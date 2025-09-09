@@ -61,6 +61,30 @@ services:
       REDIS_URL: redis://redis:6379
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       API_BASE_URL: http://api:8000
+      FRONTEND_URL: http://localhost:4444
+      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+
+  bot-webhook:
+    build: ./bot
+    command: python -m bot.src.main webhook
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      API_BASE_URL: http://api:8000
+      FRONTEND_URL: http://localhost:4444
+      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
+    ports:
+      - "8001:8001"
     depends_on:
       postgres:
         condition: service_healthy

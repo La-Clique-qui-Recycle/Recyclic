@@ -8,7 +8,8 @@ from src.core.database import get_db, Base
 from src.core.config import settings
 
 # Create test database
-SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL.replace("recyclic", "recyclic_test")
+#SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL.replace("recyclic", "recyclic_test")
+SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -25,7 +26,7 @@ app.dependency_overrides[get_db] = override_get_db
 def client():
     # Create tables
     Base.metadata.create_all(bind=engine)
-    with TestClient(app) as c:
+    with TestClient(app, base_url="http://localhost") as c:
         yield c
     # Drop tables after tests
     Base.metadata.drop_all(bind=engine)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from ...core.database import get_db
-from ...core.redis import get_redis
+from ....core.database import get_db
+from ....core.redis import get_redis
 import time
 
 router = APIRouter()

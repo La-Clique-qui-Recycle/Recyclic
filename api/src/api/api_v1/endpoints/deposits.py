@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from ...core.database import get_db
-from ...models.deposit import Deposit
-from ...schemas.deposit import DepositResponse, DepositCreate
+from ....core.database import get_db
+from ....models.deposit import Deposit
+from ....schemas.deposit import DepositResponse, DepositCreate
 
 router = APIRouter()
 
