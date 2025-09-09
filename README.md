@@ -1,5 +1,6 @@
 # ♻️ Recyclic
-**Outil de gestion pour ressourceries - POC en développement**
+**Outil de gestion pour ressourceries - POC en développement**  
+⚠️ **Attention : Non Fonctionnel !**
 
 ## 🌱 Notre Mission
 Digitaliser les processus des ressourceries pour réduire le temps administratif de 70% et assurer la conformité réglementaire Ecologic.
