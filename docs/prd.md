@@ -47,7 +47,7 @@ Le projet Recyclic résout ce défi en introduisant l'IA conversationnelle dans 
 **FR11:** Le système doit maintenir des comptes admin qui peuvent autoriser de nouveaux utilisateurs  
 **FR12:** Toutes les actions utilisateur doivent être journalisées pour audit  
 **FR13:** L'interface caisse doit être responsive (tablette/smartphone)  
-**FR14:** Le système doit supporter la configuration multi-sites  
+**FR14:** Le système doit supporter la configuration par site (single-tenant par installation)  
 **FR15:** Le bot doit fournir un lien d'inscription web quand un nouvel utilisateur l'contacte  
 **FR16:** Le formulaire d'inscription doit collecter nom et contacts et notifier tous les admins  
 **FR17:** L'admin qui valide doit notifier les autres admins de la validation  
@@ -91,7 +91,7 @@ Le projet Recyclic résout ce défi en introduisant l'IA conversationnelle dans 
 **NFR8:** Les sauvegardes automatiques doivent être chiffrées  
 **NFR9:** Le système doit fonctionner sur VPS avec coûts cloud <50€/mois/site  
 **NFR10:** L'interface doit être compatible navigateurs modernes (Chrome/Firefox/Safari 2 dernières versions)  
-**NFR11:** Le système doit supporter différents providers IA (Groq, Ollama local, OpenAI) en plus de Gemini  
+**NFR11:** Le système doit supporter différents providers IA (Groq, Ollama local, OpenAI) en plus de Gemini (fallback optionnel)  
 **NFR12:** Déploiement full Docker (conteneurisation complète)  
 **NFR13:** Le système doit fonctionner en mode offline avec synchronisation automatique lors de la reconnexion  
 **NFR14:** Indicateur visuel discret (rouge) en mode offline  
