@@ -1,57 +1,173 @@
-# Recyclic
+# Recyclic - Plateforme de Recyclage Intelligente
 
-Gestion numérique pour ressourceries développée par "La Clique qui Recycle" (Vézénobre, Gard).
+## 🚀 Démarrage Rapide
 
-## Le Problème
+### Prérequis
+- Docker et Docker Compose installés
+- Git installé
 
-Les ressourceries perdent 2-3h/jour en saisie administrative et risquent des amendes pour non-conformité réglementaire.
+### Installation
 
-## La Solution
+1. **Cloner le projet**
+   ```bash
+   git clone <repository-url>
+   cd Recyclic
+   ```
 
-- **Bot Telegram vocal** : Enregistrement des dépôts par message audio
-- **Interface caisse simple** : Vente en quelques clics sur tablette
-- **Conformité automatique** : Exports réglementaires générés automatiquement
+2. **Configurer l'environnement**
+   ```bash
+   # Copier le fichier d'environnement
+   cp env.example .env
+   
+   # Éditer les variables d'environnement
+   # Modifier les valeurs dans .env selon vos besoins
+   ```
 
-## Roadmap
+3. **Démarrer l'application**
+   
+   **Sur Windows :**
+   ```cmd
+   start.bat
+   ```
+   
+   **Sur Linux/Mac :**
+   ```bash
+   ./start.sh
+   ```
+   
+   **Ou manuellement :**
+   ```bash
+   docker-compose up -d
+   ```
 
-### Phase 1 - MVP (4 semaines)
-- Bot Telegram avec reconnaissance vocale
-- Interface caisse responsive  
-- Base de données et exports Ecologic
-- Mode hors-ligne
+### 🌐 Services Disponibles
 
-### Phase 2 - Fonctionnalités (3 mois)
-- Étiquettes QR codes
-- Balances connectées
-- Gestion multi-sites
+Une fois démarré, les services suivants sont accessibles :
 
-### Phase 3 - Intelligence (6 mois)  
-- Reconnaissance visuelle automatique
-- Recommandation prix IA
-- Plateforme territoriale
+- **API FastAPI** : http://localhost:4433
+- **Documentation API** : http://localhost:4433/docs
+- **Interface Web** : http://localhost:4444
+- **Base de données PostgreSQL** : localhost:5432
+- **Redis** : localhost:6379
 
-## Tech Stack
-
-**Backend :** FastAPI + LangChain  
-**IA :** Gemini 2.5 Flash  
-**Frontend :** Interface responsive  
-**Déploiement :** Docker
-
-## Contribuer
-
-Fork → Pull Request
-
-**Recherchons :** Développeurs Python/FastAPI, Frontend, testeurs bénévoles
-
-## Installation
+### 📚 Commandes Utiles
 
 ```bash
-git clone [repo]
-docker-compose up
+# Voir les logs
+docker-compose logs -f
+
+# Arrêter les services
+docker-compose down
+
+# Redémarrer un service
+docker-compose restart <service-name>
+
+# Reconstruire les images
+docker-compose build --no-cache
+
+# Accéder à la base de données
+docker-compose exec postgres psql -U recyclic -d recyclic
 ```
 
-**Prérequis :** Python 3.11+, Docker, compte Telegram Bot
+## 🏗️ Architecture
 
-## Licence
+### Structure du Projet
 
-MIT - Libre pour associations et collectivités
+```
+recyclic/
+├── api/                    # API FastAPI
+│   ├── src/
+│   │   ├── api/           # Routes API
+│   │   ├── core/          # Configuration
+│   │   ├── models/        # Modèles SQLAlchemy
+│   │   ├── schemas/       # Schémas Pydantic
+│   │   └── tests/         # Tests
+│   ├── migrations/        # Migrations Alembic
+│   ├── requirements.txt
+│   └── Dockerfile
+├── bot/                   # Bot Telegram
+│   ├── src/
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/              # Interface web React
+│   ├── src/
+│   ├── package.json
+│   └── Dockerfile
+├── docs/                  # Documentation
+├── docker-compose.yml
+└── README.md
+```
+
+### Technologies Utilisées
+
+- **Backend** : FastAPI, SQLAlchemy, Alembic
+- **Base de données** : PostgreSQL 15
+- **Cache** : Redis 7
+- **Bot** : python-telegram-bot
+- **Frontend** : React 18, Styled Components
+- **Conteneurisation** : Docker, Docker Compose
+
+## 🔧 Développement
+
+### Configuration de l'Environnement
+
+1. **Variables d'environnement** (fichier `.env`) :
+   ```env
+   POSTGRES_PASSWORD=recyclic_secure_password_2024
+   SECRET_KEY=your-super-secret-key-here
+   TELEGRAM_BOT_TOKEN=your-telegram-bot-token
+   ENVIRONMENT=development
+   ```
+
+2. **Base de données** :
+   - Base de données : `recyclic`
+   - Utilisateur : `recyclic`
+   - Mot de passe : configuré dans `.env`
+
+### Tests
+
+```bash
+# Tests de l'API
+cd api
+python -m pytest tests/
+
+# Tests avec Docker
+docker-compose exec api python -m pytest tests/
+```
+
+### Migrations
+
+```bash
+# Créer une nouvelle migration
+cd api
+alembic revision --autogenerate -m "Description"
+
+# Appliquer les migrations
+alembic upgrade head
+```
+
+## 📖 Documentation
+
+- [Architecture du projet](docs/architecture/)
+- [Spécifications API](docs/architecture/api-specification.md)
+- [Guide de développement](docs/architecture/development-workflow.md)
+- [Stratégie de tests](docs/architecture/testing-strategy.md)
+
+## 🤝 Contribution
+
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
+3. Commit les changements (`git commit -am 'Ajouter nouvelle fonctionnalité'`)
+4. Push vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
+5. Créer une Pull Request
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## 🆘 Support
+
+Pour toute question ou problème :
+- Créer une issue sur GitHub
+- Consulter la documentation
+- Contacter l'équipe de développement
