@@ -42,7 +42,7 @@ Le projet Recyclic résout ce défi en introduisant l'IA conversationnelle dans 
 **FR6:** Le système doit gérer les types de paiement (espèces/CB) avec totaux journaliers temps réel  
 **FR7:** Le système doit générer automatiquement les exports CSV format Ecologic par catégorie EEE  
 **FR8:** Le système doit synchroniser automatiquement avec Infomaniak kDrive via WebDAV  
-**FR9:** Le système doit synchroniser en temps réel avec Google Sheets  
+**FR9:** Le système doit sauvegarder automatiquement sur Infomaniak kDrive  
 **FR10:** Le bot doit envoyer des notifications Telegram en cas d'échec de synchronisation  
 **FR11:** Le système doit maintenir des comptes admin qui peuvent autoriser de nouveaux utilisateurs  
 **FR12:** Toutes les actions utilisateur doivent être journalisées pour audit  
@@ -334,16 +334,20 @@ so that regulatory reporting is effortless and always accurate.
 
 ### Story 4.2: Synchronisation Cloud Automatique
 As an association manager,  
-I want automatic cloud synchronization with multiple services,  
+I want automatic cloud synchronization with Infomaniak kDrive,  
 so that data is safely backed up and accessible to partners.
 
 **Acceptance Criteria:**
-1. Upload automatique Infomaniak kDrive via WebDAV
-2. Synchronisation Google Sheets temps réel (configuration par ressourcerie)
+1. **Setup Infomaniak kDrive :**
+   - Création compte Infomaniak kDrive (action utilisateur)
+   - Génération app password WebDAV depuis interface Infomaniak
+   - Test connexion WebDAV avec credentials utilisateur
+   - Configuration structure dossiers (exports/, backups/, audio/, logs/)
+2. Upload automatique Infomaniak kDrive via WebDAV
 3. Queue de retry avec backoff exponentiel en cas d'échec
 4. Notifications Telegram admins en cas d'échec sync >24h
 5. Dashboard statut synchronisation (dernière sync, statut, erreurs)
-6. Configuration multi-comptes cloud par ressourcerie
+6. Configuration multi-comptes kDrive par ressourcerie
 
 ### Story 4.3: Dashboard Admin & Gestion Multi-Caisses
 As an admin,  
@@ -358,7 +362,32 @@ so that I can monitor operations and configure system settings.
 5. Gestion utilisateurs : whitelist, rôles, permissions
 6. Logs système et audit trail complets avec filtres
 
-### Story 4.4: Monitoring & Notifications
+### Story 4.4: Documentation Utilisateur & Formation
+As a resource center manager,  
+I want comprehensive user documentation and training materials,  
+so that my team can use the system autonomously and efficiently.
+
+**Acceptance Criteria:**
+1. **Guide utilisateur Bot Telegram :**
+   - Commandes disponibles (/depot, /help, /status)
+   - Workflow enregistrement vocal avec captures écran
+   - Gestion erreurs et validation/correction classifications
+2. **Manuel interface caisse :**
+   - Ouverture/fermeture session avec contrôles caisse
+   - Workflow vente 3 modes (Catégorie → Quantité → Prix)
+   - Gestion erreurs et déverrouillages admin
+3. **Guide admin dashboard :**
+   - Configuration multi-sites et personnalisation
+   - Gestion utilisateurs et whitelist Telegram
+   - Exports et synchronisation cloud
+4. **Troubleshooting et FAQ :**
+   - Résolution problèmes courants (mode offline, sync échecs)
+   - Contact support et maintenance
+5. **Matériels de formation :**
+   - Checklist formation new user (2h max)
+   - Vidéos courtes workflow essentiels
+
+### Story 4.5: Monitoring & Notifications
 As an admin,  
 I want proactive monitoring with intelligent notifications,  
 so that I'm alerted to issues before they impact operations.
