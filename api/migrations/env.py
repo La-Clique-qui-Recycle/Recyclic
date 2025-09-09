@@ -8,9 +8,9 @@ import sys
 # Add the src directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from core.config import settings
-from core.database import Base
-from models import *  # Import all models
+from recyclic_api.core.config import settings
+from recyclic_api.core.database import Base
+from recyclic_api.models import *  # Import all models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -12,6 +12,27 @@
 - **Offline First:** All critical actions must work offline - Cache in IndexedDB and sync later
 - **Validation:** Validate on both frontend and backend - Pydantic schemas + frontend form validation
 
+## Testing Standards
+
+### PostgreSQL/Redis Testing
+- **Database Configuration:** Always use `TEST_DATABASE_URL` for tests, fallback to `DATABASE_URL`
+- **User Consistency:** Ensure Docker and test configurations use the same database user
+- **Environment Variables:** Always export variables before running tests - `export TEST_DATABASE_URL="..."`
+- **Test Isolation:** Use module-scoped fixtures for database tests to ensure proper cleanup
+- **Alternative Testing:** Have Python direct tests as fallback when pytest doesn't work
+- **Service Validation:** Always verify Docker services are running before executing tests
+
+### Test Scripts
+- **Robustness:** Scripts must validate environment variables before execution
+- **Error Handling:** Provide clear error messages when configuration is missing
+- **Documentation:** Document all required environment variables and their sources
+- **Cross-Platform:** Support both Linux (WSL2) and Windows environments
+
+### FastAPI Best Practices
+- **Lifespan Events:** Use `lifespan` handlers instead of deprecated `@app.on_event()`
+- **Docker Configuration:** Remove obsolete `version` attribute from `docker-compose.yml`
+- **Warning Management:** Address deprecation warnings promptly to maintain clean logs
+
 ## Naming Conventions
 
 | Element | Frontend | Backend | Example |

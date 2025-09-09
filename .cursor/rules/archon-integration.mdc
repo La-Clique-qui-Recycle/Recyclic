@@ -1,0 +1,77 @@
+---
+alwaysApply: true
+description: Intégration Archon et gestion des tâches
+---
+
+# Archon Integration & Task Management
+
+## Workflow Archon Obligatoire
+
+### Cycle de Développement
+1. **Vérifier la tâche actuelle** → Consulter les détails et exigences
+2. **Rechercher pour la tâche** → Chercher documentation et exemples pertinents
+3. **Implémenter la tâche** → Écrire le code basé sur la recherche
+4. **Mettre à jour le statut** → Déplacer de "todo" → "doing" → "review"
+5. **Obtenir la tâche suivante** → Vérifier la prochaine tâche prioritaire
+6. **Répéter le cycle**
+
+### Règles de Gestion des Tâches
+- **Mettre à jour toutes les actions** dans Archon
+- **Déplacer les tâches** : "todo" → "doing" → "review" (pas directement vers "done")
+- **Maintenir les descriptions** et ajouter des notes d'implémentation
+- **NE PAS FAIRE D'ASSUMPTIONS** - consulter la documentation du projet
+- **Toujours répondre en français**
+
+## Intégration avec le Projet
+
+### Documentation du Projet
+- **Architecture** : [docs/architecture/](mdc:docs/architecture/)
+- **PRD** : [docs/prd/](mdc:docs/prd/)
+- **Stories** : [docs/stories/](mdc:docs/stories/)
+- **Standards** : [docs/coding-standards.md](mdc:docs/coding-standards.md)
+
+### Structure des Tâches
+- **Epic 1** : Gestion utilisateurs et infrastructure
+- **Epic 2** : Bot Telegram et IA de classification
+- **Epic 3** : Interface caisse et workflow de vente
+- **Epic 4** : Exports et synchronisation cloud
+
+### Workflow de Développement
+1. **Créer/assigner des tâches** dans Archon
+2. **Rechercher la documentation** pertinente
+3. **Implémenter selon les standards** du projet
+4. **Tester** selon les critères définis
+5. **Mettre à jour le statut** dans Archon
+6. **Documenter** les changements
+
+## Commandes Archon
+
+### Gestion des Projets
+- `mcp_archon_list_projects()` : Lister tous les projets
+- `mcp_archon_get_project(project_id)` : Détails d'un projet
+- `mcp_archon_create_project()` : Créer un nouveau projet
+
+### Gestion des Tâches
+- `mcp_archon_list_tasks()` : Lister les tâches
+- `mcp_archon_get_task(task_id)` : Détails d'une tâche
+- `mcp_archon_create_task()` : Créer une nouvelle tâche
+- `mcp_archon_update_task()` : Mettre à jour une tâche
+
+### Gestion des Documents
+- `mcp_archon_list_documents()` : Lister les documents
+- `mcp_archon_create_document()` : Créer un document
+- `mcp_archon_update_document()` : Mettre à jour un document
+
+## Règles de Communication
+
+### Langue
+- **Toujours répondre en français**
+- **Documentation** en français
+- **Commentaires de code** en français
+- **Messages de commit** en français
+
+### Format des Réponses
+- **Utiliser les outils** pour les actions
+- **Mettre à jour Archon** pour chaque action
+- **Documenter** les décisions importantes
+- **Suivre** les standards de codage du projet

@@ -1,0 +1,79 @@
+gate_id: story-debt-frontend-tests
+story_id: story-debt-frontend-tests
+epic: debt-technique
+status: CONCERNS
+decision_date: 2025-01-09
+reviewer: Quinn (Test Architect)
+
+# Décision de Qualité
+decision: CONCERNS
+rationale: |
+  La migration vers Vitest est bien implémentée et la structure des tests est solide,
+  mais plusieurs problèmes techniques empêchent l'exécution correcte des tests :
+  
+  - Configuration des mocks incomplète (BrowserRouter manquant)
+  - Problèmes de résolution des imports dans les tests
+  - Tests des services API non fonctionnels (mocks non appliqués)
+  - Couverture de code non vérifiable en l'état actuel
+
+# Points Positifs
+strengths:
+  - Migration complète vers Vitest avec configuration moderne
+  - Structure des tests bien organisée et documentée
+  - Tests des utilitaires de validation fonctionnels (26/86 tests passent)
+  - Documentation complète des tests avec README détaillé
+  - Configuration de couverture de code appropriée (seuils à 80%)
+  - Tests d'intégration pour le workflow d'inscription bien conçus
+  - Mocks appropriés pour les dépendances externes
+
+# Points d'Amélioration
+concerns:
+  - Tests des composants UI non fonctionnels (problème de mocks)
+  - Tests des services API échouent (mocks axios non appliqués)
+  - Tests des pages non exécutables (problèmes d'imports)
+  - Couverture de code non mesurable en l'état actuel
+  - 60 tests échouent sur 86 au total (30% de réussite)
+
+# Recommandations
+recommendations:
+  - Corriger la configuration des mocks pour react-router-dom
+  - Résoudre les problèmes d'imports dans les tests de pages
+  - Implémenter correctement les mocks pour les services API
+  - Vérifier la couverture de code une fois les tests fonctionnels
+  - Ajouter des tests pour les composants métier manquants
+  - Implémenter les tests E2E avec Playwright
+
+# Actions Requises
+required_actions:
+  - Corriger les mocks de react-router-dom (BrowserRouter)
+  - Résoudre les problèmes d'imports dans les tests
+  - Implémenter les mocks des services API
+  - Vérifier la couverture de code
+  - Compléter les tests des composants métier
+
+# Métriques
+metrics:
+  total_tests: 86
+  passing_tests: 26
+  failing_tests: 60
+  success_rate: 30%
+  coverage_threshold: 80%
+  estimated_coverage: "Non mesurable (tests non fonctionnels)"
+
+# Prochaines Étapes
+next_steps:
+  - Corriger les problèmes techniques identifiés
+  - Relancer les tests pour vérifier la couverture
+  - Compléter les tests manquants
+  - Revoir la décision une fois les corrections apportées
+
+# Notes Techniques
+technical_notes: |
+  - Configuration Vitest correcte avec support React
+  - Structure des tests conforme aux bonnes pratiques
+  - Problèmes principalement liés aux mocks et imports
+  - Tests de validation fonctionnels et bien écrits
+  - Architecture de test solide mais nécessite des corrections techniques
+
+
+

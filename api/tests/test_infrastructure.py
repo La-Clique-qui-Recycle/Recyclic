@@ -1,35 +1,5 @@
 import pytest
-import httpx
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from src.main import app
-from src.core.database import get_db, Base
-from src.core.config import settings
-
-# Create test database
-#SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL.replace("recyclic", "recyclic_test")
-SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-
-@pytest.fixture(scope="module")
-def client():
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-    with TestClient(app, base_url="http://localhost") as c:
-        yield c
-    # Drop tables after tests
-    Base.metadata.drop_all(bind=engine)
+from unittest.mock import patch
 
 def test_root_endpoint(client):
     """Test root endpoint"""
@@ -39,7 +9,7 @@ def test_root_endpoint(client):
     assert "message" in data
     assert "Bienvenue sur l'API Recyclic" in data["message"]
 
-def test_health_endpoint(client):
+def test_health_endpoint(client, mock_redis):
     """Test health check endpoint"""
     response = client.get("/health")
     assert response.status_code == 200
@@ -48,7 +18,7 @@ def test_health_endpoint(client):
     assert "database" in data
     assert "redis" in data
 
-def test_api_v1_health(client):
+def test_api_v1_health(client, mock_redis):
     """Test API v1 health endpoint"""
     response = client.get("/api/v1/health")
     assert response.status_code == 200
@@ -65,7 +35,13 @@ def test_database_connection(client):
 
 def test_cors_headers(client):
     """Test CORS headers"""
-    response = client.options("/api/v1/users")
+    response = client.options(
+        "/api/v1/users",
+        headers={
+            "Origin": "http://localhost:4444",
+            "Access-Control-Request-Method": "GET"
+        }
+    )
     assert response.status_code == 200
     assert "access-control-allow-origin" in response.headers
 

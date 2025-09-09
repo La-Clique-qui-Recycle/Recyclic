@@ -4,12 +4,8 @@
   "description": "Interface web pour la plateforme Recyclic",
   "private": true,
   "dependencies": {
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^14.5.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1",
     "react-router-dom": "^6.8.1",
     "axios": "^1.6.0",
     "styled-components": "^6.1.0",
@@ -18,10 +14,22 @@
     "react-hot-toast": "^2.4.1",
     "lucide-react": "^0.294.0"
   },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.2",
+    "@vitejs/plugin-react": "^4.2.0",
+    "jsdom": "^23.0.1",
+    "vitest": "^1.0.4",
+    "vite": "^5.0.8"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

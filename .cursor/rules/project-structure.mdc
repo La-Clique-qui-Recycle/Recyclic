@@ -1,0 +1,73 @@
+---
+alwaysApply: true
+description: Structure et architecture du projet Recyclic
+---
+
+# Project Structure - Recyclic
+
+## Architecture Générale
+Le projet Recyclic est une plateforme de recyclage intelligente avec 3 composants principaux :
+
+### 🏗️ Structure des Répertoires
+
+```
+recyclic/
+├── api/                    # API FastAPI Backend
+├── bot/                    # Bot Telegram IA
+├── frontend/               # Interface Web React
+├── docs/                   # Documentation complète
+└── docker-compose.yml      # Orchestration des services
+```
+
+## Backend API (FastAPI)
+- **Répertoire** : [api/](mdc:api/)
+- **Point d'entrée** : [api/src/main.py](mdc:api/src/main.py)
+- **Structure** :
+  - `src/api/` : Routes et endpoints
+  - `src/models/` : Modèles SQLAlchemy
+  - `src/schemas/` : Schémas Pydantic
+  - `src/core/` : Configuration et utilitaires
+  - `migrations/` : Migrations Alembic
+- **Base de données** : PostgreSQL 15
+- **Cache** : Redis 7
+- **Port** : 4433 (externe) / 8000 (interne)
+
+## Bot Telegram
+- **Répertoire** : [bot/](mdc:bot/)
+- **Point d'entrée** : [bot/src/main.py](mdc:bot/src/main.py)
+- **Structure** :
+  - `src/handlers/` : Gestionnaires de commandes
+  - `src/services/` : Services métier
+- **Fonctionnalités** : Classification IA, inscription utilisateurs
+- **Modes** : Polling et Webhook
+
+## Frontend React
+- **Répertoire** : [frontend/](mdc:frontend/)
+- **Point d'entrée** : [frontend/src/App.js](mdc:frontend/src/App.js)
+- **Structure** :
+  - `src/components/` : Composants React
+  - `src/pages/` : Pages de l'application
+  - `src/services/` : Services API
+- **Port** : 4444 (externe) / 3000 (interne)
+
+## Documentation
+- **Répertoire** : [docs/](mdc:docs/)
+- **Architecture** : [docs/architecture/](mdc:docs/architecture/)
+- **PRD** : [docs/prd/](mdc:docs/prd/)
+- **Stories** : [docs/stories/](mdc:docs/stories/)
+
+## Services Docker
+- **PostgreSQL** : Base de données principale
+- **Redis** : Cache et sessions
+- **API** : Service FastAPI
+- **Bot** : Service Telegram (polling)
+- **Bot-Webhook** : Service Telegram (webhook)
+- **Frontend** : Interface utilisateur
+
+## Variables d'Environnement
+- **Fichier** : [env.example](mdc:env.example)
+- **Variables clés** :
+  - `POSTGRES_PASSWORD` : Mot de passe base de données
+  - `SECRET_KEY` : Clé secrète API
+  - `TELEGRAM_BOT_TOKEN` : Token bot Telegram
+  - `ADMIN_TELEGRAM_IDS` : IDs administrateurs

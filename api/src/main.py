@@ -4,10 +4,10 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import logging
 import time
 
-from .core.config import settings
-from .api.api_v1.api import api_router
-from .core.database import engine
-from .models import Base
+from recyclic_api.core.config import settings
+from recyclic_api.api.api_v1.api import api_router
+from recyclic_api.core.database import engine
+from recyclic_api.models import Base
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,11 +50,9 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database tables on startup"""
+    """Initialize API on startup"""
     logger.info("Starting up Recyclic API...")
-    # Create database tables
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created successfully")
+    logger.info("API ready - use migrations for database setup")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -76,11 +74,11 @@ async def health_check():
     """Health check endpoint"""
     try:
         # Test database connection
-        from .core.database import get_db
+        from recyclic_api.core.database import get_db
         db = next(get_db())
         
         # Test Redis connection
-        from .core.redis import get_redis
+        from recyclic_api.core.redis import get_redis
         redis_client = get_redis()
         redis_client.ping()
         

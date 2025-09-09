@@ -1,0 +1,84 @@
+---
+globs: *.py,*.js,*.ts,*.tsx,*.jsx
+description: Standards de codage et bonnes pratiques pour le projet Recyclic
+---
+
+# Coding Standards - Recyclic
+
+## Standards de Qualité du Code
+
+### Python (FastAPI Backend)
+- **Type hints** : Obligatoires pour toutes les fonctions publiques
+- **Formatage** : Black formatting automatique
+- **Validation** : mypy pour la validation des types
+- **Documentation** : Docstrings pour toutes les fonctions publiques
+- **Structure** : Repository pattern pour l'accès aux données
+- **Services** : Business logic séparée des controllers
+
+### JavaScript/TypeScript (Frontend React)
+- **TypeScript** : Mode strict activé, éviter `any` sauf cas exceptionnels documentés
+- **Formatage** : Prettier pour la cohérence
+- **State Management** : Zustand stores, éviter les mutations directes
+- **Composants** : Fonctionnels avec hooks
+- **Documentation** : JSDoc pour les fonctions publiques
+
+### Tests
+- **Couverture** : >80% pour le code métier, >60% pour les composants UI
+- **Backend** : pytest avec fixtures
+- **Frontend** : Vitest pour les tests unitaires
+- **E2E** : Tests d'intégration pour les workflows critiques
+
+## Architecture Patterns
+
+### Backend (API)
+- **Repository Pattern** : Toujours utiliser pour l'accès aux données
+- **Service Layer** : Business logic séparée des controllers
+- **Error Handling** : Standard ErrorHandler class avec logging structuré
+- **Dependency Injection** : Utiliser FastAPI's dependency system
+
+### Frontend (React)
+- **Component Structure** : Composants fonctionnels avec hooks
+- **State Management** : Zustand pour l'état global
+- **API Calls** : Services dédiés dans `src/services/`
+- **Error Boundaries** : Gestion d'erreurs au niveau composant
+
+## Gestion de la Dette Technique
+
+### Règles de Sprint
+- **20% de capacité** minimum dédiée à la dette technique
+- **1 story de debt** obligatoire par sprint si register non-vide
+- **Debt paydown** prioritaire sur nouvelles fonctionnalités si debt Critical
+
+### Refactoring Guidelines
+- **Red-Green-Refactor** : Tests pass → Refactor → Tests pass
+- **Strangler Fig Pattern** : Remplacement progressif du code legacy
+- **Feature Flags** : Protection pour les refactorings majeurs
+
+## Documentation Requirements
+
+### Code Documentation
+- **Docstrings** : Toutes les fonctions publiques
+- **Type Hints** : Obligatoires en Python
+- **JSDoc** : Fonctions complexes en JavaScript/TypeScript
+- **README** : Mise à jour pour chaque nouvelle fonctionnalité
+
+### Architecture Decisions
+- **ADR** : Documenter les décisions architecturales importantes
+- **Code Comments** : Expliquer le "pourquoi", pas le "quoi"
+- **API Documentation** : OpenAPI/Swagger maintenu à jour
+
+## Code Review Guidelines
+
+### Checklist Obligatoire
+- [ ] Type hints présents (Python)
+- [ ] Tests ajoutés/modifiés
+- [ ] Documentation mise à jour
+- [ ] Pas de `any` types (TypeScript)
+- [ ] Error handling approprié
+- [ ] Logging structuré
+- [ ] Performance considérée
+
+### Debt Assessment
+- Chaque PR évaluée pour dette technique potentielle
+- Architecture decisions documentées
+- New code avec tests appropriés
