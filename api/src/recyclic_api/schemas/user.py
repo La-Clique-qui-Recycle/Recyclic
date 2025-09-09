@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from recyclic_api.models.user import UserRole
+from recyclic_api.models.user import UserRole, UserStatus
 
 class UserBase(BaseModel):
     telegram_id: str
@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     role: UserRole = UserRole.USER
+    status: UserStatus = UserStatus.PENDING
     is_active: bool = True
     site_id: Optional[str] = None
 

@@ -3,7 +3,8 @@
     "allow": [
       "WebFetch(domain:www.petite-entreprise.net)",
       "WebSearch",
-      "Bash(md-tree explode:*)"
+      "Bash(md-tree explode:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

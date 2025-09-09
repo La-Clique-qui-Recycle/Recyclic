@@ -165,6 +165,9 @@ Créer l'interface caisse responsive complète avec gestion des sessions, vente 
 ### Epic 4: Exports & Synchronisation Cloud
 Assurer la conformité réglementaire avec exports automatiques Ecologic, synchronisation cloud temps réel, et dashboard admin complet.
 
+### Epic 5: Interface d'Administration et Gestion des Rôles
+Le projet a besoin d'une interface d'administration sécurisée. La première story doit permettre de créer le tout premier utilisateur "super-admin" (par exemple, via une commande CLI à usage unique). Les stories suivantes devront permettre à cet admin de lister les utilisateurs, de changer leurs rôles (user, admin, super-admin), et de valider ou rejeter les demandes d'inscription.
+
 ---
 
 ## Epic 1: Gestion Utilisateurs & Infrastructure
@@ -319,6 +322,8 @@ so that daily cash management is properly controlled and audited.
 
 **Objectif :** Assurer la conformité réglementaire avec exports automatiques Ecologic, synchronisation cloud temps réel, et dashboard admin complet. Délivre la compliance obligatoire et les outils de pilotage pour les responsables.
 
+*Pour plus de détails, voir le document complet : [Epic 4: Exports & Synchronisation Cloud](./prd/epic-4-exports-synchronisation-cloud.md)*
+
 ### Story 4.1: Exports CSV Format Ecologic
 As an association manager,  
 I want automatic Ecologic-compliant CSV exports,  
@@ -399,6 +404,14 @@ so that I'm alerted to issues before they impact operations.
 4. Dashboard santé système (performance IA, taux d'erreur, usage)
 5. Rapports automatiques hebdomadaires (KPIs, statistiques usage)
 6. Système de maintenance préventive avec recommandations
+
+---
+
+## Epic 5: Interface d'Administration et Gestion des Rôles
+
+**Objectif :** Fournir une interface d'administration sécurisée pour gérer les utilisateurs, leurs rôles et leurs inscriptions. Cet epic est essentiel pour garantir un contrôle d'accès adéquat et une gestion centralisée des utilisateurs de la plateforme Recyclic.
+
+*Pour plus de détails, voir le document complet : [Epic 5: Interface d'Administration et Gestion des Rôles](./prd/epic-5-interface-administration-gestion-roles.md)*
 
 ---
 

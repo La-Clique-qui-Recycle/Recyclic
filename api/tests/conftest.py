@@ -11,7 +11,7 @@ from main import app
 # S'assurer que api/src est dans le PYTHONPATH si exécution hors pyproject
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or settings.TEST_DATABASE_URL or settings.DATABASE_URL
+TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or settings.TEST_DATABASE_URL or "postgresql://recyclic:recyclic@localhost:5432/recyclic_test"
 
 def ensure_test_database(url: str) -> None:
     u = make_url(url)
@@ -28,7 +28,13 @@ def ensure_test_database(url: str) -> None:
 
 def create_schema(url: str) -> None:
     test_engine = create_engine(url, pool_pre_ping=True)
-    Base.metadata.create_all(bind=test_engine)
+    # Use Alembic migrations instead of metadata.create_all()
+    from alembic.config import Config
+    from alembic import command
+    
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", url)
+    command.upgrade(alembic_cfg, "head")
     test_engine.dispose()
 
 def drop_schema(url: str) -> None:

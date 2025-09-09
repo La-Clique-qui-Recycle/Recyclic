@@ -1,0 +1,139 @@
+"""
+Tests for User model
+"""
+import pytest
+import os
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine.url import make_url
+from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.core.database import Base
+from recyclic_api.core.config import settings
+
+# Use Postgres test database
+TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or settings.TEST_DATABASE_URL or "postgresql://recyclic:recyclic@localhost:5432/recyclic_test"
+
+def ensure_test_database(url: str) -> None:
+    u = make_url(url)
+    admin_url = u.set(database="postgres")
+    dbname = u.database
+    admin_engine = create_engine(admin_url)
+    with admin_engine.connect() as conn:
+        exists = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :d"), {"d": dbname}).scalar()
+        if not exists:
+            conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(f'CREATE DATABASE "{dbname}"'))
+    admin_engine.dispose()
+
+def create_schema(url: str) -> None:
+    """Create schema using Alembic migrations"""
+    from alembic.config import Config
+    from alembic import command
+    
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", url)
+    command.upgrade(alembic_cfg, "head")
+
+def drop_schema(url: str) -> None:
+    """Drop schema using Alembic downgrade"""
+    from alembic.config import Config
+    from alembic import command
+    
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", url)
+    command.downgrade(alembic_cfg, "base")
+
+@pytest.fixture
+def db_session():
+    """Create a test database session using Alembic"""
+    ensure_test_database(TEST_DB_URL)
+    create_schema(TEST_DB_URL)
+    
+    engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        drop_schema(TEST_DB_URL)
+        engine.dispose()
+
+def test_user_role_enum_values():
+    """Test that UserRole enum has all expected values"""
+    assert UserRole.SUPER_ADMIN == "super-admin"
+    assert UserRole.ADMIN == "admin"
+    assert UserRole.MANAGER == "manager"
+    assert UserRole.CASHIER == "cashier"
+    assert UserRole.USER == "user"
+
+def test_user_status_enum_values():
+    """Test that UserStatus enum has all expected values"""
+    assert UserStatus.PENDING == "pending"
+    assert UserStatus.APPROVED == "approved"
+    assert UserStatus.REJECTED == "rejected"
+
+def test_user_creation_with_defaults(db_session):
+    """Test user creation with default values"""
+    user = User(
+        telegram_id="123456789",
+        first_name="Test",
+        last_name="User"
+    )
+    
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    
+    # Check defaults
+    assert user.role == UserRole.USER
+    assert user.status == UserStatus.PENDING
+    assert user.is_active == True
+    assert user.telegram_id == "123456789"
+    assert user.first_name == "Test"
+    assert user.last_name == "User"
+
+def test_user_creation_with_custom_values(db_session):
+    """Test user creation with custom role and status"""
+    user = User(
+        telegram_id="987654321",
+        first_name="Admin",
+        last_name="User",
+        role=UserRole.SUPER_ADMIN,
+        status=UserStatus.APPROVED
+    )
+    
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    
+    assert user.role == UserRole.SUPER_ADMIN
+    assert user.status == UserStatus.APPROVED
+    assert user.telegram_id == "987654321"
+
+def test_user_repr():
+    """Test user string representation"""
+    user = User(
+        telegram_id="123456789",
+        first_name="Test",
+        last_name="User",
+        role=UserRole.ADMIN,
+        status=UserStatus.APPROVED
+    )
+    
+    repr_str = repr(user)
+    assert "telegram_id=123456789" in repr_str
+    assert "role=UserRole.ADMIN" in repr_str
+    assert "status=UserStatus.APPROVED" in repr_str
+
+def test_user_unique_telegram_id(db_session):
+    """Test that telegram_id must be unique"""
+    user1 = User(telegram_id="123456789", first_name="User1")
+    user2 = User(telegram_id="123456789", first_name="User2")
+    
+    db_session.add(user1)
+    db_session.commit()
+    
+    db_session.add(user2)
+    with pytest.raises(Exception):  # Should raise integrity error
+        db_session.commit()
+

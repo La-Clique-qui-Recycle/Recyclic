@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from recyclic_api.core.config import settings
 
-db_url = settings.TEST_DATABASE_URL or settings.DATABASE_URL
+db_url = settings.DATABASE_URL
 
 # Create database engine
 engine = create_engine(
