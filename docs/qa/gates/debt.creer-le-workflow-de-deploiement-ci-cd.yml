@@ -1,0 +1,33 @@
+schema: 1
+story: 'debt.create-deploy-workflow'
+story_title: 'Créer le Workflow de Déploiement CI/CD'
+gate: PASS
+status_reason: 'Security vulnerability resolved (appleboy/ssh-action updated), deployment script improved with error handling. Remaining concerns are future improvements (blue-green deployment, version management).'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-09-14T23:15:00Z'
+top_issues:
+  - id: 'REL-001'
+    severity: medium
+    finding: 'The deployment script (docker-compose down -> up) is not atomic and can lead to downtime.'
+    suggested_action: 'Consider implementing a blue-green deployment strategy or adding health checks before stopping the old containers.'
+    suggested_owner: 'dev'
+  - id: 'MNT-001'
+    severity: low
+    finding: 'Node.js and Python versions are hardcoded in the workflow file.'
+    suggested_action: 'Use a .nvmrc or python-version-file to manage versions from a file in the repository.'
+    suggested_owner: 'dev'
+waiver: { active: false }
+quality_score: 90
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Resolved outdated GitHub Action appleboy/ssh-action from v0.1.5 to a more recent version.'
+  performance:
+    status: PASS
+    notes: 'No performance issues identified.'
+  reliability:
+    status: PASS
+    notes: 'Deployment script improved with error handling and fallbacks. Non-atomic deployment noted as future improvement.'
+  maintainability:
+    status: PASS
+    notes: 'Hardcoded versions noted as future improvement. Current implementation is functional.'

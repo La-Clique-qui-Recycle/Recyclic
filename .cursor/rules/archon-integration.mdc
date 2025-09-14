@@ -1,8 +1,6 @@
 ---
-alwaysApply: true
-description: Intégration Archon et gestion des tâches
+alwaysApply: false
 ---
-
 # Archon Integration & Task Management
 
 ## Workflow Archon Obligatoire

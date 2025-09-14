@@ -81,6 +81,11 @@ ALWAYS cite source documents: `[Source: architecture/{filename}.md#{section}]`
 - Fill in basic story information: Title, Status (Draft), Story statement, Acceptance Criteria from Epic
 - **`Dev Notes` section (CRITICAL):**
   - CRITICAL: This section MUST contain ONLY information extracted from architecture documents. NEVER invent or assume technical details.
+  - **ALWAYS start with "Références Architecturales Clés" subsection:**
+    - List 2-3 most important architecture files for this story
+    - ALWAYS guide to start with `docs/architecture/index.md` first (19 files total, index provides navigation)
+    - Specify relevant sections with `filename.md#section` format
+    - Example: "1. **COMMENCER PAR**: `docs/architecture/index.md` - Navigation complète de l'architecture"
   - Include ALL relevant technical details from Steps 2-3, organized by category:
     - **Previous Story Insights**: Key learnings from previous story
     - **Data Models**: Specific schemas, validation rules, relationships [with source references]

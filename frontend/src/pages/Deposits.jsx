@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Package, Plus } from 'lucide-react';
+import { Package } from 'lucide-react';
 
 const DepositsContainer = styled.div`
   background: white;

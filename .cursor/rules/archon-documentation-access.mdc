@@ -1,8 +1,6 @@
 ---
-alwaysApply: true
-description: Règle pour l'accès à la documentation technique et au code via Archon MCP
+alwaysApply: false
 ---
-
 # Accès à la Documentation Technique via Archon MCP
 
 ## Documentation Technique Disponible

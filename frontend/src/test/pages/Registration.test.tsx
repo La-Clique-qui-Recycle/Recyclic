@@ -13,11 +13,12 @@ vi.mock('../../services/api', () => ({
   }
 }))
 
-// Mock useSearchParams
+// Mock useSearchParams - utiliser le mock global
 const mockSearchParams = vi.fn()
 const mockSetSearchParams = vi.fn()
 
-vi.mock('react-router-dom', async () => {
+// Override du mock global pour ce test spécifique
+vi.doMock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
     ...actual,

@@ -50,7 +50,7 @@ def test_api_documentation(client):
     response = client.get("/docs")
     assert response.status_code == 200
     
-    response = client.get("/openapi.json")
+    response = client.get("/api/v1/openapi.json")
     assert response.status_code == 200
     data = response.json()
     assert "openapi" in data

@@ -1,0 +1,116 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci
+          cd ../api && pip install -r requirements.txt
+      
+      - name: Lint code
+        run: cd frontend && npm run lint
+      
+      - name: Run tests
+        run: |
+          cd frontend && npm run test:run
+          cd ../api && python -m pytest tests/ -v
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          REDIS_URL: redis://localhost:6379
+
+  build-and-deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set version tag
+        id: vars
+        run: echo "tag=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+      
+      - name: Build Docker images
+        run: |
+          docker build -t recyclic-api:${{ steps.vars.outputs.tag }} -f api/Dockerfile .
+          docker build -t recyclic-bot:${{ steps.vars.outputs.tag }} -f bot/Dockerfile .
+          docker build -t recyclic-frontend:${{ steps.vars.outputs.tag }} -f frontend/Dockerfile .
+      
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            set -e
+            echo "Starting deployment with version ${{ steps.vars.outputs.tag }}..."
+            cd /opt/recyclic
+            git pull origin main
+            
+            # Create environment file with version tags
+            echo "API_IMAGE_TAG=${{ steps.vars.outputs.tag }}" > .env.production
+            echo "BOT_IMAGE_TAG=${{ steps.vars.outputs.tag }}" >> .env.production
+            echo "FRONTEND_IMAGE_TAG=${{ steps.vars.outputs.tag }}" >> .env.production
+            
+            echo "Stopping existing services..."
+            docker-compose --env-file .env.production down || true
+            
+            echo "Starting services with versioned images..."
+            docker-compose --env-file .env.production up -d
+            
+            echo "Cleaning up old images (keeping last 5 versions)..."
+            # Keep only the last 5 versions of each image
+            # Use safer approach to avoid errors with empty results
+            docker images recyclic-api --format "{{.Tag}}" | grep -v "TAG" | tail -n +6 | while read tag; do
+                [ -n "$tag" ] && docker rmi "recyclic-api:$tag" || true
+            done
+            docker images recyclic-bot --format "{{.Tag}}" | grep -v "TAG" | tail -n +6 | while read tag; do
+                [ -n "$tag" ] && docker rmi "recyclic-bot:$tag" || true
+            done
+            docker images recyclic-frontend --format "{{.Tag}}" | grep -v "TAG" | tail -n +6 | while read tag; do
+                [ -n "$tag" ] && docker rmi "recyclic-frontend:$tag" || true
+            done
+            
+            echo "Deployment completed successfully with version ${{ steps.vars.outputs.tag }}"

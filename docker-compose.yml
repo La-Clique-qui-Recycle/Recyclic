@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
@@ -32,7 +30,7 @@ services:
       - recyclic-network
 
   api:
-    build: ./api
+    image: recyclic-api:${API_IMAGE_TAG:-latest}
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
       REDIS_URL: redis://redis:6379
@@ -54,7 +52,7 @@ services:
       - recyclic-network
 
   bot:
-    build: ./bot
+    image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
       REDIS_URL: redis://redis:6379
@@ -73,7 +71,7 @@ services:
       - recyclic-network
 
   bot-webhook:
-    build: ./bot
+    image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     command: python -m bot.src.main webhook
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
@@ -95,7 +93,7 @@ services:
       - recyclic-network
 
   frontend:
-    build: ./frontend
+    image: recyclic-frontend:${FRONTEND_IMAGE_TAG:-latest}
     environment:
       REACT_APP_API_URL: http://localhost:4433
     ports:

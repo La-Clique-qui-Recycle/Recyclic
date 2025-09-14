@@ -14,6 +14,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY src/ ./src/
 
+# Install package in development mode
+RUN pip install -e .
+
+# Copy environment file
+COPY ../env.example .env
+
+# Add src to Python path
+ENV PYTHONPATH=/app/src:/app/src/recyclic_api
+
 # Create non-root user
 RUN useradd -m -u 1000 recyclic && chown -R recyclic:recyclic /app
 USER recyclic

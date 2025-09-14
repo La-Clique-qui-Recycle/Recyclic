@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Calculator, Package, CreditCard } from 'lucide-react';
+import { Calculator, Package } from 'lucide-react';
 
 const CashRegisterContainer = styled.div`
   background: white;

@@ -201,7 +201,7 @@ function Registration() {
     }
 
     try {
-      const response = await api.post('/users/registration-requests', formData);
+      await api.post('/users/registration-requests', formData);
       
       setMessage({
         type: 'success',

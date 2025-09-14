@@ -4,33 +4,51 @@
   "description": "Interface web pour la plateforme Recyclic",
   "private": true,
   "dependencies": {
+    "@mantine/core": "^8.3.1",
+    "@mantine/hooks": "^8.3.1",
+    "@mantine/notifications": "^8.3.1",
+    "@playwright/test": "^1.55.0",
+    "@tabler/icons-react": "^3.34.1",
+    "axios": "^1.6.0",
+    "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.8.1",
-    "axios": "^1.6.0",
-    "styled-components": "^6.1.0",
-    "react-query": "^3.39.3",
     "react-hook-form": "^7.48.0",
     "react-hot-toast": "^2.4.1",
-    "lucide-react": "^0.294.0"
+    "react-query": "^3.39.3",
+    "react-router-dom": "^6.8.1",
+    "styled-components": "^6.1.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@eslint/js": "^9.35.0",
     "@testing-library/jest-dom": "^6.1.4",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
     "@vitejs/plugin-react": "^4.2.0",
+    "@vitest/coverage-v8": "^1.0.4",
+    "eslint": "^9.35.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "jsdom": "^23.0.1",
-    "vitest": "^1.0.4",
-    "vite": "^5.0.8"
+    "@openapitools/openapi-generator-cli": "^2.7.0",
+    "vite": "^5.0.8",
+    "vitest": "^1.0.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:run": "vitest run",
-    "eject": "react-scripts eject"
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "eject": "react-scripts eject",
+    "codegen": "node scripts/generate-api.js"
   },
   "eslintConfig": {
     "extends": [

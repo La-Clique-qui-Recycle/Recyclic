@@ -17,11 +17,11 @@ Cet epic permet aux administrateurs de gérer efficacement les utilisateurs de l
 **Description** : Mettre à jour le modèle `User` pour inclure un champ `role` et un champ `status`. Créer une commande CLI `create-super-admin` qui prend un email/id et un mot de passe (si nécessaire) pour créer le premier utilisateur avec le rôle `super-admin`.
 
 **Critères d'Acceptation :**
-- [ ] Modèle `User` étendu avec champ `role` (user, admin, super-admin)
-- [ ] Champ `status` pour le statut d'inscription (pending, approved, rejected)
-- [ ] Commande CLI `create-super-admin` fonctionnelle
-- [ ] Migration Alembic pour les nouveaux champs
-- [ ] Tests unitaires pour le système de rôles
+- [x] Modèle `User` étendu avec champ `role` (user, admin, super-admin)
+- [x] Champ `status` pour le statut d'inscription (pending, approved, rejected)
+- [x] Commande CLI `create-super-admin` fonctionnelle
+- [x] Migration Alembic pour les nouveaux champs
+- [x] Tests unitaires pour le système de rôles
 
 ### Story 3.2 : API et Interface d'Administration pour la Gestion des Utilisateurs
 

@@ -1,8 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useQuery } from 'react-query';
+// import { useQuery } from 'react-query';
 import { BarChart3, Package, DollarSign, Users } from 'lucide-react';
-import { api } from '../services/api';
+// import { api } from '../services/api';
 
 const DashboardContainer = styled.div`
   display: grid;
@@ -70,7 +70,7 @@ const WelcomeText = styled.p`
 `;
 
 function Dashboard() {
-  const { data: healthData } = useQuery('health', api.getHealth);
+  // const { data: healthData } = useQuery('health', api.getHealth);
   
   return (
     <DashboardContainer>

@@ -1,0 +1,44 @@
+schema: 1
+story: 'debt-create-deploy-workflow'
+story_title: 'Créer le Workflow de Déploiement CI/CD'
+gate: PASS
+status_reason: 'Workflow créé avec succès, corrections appliquées pour alignement avec structure projet'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-27T10:30:00Z'
+
+top_issues: []
+waiver: { active: false }
+
+quality_score: 85
+expires: '2025-02-10T10:30:00Z'
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Secrets GitHub configurés, environnement production protégé'
+  performance:
+    status: PASS
+    notes: 'Build Docker optimisé, cleanup automatique des images'
+  reliability:
+    status: PASS
+    notes: 'Gestion d\'erreurs avec set -e, fallback pour docker-compose down'
+  maintainability:
+    status: CONCERNS
+    notes: 'Workflow basique, manque de notifications et monitoring'
+
+recommendations:
+  immediate: []
+  future:
+    - action: 'Ajouter notifications Slack/Discord pour les déploiements'
+      refs: ['.github/workflows/deploy.yaml']
+    - action: 'Implémenter rollback automatique en cas d\'échec'
+      refs: ['.github/workflows/deploy.yaml']
+    - action: 'Ajouter health checks post-déploiement'
+      refs: ['.github/workflows/deploy.yaml']

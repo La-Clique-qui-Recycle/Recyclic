@@ -7,6 +7,8 @@ import CashRegister from './pages/CashRegister.jsx';
 import Deposits from './pages/Deposits.jsx';
 import Reports from './pages/Reports.jsx';
 import Registration from './pages/Registration.jsx';
+import AdminUsers from './pages/Admin/Users.tsx';
+import PendingUsers from './pages/Admin/PendingUsers.tsx';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -30,6 +32,8 @@ function App() {
           <Route path="/depots" element={<Deposits />} />
           <Route path="/rapports" element={<Reports />} />
           <Route path="/inscription" element={<Registration />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/pending" element={<PendingUsers />} />
         </Routes>
       </MainContent>
     </AppContainer>

@@ -318,6 +318,34 @@ so that daily cash management is properly controlled and audited.
 
 ---
 
+### Histoires de Dette Technique (Prioritaires)
+
+*Note: Ces stories doivent être exécutées avant de commencer l'Epic 4 pour garantir la stabilité et la qualité du projet.*
+
+### Story Tech-Debt: Fiabilisation du Contrat d'API
+As a developer,
+I want frontend types and API client to be automatically generated from the backend's OpenAPI specification,
+so that type safety is guaranteed across the stack and manual duplication is eliminated.
+
+**Acceptance Criteria:**
+1. A script `npm run codegen` is created in the frontend project.
+2. Running the script generates a TypeScript client from the backend's OpenAPI spec.
+3. Frontend services are refactored to use the generated client, removing manual type definitions.
+4. The application compiles and all tests pass after refactoring.
+
+### Story Tech-Debt: Implémentation d'une Procédure de Rollback
+As a DevOps/Operator,
+I want a simple and reliable rollback script,
+so that I can immediately revert to the previous stable version if a deployment fails in production.
+
+**Acceptance Criteria:**
+1. The deployment script is modified to tag Docker images with a version.
+2. A new script `scripts/rollback.sh` is created.
+3. Executing the script redeploys the previously tagged version of the application.
+4. The procedure is documented in `architecture.md`.
+
+---
+
 ## Epic 4: Exports & Synchronisation Cloud
 
 **Objectif :** Assurer la conformité réglementaire avec exports automatiques Ecologic, synchronisation cloud temps réel, et dashboard admin complet. Délivre la compliance obligatoire et les outils de pilotage pour les responsables.

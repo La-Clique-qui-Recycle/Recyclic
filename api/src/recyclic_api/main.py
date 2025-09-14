@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -13,18 +14,29 @@ from recyclic_api.models import Base
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gestionnaire de cycle de vie de l'application"""
+    # Startup
+    logger.info("Starting up Recyclic API...")
+    logger.info("API ready - use migrations for database setup")
+    yield
+    # Shutdown
+    logger.info("Shutting down Recyclic API...")
+
 # Create FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0.0",
     description="API pour la plateforme Recyclic - Gestion de recyclage intelligente",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://frontend:3000"],
+    allow_origins=["http://localhost:3000", "http://frontend:3000", "http://localhost:4444"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,7 +45,7 @@ app.add_middleware(
 # Add trusted host middleware
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "api", "127.0.0.1"]
+    allowed_hosts=["localhost", "api", "127.0.0.1", "testserver"]
 )
 
 # Add request timing middleware
@@ -48,16 +60,6 @@ async def add_process_time_header(request, call_next):
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize API on startup"""
-    logger.info("Starting up Recyclic API...")
-    logger.info("API ready - use migrations for database setup")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("Shutting down Recyclic API...")
 
 @app.get("/")
 async def root():
