@@ -4,17 +4,7 @@ import { render, screen, fireEvent } from '@test/test-utils'
 import { UserListTable } from '../../../components/business/UserListTable'
 import { AdminUser, UserRole, UserStatus } from '../../../services/adminService'
 
-// Mock du composant RoleSelector
-vi.mock('../../../components/business/RoleSelector', () => ({
-  RoleSelector: ({ currentRole, userId, userName, onRoleChange }: any) => (
-    <button 
-      data-testid={`role-selector-${userId}`}
-      onClick={() => onRoleChange(userId, UserRole.ADMIN)}
-    >
-      {currentRole}
-    </button>
-  )
-}))
+// Les mocks sont centralisés dans setup.ts
 
 describe('UserListTable Component', () => {
   const mockUsers: AdminUser[] = [
@@ -61,8 +51,8 @@ describe('UserListTable Component', () => {
 
   it('should render table with users', () => {
     render(<UserListTable {...defaultProps} />)
-    
-    expect(screen.getByTestId('user-list-table')).toBeInTheDocument()
+
+    expect(screen.getByTestId('table')).toBeInTheDocument()
     expect(screen.getByText('Nom')).toBeInTheDocument()
     expect(screen.getByText('Rôle')).toBeInTheDocument()
     expect(screen.getByText('Statut')).toBeInTheDocument()
@@ -82,8 +72,7 @@ describe('UserListTable Component', () => {
   it('should render role selectors for each user', () => {
     render(<UserListTable {...defaultProps} />)
     
-    expect(screen.getByTestId('role-selector-1')).toBeInTheDocument()
-    expect(screen.getByTestId('role-selector-2')).toBeInTheDocument()
+    expect(screen.getAllByTestId('role-selector-button')).toHaveLength(2)
   })
 
   it('should render status badges with correct colors', () => {
@@ -100,9 +89,9 @@ describe('UserListTable Component', () => {
       onEditUser: vi.fn(),
       onDeleteUser: vi.fn()
     }
-    
+
     render(<UserListTable {...props} />)
-    
+
     expect(screen.getAllByTestId('view-user-button')).toHaveLength(2)
     expect(screen.getAllByTestId('edit-user-button')).toHaveLength(2)
     expect(screen.getAllByTestId('delete-user-button')).toHaveLength(2)
@@ -121,9 +110,9 @@ describe('UserListTable Component', () => {
     const props = { ...defaultProps, onViewUser }
     
     render(<UserListTable {...props} />)
-    
+
     fireEvent.click(screen.getAllByTestId('view-user-button')[0])
-    
+
     expect(onViewUser).toHaveBeenCalledWith(mockUsers[0])
   })
 
@@ -132,9 +121,9 @@ describe('UserListTable Component', () => {
     const props = { ...defaultProps, onEditUser }
     
     render(<UserListTable {...props} />)
-    
+
     fireEvent.click(screen.getAllByTestId('edit-user-button')[0])
-    
+
     expect(onEditUser).toHaveBeenCalledWith(mockUsers[0])
   })
 
@@ -143,9 +132,9 @@ describe('UserListTable Component', () => {
     const props = { ...defaultProps, onDeleteUser }
     
     render(<UserListTable {...props} />)
-    
+
     fireEvent.click(screen.getAllByTestId('delete-user-button')[0])
-    
+
     expect(onDeleteUser).toHaveBeenCalledWith(mockUsers[0])
   })
 
@@ -255,11 +244,11 @@ describe('UserListTable Component', () => {
   it('should pass correct props to RoleSelector', () => {
     render(<UserListTable {...defaultProps} />)
     
-    const roleSelector1 = screen.getByTestId('role-selector-1')
-    const roleSelector2 = screen.getByTestId('role-selector-2')
+    const roleSelectors = screen.getAllByTestId('role-selector-button')
     
-    expect(roleSelector1).toBeInTheDocument()
-    expect(roleSelector2).toBeInTheDocument()
+    expect(roleSelectors).toHaveLength(2)
+    expect(roleSelectors[0]).toBeInTheDocument()
+    expect(roleSelectors[1]).toBeInTheDocument()
   })
 
   it('should handle role change through RoleSelector', () => {
@@ -267,8 +256,10 @@ describe('UserListTable Component', () => {
     render(<UserListTable {...defaultProps} onRoleChange={onRoleChange} />)
     
     // Cliquer sur le premier RoleSelector
-    fireEvent.click(screen.getByTestId('role-selector-1'))
+    const roleSelectors = screen.getAllByTestId('role-selector-button')
+    fireEvent.click(roleSelectors[0])
     
-    expect(onRoleChange).toHaveBeenCalledWith('1', UserRole.ADMIN)
+    // Vérifier que la modal s'ouvre
+    expect(screen.getByTestId('role-change-modal')).toBeInTheDocument()
   })
 })

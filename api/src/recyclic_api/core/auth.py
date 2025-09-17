@@ -3,48 +3,19 @@ Module d'authentification pour l'API Recyclic
 Gère l'authentification JWT et la vérification des rôles
 """
 
-from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Union, List, Optional
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+from jose import JWTError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from .config import settings
 from .database import get_db
+from .security import verify_token
 from ..models.user import User, UserRole
-
-# Configuration JWT
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Schéma de sécurité
 security = HTTPBearer()
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Crée un token JWT d'accès"""
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def verify_token(token: str) -> dict:
-    """Vérifie et décode un token JWT"""
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalide",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -68,7 +39,14 @@ async def get_current_user(
         raise credentials_exception
     
     # Récupérer l'utilisateur depuis la base de données
-    result = db.execute(select(User).where(User.id == user_id))
+    # Convertir l'ID string en UUID pour la requête
+    from uuid import UUID
+    try:
+        user_uuid = UUID(user_id)
+    except ValueError:
+        raise credentials_exception
+    
+    result = db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
     
     if user is None or not user.is_active:
@@ -76,9 +54,21 @@ async def get_current_user(
     
     return user
 
-def require_role(required_role: Union[UserRole, str]):
-    """Décorateur pour vérifier qu'un utilisateur a un rôle spécifique"""
+def require_role(required_role: Union[UserRole, str, List[UserRole]]):
+    """Décorateur pour vérifier qu'un utilisateur a un rôle spécifique ou une liste de rôles"""
     def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        # Gérer les listes de rôles
+        if isinstance(required_role, list):
+            # Vérifier si l'utilisateur a un des rôles requis
+            if current_user.role not in required_role:
+                # Les super-admins héritent automatiquement des permissions admin
+                if not (current_user.role == UserRole.SUPER_ADMIN and UserRole.ADMIN in required_role):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Permissions insuffisantes"
+                    )
+            return current_user
+        
         # Convertir en UserRole si c'est une string
         if isinstance(required_role, str):
             try:

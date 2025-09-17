@@ -1,12 +1,15 @@
 import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { MantineProvider } from '@mantine/core'
 
-// Mock providers wrapper avec MemoryRouter
+// Mock providers wrapper avec MemoryRouter et MantineProvider
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <MemoryRouter initialEntries={['/']}>
-      {children}
+      <MantineProvider>
+        {children}
+      </MantineProvider>
     </MemoryRouter>
   )
 }

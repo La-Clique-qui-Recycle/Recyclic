@@ -16,6 +16,18 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     pass
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: Optional[UserRole] = None
+    status: Optional[UserStatus] = None
+    is_active: Optional[bool] = None
+    site_id: Optional[str] = None
+
+class UserStatusUpdate(BaseModel):
+    status: UserStatus
+
 class UserResponse(UserBase):
     id: str
     created_at: datetime

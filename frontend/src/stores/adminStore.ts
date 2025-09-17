@@ -106,5 +106,4 @@ export const useAdminStore = create<AdminState>()(
   )
 );
 
-export { useAdminStore };
 export default useAdminStore;

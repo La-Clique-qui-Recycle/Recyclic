@@ -30,11 +30,11 @@ Cet epic permet aux administrateurs de gérer efficacement les utilisateurs de l
 **Description** : Créer les endpoints API sécurisés pour lister les utilisateurs et modifier leur rôle. Développer l'interface frontend correspondante où un admin peut voir la liste des utilisateurs et changer leur rôle via un menu déroulant.
 
 **Critères d'Acceptation :**
-- [ ] Endpoints API sécurisés sous `/api/v1/admin/`
-- [ ] Interface admin pour lister tous les utilisateurs
-- [ ] Fonctionnalité de modification des rôles
-- [ ] Protection des endpoints avec `require_role("admin")`
-- [ ] Interface responsive et intuitive
+- [x] Endpoints API sécurisés sous `/api/v1/admin/`
+- [x] Interface admin pour lister tous les utilisateurs
+- [x] Fonctionnalité de modification des rôles
+- [x] Protection des endpoints avec `require_role("admin")`
+- [x] Interface responsive et intuitive
 
 ### Story 3.3 : API et Interface pour la Validation des Inscriptions
 
@@ -43,11 +43,11 @@ Cet epic permet aux administrateurs de gérer efficacement les utilisateurs de l
 **Description** : Créer les endpoints API pour lister les utilisateurs avec un statut "en attente" et pour approuver ou rejeter leur inscription. Développer la section correspondante dans l'interface d'administration.
 
 **Critères d'Acceptation :**
-- [ ] Interface admin listant les demandes d'inscription en attente
-- [ ] Boutons Approuver/Rejeter avec notification Telegram
-- [ ] Utilisateur approuvé ajouté à whitelist Telegram active
-- [ ] Notification automatique aux autres admins
-- [ ] Logs audit complets (qui a validé qui et quand)
+- [x] Interface admin listant les demandes d'inscription en attente
+- [x] Boutons Approuver/Rejeter avec notification Telegram
+- [x] Utilisateur approuvé ajouté à whitelist Telegram active
+- [x] Notification automatique aux autres admins
+- [x] Logs audit complets (qui a validé qui et quand)
 
 ## Exigences de Compatibilité
 

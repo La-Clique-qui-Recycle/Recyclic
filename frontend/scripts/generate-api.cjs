@@ -200,7 +200,8 @@ function generateApiClient(openApiSpec) {
   
   // Générer les classes API
   Object.entries(endpointsByTag).forEach(([tag, endpoints]) => {
-    const className = `${tag.charAt(0).toUpperCase() + tag.slice(1)}Api`;
+    // Transformer le tag en nom de classe valide (PascalCase)
+    const className = `${tag.charAt(0).toUpperCase() + tag.slice(1).replace(/-([a-z])/g, (match, letter) => letter.toUpperCase())}Api`;
     const methods = endpoints.map(endpoint => generateApiMethod(endpoint)).join('\n\n  ');
     
     apiClasses.push(`export class ${className} {

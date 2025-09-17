@@ -1,14 +1,21 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from './components/Header.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import CashRegister from './pages/CashRegister.jsx';
-import Deposits from './pages/Deposits.jsx';
-import Reports from './pages/Reports.jsx';
-import Registration from './pages/Registration.jsx';
-import AdminUsers from './pages/Admin/Users.tsx';
-import PendingUsers from './pages/Admin/PendingUsers.tsx';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
+// Lazy loading des pages pour le code-splitting
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const CashRegister = lazy(() => import('./pages/CashRegister.jsx'));
+const Deposits = lazy(() => import('./pages/Deposits.jsx'));
+const Reports = lazy(() => import('./pages/Reports.jsx'));
+const Registration = lazy(() => import('./pages/Registration.jsx'));
+const AdminUsers = lazy(() => import('./pages/Admin/Users.tsx'));
+const PendingUsers = lazy(() => import('./pages/Admin/PendingUsers.tsx'));
+const Login = lazy(() => import('./pages/Login.tsx'));
+const Signup = lazy(() => import('./pages/Signup.tsx'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'));
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -21,20 +28,40 @@ const MainContent = styled.main`
   margin: 0 auto;
 `;
 
+// Composant de chargement
+const LoadingSpinner = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '200px',
+    fontSize: '18px',
+    color: '#666'
+  }}>
+    Chargement...
+  </div>
+);
+
 function App() {
   return (
     <AppContainer>
       <Header />
       <MainContent>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/caisse" element={<CashRegister />} />
-          <Route path="/depots" element={<Deposits />} />
-          <Route path="/rapports" element={<Reports />} />
-          <Route path="/inscription" element={<Registration />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/pending" element={<PendingUsers />} />
-        </Routes>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/caisse" element={<ProtectedRoute requiredRole="cashier"><CashRegister /></ProtectedRoute>} />
+            <Route path="/depots" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
+            <Route path="/rapports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/inscription" element={<ProtectedRoute><Registration /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
+            <Route path="/admin/pending" element={<ProtectedRoute adminOnly><PendingUsers /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
       </MainContent>
     </AppContainer>
   );

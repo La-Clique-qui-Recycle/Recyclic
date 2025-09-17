@@ -1,25 +1,26 @@
 FROM node:18-alpine
 
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Change ownership and switch to non-root user
+RUN chown -R node:node /app
+USER node
+
+# Install dependencies as non-root user
+RUN npm ci
 
 # Copy source code
+COPY index.html ./
 COPY src/ ./src/
 COPY public/ ./public/
-
-# Create non-root user
-RUN addgroup -g 1000 -S recyclic && \
-    adduser -S recyclic -u 1000
-
-# Change ownership
-RUN chown -R recyclic:recyclic /app
-USER recyclic
+COPY vite.config.js ./
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

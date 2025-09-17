@@ -4,8 +4,9 @@ import logging
 import asyncio
 from telegram.ext import Application
 from .config import settings
-from .handlers import setup_handlers
+from .bot_handlers import setup_handlers
 from .handlers.webhook import router as webhook_router
+from .handlers.notification_api import router as notification_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,8 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include webhook router
+# Include routers
 app.include_router(webhook_router)
+app.include_router(notification_router)
 
 # Global application instance
 telegram_app = None

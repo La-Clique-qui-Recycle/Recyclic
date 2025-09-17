@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     
     # Frontend
     FRONTEND_URL: str = "http://localhost:4444"
+    # Feature flag: activer les boutons inline (HTTPS requis). Si false, fallback texte cliquable
+    ENABLE_INLINE_BUTTONS: bool = False
     
     # Admin notifications
     ADMIN_TELEGRAM_IDS: str = ""  # Comma-separated list of admin Telegram IDs

@@ -1,0 +1,42 @@
+schema: 1
+story: 'bug.frontend-dev-server-fails-to-start'
+story_title: 'Bug: Échec du démarrage du serveur de développement Frontend'
+gate: PASS
+status_reason: 'Toutes les corrections de compilation ont été appliquées avec succès, le serveur démarre correctement'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-27T16:30:00Z'
+
+top_issues: []
+
+waiver: { active: false }
+
+quality_score: 95
+
+evidence:
+  tests_reviewed: 1
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Aucun impact sur la sécurité - corrections techniques uniquement'
+  performance:
+    status: PASS
+    notes: 'Amélioration de la maintenabilité du code généré'
+  reliability:
+    status: PASS
+    notes: 'Serveur de développement démarre de manière fiable'
+  maintainability:
+    status: PASS
+    notes: 'Code généré plus lisible avec noms de classe valides'
+
+recommendations:
+  immediate: []
+  future:
+    - action: 'Considérer l\'ajout de tests automatisés pour la génération de code'
+      refs: ['frontend/scripts/generate-api.js']
+    - action: 'Documenter le processus de génération de code'
+      refs: ['frontend/scripts/generate-api.js']

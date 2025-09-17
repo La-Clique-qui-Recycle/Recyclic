@@ -17,8 +17,16 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Recyclic API"
     
+    # Telegram
+    TELEGRAM_BOT_URL: str | None = None
+    TELEGRAM_BOT_TOKEN: str | None = None  # For validating bot requests
+    ADMIN_TELEGRAM_IDS: str | None = None
+    
     # Environment
     ENVIRONMENT: str = "development"
+
+    # Email Service
+    BREVO_API_KEY: str | None = None
     
     model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

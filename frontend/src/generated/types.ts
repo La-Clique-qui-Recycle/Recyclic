@@ -1,13 +1,26 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-14T22:21:41.899Z
+ * Généré le: 2025-09-17T00:08:31.866Z
  */
 
 // ============================================================================
 // ENUMS
 // ============================================================================
 
+export enum CashSessionStatus {
+  OPEN = 'open',
+  CLOSED = 'closed'
+}
+export enum DepositStatus {
+  PENDING_AUDIO = 'pending_audio',
+  AUDIO_PROCESSING = 'audio_processing',
+  PENDING_VALIDATION = 'pending_validation',
+  CLASSIFICATION_FAILED = 'classification_failed',
+  CLASSIFIED = 'classified',
+  VALIDATED = 'validated',
+  COMPLETED = 'completed'
+}
 export enum EEECategory {
   SMALL_APPLIANCE = 'small_appliance',
   LARGE_APPLIANCE = 'large_appliance',
@@ -25,11 +38,6 @@ export enum PaymentMethod {
   CARD = 'card',
   MOBILE_PAYMENT = 'mobile_payment',
   VOUCHER = 'voucher'
-}
-export enum SessionStatus {
-  OPEN = 'open',
-  CLOSED = 'closed',
-  PAUSED = 'paused'
 }
 export enum UserRole {
   SUPER_ADMIN = 'super-admin',
@@ -54,8 +62,8 @@ export interface AdminResponse {
   success?: boolean;
 }
 export interface AdminUser {
-  id: string;
-  telegram_id: number;
+  id: string | string;
+  telegram_id: number | string;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
@@ -64,44 +72,100 @@ export interface AdminUser {
   role: UserRole;
   status: UserStatus;
   is_active: boolean;
-  site_id?: string | any;
+  site_id?: string | string | any;
   created_at: string;
   updated_at: string;
+}
+export interface AuthUser {
+  id: string;
+  telegram_id?: number | any;
+  username?: string | any;
+  first_name?: string | any;
+  last_name?: string | any;
+  role: string;
+  status?: string | any;
+  is_active: boolean;
+  created_at?: string | any;
+  updated_at?: string | any;
 }
 export interface CashSessionCreate {
-  user_id: string;
+  operator_id: string;
   site_id: string;
-  status?: any;
-  total_amount?: number;
+  initial_amount: number;
+}
+export interface CashSessionListResponse {
+  data: CashSessionResponse[];
+  total: number;
+  skip: number;
+  limit: number;
 }
 export interface CashSessionResponse {
-  user_id: string;
+  operator_id: string;
   site_id: string;
-  status?: any;
-  total_amount?: number;
+  initial_amount: number;
   id: string;
+  current_amount: number;
+  status: CashSessionStatus;
   opened_at: string;
   closed_at?: string | any;
-  created_at: string;
-  updated_at: string;
+  total_sales?: number | any;
+  total_items?: number | any;
+}
+export interface CashSessionStats {
+  total_sessions: number;
+  open_sessions: number;
+  closed_sessions: number;
+  total_sales: number;
+  total_items: number;
+  average_session_duration?: number | any;
+}
+export interface CashSessionUpdate {
+  status?: CashSessionStatus | any;
+  current_amount?: number | any;
+  total_sales?: number | any;
+  total_items?: number | any;
 }
 export interface DepositCreate {
   user_id: string;
-  site_id: string;
-  category: EEECategory;
+  site_id?: string | any;
+  telegram_user_id?: string | any;
+  audio_file_path?: string | any;
+  status?: DepositStatus | any;
+  category?: EEECategory | any;
   weight?: number | any;
   description?: string | any;
   ai_classification?: string | any;
   ai_confidence?: number | any;
+  transcription?: string | any;
+  eee_category?: EEECategory | any;
+  confidence_score?: number | any;
+  alternative_categories?: object | object[] | any;
+}
+export interface DepositCreateFromBot {
+  telegram_user_id: string;
+  audio_file_path: string;
+  status?: DepositStatus;
+}
+export interface DepositFinalize {
+  final_category?: EEECategory | any;
+  correction_applied?: boolean;
+  validated?: boolean;
 }
 export interface DepositResponse {
   user_id: string;
-  site_id: string;
-  category: EEECategory;
+  site_id?: string | any;
+  telegram_user_id?: string | any;
+  audio_file_path?: string | any;
+  status?: DepositStatus | any;
+  category?: EEECategory | any;
   weight?: number | any;
   description?: string | any;
   ai_classification?: string | any;
   ai_confidence?: number | any;
+  transcription?: string | any;
+  eee_category?: EEECategory | any;
+  confidence_score?: number | any;
+  alternative_categories?: object | object[] | any;
   id: string;
   created_at: string;
   updated_at: string;
@@ -109,11 +173,62 @@ export interface DepositResponse {
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+export interface LoginResponse {
+  access_token: string;
+  token_type?: string;
+  user: AuthUser;
+}
+export interface PendingUserResponse {
+  id: string | string;
+  telegram_id: number | string;
+  username?: string | any;
+  first_name?: string | any;
+  last_name?: string | any;
+  full_name?: string | any;
+  role: UserRole;
+  status: UserStatus;
+  created_at: string;
+}
 export interface SaleCreate {
   cash_session_id: string;
   deposit_id: string;
   amount: number;
   payment_method: PaymentMethod;
+}
+export interface SaleDirectCreate {
+  cash_session_id: string;
+  total_amount: number;
+  payment_method?: PaymentMethod;
+  items: SaleItemCreate[];
+}
+export interface SaleDirectResponse {
+  cash_session_id: string;
+  total_amount: number;
+  payment_method?: PaymentMethod;
+  id: string;
+  created_at: string;
+  updated_at: string;
+  items?: SaleItemResponse[];
+}
+export interface SaleItemCreate {
+  category: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+export interface SaleItemResponse {
+  category: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  id: string;
+  sale_id: string;
+  created_at: string;
+  updated_at: string;
 }
 export interface SaleResponse {
   cash_session_id: string;
@@ -139,23 +254,29 @@ export interface SiteResponse {
   created_at: string;
   updated_at: string;
 }
+export interface UserApprovalRequest {
+  message?: string | any;
+}
 export interface UserCreate {
   telegram_id: string;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
-  role?: any;
-  status?: any;
+  role?: UserRole;
+  status?: UserStatus;
   is_active?: boolean;
   site_id?: string | any;
+}
+export interface UserRejectionRequest {
+  reason?: string | any;
 }
 export interface UserResponse {
   telegram_id: string;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
-  role?: any;
-  status?: any;
+  role?: UserRole;
+  status?: UserStatus;
   is_active?: boolean;
   site_id?: string | any;
   id: string;
@@ -163,7 +284,19 @@ export interface UserResponse {
   updated_at: string;
 }
 export interface UserRoleUpdate {
-  role: any;
+  role: UserRole;
+}
+export interface UserStatusUpdate {
+  status: UserStatus;
+}
+export interface UserUpdate {
+  username?: string | any;
+  first_name?: string | any;
+  last_name?: string | any;
+  role?: UserRole | any;
+  status?: UserStatus | any;
+  is_active?: boolean | any;
+  site_id?: string | any;
 }
 export interface ValidationError {
   loc: string | number[];

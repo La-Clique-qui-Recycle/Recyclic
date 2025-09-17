@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from recyclic_api.core.database import get_db
 from recyclic_api.models.user import User
-from recyclic_api.schemas.user import UserResponse, UserCreate
+from recyclic_api.schemas.user import UserResponse, UserCreate, UserUpdate, UserStatusUpdate
 
 router = APIRouter()
 
@@ -29,3 +29,42 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     return db_user
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get_db)):
+    """Update user by ID"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update only provided fields
+    update_data = user_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(user, field, value)
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+@router.put("/{user_id}/status", response_model=UserResponse)
+async def update_user_status(user_id: str, status_update: UserStatusUpdate, db: Session = Depends(get_db)):
+    """Update user status by ID"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.status = status_update.status
+    db.commit()
+    db.refresh(user)
+    return user
+
+@router.delete("/{user_id}")
+async def delete_user(user_id: str, db: Session = Depends(get_db)):
+    """Delete user by ID"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+    return {"message": "User deleted successfully"}

@@ -227,6 +227,9 @@ vi.mock('@mantine/core', async () => {
   const actual = await vi.importActual('@mantine/core')
   return {
     ...actual,
+    MantineProvider: ({ children }: any) => {
+      return React.createElement('div', { 'data-testid': 'mantine-provider' }, children)
+    },
     Portal: ({ children }: any) => {
       // Rendre le contenu directement dans le DOM de test
       return React.createElement('div', { 'data-testid': 'mantine-portal' }, children)
@@ -240,22 +243,126 @@ vi.mock('@mantine/core', async () => {
         style: { display: 'block' }
       }, children)
     },
-    Skeleton: ({ ...props }: any) => {
+    Table: Object.assign(
+      ({ children, ...props }: any) => React.createElement('table', { ...props, 'data-testid': 'table' }, children),
+      {
+        Root: ({ children, ...props }: any) => React.createElement('table', { ...props, 'data-testid': 'table' }, children),
+        Thead: ({ children, ...props }: any) => React.createElement('thead', props, children),
+        Tbody: ({ children, ...props }: any) => React.createElement('tbody', props, children),
+        Tr: ({ children, ...props }: any) => React.createElement('tr', props, children),
+        Th: ({ children, ...props }: any) => React.createElement('th', props, children),
+        Td: ({ children, ...props }: any) => React.createElement('td', props, children),
+      }
+    ),
+    Select: ({ children, value, onChange, data, leftSection, ...props }: any) => {
+      return React.createElement('select', { 
+        ...props, 
+        'data-testid': 'role-select',
+        value,
+        onChange: (e: any) => onChange && onChange(e.target.value)
+      }, 
+        data?.map((option: any) => 
+          React.createElement('option', { key: option.value, value: option.value }, option.label)
+        )
+      )
+    },
+    Button: ({ children, onClick, disabled, loading, leftSection, ...props }: any) => {
+      return React.createElement('button', { 
+        ...props, 
+        'data-testid': props['data-testid'] || 'button',
+        onClick,
+        disabled: disabled || loading,
+        style: { 
+          padding: '8px 16px', 
+          border: '1px solid #ccc', 
+          borderRadius: '4px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.6 : 1
+        }
+      }, leftSection, children)
+    },
+    Stack: ({ children, gap, ...props }: any) => {
       return React.createElement('div', { 
         ...props, 
-        'data-testid': 'skeleton' 
+        'data-testid': 'stack',
+        style: { display: 'flex', flexDirection: 'column', gap: gap || '8px' }
+      }, children)
+    },
+    Badge: ({ children, color, variant, ...props }: any) => {
+      return React.createElement('span', { 
+        ...props, 
+        'data-testid': 'badge',
+        'data-color': color,
+        'data-variant': variant,
+        style: { 
+          padding: '4px 8px', 
+          borderRadius: '4px', 
+          backgroundColor: color === 'green' ? '#d4edda' : color === 'yellow' ? '#fff3cd' : color === 'red' ? '#f8d7da' : '#e2e3e5',
+          color: color === 'green' ? '#155724' : color === 'yellow' ? '#856404' : color === 'red' ? '#721c24' : '#383d41'
+        }
+      }, children)
+    },
+    Group: ({ children, gap, justify, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'group',
+        style: { 
+          display: 'flex', 
+          gap: gap || '8px', 
+          alignItems: 'center',
+          justifyContent: justify || 'flex-start'
+        }
+      }, children)
+    },
+    Text: ({ children, fw, size, c, ...props }: any) => {
+      return React.createElement('p', { 
+        ...props, 
+        'data-testid': 'text',
+        style: { 
+          fontWeight: fw === 500 ? '500' : 'normal',
+          fontSize: size === 'sm' ? '14px' : '16px',
+          color: c === 'dimmed' ? '#6c757d' : 'inherit',
+          margin: 0
+        }
+      }, children)
+    },
+    ActionIcon: ({ children, variant, color, onClick, 'data-testid': testId, ...props }: any) => {
+      return React.createElement('button', { 
+        ...props, 
+        'data-testid': testId || 'action-icon',
+        onClick,
+        style: { 
+          border: 'none', 
+          background: 'transparent', 
+          cursor: 'pointer',
+          padding: '4px',
+          borderRadius: '4px'
+        }
+      }, children)
+    },
+    Tooltip: ({ children, label, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'tooltip',
+        title: label
+      }, children)
+    },
+    Skeleton: ({ height, width, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'skeleton',
+        style: { 
+          height: height || '20px', 
+          width: width || '100%', 
+          backgroundColor: '#f0f0f0',
+          borderRadius: '4px'
+        }
       })
     },
     Alert: ({ children, ...props }: any) => {
       return React.createElement('div', { 
         ...props, 
         'data-testid': 'error-message' 
-      }, children)
-    },
-    Text: ({ children, ...props }: any) => {
-      return React.createElement('p', { 
-        ...props, 
-        'data-testid': 'text' 
       }, children)
     },
   }

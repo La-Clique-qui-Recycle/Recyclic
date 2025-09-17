@@ -13,6 +13,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 **Fonctionnalités principales :**
 📸 **Classification :** Envoyez une photo d'un appareil électronique pour le classifier automatiquement
+🎤 **Dépôts vocaux :** Utilisez /depot puis envoyez un message vocal pour enregistrer vos dépôts
 📝 **Dépôts :** Enregistrer vos dépôts de déchets électroniques
 📊 **Statistiques :** Consulter vos données personnelles
 🏪 **Caisse :** Gérer les sessions de caisse

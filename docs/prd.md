@@ -168,6 +168,9 @@ Assurer la conformité réglementaire avec exports automatiques Ecologic, synchr
 ### Epic 5: Interface d'Administration et Gestion des Rôles
 Le projet a besoin d'une interface d'administration sécurisée. La première story doit permettre de créer le tout premier utilisateur "super-admin" (par exemple, via une commande CLI à usage unique). Les stories suivantes devront permettre à cet admin de lister les utilisateurs, de changer leurs rôles (user, admin, super-admin), et de valider ou rejeter les demandes d'inscription.
 
+### Epic Tech-Debt: Refonte de l'Authentification
+**Objectif :** Remplacer le système d'authentification basé sur l'ID Telegram par un système standard et sécurisé basé sur un couple Email/Mot de passe, afin de répondre aux exigences réelles d'ergonomie et de sécurité du projet. Pour plus de détails, voir le document complet : [Epic Tech-Debt: Refonte de l'Authentification](./epic-auth-refactoring.md)
+
 ---
 
 ## Epic 1: Gestion Utilisateurs & Infrastructure

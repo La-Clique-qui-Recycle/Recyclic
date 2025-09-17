@@ -165,6 +165,149 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Update User",
+        "description": "Update user by ID",
+        "operationId": "update_user_api_v1_users__user_id__put",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Delete User",
+        "description": "Delete user by ID",
+        "operationId": "delete_user_api_v1_users__user_id__delete",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{user_id}/status": {
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Update User Status",
+        "description": "Update user status by ID",
+        "operationId": "update_user_status_api_v1_users__user_id__status_put",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/sites/": {
@@ -447,6 +590,216 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "deposits"
+        ],
+        "summary": "Finalize Deposit",
+        "description": "Finalize deposit after human validation/correction (Story 4.3).\n\nThis endpoint handles:\n- Validation of AI classification by user\n- Correction of AI classification with user's choice\n- Setting final status to completed\n- Tracking AI vs human decisions for analysis",
+        "operationId": "finalize_deposit_api_v1_deposits__deposit_id__put",
+        "parameters": [
+          {
+            "name": "deposit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deposit Id"
+            }
+          },
+          {
+            "name": "x-bot-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Bot-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositFinalize"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deposits/from-bot": {
+      "post": {
+        "tags": [
+          "deposits"
+        ],
+        "summary": "Create Deposit From Bot",
+        "description": "Create new deposit from Telegram bot",
+        "operationId": "create_deposit_from_bot_api_v1_deposits_from_bot_post",
+        "parameters": [
+          {
+            "name": "x-bot-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Bot-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositCreateFromBot"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deposits/{deposit_id}/classify": {
+      "post": {
+        "tags": [
+          "deposits"
+        ],
+        "summary": "Classify Deposit",
+        "description": "Classify deposit using LangChain + Gemini AI classification service.\n\nThis endpoint implements Story 4.2 requirements:\n- Audio transcription using Google Speech-to-Text\n- EEE classification using LangChain + Gemini LLM\n- Confidence scoring and alternative suggestions\n- Proper status management and error handling",
+        "operationId": "classify_deposit_api_v1_deposits__deposit_id__classify_post",
+        "parameters": [
+          {
+            "name": "deposit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deposit Id"
+            }
+          },
+          {
+            "name": "x-bot-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Bot-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deposits/metrics/validation-performance": {
+      "get": {
+        "tags": [
+          "deposits"
+        ],
+        "summary": "Get Validation Metrics",
+        "description": "Get validation performance metrics for AI vs human decisions.\nProvides insights into validation patterns and performance.",
+        "operationId": "get_validation_metrics_api_v1_deposits_metrics_validation_performance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Validation Metrics Api V1 Deposits Metrics Validation Performance Get"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/sales/": {
@@ -590,33 +943,75 @@
         }
       }
     },
-    "/api/v1/cash-sessions/": {
-      "get": {
+    "/api/v1/sales/direct": {
+      "post": {
         "tags": [
-          "cash-sessions"
+          "sales"
         ],
-        "summary": "Get Cash Sessions",
-        "description": "Get all cash sessions",
-        "operationId": "get_cash_sessions_api_v1_cash_sessions__get",
-        "parameters": [
-          {
-            "name": "skip",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 0,
-              "title": "Skip"
+        "summary": "Create Direct Sale",
+        "description": "Créer une nouvelle vente directe",
+        "operationId": "create_direct_sale_api_v1_sales_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaleDirectCreate"
+              }
             }
           },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaleDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
           {
-            "name": "limit",
-            "in": "query",
-            "required": false,
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sales/direct/{sale_id}": {
+      "get": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Get Direct Sale",
+        "description": "Récupérer une vente directe par son ID",
+        "operationId": "get_direct_sale_api_v1_sales_direct__sale_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "integer",
-              "default": 100,
-              "title": "Limit"
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
             }
           }
         ],
@@ -626,11 +1021,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CashSessionResponse"
-                  },
-                  "title": "Response Get Cash Sessions Api V1 Cash Sessions  Get"
+                  "$ref": "#/components/schemas/SaleDirectResponse"
                 }
               }
             }
@@ -647,30 +1038,83 @@
           }
         }
       },
-      "post": {
+      "delete": {
         "tags": [
-          "cash-sessions"
+          "sales"
         ],
-        "summary": "Create Cash Session",
-        "description": "Create new cash session",
-        "operationId": "create_cash_session_api_v1_cash_sessions__post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CashSessionCreate"
+        "summary": "Delete Direct Sale",
+        "description": "Supprimer une vente directe",
+        "operationId": "delete_direct_sale_api_v1_sales_direct__sale_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
-        },
+        }
+      }
+    },
+    "/api/v1/sales/direct/session/{cash_session_id}": {
+      "get": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Get Direct Sales By Session",
+        "description": "Récupérer toutes les ventes directes d'une session de caisse",
+        "operationId": "get_direct_sales_by_session_api_v1_sales_direct_session__cash_session_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cash_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cash Session Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CashSessionResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SaleDirectResponse"
+                  },
+                  "title": "Response Get Direct Sales By Session Api V1 Sales Direct Session  Cash Session Id  Get"
                 }
               }
             }
@@ -688,14 +1132,298 @@
         }
       }
     },
+    "/api/v1/cash-sessions/": {
+      "post": {
+        "tags": [
+          "cash-sessions",
+          "Sessions de Caisse"
+        ],
+        "summary": "Créer une session de caisse",
+        "description": "Crée une nouvelle session de caisse pour un opérateur.\n    \n    **Permissions requises :** CASHIER, ADMIN, ou SUPER_ADMIN\n    \n    **Règles métier :**\n    - Un opérateur ne peut avoir qu'une seule session ouverte à la fois\n    - Le montant initial doit être positif et inférieur à 10 000€\n    - La session est automatiquement marquée comme \"ouverte\"\n    \n    **Audit :** Toutes les opérations sont tracées dans les logs d'audit",
+        "operationId": "create_cash_session_api_v1_cash_sessions__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashSessionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session créée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashSessionResponse"
+                },
+                "example": {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "operator_id": "550e8400-e29b-41d4-a716-446655440001",
+                  "initial_amount": 50.0,
+                  "current_amount": 50.0,
+                  "status": "open",
+                  "opened_at": "2025-01-27T10:30:00Z",
+                  "total_sales": 0.0,
+                  "total_items": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erreur de validation ou session déjà ouverte",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Une session de caisse est déjà ouverte pour cet opérateur"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès non autorisé",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Accès non autorisé"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "cash-sessions",
+          "Sessions de Caisse"
+        ],
+        "summary": "Lister les sessions de caisse",
+        "description": "Récupère la liste des sessions de caisse avec filtres optionnels.\n    \n    **Permissions requises :** CASHIER, ADMIN ou SUPER_ADMIN\n    \n    **Filtres disponibles :**\n    - `status` : Filtrer par statut (open/closed)\n    - `operator_id` : Filtrer par opérateur\n    - `date_from` : Date de début (ISO 8601)\n    - `date_to` : Date de fin (ISO 8601)\n    - `skip` : Nombre d'éléments à ignorer (pagination)\n    - `limit` : Nombre maximum d'éléments (1-100)\n    \n    **Pagination :** Les résultats sont paginés pour optimiser les performances",
+        "operationId": "get_cash_sessions_api_v1_cash_sessions__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Nombre d'éléments à ignorer",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Nombre d'éléments à ignorer"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Nombre maximum d'éléments à retourner",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Nombre maximum d'éléments à retourner"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CashSessionStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrer par statut",
+              "title": "Status"
+            },
+            "description": "Filtrer par statut"
+          },
+          {
+            "name": "operator_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrer par ID d'opérateur",
+              "title": "Operator Id"
+            },
+            "description": "Filtrer par ID d'opérateur"
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date de début (ISO 8601)",
+              "title": "Date From"
+            },
+            "description": "Date de début (ISO 8601)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date de fin (ISO 8601)",
+              "title": "Date To"
+            },
+            "description": "Date de fin (ISO 8601)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des sessions récupérée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashSessionListResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "550e8400-e29b-41d4-a716-446655440000",
+                      "operator_id": "550e8400-e29b-41d4-a716-446655440001",
+                      "initial_amount": 50.0,
+                      "current_amount": 100.0,
+                      "status": "open",
+                      "opened_at": "2025-01-27T10:30:00Z",
+                      "total_sales": 50.0,
+                      "total_items": 5
+                    }
+                  ],
+                  "total": 1,
+                  "skip": 0,
+                  "limit": 20
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès non autorisé",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Accès non autorisé"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cash-sessions/current": {
+      "get": {
+        "tags": [
+          "cash-sessions"
+        ],
+        "summary": "Get Current Cash Session",
+        "description": "Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté.",
+        "operationId": "get_current_cash_session_api_v1_cash_sessions_current_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CashSessionResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Current Cash Session Api V1 Cash Sessions Current Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/cash-sessions/{session_id}": {
       "get": {
         "tags": [
           "cash-sessions"
         ],
         "summary": "Get Cash Session",
-        "description": "Get cash session by ID",
+        "description": "Récupère une session de caisse par son ID.",
         "operationId": "get_cash_session_api_v1_cash_sessions__session_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "session_id",
@@ -729,6 +1457,225 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "cash-sessions"
+        ],
+        "summary": "Update Cash Session",
+        "description": "Met à jour une session de caisse.",
+        "operationId": "update_cash_session_api_v1_cash_sessions__session_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashSessionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cash-sessions/{session_id}/close": {
+      "post": {
+        "tags": [
+          "cash-sessions",
+          "Sessions de Caisse"
+        ],
+        "summary": "Fermer une session de caisse",
+        "description": "Ferme une session de caisse ouverte.\n    \n    **Permissions requises :** CASHIER, ADMIN, ou SUPER_ADMIN\n    \n    **Règles métier :**\n    - Seul l'opérateur de la session peut la fermer (sauf ADMIN/SUPER_ADMIN)\n    - Une session fermée ne peut plus être modifiée\n    - La date de fermeture est automatiquement enregistrée\n    - Les statistiques finales sont calculées et sauvegardées\n    \n    **Audit :** La fermeture est tracée avec les statistiques finales",
+        "operationId": "close_cash_session_api_v1_cash_sessions__session_id__close_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session fermée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashSessionResponse"
+                },
+                "example": {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "operator_id": "550e8400-e29b-41d4-a716-446655440001",
+                  "initial_amount": 50.0,
+                  "current_amount": 100.0,
+                  "status": "closed",
+                  "opened_at": "2025-01-27T10:30:00Z",
+                  "closed_at": "2025-01-27T18:30:00Z",
+                  "total_sales": 50.0,
+                  "total_items": 5
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Session déjà fermée",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "La session est déjà fermée"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès non autorisé à cette session",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Accès non autorisé à cette session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session non trouvée",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Session de caisse non trouvée"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cash-sessions/stats/summary": {
+      "get": {
+        "tags": [
+          "cash-sessions"
+        ],
+        "summary": "Get Cash Session Stats",
+        "description": "Récupère les statistiques des sessions de caisse.\n\nSeuls les administrateurs peuvent voir les statistiques.",
+        "operationId": "get_cash_session_stats_api_v1_cash_sessions_stats_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashSessionStats"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/users": {
@@ -738,7 +1685,7 @@
           "admin"
         ],
         "summary": "Liste des utilisateurs (Admin)",
-        "description": "R\u00e9cup\u00e8re la liste des utilisateurs avec filtres optionnels",
+        "description": "Récupère la liste des utilisateurs avec filtres optionnels",
         "operationId": "get_users_api_v1_admin_users_get",
         "security": [
           {
@@ -753,11 +1700,11 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer",
+              "description": "Nombre d'éléments à ignorer",
               "default": 0,
               "title": "Skip"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments \u00e0 ignorer"
+            "description": "Nombre d'éléments à ignorer"
           },
           {
             "name": "limit",
@@ -767,11 +1714,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "Nombre d'\u00e9l\u00e9ments par page",
+              "description": "Nombre d'éléments par page",
               "default": 20,
               "title": "Limit"
             },
-            "description": "Nombre d'\u00e9l\u00e9ments par page"
+            "description": "Nombre d'éléments par page"
           },
           {
             "name": "role",
@@ -786,10 +1733,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filtrer par r\u00f4le",
+              "description": "Filtrer par rôle",
               "title": "Role"
             },
-            "description": "Filtrer par r\u00f4le"
+            "description": "Filtrer par rôle"
           },
           {
             "name": "user_status",
@@ -844,8 +1791,8 @@
           "admin",
           "admin"
         ],
-        "summary": "Modifier le r\u00f4le d'un utilisateur (Admin)",
-        "description": "Met \u00e0 jour le r\u00f4le d'un utilisateur sp\u00e9cifique",
+        "summary": "Modifier le rôle d'un utilisateur (Admin)",
+        "description": "Met à jour le rôle d'un utilisateur spécifique",
         "operationId": "update_user_role_api_v1_admin_users__user_id__role_put",
         "security": [
           {
@@ -880,6 +1827,373 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/pending": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Liste des utilisateurs en attente (Admin)",
+        "description": "Récupère la liste des utilisateurs avec le statut 'pending'",
+        "operationId": "get_pending_users_api_v1_admin_users_pending_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PendingUserResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get Pending Users Api V1 Admin Users Pending Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{user_id}/approve": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Approuver un utilisateur (Admin)",
+        "description": "Approuve un utilisateur en attente et envoie une notification",
+        "operationId": "approve_user_api_v1_admin_users__user_id__approve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserApprovalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/reject": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Rejeter un utilisateur (Admin)",
+        "description": "Rejette un utilisateur en attente",
+        "operationId": "reject_user_api_v1_admin_users__user_id__reject_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRejectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/classification/performance": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Classification Performance",
+        "description": "Get classification performance summary for the last N hours.\n\nArgs:\n    hours: Number of hours to include in summary (1-168)\n\nReturns:\n    Performance metrics summary including timing, success rates, and method usage",
+        "operationId": "get_classification_performance_api_v1_monitoring_classification_performance_get",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 168,
+              "minimum": 1,
+              "description": "Number of hours to include in summary (1-168)",
+              "default": 24,
+              "title": "Hours"
+            },
+            "description": "Number of hours to include in summary (1-168)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Classification Performance Api V1 Monitoring Classification Performance Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/classification/performance/export": {
+      "post": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Export Classification Metrics",
+        "description": "Export classification metrics to a JSON file.\n\nArgs:\n    hours: Number of hours of metrics to export\n\nReturns:\n    Confirmation of export with file location",
+        "operationId": "export_classification_metrics_api_v1_monitoring_classification_performance_export_post",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 168,
+              "minimum": 1,
+              "description": "Number of hours to export",
+              "default": 24,
+              "title": "Hours"
+            },
+            "description": "Number of hours to export"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/classification/health": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Classification Health",
+        "description": "Get health status of the classification service.\n\nReturns:\n    Health status including service availability and recent performance",
+        "operationId": "get_classification_health_api_v1_monitoring_classification_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/classification/cache/stats": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Cache Stats",
+        "description": "Get classification cache statistics.\n\nReturns:\n    Cache statistics including hit rate, size, and utilization",
+        "operationId": "get_cache_stats_api_v1_monitoring_classification_cache_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/classification/cache/clear": {
+      "post": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Clear Classification Cache",
+        "description": "Clear the classification cache.\n\nReturns:\n    Confirmation of cache clearing",
+        "operationId": "clear_classification_cache_api_v1_monitoring_classification_cache_clear_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/classification/cache/export": {
+      "post": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Export Classification Cache",
+        "description": "Export classification cache contents to a JSON file.\n\nReturns:\n    Confirmation of export with file location",
+        "operationId": "export_classification_cache_api_v1_monitoring_classification_cache_export_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Login",
+        "description": "Authentifie un utilisateur via son nom d'utilisateur et mot de passe, et retourne un JWT.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
                 }
               }
             }
@@ -939,6 +2253,7 @@
           "data": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -962,16 +2277,31 @@
           "message"
         ],
         "title": "AdminResponse",
-        "description": "Sch\u00e9ma de r\u00e9ponse standardis\u00e9 pour les op\u00e9rations d'administration"
+        "description": "Schéma de réponse standardisé pour les opérations d'administration"
       },
       "AdminUser": {
         "properties": {
           "id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string",
+                "format": "uuid"
+              }
+            ],
             "title": "Id"
           },
           "telegram_id": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
             "title": "Telegram Id"
           },
           "username": {
@@ -1045,6 +2375,10 @@
                 "type": "string"
               },
               {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
                 "type": "null"
               }
             ],
@@ -1072,70 +2406,212 @@
           "updated_at"
         ],
         "title": "AdminUser",
-        "description": "Sch\u00e9ma pour les utilisateurs dans l'interface d'administration"
+        "description": "Schéma pour les utilisateurs dans l'interface d'administration"
       },
-      "CashSessionCreate": {
+      "AuthUser": {
         "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "site_id": {
-            "type": "string",
-            "title": "Site Id"
-          },
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/SessionStatus"
-              }
-            ],
-            "default": "open"
-          },
-          "total_amount": {
-            "type": "number",
-            "title": "Total Amount",
-            "default": 0.0
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id",
-          "site_id"
-        ],
-        "title": "CashSessionCreate"
-      },
-      "CashSessionResponse": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "site_id": {
-            "type": "string",
-            "title": "Site Id"
-          },
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/SessionStatus"
-              }
-            ],
-            "default": "open"
-          },
-          "total_amount": {
-            "type": "number",
-            "title": "Total Amount",
-            "default": 0.0
-          },
           "id": {
             "type": "string",
             "title": "Id"
           },
+          "telegram_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Id"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "is_active"
+        ],
+        "title": "AuthUser",
+        "description": "Représentation de l'utilisateur retournée après authentification."
+      },
+      "CashSessionCreate": {
+        "properties": {
+          "operator_id": {
+            "type": "string",
+            "title": "Operator Id",
+            "description": "ID de l'opérateur (caissier)"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id",
+            "description": "ID du site"
+          },
+          "initial_amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Initial Amount",
+            "description": "Montant initial du fond de caisse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operator_id",
+          "site_id",
+          "initial_amount"
+        ],
+        "title": "CashSessionCreate",
+        "description": "Schéma pour la création d'une session de caisse."
+      },
+      "CashSessionListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CashSessionResponse"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "Liste des sessions"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Nombre total de sessions"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip",
+            "description": "Nombre de sessions ignorées"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Limite de sessions par page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "CashSessionListResponse",
+        "description": "Schéma de réponse pour la liste des sessions de caisse."
+      },
+      "CashSessionResponse": {
+        "properties": {
+          "operator_id": {
+            "type": "string",
+            "title": "Operator Id",
+            "description": "ID de l'opérateur (caissier)"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id",
+            "description": "ID du site"
+          },
+          "initial_amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Initial Amount",
+            "description": "Montant initial du fond de caisse"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "ID unique de la session"
+          },
+          "current_amount": {
+            "type": "number",
+            "title": "Current Amount",
+            "description": "Montant actuel en caisse"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CashSessionStatus",
+            "description": "Statut de la session"
+          },
           "opened_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Opened At"
+            "title": "Opened At",
+            "description": "Date et heure d'ouverture"
           },
           "closed_at": {
             "anyOf": [
@@ -1147,29 +2623,162 @@
                 "type": "null"
               }
             ],
-            "title": "Closed At"
+            "title": "Closed At",
+            "description": "Date et heure de fermeture"
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
+          "total_sales": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Sales",
+            "description": "Total des ventes"
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
+          "total_items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Items",
+            "description": "Nombre total d'articles vendus"
           }
         },
         "type": "object",
         "required": [
-          "user_id",
+          "operator_id",
           "site_id",
+          "initial_amount",
           "id",
-          "opened_at",
-          "created_at",
-          "updated_at"
+          "current_amount",
+          "status",
+          "opened_at"
         ],
-        "title": "CashSessionResponse"
+        "title": "CashSessionResponse",
+        "description": "Schéma de réponse pour une session de caisse."
+      },
+      "CashSessionStats": {
+        "properties": {
+          "total_sessions": {
+            "type": "integer",
+            "title": "Total Sessions",
+            "description": "Nombre total de sessions"
+          },
+          "open_sessions": {
+            "type": "integer",
+            "title": "Open Sessions",
+            "description": "Nombre de sessions ouvertes"
+          },
+          "closed_sessions": {
+            "type": "integer",
+            "title": "Closed Sessions",
+            "description": "Nombre de sessions fermées"
+          },
+          "total_sales": {
+            "type": "number",
+            "title": "Total Sales",
+            "description": "Total des ventes"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items",
+            "description": "Total des articles vendus"
+          },
+          "average_session_duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Session Duration",
+            "description": "Durée moyenne des sessions en heures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_sessions",
+          "open_sessions",
+          "closed_sessions",
+          "total_sales",
+          "total_items"
+        ],
+        "title": "CashSessionStats",
+        "description": "Schéma pour les statistiques des sessions de caisse."
+      },
+      "CashSessionStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "title": "CashSessionStatus"
+      },
+      "CashSessionUpdate": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CashSessionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Nouveau statut de la session"
+          },
+          "current_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Amount",
+            "description": "Montant actuel en caisse"
+          },
+          "total_sales": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Sales",
+            "description": "Total des ventes"
+          },
+          "total_items": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Items",
+            "description": "Nombre total d'articles vendus"
+          }
+        },
+        "type": "object",
+        "title": "CashSessionUpdate",
+        "description": "Schéma pour la mise à jour d'une session de caisse."
       },
       "DepositCreate": {
         "properties": {
@@ -1178,11 +2787,58 @@
             "title": "User Id"
           },
           "site_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Site Id"
           },
+          "telegram_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram User Id"
+          },
+          "audio_file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio File Path"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DepositStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "pending_audio"
+          },
           "category": {
-            "$ref": "#/components/schemas/EEECategory"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EEECategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "weight": {
             "anyOf": [
@@ -1227,15 +2883,114 @@
               }
             ],
             "title": "Ai Confidence"
+          },
+          "transcription": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcription"
+          },
+          "eee_category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EEECategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Score"
+          },
+          "alternative_categories": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alternative Categories"
           }
         },
         "type": "object",
         "required": [
-          "user_id",
-          "site_id",
-          "category"
+          "user_id"
         ],
         "title": "DepositCreate"
+      },
+      "DepositCreateFromBot": {
+        "properties": {
+          "telegram_user_id": {
+            "type": "string",
+            "title": "Telegram User Id"
+          },
+          "audio_file_path": {
+            "type": "string",
+            "title": "Audio File Path"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DepositStatus",
+            "default": "pending_audio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "telegram_user_id",
+          "audio_file_path"
+        ],
+        "title": "DepositCreateFromBot",
+        "description": "Schema for creating deposits from Telegram bot"
+      },
+      "DepositFinalize": {
+        "properties": {
+          "final_category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EEECategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "correction_applied": {
+            "type": "boolean",
+            "title": "Correction Applied",
+            "default": false
+          },
+          "validated": {
+            "type": "boolean",
+            "title": "Validated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "DepositFinalize",
+        "description": "Schema for finalizing deposits after validation/correction"
       },
       "DepositResponse": {
         "properties": {
@@ -1244,11 +2999,58 @@
             "title": "User Id"
           },
           "site_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Site Id"
           },
+          "telegram_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram User Id"
+          },
+          "audio_file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio File Path"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DepositStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "pending_audio"
+          },
           "category": {
-            "$ref": "#/components/schemas/EEECategory"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EEECategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "weight": {
             "anyOf": [
@@ -1294,9 +3096,61 @@
             ],
             "title": "Ai Confidence"
           },
+          "transcription": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcription"
+          },
+          "eee_category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EEECategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Score"
+          },
+          "alternative_categories": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alternative Categories"
+          },
           "id": {
             "type": "string",
-            "title": "Id"
+            "title": "Id",
+            "description": "Deposit ID"
           },
           "created_at": {
             "type": "string",
@@ -1312,13 +3166,24 @@
         "type": "object",
         "required": [
           "user_id",
-          "site_id",
-          "category",
           "id",
           "created_at",
           "updated_at"
         ],
         "title": "DepositResponse"
+      },
+      "DepositStatus": {
+        "type": "string",
+        "enum": [
+          "pending_audio",
+          "audio_processing",
+          "pending_validation",
+          "classification_failed",
+          "classified",
+          "validated",
+          "completed"
+        ],
+        "title": "DepositStatus"
       },
       "EEECategory": {
         "type": "string",
@@ -1349,6 +3214,52 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "LoginRequest": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "Nom d'utilisateur"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "description": "Mot de passe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "Schéma de requête pour la connexion via nom d'utilisateur et mot de passe."
+      },
+      "LoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token",
+            "description": "JWT d'accès"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "description": "Type de token",
+            "default": "bearer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user"
+        ],
+        "title": "LoginResponse",
+        "description": "Réponse d'authentification contenant le token et l'utilisateur."
+      },
       "PaymentMethod": {
         "type": "string",
         "enum": [
@@ -1358,6 +3269,98 @@
           "voucher"
         ],
         "title": "PaymentMethod"
+      },
+      "PendingUserResponse": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string",
+                "format": "uuid"
+              }
+            ],
+            "title": "Id"
+          },
+          "telegram_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Telegram Id"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "telegram_id",
+          "role",
+          "status",
+          "created_at"
+        ],
+        "title": "PendingUserResponse",
+        "description": "Schéma pour la réponse des utilisateurs en attente"
       },
       "SaleCreate": {
         "properties": {
@@ -1385,6 +3388,190 @@
           "payment_method"
         ],
         "title": "SaleCreate"
+      },
+      "SaleDirectCreate": {
+        "properties": {
+          "cash_session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cash Session Id",
+            "description": "ID de la session de caisse"
+          },
+          "total_amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Total Amount",
+            "description": "Montant total de la vente"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "description": "Méthode de paiement",
+            "default": "cash"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SaleItemCreate"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items",
+            "description": "Articles de la vente"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cash_session_id",
+          "total_amount",
+          "items"
+        ],
+        "title": "SaleDirectCreate"
+      },
+      "SaleDirectResponse": {
+        "properties": {
+          "cash_session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cash Session Id",
+            "description": "ID de la session de caisse"
+          },
+          "total_amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Total Amount",
+            "description": "Montant total de la vente"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "description": "Méthode de paiement",
+            "default": "cash"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SaleItemResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "cash_session_id",
+          "total_amount",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SaleDirectResponse"
+      },
+      "SaleItemCreate": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Catégorie EEE (ex: EEE-1)"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity",
+            "description": "Quantité"
+          },
+          "unit_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Unit Price",
+            "description": "Prix unitaire"
+          },
+          "total_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Total Price",
+            "description": "Prix total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "quantity",
+          "unit_price",
+          "total_price"
+        ],
+        "title": "SaleItemCreate"
+      },
+      "SaleItemResponse": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Catégorie EEE (ex: EEE-1)"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity",
+            "description": "Quantité"
+          },
+          "unit_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Unit Price",
+            "description": "Prix unitaire"
+          },
+          "total_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Total Price",
+            "description": "Prix total"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sale_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sale Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "quantity",
+          "unit_price",
+          "total_price",
+          "id",
+          "sale_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SaleItemResponse"
       },
       "SaleResponse": {
         "properties": {
@@ -1430,15 +3617,6 @@
         ],
         "title": "SaleResponse"
       },
-      "SessionStatus": {
-        "type": "string",
-        "enum": [
-          "open",
-          "closed",
-          "paused"
-        ],
-        "title": "SessionStatus"
-      },
       "SiteCreate": {
         "properties": {
           "name": {
@@ -1459,6 +3637,7 @@
           "configuration": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -1499,6 +3678,7 @@
           "configuration": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -1535,6 +3715,25 @@
           "updated_at"
         ],
         "title": "SiteResponse"
+      },
+      "UserApprovalRequest": {
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Message personnalisé pour l'utilisateur"
+          }
+        },
+        "type": "object",
+        "title": "UserApprovalRequest",
+        "description": "Schéma pour l'approbation d'un utilisateur"
       },
       "UserCreate": {
         "properties": {
@@ -1576,19 +3775,11 @@
             "title": "Last Name"
           },
           "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/UserRole"
-              }
-            ],
+            "$ref": "#/components/schemas/UserRole",
             "default": "user"
           },
           "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/UserStatus"
-              }
-            ],
+            "$ref": "#/components/schemas/UserStatus",
             "default": "pending"
           },
           "is_active": {
@@ -1613,6 +3804,25 @@
           "telegram_id"
         ],
         "title": "UserCreate"
+      },
+      "UserRejectionRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Raison du rejet"
+          }
+        },
+        "type": "object",
+        "title": "UserRejectionRequest",
+        "description": "Schéma pour le rejet d'un utilisateur"
       },
       "UserResponse": {
         "properties": {
@@ -1654,19 +3864,11 @@
             "title": "Last Name"
           },
           "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/UserRole"
-              }
-            ],
+            "$ref": "#/components/schemas/UserRole",
             "default": "user"
           },
           "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/UserStatus"
-              }
-            ],
+            "$ref": "#/components/schemas/UserStatus",
             "default": "pending"
           },
           "is_active": {
@@ -1723,12 +3925,8 @@
       "UserRoleUpdate": {
         "properties": {
           "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/UserRole"
-              }
-            ],
-            "description": "Nouveau r\u00f4le \u00e0 assigner \u00e0 l'utilisateur"
+            "$ref": "#/components/schemas/UserRole",
+            "description": "Nouveau rôle à assigner à l'utilisateur"
           }
         },
         "type": "object",
@@ -1736,7 +3934,7 @@
           "role"
         ],
         "title": "UserRoleUpdate",
-        "description": "Sch\u00e9ma pour la modification du r\u00f4le d'un utilisateur"
+        "description": "Schéma pour la modification du rôle d'un utilisateur"
       },
       "UserStatus": {
         "type": "string",
@@ -1746,6 +3944,99 @@
           "rejected"
         ],
         "title": "UserStatus"
+      },
+      "UserStatusUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "UserStatusUpdate"
+      },
+      "UserUpdate": {
+        "properties": {
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          }
+        },
+        "type": "object",
+        "title": "UserUpdate"
       },
       "ValidationError": {
         "properties": {

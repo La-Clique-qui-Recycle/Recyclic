@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react'
 
 interface User {
   id: string
-  telegram_id: string
+  telegram_id?: string
   username: string
-  first_name: string
-  last_name: string
+  first_name?: string
+  last_name?: string
   email: string
   role: 'user' | 'admin' | 'super-admin'
-  status: 'pending' | 'approved' | 'rejected'
-  site_id: string
-  is_active: boolean
+  status?: 'pending' | 'approved' | 'rejected'
+  site_id?: string
+  is_active?: boolean
+  permissions?: string[]
 }
 
 interface AuthState {
@@ -29,37 +30,33 @@ export const useAuth = () => {
   })
 
   useEffect(() => {
-    // Simulate loading user from localStorage or API
-    const loadUser = async () => {
-      try {
-        const storedUser = localStorage.getItem('user')
-        if (storedUser) {
-          const user = JSON.parse(storedUser)
-          setAuthState({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          })
-        } else {
-          setAuthState({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null
-          })
-        }
-      } catch (error) {
+    // Load user from localStorage synchronously for better test compatibility
+    try {
+      const storedUser = localStorage.getItem('user')
+      if (storedUser) {
+        const user = JSON.parse(storedUser)
+        setAuthState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        })
+      } else {
         setAuthState({
           user: null,
           isAuthenticated: false,
           isLoading: false,
-          error: 'Failed to load user'
+          error: null
         })
       }
+    } catch (error) {
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: 'Failed to load user'
+      })
     }
-
-    loadUser()
   }, [])
 
   const login = async (userData: User) => {
@@ -99,6 +96,19 @@ export const useAuth = () => {
   const hasPermission = (permission: string) => {
     if (!authState.user) return false
     
+    // Check if user has custom permissions array
+    if (authState.user.permissions) {
+      // Super admin with '*' has all permissions
+      if (authState.user.permissions.includes('*')) {
+        return true
+      }
+      // Check if permission is in user's custom permissions
+      if (authState.user.permissions.includes(permission)) {
+        return true
+      }
+    }
+    
+    // Fallback to role-based permissions
     const rolePermissions: Record<string, string[]> = {
       'user': ['view_own_data'],
       'admin': ['view_own_data', 'manage_users', 'view_reports'],

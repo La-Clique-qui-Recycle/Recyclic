@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Recycle, Home, Calculator, Package, BarChart3 } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
 
 const HeaderContainer = styled.header`
   background-color: #2e7d32;
@@ -51,9 +52,16 @@ const NavLink = styled(Link)`
   `}
 `;
 
-function Header() {
-  const location = useLocation();
-  
+export default function Header() {
+  const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const logout = useAuthStore((s) => s.logout);
+
+  const onLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const navItems = [
     { path: '/', label: 'Tableau de bord', icon: Home },
     { path: '/caisse', label: 'Caisse', icon: Calculator },
@@ -81,8 +89,9 @@ function Header() {
           ))}
         </NavLinks>
       </Nav>
+      {isAuthenticated && (
+        <button onClick={onLogout}>Déconnexion</button>
+      )}
     </HeaderContainer>
   );
 }
-
-export default Header;

@@ -1,7 +1,7 @@
 /**
  * Client API généré automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-14T22:21:41.908Z
+ * Généré le: 2025-09-17T00:08:31.870Z
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -33,7 +33,10 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor pour ajouter l'auth si nécessaire
 apiClient.interceptors.request.use(
   (config) => {
-    // TODO: Ajouter le token d'authentification si nécessaire
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -89,6 +92,30 @@ export class UsersApi {
     const response: AxiosResponse<UserResponse> = await apiClient.get(`/api/v1/users/${user_id}`);
     return response.data;
   }
+
+    /**
+   * Update User
+   */
+  static async userapiv1usersuseridput(user_id, data?: any): Promise<UserResponse> {
+    const response: AxiosResponse<UserResponse> = await apiClient.put(`/api/v1/users/${user_id}`, data);
+    return response.data;
+  }
+
+    /**
+   * Delete User
+   */
+  static async userapiv1usersuseriddelete(user_id): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.delete(`/api/v1/users/${user_id}`);
+    return response.data;
+  }
+
+    /**
+   * Update User Status
+   */
+  static async userstatusapiv1usersuseridstatusput(user_id, data?: any): Promise<UserResponse> {
+    const response: AxiosResponse<UserResponse> = await apiClient.put(`/api/v1/users/${user_id}/status`, data);
+    return response.data;
+  }
 }
 export class SitesApi {
     /**
@@ -139,6 +166,38 @@ export class DepositsApi {
     const response: AxiosResponse<DepositResponse> = await apiClient.get(`/api/v1/deposits/${deposit_id}`);
     return response.data;
   }
+
+    /**
+   * Finalize Deposit
+   */
+  static async depositapiv1depositsdepositidput(deposit_id, data?: any): Promise<DepositResponse> {
+    const response: AxiosResponse<DepositResponse> = await apiClient.put(`/api/v1/deposits/${deposit_id}`, data);
+    return response.data;
+  }
+
+    /**
+   * Create Deposit From Bot
+   */
+  static async depositfrombotapiv1depositsfrombotpost(data?: any): Promise<DepositResponse> {
+    const response: AxiosResponse<DepositResponse> = await apiClient.post(`/api/v1/deposits/from-bot`, data);
+    return response.data;
+  }
+
+    /**
+   * Classify Deposit
+   */
+  static async depositapiv1depositsdepositidclassifypost(deposit_id): Promise<DepositResponse> {
+    const response: AxiosResponse<DepositResponse> = await apiClient.post(`/api/v1/deposits/${deposit_id}/classify`);
+    return response.data;
+  }
+
+    /**
+   * Get Validation Metrics
+   */
+  static async validationmetricsapiv1depositsmetricsvalidationperformanceget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/deposits/metrics/validation-performance`);
+    return response.data;
+  }
 }
 export class SalesApi {
     /**
@@ -164,21 +223,61 @@ export class SalesApi {
     const response: AxiosResponse<SaleResponse> = await apiClient.get(`/api/v1/sales/${sale_id}`);
     return response.data;
   }
-}
-export class Cash-sessionsApi {
+
     /**
-   * Get Cash Sessions
+   * Create Direct Sale
    */
-  static async cashsessionsapiv1cashsessionsget(params?: any): Promise<CashSessionResponse[]> {
-    const response: AxiosResponse<CashSessionResponse[]> = await apiClient.get(`/api/v1/cash-sessions/?${new URLSearchParams(params).toString()}`);
+  static async directsaleapiv1salesdirectpost(data?: any): Promise<SaleDirectResponse> {
+    const response: AxiosResponse<SaleDirectResponse> = await apiClient.post(`/api/v1/sales/direct`, data);
     return response.data;
   }
 
     /**
-   * Create Cash Session
+   * Get Direct Sale
+   */
+  static async directsaleapiv1salesdirectsaleidget(sale_id): Promise<SaleDirectResponse> {
+    const response: AxiosResponse<SaleDirectResponse> = await apiClient.get(`/api/v1/sales/direct/${sale_id}`);
+    return response.data;
+  }
+
+    /**
+   * Delete Direct Sale
+   */
+  static async directsaleapiv1salesdirectsaleiddelete(sale_id): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.delete(`/api/v1/sales/direct/${sale_id}`);
+    return response.data;
+  }
+
+    /**
+   * Get Direct Sales By Session
+   */
+  static async directsalesbysessionapiv1salesdirectsessioncashsessionidget(cash_session_id): Promise<SaleDirectResponse[]> {
+    const response: AxiosResponse<SaleDirectResponse[]> = await apiClient.get(`/api/v1/sales/direct/session/${cash_session_id}`);
+    return response.data;
+  }
+}
+export class CashSessionsApi {
+    /**
+   * Créer une session de caisse
    */
   static async cashsessionapiv1cashsessionspost(data?: any): Promise<CashSessionResponse> {
     const response: AxiosResponse<CashSessionResponse> = await apiClient.post(`/api/v1/cash-sessions/`, data);
+    return response.data;
+  }
+
+    /**
+   * Lister les sessions de caisse
+   */
+  static async cashsessionsapiv1cashsessionsget(params?: any): Promise<CashSessionListResponse> {
+    const response: AxiosResponse<CashSessionListResponse> = await apiClient.get(`/api/v1/cash-sessions/?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Get Current Cash Session
+   */
+  static async currentcashsessionapiv1cashsessionscurrentget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/cash-sessions/current`);
     return response.data;
   }
 
@@ -187,6 +286,30 @@ export class Cash-sessionsApi {
    */
   static async cashsessionapiv1cashsessionssessionidget(session_id): Promise<CashSessionResponse> {
     const response: AxiosResponse<CashSessionResponse> = await apiClient.get(`/api/v1/cash-sessions/${session_id}`);
+    return response.data;
+  }
+
+    /**
+   * Update Cash Session
+   */
+  static async cashsessionapiv1cashsessionssessionidput(session_id, data?: any): Promise<CashSessionResponse> {
+    const response: AxiosResponse<CashSessionResponse> = await apiClient.put(`/api/v1/cash-sessions/${session_id}`, data);
+    return response.data;
+  }
+
+    /**
+   * Fermer une session de caisse
+   */
+  static async cashsessionapiv1cashsessionssessionidclosepost(session_id): Promise<CashSessionResponse> {
+    const response: AxiosResponse<CashSessionResponse> = await apiClient.post(`/api/v1/cash-sessions/${session_id}/close`);
+    return response.data;
+  }
+
+    /**
+   * Get Cash Session Stats
+   */
+  static async cashsessionstatsapiv1cashsessionsstatssummaryget(params?: any): Promise<CashSessionStats> {
+    const response: AxiosResponse<CashSessionStats> = await apiClient.get(`/api/v1/cash-sessions/stats/summary?${new URLSearchParams(params).toString()}`);
     return response.data;
   }
 }
@@ -204,6 +327,88 @@ export class AdminApi {
    */
   static async userroleapiv1adminusersuseridroleput(user_id, data?: any): Promise<AdminResponse> {
     const response: AxiosResponse<AdminResponse> = await apiClient.put(`/api/v1/admin/users/${user_id}/role`, data);
+    return response.data;
+  }
+
+    /**
+   * Liste des utilisateurs en attente (Admin)
+   */
+  static async pendingusersapiv1adminuserspendingget(): Promise<PendingUserResponse[]> {
+    const response: AxiosResponse<PendingUserResponse[]> = await apiClient.get(`/api/v1/admin/users/pending`);
+    return response.data;
+  }
+
+    /**
+   * Approuver un utilisateur (Admin)
+   */
+  static async userapiv1adminusersuseridapprovepost(user_id, data?: any): Promise<AdminResponse> {
+    const response: AxiosResponse<AdminResponse> = await apiClient.post(`/api/v1/admin/users/${user_id}/approve`, data);
+    return response.data;
+  }
+
+    /**
+   * Rejeter un utilisateur (Admin)
+   */
+  static async userapiv1adminusersuseridrejectpost(user_id, data?: any): Promise<AdminResponse> {
+    const response: AxiosResponse<AdminResponse> = await apiClient.post(`/api/v1/admin/users/${user_id}/reject`, data);
+    return response.data;
+  }
+}
+export class MonitoringApi {
+    /**
+   * Get Classification Performance
+   */
+  static async classificationperformanceapiv1monitoringclassificationperformanceget(params?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/monitoring/classification/performance?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Export Classification Metrics
+   */
+  static async classificationmetricsapiv1monitoringclassificationperformanceexportpost(params?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/monitoring/classification/performance/export?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Get Classification Health
+   */
+  static async classificationhealthapiv1monitoringclassificationhealthget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/monitoring/classification/health`);
+    return response.data;
+  }
+
+    /**
+   * Get Cache Stats
+   */
+  static async cachestatsapiv1monitoringclassificationcachestatsget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/monitoring/classification/cache/stats`);
+    return response.data;
+  }
+
+    /**
+   * Clear Classification Cache
+   */
+  static async classificationcacheapiv1monitoringclassificationcacheclearpost(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/monitoring/classification/cache/clear`);
+    return response.data;
+  }
+
+    /**
+   * Export Classification Cache
+   */
+  static async classificationcacheapiv1monitoringclassificationcacheexportpost(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/monitoring/classification/cache/export`);
+    return response.data;
+  }
+}
+export class AuthApi {
+    /**
+   * Login
+   */
+  static async apiv1authloginpost(data?: any): Promise<LoginResponse> {
+    const response: AxiosResponse<LoginResponse> = await apiClient.post(`/api/v1/auth/login`, data);
     return response.data;
   }
 }
@@ -224,6 +429,19 @@ export class DefaultApi {
     return response.data;
   }
 }
+
+// ============================================================================
+// RE-EXPORT DES TYPES
+// ============================================================================
+
+// Export des types de base nécessaires pour l'API
+export {
+  UserRole,
+  UserStatus,
+  LoginRequest,
+  LoginResponse,
+  AuthUser
+} from './types';
 
 // ============================================================================
 // EXPORT PAR DÉFAUT

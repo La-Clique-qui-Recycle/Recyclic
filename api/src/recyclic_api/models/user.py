@@ -27,8 +27,10 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    telegram_id = Column(String, unique=True, nullable=False, index=True)
-    username = Column(String, nullable=True)
+    username = Column(String, unique=True, nullable=False, index=True)
+    email = Column(String, unique=False, nullable=True)
+    hashed_password = Column(String, nullable=False)
+    telegram_id = Column(String, unique=False, nullable=True, index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     role = Column(Enum(UserRole, values_callable=get_enum_values), default=UserRole.USER, nullable=False)
@@ -40,7 +42,7 @@ class User(Base):
 
     # Relationships
     deposits = relationship("Deposit", back_populates="user")
-    cash_sessions = relationship("CashSession", back_populates="user")
+    cash_sessions = relationship("CashSession", back_populates="operator")
 
     def __repr__(self):
         return f"<User(id={self.id}, telegram_id={self.telegram_id}, role={self.role}, status={self.status})>"

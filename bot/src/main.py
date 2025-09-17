@@ -2,7 +2,7 @@ import asyncio
 import logging
 import uvicorn
 from telegram.ext import Application
-from .handlers import setup_handlers
+from .bot_handlers import setup_handlers
 from .config import settings
 
 # Configure logging
@@ -22,7 +22,23 @@ async def main_polling():
     
     # Start the bot
     logger.info("Starting Recyclic Telegram Bot in polling mode...")
-    await application.run_polling()
+    
+    # Initialize and start the application manually
+    await application.initialize()
+    await application.start()
+    
+    try:
+        # Run the bot
+        await application.updater.start_polling()
+        # Keep the bot running
+        await asyncio.Event().wait()
+    except KeyboardInterrupt:
+        logger.info("Bot stopped by user")
+    finally:
+        # Stop the bot
+        await application.updater.stop()
+        await application.stop()
+        await application.shutdown()
 
 def main_webhook():
     """Main function to start the bot in webhook mode"""
@@ -40,4 +56,5 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == "webhook":
         main_webhook()
     else:
+        # Simple approach: just run the async function
         asyncio.run(main_polling())

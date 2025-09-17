@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Float, Enum, ForeignKey
+from sqlalchemy import Column, String, DateTime, Float, Enum, ForeignKey, Text, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -19,17 +19,37 @@ class EEECategory(str, enum.Enum):
     AUTOMATIC_DISPENSERS = "automatic_dispensers"
     OTHER = "other"
 
+class DepositStatus(str, enum.Enum):
+    PENDING_AUDIO = "pending_audio"
+    AUDIO_PROCESSING = "audio_processing"
+    PENDING_VALIDATION = "pending_validation"
+    CLASSIFICATION_FAILED = "classification_failed"
+    CLASSIFIED = "classified"
+    VALIDATED = "validated"
+    COMPLETED = "completed"
+
 class Deposit(Base):
     __tablename__ = "deposits"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=False)
-    category = Column(Enum(EEECategory), nullable=False)
+    site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=True)  # Made nullable for telegram_user_id deposits
+    telegram_user_id = Column(String, nullable=True)  # Telegram user ID for bot deposits
+    audio_file_path = Column(String, nullable=True)  # Path to audio file
+    status = Column(Enum(DepositStatus), nullable=False, default=DepositStatus.PENDING_AUDIO)
+    category = Column(Enum(EEECategory), nullable=True)  # Made nullable initially
     weight = Column(Float, nullable=True)  # Poids en kg
     description = Column(String, nullable=True)
-    ai_classification = Column(String, nullable=True)  # Classification IA
-    ai_confidence = Column(Float, nullable=True)  # Confiance IA (0-1)
+    # AI processing fields according to Story 4.2
+    transcription = Column(Text, nullable=True)  # Audio transcription
+    eee_category = Column(Enum(EEECategory), nullable=True)  # AI classified category
+    confidence_score = Column(Float, nullable=True)  # Classification confidence (0-1)
+    alternative_categories = Column(JSON, nullable=True)  # Alternative classifications for low confidence
+    ai_classification = Column(String, nullable=True)  # Legacy field - keep for compatibility
+    ai_confidence = Column(Float, nullable=True)  # Legacy field - keep for compatibility
+# Human validation/correction tracking fields (Story 4.3) - temporarily commented out for testing
+    # human_validated = Column(Boolean, default=False)  # True if human validated AI classification
+    # human_corrected = Column(Boolean, default=False)  # True if human corrected AI classification
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

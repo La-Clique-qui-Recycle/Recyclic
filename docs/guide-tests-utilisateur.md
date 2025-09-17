@@ -1,226 +1,74 @@
-# 🧪 Guide de Tests Utilisateur - Interface Admin
+# 🧪 Guide de Tests Utilisateur - Interface Admin (Mis à jour le 15/09/2025)
+
+Ce guide simple vous permet de tester les fonctionnalités d'administration du projet.
 
 ## 📋 **Prérequis**
 
-✅ Stories terminées : 3.1, 3.2, Tech Debt Frontend Tests, Tech Debt API Codegen
-✅ Docker Desktop installé et démarré
-✅ Node.js et Python installés
+- **Docker Desktop** installé et démarré.
+- Avoir rempli le fichier `.env` à la racine du projet (copié depuis `env.example`).
 
 ---
 
-## 🚀 **Étape 1 : Démarrage de l'Application**
+## 🚀 **Étape 1 : Démarrer l'Application (Une Seule Commande)**
 
-### **1.1 Terminal 1 - Backend API**
+Ouvrez un terminal à la racine du projet et lancez :
+
 ```bash
-# Aller dans le dossier racine projet (IMPORTANT!)
-cd "D:\Users\Strophe\Documents\°IA\La Clique Qui Recycle\Recyclic"
-
-# Démarrer SEULEMENT la base de données depuis la racine
-docker-compose up -d
-
-# Attendre 10 secondes que PostgreSQL démarre
-# Puis aller dans le dossier API et démarrer l'API en local
-cd api
-python -m uvicorn recyclic_api.main:app --reload --host 0.0.0.0 --port 8000
+docker-compose up -d --build
 ```
 
-**✅ Vérification :** http://localhost:8000/docs doit afficher l'interface Swagger
+Cette commande va construire et démarrer tous les services en arrière-plan. Attendez quelques instants que les services se stabilisent.
 
-### **1.2 Terminal 2 - Frontend**
+**✅ Vérifications :**
+- L'API doit être accessible sur http://localhost:8000/docs
+- Le Frontend doit être accessible sur http://localhost:5173
+
+**🔴 En cas de problème avec le Frontend :**
+Si le frontend n'est pas accessible, lancez la commande suivante pour voir les logs et identifier l'erreur :
+
 ```bash
-# Aller dans le dossier frontend
-cd frontend
-
-# Installer les dépendances si pas fait
-npm install
-
-# Démarrer le frontend
-npm run dev
+docker-compose logs -f frontend
 ```
-
-**✅ Vérification :** http://localhost:5173 doit afficher l'application
+Copiez le message d'erreur et transmettez-le pour analyse.
 
 ---
 
-## 👨‍💼 **Étape 2 : Créer le Super-Admin**
+## 👨‍💼 **Étape 2 : Créer Votre Compte Super-Admin**
 
-### **2.1 Terminal 3 - CLI Admin**
+Ouvrez un **nouveau terminal** et lancez la commande suivante pour créer votre compte administrateur :
+
 ```bash
-# Depuis le dossier racine, aller dans API
-cd "D:\Users\Strophe\Documents\°IA\La Clique Qui Recycle\Recyclic\api"
-
-# Créer le super-admin
-python -m recyclic_api.cli create-super-admin --telegram-id 123456789 --full-name "Admin Test"
+docker-compose exec api python -m recyclic_api.cli create-super-admin --telegram-id 123456789 --full-name "Admin Test"
 ```
 
-**✅ Résultat attendu :**
-```
-✅ Super-admin créé avec succès !
-- ID Telegram: 123456789
-- Nom: Admin Test
-- Rôle: super-admin
-- Statut: approved
-```
+**✅ Résultat attendu :** Un message confirmant la création du super-admin.
 
 ---
 
-## 🔐 **Étape 3 : Test de Connexion Admin**
+## 🔐 **Étape 3 : Tester l'Interface d'Administration**
 
-### **3.1 Ouvrir l'Interface**
-1. Aller sur http://localhost:5173
-2. Cliquer sur "Connexion Admin" ou aller à `/admin`
+1.  **Connectez-vous :** Allez sur http://localhost:5173, naviguez vers la page de connexion admin et connectez-vous avec l'ID Telegram `123456789`.
 
-### **3.2 Se Connecter**
-- **Telegram ID :** `123456789`
-- **Mot de passe :** Laisser vide si pas configuré
-- Cliquer "Se connecter"
+2.  **Gérez les Utilisateurs :** Allez dans la section de gestion des utilisateurs. Vous devriez voir votre propre compte. Si d'autres utilisateurs sont en attente, vous pouvez tester les fonctionnalités d'approbation et de rejet.
 
-**✅ Résultat attendu :** Redirection vers dashboard admin
+3.  **Vérifiez la Cohérence des Données :** La fonctionnalité de génération de code (`codegen`) est maintenant active. Cela signifie que les données affichées dans l'interface devraient être parfaitement cohérentes avec ce que l'API fournit. Vous pouvez le vérifier en ouvrant les outils de développement de votre navigateur (F12) dans l'onglet "Réseau" pour inspecter les réponses de l'API.
 
----
+--- 
 
-## 👥 **Étape 4 : Test Gestion Utilisateurs**
+## ✅ **Étape 4 : Lancer les Tests Automatisés (Optionnel)**
 
-### **4.1 Accéder à la Liste**
-1. Dans le dashboard admin
-2. Cliquer sur "Gestion des Utilisateurs"
-3. Aller à l'URL `/admin/users`
+Si vous souhaitez vérifier la santé du projet via les tests automatisés, ouvrez un nouveau terminal :
 
-**✅ Résultat attendu :**
-- Table Mantine avec colonnes : Nom, Rôle, Statut, Actions
-- Au moins 1 utilisateur (le super-admin)
-
-### **4.2 Test Modification Rôle**
-1. Trouver un utilisateur avec rôle "user"
-2. Cliquer sur le dropdown "Rôle"
-3. Sélectionner "admin"
-4. Confirmer la modification
-
-**✅ Résultat attendu :**
-- Modal de confirmation apparaît
-- Après confirmation : notification de succès
-- Rôle mis à jour dans la table
-
----
-
-## 🔒 **Étape 5 : Test Sécurité & Permissions**
-
-### **5.1 Test Protection Endpoints**
-1. Ouvrir DevTools (F12)
-2. Onglet Network
-3. Modifier un rôle utilisateur
-4. Observer les requêtes API
-
-**✅ Résultat attendu :**
-- Requête PUT vers `/api/v1/admin/users/{id}/role`
-- Status 200 (succès)
-- Header Authorization avec token JWT
-
-### **5.2 Test Hiérarchie Rôles**
-1. Se connecter avec un utilisateur "user" normal
-2. Essayer d'accéder à `/admin/users`
-
-**✅ Résultat attendu :**
-- Erreur 403 Forbidden
-- Redirection vers page non autorisée
-
----
-
-## 🧪 **Étape 6 : Test Technique API Codegen**
-
-### **6.1 Vérifier Types Générés**
 ```bash
-cd frontend
+# Lancer les tests du Backend
+docker-compose exec api pytest
 
-# Régénérer les types API
-npm run codegen
-
-# Vérifier les fichiers générés
-ls src/generated/
+# Lancer les tests du Frontend
+docker-compose exec frontend npm test
 ```
 
-**✅ Résultat attendu :**
-- `types.ts` : Interfaces UserResponse, AdminUser, etc.
-- `api.ts` : Client API avec AdminApi, UsersApi
-- `index.ts` : Exports consolidés
+**✅ Résultat attendu :** Toutes les suites de tests s'exécutent avec succès.
 
-### **6.2 Test Cohérence Frontend/Backend**
-1. Modifier un utilisateur depuis l'interface
-2. Vérifier dans Swagger http://localhost:8000/docs
-3. Utiliser GET `/api/v1/admin/users` dans Swagger
+--- 
 
-**✅ Résultat attendu :** Données identiques interface ↔ API
-
----
-
-## ✅ **Étape 7 : Test Suite Automatisée**
-
-### **7.1 Tests Frontend**
-```bash
-cd frontend
-
-# Lancer tous les tests
-npm test
-
-# Tests spécifiques admin
-npm test -- src/test/pages/Admin/
-```
-
-**✅ Résultat attendu :** Tous tests passent (100+ tests)
-
-### **7.2 Tests API**
-```bash
-cd api
-
-# Tests endpoints admin
-python -m pytest tests/api/test_admin.py -v
-
-# Tests modèle utilisateur
-python -m pytest tests/models/test_user.py -v
-```
-
-**✅ Résultat attendu :** Tous tests API passent
-
----
-
-## 🐛 **Dépannage**
-
-### **Problèmes Courants**
-
-**🔴 Erreur 500 API :**
-- Vérifier Docker PostgreSQL : `docker ps`
-- Redémarrer : `docker-compose restart`
-
-**🔴 Frontend ne charge pas :**
-- Vérifier port 5173 libre
-- Relancer : `npm run dev`
-
-**🔴 Utilisateur non trouvé :**
-- Vérifier création super-admin
-- Check base données : `docker exec -it recyclic-postgres-1 psql -U recyclic_user -d recyclic_db`
-
-**🔴 Types TypeScript erreurs :**
-- Régénérer : `npm run codegen`
-- Restart IDE TypeScript server
-
----
-
-## 📊 **Résumé Tests Validés**
-
-- ✅ **Démarrage application** (Backend + Frontend)
-- ✅ **Création super-admin** via CLI
-- ✅ **Connexion interface admin**
-- ✅ **Liste utilisateurs** avec interface Mantine
-- ✅ **Modification rôles** avec confirmations
-- ✅ **Sécurité endpoints** (JWT + permissions)
-- ✅ **Types API auto-générés** cohérents
-- ✅ **Suite tests automatisée** complète
-
-## 🎯 **Statut Final**
-
-Si tous ces tests passent ✅ :
-- Stories 3.1, 3.2 et tech debt = **Production Ready**
-- Prêt pour Story 3.3 (après rollback procedure)
-- Interface admin fonctionnelle et sécurisée
-
-**🚀 Félicitations ! L'interface d'administration Recyclic est opérationnelle !**
+**Félicitations ! Si ces étapes fonctionnent, l'interface d'administration est pleinement opérationnelle.**

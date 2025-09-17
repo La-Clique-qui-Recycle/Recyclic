@@ -2,11 +2,11 @@ import os
 import pytest
 from sqlalchemy import create_engine, text
 from redis import Redis
+from recyclic_api.core.config import settings
 
 def test_postgres_connectivity():
     """Test PostgreSQL connection"""
-    url = os.environ.get("TEST_DATABASE_URL")
-    assert url, "TEST_DATABASE_URL must be set"
+    url = os.environ.get("TEST_DATABASE_URL") or settings.TEST_DATABASE_URL or "postgresql://recyclic:recyclic_secure_password_2024@localhost:5432/recyclic_test"
     engine = create_engine(url, pool_pre_ping=True)
     with engine.connect() as conn:
         assert conn.execute(text("SELECT 1")).scalar() == 1
@@ -20,8 +20,7 @@ def test_redis_connectivity():
 @pytest.mark.integration_db
 def test_postgres_database_creation():
     """Test that test database can be created and used"""
-    url = os.environ.get("TEST_DATABASE_URL")
-    assert url, "TEST_DATABASE_URL must be set"
+    url = os.environ.get("TEST_DATABASE_URL") or settings.TEST_DATABASE_URL or "postgresql://recyclic:recyclic_secure_password_2024@localhost:5432/recyclic_test"
     
     # Test connection
     engine = create_engine(url, pool_pre_ping=True)

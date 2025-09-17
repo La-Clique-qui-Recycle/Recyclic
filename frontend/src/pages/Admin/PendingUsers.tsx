@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Title, Text, Group, Button, Stack, Alert } from '@mantine/core';
 import { IconRefresh, IconAlertCircle, IconUsers } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { PendingUsersTable } from '../../components/business/PendingUsersTable';
+import PendingUsersTable from '../../components/business/PendingUsersTable';
 import { adminService, AdminUser } from '../../services/adminService';
 
 const PendingUsers: React.FC = () => {

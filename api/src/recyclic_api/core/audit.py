@@ -162,3 +162,154 @@ def log_security_event(
             f"Security event: {event_type} - {username or 'Unknown user'}",
             extra=log_data
         )
+
+def log_cash_session_opening(
+    operator_id: str,
+    operator_username: str,
+    session_id: str,
+    initial_amount: float,
+    site_id: Optional[str] = None,
+    success: bool = True,
+    error_message: Optional[str] = None
+):
+    """Log l'ouverture d'une session de caisse"""
+    
+    log_data = {
+        "action": "cash_session_opening",
+        "operator_id": operator_id,
+        "operator_username": operator_username,
+        "session_id": session_id,
+        "initial_amount": initial_amount,
+        "site_id": site_id,
+        "success": success,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    if error_message:
+        log_data["error"] = error_message
+    
+    if success:
+        audit_logger.info(
+            f"Cash session opened: {operator_username} opened session {session_id} "
+            f"with initial amount {initial_amount}€",
+            extra=log_data
+        )
+    else:
+        audit_logger.error(
+            f"Failed cash session opening: {operator_username} failed to open session - {error_message}",
+            extra=log_data
+        )
+
+def log_cash_session_closing(
+    operator_id: str,
+    operator_username: str,
+    session_id: str,
+    final_amount: float,
+    total_sales: float,
+    total_items: int,
+    success: bool = True,
+    error_message: Optional[str] = None
+):
+    """Log la fermeture d'une session de caisse"""
+    
+    log_data = {
+        "action": "cash_session_closing",
+        "operator_id": operator_id,
+        "operator_username": operator_username,
+        "session_id": session_id,
+        "final_amount": final_amount,
+        "total_sales": total_sales,
+        "total_items": total_items,
+        "success": success,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    if error_message:
+        log_data["error"] = error_message
+    
+    if success:
+        audit_logger.info(
+            f"Cash session closed: {operator_username} closed session {session_id} "
+            f"with final amount {final_amount}€, sales: {total_sales}€, items: {total_items}",
+            extra=log_data
+        )
+    else:
+        audit_logger.error(
+            f"Failed cash session closing: {operator_username} failed to close session {session_id} - {error_message}",
+            extra=log_data
+        )
+
+def log_cash_sale(
+    operator_id: str,
+    operator_username: str,
+    session_id: str,
+    sale_id: str,
+    amount: float,
+    payment_method: str,
+    deposit_id: Optional[str] = None,
+    success: bool = True,
+    error_message: Optional[str] = None
+):
+    """Log une vente en caisse"""
+    
+    log_data = {
+        "action": "cash_sale",
+        "operator_id": operator_id,
+        "operator_username": operator_username,
+        "session_id": session_id,
+        "sale_id": sale_id,
+        "amount": amount,
+        "payment_method": payment_method,
+        "deposit_id": deposit_id,
+        "success": success,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    if error_message:
+        log_data["error"] = error_message
+    
+    if success:
+        audit_logger.info(
+            f"Cash sale: {operator_username} processed sale {sale_id} "
+            f"for {amount}€ via {payment_method} in session {session_id}",
+            extra=log_data
+        )
+    else:
+        audit_logger.error(
+            f"Failed cash sale: {operator_username} failed to process sale in session {session_id} - {error_message}",
+            extra=log_data
+        )
+
+def log_cash_session_access(
+    user_id: str,
+    username: str,
+    session_id: str,
+    action: str,
+    success: bool = True,
+    error_message: Optional[str] = None
+):
+    """Log l'accès à une session de caisse"""
+    
+    log_data = {
+        "action": "cash_session_access",
+        "user_id": user_id,
+        "username": username,
+        "session_id": session_id,
+        "access_action": action,
+        "success": success,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    if error_message:
+        log_data["error"] = error_message
+    
+    if success:
+        audit_logger.info(
+            f"Cash session access: {username} performed {action} on session {session_id}",
+            extra=log_data
+        )
+    else:
+        audit_logger.warning(
+            f"Failed cash session access: {username} failed to {action} session {session_id} - {error_message}",
+            extra=log_data
+        )

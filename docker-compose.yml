@@ -30,6 +30,7 @@ services:
       - recyclic-network
 
   api:
+    build: ./api
     image: recyclic-api:${API_IMAGE_TAG:-latest}
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
@@ -37,7 +38,7 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       ENVIRONMENT: development
     ports:
-      - "4433:8000"
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,36 +53,16 @@ services:
       - recyclic-network
 
   bot:
+    build: ./bot
     image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
       REDIS_URL: redis://redis:6379
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       API_BASE_URL: http://api:8000
-      FRONTEND_URL: http://localhost:4444
+      FRONTEND_URL: ${FRONTEND_URL}
       ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      api:
-        condition: service_healthy
-    networks:
-      - recyclic-network
-
-  bot-webhook:
-    image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
-    command: python -m bot.src.main webhook
-    environment:
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
-      REDIS_URL: redis://redis:6379
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      API_BASE_URL: http://api:8000
-      FRONTEND_URL: http://localhost:4444
-      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
-    ports:
-      - "8001:8001"
+      ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,14 +74,20 @@ services:
       - recyclic-network
 
   frontend:
+    build: ./frontend
     image: recyclic-frontend:${FRONTEND_IMAGE_TAG:-latest}
     environment:
-      REACT_APP_API_URL: http://localhost:4433
+      REACT_APP_API_URL: http://localhost:8000
     ports:
-      - "4444:3000"
+      - "4444:5173"
     depends_on:
-      api:
-        condition: service_healthy
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - recyclic-network
 

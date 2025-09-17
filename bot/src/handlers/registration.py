@@ -1,7 +1,9 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 import logging
 from ..services.user_service import user_service
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +30,7 @@ async def registration_command(update: Update, context: ContextTypes.DEFAULT_TYP
     
     # Générer le lien d'inscription
     registration_link = await user_service.get_registration_link(telegram_id)
-    
-    # Créer le clavier avec le lien d'inscription
-    keyboard = [
-        [InlineKeyboardButton("📝 S'inscrire", url=registration_link)]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    logger.info(f"registration_command: telegram_id={telegram_id} registration_link={registration_link}")
     
     message = f"""
 🤖 **Inscription Recyclic**
@@ -59,11 +56,27 @@ Une fois inscrit, vous pourrez :
 • Consulter vos statistiques
 """
     
-    await update.message.reply_text(
-        message,
-        reply_markup=reply_markup,
-        parse_mode='Markdown'
-    )
+    # Si les boutons inline sont activés ET URL en HTTPS, utiliser le bouton; sinon fallback cliquable
+    if settings.ENABLE_INLINE_BUTTONS and registration_link.lower().startswith("https://"):
+        keyboard = [
+            [InlineKeyboardButton("📝 S'inscrire", url=registration_link)]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            message,
+            reply_markup=reply_markup
+        )
+    else:
+        # Fallback en DEV: lien cliquable en HTML
+        html_msg = (
+            message
+            + f"\n\nLien d'inscription: <a href=\"{registration_link}\">{registration_link}</a>"
+        )
+        await update.message.reply_text(
+            html_msg,
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True,
+        )
 
 async def handle_registration_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle registration callback queries"""

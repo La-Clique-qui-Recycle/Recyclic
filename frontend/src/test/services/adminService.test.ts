@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import axios from 'axios'
 import { adminService, AdminUser, UserRole, UserStatus } from '../../services/adminService'
+import { UsersApi, AdminApi } from '../../generated/api'
 
 // Mock axios
 const mockAxiosInstance = {
@@ -22,16 +23,25 @@ vi.mock('axios', () => ({
 }))
 
 // Mock du client API généré
-vi.mock('../../generated', () => ({
+vi.mock('../../generated/api', () => ({
   UsersApi: {
-    getUsers: vi.fn(),
-    getUserById: vi.fn(),
-    createUser: vi.fn(),
-    updateUser: vi.fn(),
-    updateUserRole: vi.fn(),
-    updateUserStatus: vi.fn(),
-    deleteUser: vi.fn()
+    usersapiv1usersget: vi.fn(),
+    userapiv1usersuseridget: vi.fn(),
+    userapiv1userspost: vi.fn(),
+    userapiv1usersuseridput: vi.fn(),
+    userapiv1usersuseriddelete: vi.fn(),
+    userstatusapiv1usersuseridstatusput: vi.fn()
   },
+  AdminApi: {
+    userroleapiv1adminusersuseridroleput: vi.fn(),
+    pendingusersapiv1adminuserspendingget: vi.fn(),
+    userapiv1adminusersuseridapprovepost: vi.fn(),
+    userapiv1adminusersuseridrejectpost: vi.fn()
+  }
+}))
+
+// Mock des types générés
+vi.mock('../../generated/types', () => ({
   UserRole: {
     USER: 'user',
     CASHIER: 'cashier',
@@ -43,13 +53,7 @@ vi.mock('../../generated', () => ({
     PENDING: 'pending',
     APPROVED: 'approved',
     REJECTED: 'rejected'
-  },
-  UserRoleUpdate: {},
-  UserStatusUpdate: {},
-  UserCreate: {},
-  UserUpdate: {},
-  AdminUser: {},
-  AdminResponse: {}
+  }
 }))
 
 describe('AdminService', () => {
@@ -86,18 +90,24 @@ describe('AdminService', () => {
         }
       ]
 
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.getUsers).mockResolvedValue(mockUsers)
+      const { UsersApi } = await import('../../generated/api')
+      vi.mocked(UsersApi.usersapiv1usersget).mockResolvedValue(mockUsers)
 
       const result = await adminService.getUsers()
 
-      expect(UsersApi.getUsers).toHaveBeenCalledWith({
-        skip: undefined,
-        limit: undefined
-      })
+      expect(UsersApi.usersapiv1usersget).toHaveBeenCalledWith({})
       expect(result).toHaveLength(2)
       expect(result[0]).toMatchObject({
-        ...mockUsers[0],
+        id: '1',
+        telegram_id: 123456789, // Should be converted to number
+        username: 'john_doe',
+        first_name: 'John',
+        last_name: 'Doe',
+        role: UserRole.USER,
+        status: UserStatus.APPROVED,
+        is_active: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
         full_name: 'John Doe',
         email: undefined,
         site_id: undefined
@@ -132,8 +142,8 @@ describe('AdminService', () => {
         }
       ]
 
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.getUsers).mockResolvedValue(mockUsers)
+      const { UsersApi } = await import('../../generated/api')
+      vi.mocked(UsersApi.usersapiv1usersget).mockResolvedValue(mockUsers)
 
       const result = await adminService.getUsers({ role: UserRole.ADMIN })
 
@@ -169,8 +179,8 @@ describe('AdminService', () => {
         }
       ]
 
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.getUsers).mockResolvedValue(mockUsers)
+      const { UsersApi } = await import('../../generated/api')
+      vi.mocked(UsersApi.usersapiv1usersget).mockResolvedValue(mockUsers)
 
       const result = await adminService.getUsers({ search: 'john' })
 
@@ -194,22 +204,33 @@ describe('AdminService', () => {
         updated_at: '2024-01-01T00:00:00Z'
       }
 
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.updateUserRole).mockResolvedValue(mockUpdatedUser)
-
-      const result = await adminService.updateUserRole('1', { role: UserRole.ADMIN })
-
-      expect(UsersApi.updateUserRole).toHaveBeenCalledWith('1', { role: UserRole.ADMIN })
-      expect(result).toMatchObject({
+      const mockResponse = {
         data: {
-          ...mockUpdatedUser,
+          id: '1',
+          telegram_id: 123456789,
+          username: 'john_doe',
+          first_name: 'John',
+          last_name: 'Doe',
+          role: UserRole.ADMIN,
+          status: UserStatus.APPROVED,
+          is_active: true,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
           full_name: 'John Doe',
           email: undefined,
           site_id: undefined
         },
         message: 'Rôle mis à jour avec succès',
         success: true
-      })
+      }
+
+      const { AdminApi } = await import('../../generated/api')
+      vi.mocked(AdminApi.userroleapiv1adminusersuseridroleput).mockResolvedValue(mockResponse)
+
+      const result = await adminService.updateUserRole('1', { role: UserRole.ADMIN })
+
+      expect(AdminApi.userroleapiv1adminusersuseridroleput).toHaveBeenCalledWith('1', { role: UserRole.ADMIN })
+      expect(result).toEqual(mockResponse)
     })
   })
 
@@ -228,14 +249,23 @@ describe('AdminService', () => {
         updated_at: '2024-01-01T00:00:00Z'
       }
 
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.getUserById).mockResolvedValue(mockUser)
+      const { UsersApi } = await import('../../generated/api')
+      vi.mocked(UsersApi.userapiv1usersuseridget).mockResolvedValue(mockUser)
 
       const result = await adminService.getUserById('1')
 
-      expect(UsersApi.getUserById).toHaveBeenCalledWith('1')
+      expect(UsersApi.userapiv1usersuseridget).toHaveBeenCalledWith('1')
       expect(result).toMatchObject({
-        ...mockUser,
+        id: '1',
+        telegram_id: 123456789, // Should be converted to number
+        username: 'john_doe',
+        first_name: 'John',
+        last_name: 'Doe',
+        role: UserRole.USER,
+        status: UserStatus.APPROVED,
+        is_active: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
         full_name: 'John Doe',
         email: undefined,
         site_id: undefined
@@ -262,15 +292,24 @@ describe('AdminService', () => {
         updated_at: '2024-01-01T00:00:00Z'
       }
 
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.createUser).mockResolvedValue(mockCreatedUser)
+      const { UsersApi } = await import('../../generated/api')
+      vi.mocked(UsersApi.userapiv1userspost).mockResolvedValue(mockCreatedUser)
 
       const result = await adminService.createUser(userData)
 
-      expect(UsersApi.createUser).toHaveBeenCalledWith(userData)
+      expect(UsersApi.userapiv1userspost).toHaveBeenCalledWith(userData)
       expect(result).toMatchObject({
         data: {
-          ...mockCreatedUser,
+          id: '1',
+          telegram_id: 123456789, // Should be converted to number
+          username: 'john_doe',
+          first_name: 'John',
+          last_name: 'Doe',
+          role: UserRole.USER,
+          status: UserStatus.PENDING,
+          is_active: true,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
           full_name: 'John Doe',
           email: undefined,
           site_id: undefined
@@ -301,15 +340,16 @@ describe('AdminService', () => {
         updated_at: '2024-01-01T00:00:00Z'
       }
 
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.updateUser).mockResolvedValue(mockUpdatedUser)
+      // Mock the generated API
+      vi.mocked(UsersApi.userapiv1usersuseridput).mockResolvedValue(mockUpdatedUser)
 
       const result = await adminService.updateUser('1', userData)
 
-      expect(UsersApi.updateUser).toHaveBeenCalledWith('1', userData)
+      expect(UsersApi.userapiv1usersuseridput).toHaveBeenCalledWith('1', userData)
       expect(result).toMatchObject({
         data: {
           ...mockUpdatedUser,
+          telegram_id: 123456789, // Converted from string to number
           full_name: 'John Updated Doe',
           email: undefined,
           site_id: undefined
@@ -322,12 +362,12 @@ describe('AdminService', () => {
 
   describe('deleteUser', () => {
     it('should delete user and return AdminResponse', async () => {
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.deleteUser).mockResolvedValue(undefined)
+      // Mock the generated API
+      vi.mocked(UsersApi.userapiv1usersuseriddelete).mockResolvedValue({})
 
       const result = await adminService.deleteUser('1')
 
-      expect(UsersApi.deleteUser).toHaveBeenCalledWith('1')
+      expect(UsersApi.userapiv1usersuseriddelete).toHaveBeenCalledWith('1')
       expect(result).toMatchObject({
         data: undefined,
         message: 'Utilisateur supprimé avec succès',
@@ -339,8 +379,8 @@ describe('AdminService', () => {
   describe('Error Handling', () => {
     it('should propagate errors from API calls', async () => {
       const error = new Error('API Error')
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.getUsers).mockRejectedValue(error)
+      const { UsersApi } = await import('../../generated/api')
+      vi.mocked(UsersApi.usersapiv1usersget).mockRejectedValue(error)
 
       await expect(adminService.getUsers()).rejects.toThrow('API Error')
     })
@@ -350,8 +390,8 @@ describe('AdminService', () => {
         detail: 'Validation error',
         type: 'validation_error'
       }
-      const { UsersApi } = await import('../../generated')
-      vi.mocked(UsersApi.createUser).mockRejectedValue(error)
+      const { UsersApi } = await import('../../generated/api')
+      vi.mocked(UsersApi.userapiv1userspost).mockRejectedValue(error)
 
       await expect(adminService.createUser({})).rejects.toEqual(error)
     })

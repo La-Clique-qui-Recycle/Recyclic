@@ -247,6 +247,48 @@ Cette section définit les règles obligatoires pour garantir la qualité, la pe
 
 L'application est entièrement conteneurisée avec Docker. Le déploiement sur les différents environnements (staging, production) est géré via des scripts et potentiellement une pipeline CI/CD (ex: GitHub Actions) qui automatise les tests et le déploiement.
 
+### 11.1. Configuration des Ports
+
+La configuration des ports est cruciale pour le bon fonctionnement de l'application en environnement de développement et de production.
+
+#### Ports de Développement (docker-compose.yml)
+
+| Service | Port Interne | Port Externe | Description |
+|---------|--------------|--------------|-------------|
+| **Frontend** | 5173 | 4444 | Interface utilisateur React (Vite dev server) |
+| **API** | 8000 | 8000 | Backend FastAPI |
+| **PostgreSQL** | 5432 | 5432 | Base de données |
+| **Redis** | 6379 | 6379 | Cache et sessions |
+
+#### Configuration Vite
+
+Le serveur de développement Vite est configuré pour :
+- **Port interne** : 5173 (port par défaut de Vite)
+- **Host** : `0.0.0.0` (accessible depuis l'extérieur du conteneur)
+- **Proxy API** : `/api` → `http://api:8000` (communication inter-conteneurs)
+
+#### Healthchecks
+
+Chaque service dispose d'un healthcheck pour s'assurer de sa disponibilité :
+
+```yaml
+# Exemple pour le frontend
+healthcheck:
+  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173/"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+```
+
+#### Accès aux Services
+
+- **Frontend** : http://localhost:4444
+- **API** : http://localhost:8000
+- **API Docs** : http://localhost:8000/docs
+- **PostgreSQL** : localhost:5432 (utilisateur: recyclic)
+- **Redis** : localhost:6379
+
 ### Exemple de Workflow de Déploiement (`deploy.yaml`)
 
 Le code ci-dessous est l'exemple de base pour le workflow de déploiement continu qui doit être créé par la story `story-tech-debt-create-deploy-workflow.md`.

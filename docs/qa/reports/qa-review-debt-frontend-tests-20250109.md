@@ -110,3 +110,4 @@ La story de dette technique pour les tests frontend a été **entièrement réso
 ---
 
 *Rapport généré automatiquement par Quinn (Test Architect) le 2025-01-09*
+

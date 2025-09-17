@@ -28,8 +28,11 @@ def test_imports():
 def test_config():
     """Test configuration loading"""
     from recyclic_api.core.config import settings
-    assert settings.DATABASE_URL == 'sqlite:///./test.db'
+    # Vérifier que la configuration est chargée correctement
+    assert settings.DATABASE_URL is not None
     assert settings.ENVIRONMENT == 'test'
+    # Vérifier que c'est une URL PostgreSQL (configuration par défaut)
+    assert 'postgresql' in settings.DATABASE_URL
 
 @patch('redis.from_url')
 def test_redis_mock(mock_redis_from_url):

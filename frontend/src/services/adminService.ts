@@ -1,27 +1,31 @@
-// Import des types et de l'API générés
+// Import des types générés automatiquement
 import {
   UserResponse,
   UserRole,
   UserStatus,
-  UserRoleUpdate,
   UserStatusUpdate,
-  UserCreate,
   UserUpdate,
-  ApiResponse,
-  UsersApi
+  AdminUser,
+  AdminResponse,
+  PendingUserResponse,
+  UsersApi,
+  AdminApi
 } from '../generated';
 
-// Types spécifiques à l'administration (extension des types générés)
-export interface AdminUser extends UserResponse {
-  full_name?: string;
-  email?: string;
-  site_id?: string;
+// Types locaux pour contourner les problèmes d'export
+export interface UserRoleUpdate {
+  role: UserRole;
 }
 
-export interface AdminResponse<T = unknown> {
-  data?: T;
-  message: string;
-  success: boolean;
+export interface UserCreate {
+  telegram_id: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: UserRole;
+  status?: UserStatus;
+  is_active?: boolean;
+  site_id?: string;
 }
 
 export interface UsersFilter {
@@ -33,7 +37,29 @@ export interface UsersFilter {
 }
 
 // Re-export des types générés pour la compatibilité
-export { UserRole, UserStatus, UserRoleUpdate, UserStatusUpdate, UserCreate, UserUpdate };
+export { UserRole, UserStatus };
+export type { UserStatusUpdate, UserUpdate };
+
+// Helper pour convertir UserResponse en AdminUser
+function convertToAdminUser(user: UserResponse): AdminUser {
+  return {
+    id: user.id,
+    telegram_id: typeof user.telegram_id === 'string' ? parseInt(user.telegram_id) : user.telegram_id,
+    username: user.username,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    full_name: user.first_name && user.last_name
+      ? `${user.first_name} ${user.last_name}`
+      : user.username || `User ${user.telegram_id}`,
+    email: undefined, // Pas encore implémenté dans l'API
+    role: user.role as UserRole,
+    status: user.status as UserStatus,
+    is_active: user.is_active,
+    site_id: user.site_id,
+    created_at: user.created_at,
+    updated_at: user.updated_at
+  };
+}
 
 // Service d'administration utilisant l'API générée
 export const adminService = {
@@ -42,20 +68,11 @@ export const adminService = {
    */
   async getUsers(filters: UsersFilter = {}): Promise<AdminUser[]> {
     try {
-      const users = await UsersApi.getUsers({
-        skip: filters.skip,
-        limit: filters.limit
-      });
-      
+      // Utiliser l'API générée
+      const users = await UsersApi.usersapiv1usersget(filters);
+
       // Convertir UserResponse en AdminUser et appliquer les filtres
-      let adminUsers: AdminUser[] = users.map(user => ({
-        ...user,
-        full_name: user.first_name && user.last_name 
-          ? `${user.first_name} ${user.last_name}` 
-          : user.username || `User ${user.telegram_id}`,
-        email: undefined, // Pas encore implémenté dans l'API
-        site_id: undefined // Pas encore implémenté dans l'API
-      }));
+      let adminUsers: AdminUser[] = users.map(convertToAdminUser);
 
       // Appliquer les filtres côté client (en attendant que l'API les supporte)
       if (filters.role) {
@@ -66,7 +83,7 @@ export const adminService = {
       }
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        adminUsers = adminUsers.filter(user => 
+        adminUsers = adminUsers.filter(user =>
           user.username?.toLowerCase().includes(searchLower) ||
           user.first_name?.toLowerCase().includes(searchLower) ||
           user.last_name?.toLowerCase().includes(searchLower) ||
@@ -84,25 +101,11 @@ export const adminService = {
   /**
    * Met à jour le rôle d'un utilisateur
    */
-  async updateUserRole(userId: string, roleUpdate: UserRoleUpdate): Promise<AdminResponse<AdminUser>> {
+  async updateUserRole(userId: string, roleUpdate: UserRoleUpdate): Promise<AdminResponse> {
     try {
-      const updatedUser = await UsersApi.updateUserRole(userId, roleUpdate);
-      
-      // Convertir en AdminUser
-      const adminUser: AdminUser = {
-        ...updatedUser,
-        full_name: updatedUser.first_name && updatedUser.last_name 
-          ? `${updatedUser.first_name} ${updatedUser.last_name}` 
-          : updatedUser.username || `User ${updatedUser.telegram_id}`,
-        email: undefined,
-        site_id: undefined
-      };
-
-      return {
-        data: adminUser,
-        message: 'Rôle mis à jour avec succès',
-        success: true
-      };
+      // Utiliser l'API générée
+      const response = await AdminApi.userroleapiv1adminusersuseridroleput(userId, roleUpdate);
+      return response;
     } catch (error) {
       console.error('Erreur lors de la mise à jour du rôle:', error);
       throw error;
@@ -114,17 +117,11 @@ export const adminService = {
    */
   async getUserById(userId: string): Promise<AdminUser> {
     try {
-      const user = await UsersApi.getUserById(userId);
-      
-      // Convertir en AdminUser
-      return {
-        ...user,
-        full_name: user.first_name && user.last_name 
-          ? `${user.first_name} ${user.last_name}` 
-          : user.username || `User ${user.telegram_id}`,
-        email: undefined,
-        site_id: undefined
-      };
+      // Utiliser l'API générée
+      const user = await UsersApi.userapiv1usersuseridget(userId);
+
+      // Convertir UserResponse en AdminUser
+      return convertToAdminUser(user);
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'utilisateur:', error);
       throw error;
@@ -134,19 +131,13 @@ export const adminService = {
   /**
    * Met à jour le statut d'un utilisateur
    */
-  async updateUserStatus(userId: string, statusUpdate: UserStatusUpdate): Promise<AdminResponse<AdminUser>> {
+  async updateUserStatus(userId: string, statusUpdate: UserStatusUpdate): Promise<AdminResponse> {
     try {
-      const updatedUser = await UsersApi.updateUserStatus(userId, statusUpdate);
-      
+      // Utiliser l'API générée
+      const updatedUser = await UsersApi.userstatusapiv1usersuseridstatusput(userId, statusUpdate);
+
       // Convertir en AdminUser
-      const adminUser: AdminUser = {
-        ...updatedUser,
-        full_name: updatedUser.first_name && updatedUser.last_name 
-          ? `${updatedUser.first_name} ${updatedUser.last_name}` 
-          : updatedUser.username || `User ${updatedUser.telegram_id}`,
-        email: undefined,
-        site_id: undefined
-      };
+      const adminUser = convertToAdminUser(updatedUser);
 
       return {
         data: adminUser,
@@ -162,19 +153,13 @@ export const adminService = {
   /**
    * Crée un nouvel utilisateur
    */
-  async createUser(userData: UserCreate): Promise<AdminResponse<AdminUser>> {
+  async createUser(userData: UserCreate): Promise<AdminResponse> {
     try {
-      const newUser = await UsersApi.createUser(userData);
-      
-      // Convertir en AdminUser
-      const adminUser: AdminUser = {
-        ...newUser,
-        full_name: newUser.first_name && newUser.last_name 
-          ? `${newUser.first_name} ${newUser.last_name}` 
-          : newUser.username || `User ${newUser.telegram_id}`,
-        email: undefined,
-        site_id: undefined
-      };
+      // Utiliser l'API générée
+      const newUser = await UsersApi.userapiv1userspost(userData);
+
+      // Convertir UserResponse en AdminUser
+      const adminUser = convertToAdminUser(newUser);
 
       return {
         data: adminUser,
@@ -190,19 +175,13 @@ export const adminService = {
   /**
    * Met à jour un utilisateur
    */
-  async updateUser(userId: string, userData: UserUpdate): Promise<AdminResponse<AdminUser>> {
+  async updateUser(userId: string, userData: UserUpdate): Promise<AdminResponse> {
     try {
-      const updatedUser = await UsersApi.updateUser(userId, userData);
-      
+      // Utiliser l'API générée
+      const updatedUser = await UsersApi.userapiv1usersuseridput(userId, userData);
+
       // Convertir en AdminUser
-      const adminUser: AdminUser = {
-        ...updatedUser,
-        full_name: updatedUser.first_name && updatedUser.last_name 
-          ? `${updatedUser.first_name} ${updatedUser.last_name}` 
-          : updatedUser.username || `User ${updatedUser.telegram_id}`,
-        email: undefined,
-        site_id: undefined
-      };
+      const adminUser = convertToAdminUser(updatedUser);
 
       return {
         data: adminUser,
@@ -218,9 +197,10 @@ export const adminService = {
   /**
    * Supprime un utilisateur
    */
-  async deleteUser(userId: string): Promise<AdminResponse<void>> {
+  async deleteUser(userId: string): Promise<AdminResponse> {
     try {
-      await UsersApi.deleteUser(userId);
+      // Utiliser l'API générée
+      await UsersApi.userapiv1usersuseriddelete(userId);
       
       return {
         data: undefined,
@@ -238,10 +218,24 @@ export const adminService = {
    */
   async getPendingUsers(): Promise<AdminUser[]> {
     try {
-      // Pour l'instant, on utilise l'endpoint existant avec un filtre
-      // TODO: Remplacer par l'endpoint dédié une fois disponible
-      const users = await this.getUsers({ status: UserStatus.PENDING });
-      return users;
+      // Utiliser l'API générée
+      const pendingUsers = await AdminApi.pendingusersapiv1adminuserspendingget();
+      
+      // Convertir PendingUserResponse en AdminUser
+      return pendingUsers.map((user) => ({
+        id: user.id,
+        telegram_id: typeof user.telegram_id === 'string' ? parseInt(user.telegram_id) : user.telegram_id,
+        username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        full_name: user.full_name,
+        role: user.role,
+        status: user.status,
+        is_active: true, // Les utilisateurs en attente sont considérés comme actifs
+        site_id: undefined, // Pas disponible dans PendingUserResponse
+        created_at: user.created_at,
+        updated_at: user.created_at // Même date pour les utilisateurs en attente
+      }));
     } catch (error) {
       console.error('Erreur lors de la récupération des utilisateurs en attente:', error);
       throw error;
@@ -251,27 +245,11 @@ export const adminService = {
   /**
    * Approuve un utilisateur en attente
    */
-  async approveUser(userId: string, message?: string): Promise<AdminResponse<AdminUser>> {
+  async approveUser(userId: string, message?: string): Promise<AdminResponse> {
     try {
-      // Pour l'instant, on utilise l'endpoint de mise à jour de statut
-      // TODO: Remplacer par l'endpoint dédié une fois disponible
-      const updatedUser = await UsersApi.updateUserStatus(userId, { status: UserStatus.APPROVED });
-      
-      // Convertir en AdminUser
-      const adminUser: AdminUser = {
-        ...updatedUser,
-        full_name: updatedUser.first_name && updatedUser.last_name 
-          ? `${updatedUser.first_name} ${updatedUser.last_name}` 
-          : updatedUser.username || `User ${updatedUser.telegram_id}`,
-        email: undefined,
-        site_id: undefined
-      };
-
-      return {
-        data: adminUser,
-        message: message || 'Utilisateur approuvé avec succès',
-        success: true
-      };
+      // Utiliser l'API générée
+      const result = await AdminApi.userapiv1adminusersuseridapprovepost(userId, { message });
+      return result;
     } catch (error) {
       console.error('Erreur lors de l\'approbation de l\'utilisateur:', error);
       throw error;
@@ -281,27 +259,11 @@ export const adminService = {
   /**
    * Rejette un utilisateur en attente
    */
-  async rejectUser(userId: string, reason?: string): Promise<AdminResponse<AdminUser>> {
+  async rejectUser(userId: string, reason?: string): Promise<AdminResponse> {
     try {
-      // Pour l'instant, on utilise l'endpoint de mise à jour de statut
-      // TODO: Remplacer par l'endpoint dédié une fois disponible
-      const updatedUser = await UsersApi.updateUserStatus(userId, { status: UserStatus.REJECTED });
-      
-      // Convertir en AdminUser
-      const adminUser: AdminUser = {
-        ...updatedUser,
-        full_name: updatedUser.first_name && updatedUser.last_name 
-          ? `${updatedUser.first_name} ${updatedUser.last_name}` 
-          : updatedUser.username || `User ${updatedUser.telegram_id}`,
-        email: undefined,
-        site_id: undefined
-      };
-
-      return {
-        data: adminUser,
-        message: reason ? `Utilisateur rejeté: ${reason}` : 'Utilisateur rejeté avec succès',
-        success: true
-      };
+      // Utiliser l'API générée
+      const result = await AdminApi.userapiv1adminusersuseridrejectpost(userId, { reason });
+      return result;
     } catch (error) {
       console.error('Erreur lors du rejet de l\'utilisateur:', error);
       throw error;

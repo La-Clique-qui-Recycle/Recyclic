@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 import uuid
+import logging
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user, require_admin_role
 from recyclic_api.core.audit import log_role_change, log_admin_access
 from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.services.telegram_service import telegram_service
 from recyclic_api.schemas.admin import (
     AdminUserList, 
     AdminUser, 
@@ -20,6 +22,7 @@ from recyclic_api.schemas.admin import (
 )
 
 router = APIRouter(tags=["admin"])
+logger = logging.getLogger(__name__)
 
 # La fonction require_admin_role est maintenant importée depuis core.auth
 
@@ -234,7 +237,7 @@ def get_pending_users(
     summary="Approuver un utilisateur (Admin)",
     description="Approuve un utilisateur en attente et envoie une notification"
 )
-def approve_user(
+async def approve_user(
     user_id: str,
     approval_request: UserApprovalRequest = None,
     current_user: User = Depends(require_admin_role()),
@@ -288,8 +291,27 @@ def approve_user(
             success=True
         )
         
-        # TODO: Envoyer notification Telegram
-        # send_telegram_notification(user.telegram_id, "Votre inscription a été approuvée ! Bienvenue !")
+        # Envoyer notification Telegram à l'utilisateur
+        try:
+            user_name = user.first_name or user.username or f"User {user.telegram_id}"
+            custom_message = approval_request.message if approval_request else None
+            await telegram_service.send_user_approval_notification(
+                telegram_id=user.telegram_id,
+                user_name=user_name,
+                message=custom_message
+            )
+        except Exception as e:
+            logger.error(f"Erreur lors de l'envoi de notification d'approbation: {e}")
+        
+        # Notifier les autres admins
+        try:
+            await telegram_service.notify_admins_user_processed(
+                admin_user_id=str(current_user.id),
+                target_user_name=user_name,
+                action="approved"
+            )
+        except Exception as e:
+            logger.error(f"Erreur lors de la notification admin: {e}")
         
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
         
@@ -317,7 +339,7 @@ def approve_user(
     summary="Rejeter un utilisateur (Admin)",
     description="Rejette un utilisateur en attente"
 )
-def reject_user(
+async def reject_user(
     user_id: str,
     rejection_request: UserRejectionRequest = None,
     current_user: User = Depends(require_admin_role()),
@@ -371,9 +393,27 @@ def reject_user(
             success=True
         )
         
-        # TODO: Envoyer notification Telegram
-        # reason = rejection_request.reason if rejection_request else "Aucune raison spécifiée"
-        # send_telegram_notification(user.telegram_id, f"Votre inscription a été rejetée. Raison: {reason}")
+        # Envoyer notification Telegram à l'utilisateur
+        try:
+            user_name = user.first_name or user.username or f"User {user.telegram_id}"
+            reason = rejection_request.reason if rejection_request and rejection_request.reason else "Aucune raison spécifiée"
+            await telegram_service.send_user_rejection_notification(
+                telegram_id=user.telegram_id,
+                user_name=user_name,
+                reason=reason
+            )
+        except Exception as e:
+            logger.error(f"Erreur lors de l'envoi de notification de rejet: {e}")
+        
+        # Notifier les autres admins
+        try:
+            await telegram_service.notify_admins_user_processed(
+                admin_user_id=str(current_user.id),
+                target_user_name=user_name,
+                action="rejected"
+            )
+        except Exception as e:
+            logger.error(f"Erreur lors de la notification admin: {e}")
         
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
         reason = rejection_request.reason if rejection_request and rejection_request.reason else "Aucune raison spécifiée"

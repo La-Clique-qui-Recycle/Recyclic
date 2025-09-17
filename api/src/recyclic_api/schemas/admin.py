@@ -1,12 +1,13 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
+from uuid import UUID
 from recyclic_api.models.user import UserRole, UserStatus
 
 class AdminUser(BaseModel):
     """Schéma pour les utilisateurs dans l'interface d'administration"""
-    id: str
-    telegram_id: int
+    id: Union[str, UUID]
+    telegram_id: Union[int, str]
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -15,11 +16,20 @@ class AdminUser(BaseModel):
     role: UserRole
     status: UserStatus
     is_active: bool
-    site_id: Optional[str] = None
+    site_id: Optional[Union[str, UUID]] = None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+    
+    def model_post_init(self, __context) -> None:
+        """Convertit les UUIDs en strings après validation"""
+        if isinstance(self.id, UUID):
+            self.id = str(self.id)
+        if isinstance(self.site_id, UUID):
+            self.site_id = str(self.site_id)
+        if isinstance(self.telegram_id, str):
+            self.telegram_id = int(self.telegram_id)
 
 class UserRoleUpdate(BaseModel):
     """Schéma pour la modification du rôle d'un utilisateur"""
@@ -53,8 +63,8 @@ class AdminErrorResponse(BaseModel):
 
 class PendingUserResponse(BaseModel):
     """Schéma pour la réponse des utilisateurs en attente"""
-    id: str
-    telegram_id: int
+    id: Union[str, UUID]
+    telegram_id: Union[int, str]
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -64,6 +74,13 @@ class PendingUserResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+    
+    def model_post_init(self, __context) -> None:
+        """Convertit les UUIDs en strings après validation"""
+        if isinstance(self.id, UUID):
+            self.id = str(self.id)
+        if isinstance(self.telegram_id, str):
+            self.telegram_id = int(self.telegram_id)
 
 class UserApprovalRequest(BaseModel):
     """Schéma pour l'approbation d'un utilisateur"""
