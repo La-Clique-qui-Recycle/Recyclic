@@ -66,7 +66,7 @@ class ResetPasswordRequest(BaseModel):
     """Schéma de requête pour réinitialiser le mot de passe."""
 
     token: str = Field(..., description="Token de réinitialisation")
-    new_password: str = Field(..., description="Nouveau mot de passe", min_length=8)
+    new_password: str = Field(..., description="Nouveau mot de passe")
 
 
 class ResetPasswordResponse(BaseModel):

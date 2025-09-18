@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import health, users, sites, deposits, sales, cash_sessions, admin, monitoring, auth
+from .endpoints import health, users, sites, deposits, sales, cash_sessions, admin, monitoring, auth, email
 
 api_router = APIRouter()
 
@@ -13,3 +13,4 @@ api_router.include_router(cash_sessions.router, prefix="/cash-sessions", tags=["
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(monitoring.router, prefix="/monitoring", tags=["monitoring"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(email.router, prefix="/email", tags=["email"])

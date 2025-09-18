@@ -48,9 +48,7 @@ Cette story introduit la fonctionnalité d'auto-inscription. Elle nécessite des
 
 ### Validation du Scrum Master (2025-09-17)
 
-**Statut :** ✅ **VALIDÉ ET FERMÉ**
-
-**Vérification :** Après une correction, les fichiers de test `frontend/src/pages/__tests__/Signup.test.tsx` et `api/tests/api/test_signup_endpoint.py` sont maintenant présents et leur contenu est excellent. La fonctionnalité est complète et couverte par des tests robustes. La story est terminée.
+**Statut :** Done
 
 ---
 

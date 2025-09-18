@@ -2,6 +2,22 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { AdminUser, UserRole, adminService, UsersFilter } from '../services/adminService';
 
+// Types pour l'historique
+interface HistoryEvent {
+  id: string;
+  type: 'ADMINISTRATION' | 'VENTE' | 'DÉPÔT' | 'CONNEXION' | 'AUTRE';
+  description: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+
+interface HistoryFilters {
+  startDate?: Date | null;
+  endDate?: Date | null;
+  eventType?: string[];
+  search?: string;
+}
+
 interface AdminState {
   // State
   users: AdminUser[];
@@ -10,6 +26,12 @@ interface AdminState {
   filters: UsersFilter;
   selectedUser: AdminUser | null;
   
+  // History state
+  userHistory: HistoryEvent[];
+  historyLoading: boolean;
+  historyError: string | null;
+  historyFilters: HistoryFilters;
+  
   // Actions
   setUsers: (users: AdminUser[]) => void;
   setLoading: (loading: boolean) => void;
@@ -17,11 +39,20 @@ interface AdminState {
   setFilters: (filters: UsersFilter) => void;
   setSelectedUser: (user: AdminUser | null) => void;
   
+  // History actions
+  setUserHistory: (history: HistoryEvent[]) => void;
+  setHistoryLoading: (loading: boolean) => void;
+  setHistoryError: (error: string | null) => void;
+  setHistoryFilters: (filters: HistoryFilters) => void;
+  
   // Async actions
   fetchUsers: () => Promise<void>;
   updateUserRole: (userId: string, role: UserRole) => Promise<boolean>;
   refreshUsers: () => Promise<void>;
   filterUsers: (filters: UsersFilter) => Promise<void>;
+  
+  // History async actions
+  fetchUserHistory: (userId: string, filters?: HistoryFilters) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -36,6 +67,12 @@ export const useAdminStore = create<AdminState>()(
         limit: 20
       },
       selectedUser: null,
+      
+      // History initial state
+      userHistory: [],
+      historyLoading: false,
+      historyError: null,
+      historyFilters: {},
 
       // Setters
       setUsers: (users) => set({ users }),
@@ -43,6 +80,12 @@ export const useAdminStore = create<AdminState>()(
       setError: (error) => set({ error }),
       setFilters: (filters) => set({ filters }),
       setSelectedUser: (selectedUser) => set({ selectedUser }),
+      
+      // History setters
+      setUserHistory: (userHistory) => set({ userHistory }),
+      setHistoryLoading: (historyLoading) => set({ historyLoading }),
+      setHistoryError: (historyError) => set({ historyError }),
+      setHistoryFilters: (historyFilters) => set({ historyFilters }),
 
       // Async actions
       fetchUsers: async () => {
@@ -98,6 +141,24 @@ export const useAdminStore = create<AdminState>()(
           const errorMessage = error instanceof Error ? error.message : 'Erreur lors du filtrage';
           set({ error: errorMessage, loading: false });
         }
+      },
+
+      // History async actions
+      fetchUserHistory: async (userId: string, filters: HistoryFilters = {}) => {
+        set({ historyLoading: true, historyError: null });
+        
+        try {
+          const history = await adminService.getUserHistory(userId, filters);
+          
+          set({ 
+            userHistory: history, 
+            historyLoading: false,
+            historyFilters: filters
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Erreur lors du chargement de l\'historique';
+          set({ historyError: errorMessage, historyLoading: false });
+        }
       }
     }),
     {
@@ -105,5 +166,8 @@ export const useAdminStore = create<AdminState>()(
     }
   )
 );
+
+// Export des types pour utilisation dans les composants
+export type { HistoryEvent, HistoryFilters };
 
 export default useAdminStore;

@@ -56,7 +56,6 @@ class Deposit(Base):
     # Relationships
     user = relationship("User", back_populates="deposits")
     site = relationship("Site", back_populates="deposits")
-    sales = relationship("Sale", back_populates="deposit")
 
     def __repr__(self):
         return f"<Deposit(id={self.id}, category={self.category}, weight={self.weight})>"

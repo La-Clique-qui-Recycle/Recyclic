@@ -97,7 +97,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
   }
 
   return (
-    <Table data-testid="user-list-table">
+    <Table data-testid="user-list-table" striped highlightOnHover>
       <Table.Thead>
         <Table.Tr>
           <Table.Th>Nom</Table.Th>

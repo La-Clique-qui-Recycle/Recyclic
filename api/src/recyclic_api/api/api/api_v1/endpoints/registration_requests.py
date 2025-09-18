@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from ....core.database import get_db
@@ -107,7 +107,7 @@ async def update_registration_request(
     
     # Set reviewed timestamp if status is being changed
     if request_update.status and request_update.status != db_request.status:
-        db_request.reviewed_at = datetime.utcnow()
+        db_request.reviewed_at = datetime.now(timezone.utc)
     
     db.commit()
     db.refresh(db_request)

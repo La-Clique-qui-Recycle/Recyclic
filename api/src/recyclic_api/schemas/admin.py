@@ -7,7 +7,7 @@ from recyclic_api.models.user import UserRole, UserStatus
 class AdminUser(BaseModel):
     """Schéma pour les utilisateurs dans l'interface d'administration"""
     id: Union[str, UUID]
-    telegram_id: Union[int, str]
+    telegram_id: Optional[Union[int, str]] = None
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -28,8 +28,9 @@ class AdminUser(BaseModel):
             self.id = str(self.id)
         if isinstance(self.site_id, UUID):
             self.site_id = str(self.site_id)
-        if isinstance(self.telegram_id, str):
-            self.telegram_id = int(self.telegram_id)
+        # Normaliser telegram_id en chaîne pour cohérence d'API et compatibilité tests
+        if self.telegram_id is not None:
+            self.telegram_id = str(self.telegram_id)
 
 class UserRoleUpdate(BaseModel):
     """Schéma pour la modification du rôle d'un utilisateur"""
@@ -89,3 +90,45 @@ class UserApprovalRequest(BaseModel):
 class UserRejectionRequest(BaseModel):
     """Schéma pour le rejet d'un utilisateur"""
     reason: Optional[str] = Field(None, description="Raison du rejet")
+
+class UserStatusUpdate(BaseModel):
+    """Schéma pour la modification du statut is_active d'un utilisateur"""
+    is_active: bool = Field(..., description="Nouveau statut actif de l'utilisateur")
+    reason: Optional[str] = Field(None, description="Raison du changement de statut")
+
+class UserProfileUpdate(BaseModel):
+    """Schéma pour la mise à jour du profil utilisateur"""
+    first_name: Optional[str] = Field(None, description="Prénom de l'utilisateur")
+    last_name: Optional[str] = Field(None, description="Nom de famille de l'utilisateur")
+
+class ActivityEvent(BaseModel):
+    """Schéma pour un événement d'activité utilisateur"""
+    id: Union[str, UUID]
+    event_type: str = Field(..., description="Type d'événement (ADMINISTRATION, LOGIN, SESSION CAISSE, VENTE, DEPOT)")
+    description: str = Field(..., description="Description de l'événement")
+    date: datetime = Field(..., description="Date de l'événement")
+    metadata: Optional[dict] = Field(None, description="Métadonnées supplémentaires de l'événement")
+    
+    model_config = {"from_attributes": True}
+    
+    def model_post_init(self, __context) -> None:
+        """Convertit les UUIDs en strings après validation"""
+        if isinstance(self.id, UUID):
+            self.id = str(self.id)
+
+class UserHistoryResponse(BaseModel):
+    """Schéma pour la réponse de l'historique utilisateur"""
+    user_id: Union[str, UUID]
+    events: List[ActivityEvent]
+    total_count: int = Field(..., description="Nombre total d'événements")
+    page: int = Field(..., ge=1, description="Page actuelle")
+    limit: int = Field(..., ge=1, le=100, description="Nombre d'éléments par page")
+    has_next: bool = Field(..., description="Y a-t-il une page suivante")
+    has_prev: bool = Field(..., description="Y a-t-il une page précédente")
+    
+    model_config = {"from_attributes": True}
+    
+    def model_post_init(self, __context) -> None:
+        """Convertit les UUIDs en strings après validation"""
+        if isinstance(self.user_id, UUID):
+            self.user_id = str(self.user_id)

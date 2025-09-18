@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, func
 from typing import List, Optional, Tuple, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from uuid import UUID
 from recyclic_api.models.user import User
 from recyclic_api.schemas.cash_session import CashSessionFilters
 
@@ -17,14 +18,18 @@ class CashSessionService:
     def create_session(self, operator_id: str, site_id: str, initial_amount: float) -> CashSession:
         """Crée une nouvelle session de caisse."""
         # Vérifier que l'opérateur existe
-        operator = self.db.query(User).filter(User.id == operator_id).first()
+        # Ensure UUID types for DB comparisons
+        operator_uuid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
+        site_uuid = UUID(str(site_id)) if not isinstance(site_id, UUID) else site_id
+
+        operator = self.db.query(User).filter(User.id == operator_uuid).first()
         if not operator:
             raise ValueError("Opérateur non trouvé")
         
         # Créer la session
         cash_session = CashSession(
-            operator_id=operator_id,
-            site_id=site_id,
+            operator_id=operator_uuid,
+            site_id=site_uuid,
             initial_amount=initial_amount,
             current_amount=initial_amount,
             status=CashSessionStatus.OPEN
@@ -38,13 +43,15 @@ class CashSessionService:
     
     def get_session_by_id(self, session_id: str) -> Optional[CashSession]:
         """Récupère une session par son ID."""
-        return self.db.query(CashSession).filter(CashSession.id == session_id).first()
+        sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
+        return self.db.query(CashSession).filter(CashSession.id == sid).first()
     
     def get_open_session_by_operator(self, operator_id: str) -> Optional[CashSession]:
         """Récupère la session ouverte d'un opérateur."""
+        oid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
         return self.db.query(CashSession).filter(
             and_(
-                CashSession.operator_id == operator_id,
+                CashSession.operator_id == oid,
                 CashSession.status == CashSessionStatus.OPEN
             )
         ).first()
@@ -58,7 +65,8 @@ class CashSessionService:
             query = query.filter(CashSession.status == filters.status)
         
         if filters.operator_id:
-            query = query.filter(CashSession.operator_id == filters.operator_id)
+            oid = UUID(str(filters.operator_id)) if not isinstance(filters.operator_id, UUID) else filters.operator_id
+            query = query.filter(CashSession.operator_id == oid)
         
         if filters.date_from:
             query = query.filter(CashSession.opened_at >= filters.date_from)
@@ -88,7 +96,7 @@ class CashSessionService:
         
         # Si on ferme la session, mettre à jour la date de fermeture
         if update_data.status == CashSessionStatus.CLOSED:
-            session.closed_at = datetime.now(datetime.timezone.utc)
+            session.closed_at = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(session)
@@ -105,7 +113,7 @@ class CashSessionService:
             return session
         
         session.status = CashSessionStatus.CLOSED
-        session.closed_at = datetime.now(datetime.timezone.utc)
+        session.closed_at = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(session)
@@ -179,8 +187,9 @@ class CashSessionService:
     
     def get_operator_sessions(self, operator_id: str, limit: int = 10) -> List[CashSession]:
         """Récupère les dernières sessions d'un opérateur."""
+        oid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
         return self.db.query(CashSession).filter(
-            CashSession.operator_id == operator_id
+            CashSession.operator_id == oid
         ).order_by(desc(CashSession.opened_at)).limit(limit).all()
     
     def get_daily_sessions(self, date: datetime) -> List[CashSession]:

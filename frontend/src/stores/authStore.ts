@@ -82,12 +82,34 @@ export const useAuthStore = create<AuthState>()(
               error: null 
             });
           } catch (error: any) {
-            const errorMessage = error?.detail || error?.message || 'Erreur de connexion';
-            set({ 
-              error: errorMessage, 
-              loading: false 
+            let errorMessage = 'Erreur de connexion';
+
+            // L'interceptor Axios retourne directement error.response.data
+            if (error?.detail) {
+              // Gérer les erreurs de validation (array)
+              if (Array.isArray(error.detail)) {
+                errorMessage = error.detail.map((e: any) => e.msg).join(', ');
+              } else {
+                errorMessage = error.detail;
+              }
+            } else if (error?.response?.data?.detail) {
+              // Fallback si l'interceptor n'a pas fonctionné
+              if (Array.isArray(error.response.data.detail)) {
+                errorMessage = error.response.data.detail.map((e: any) => e.msg).join(', ');
+              } else {
+                errorMessage = error.response.data.detail;
+              }
+            } else if (error?.message) {
+              errorMessage = error.message;
+            } else if (typeof error === 'string') {
+              errorMessage = error;
+            }
+
+            set({
+              error: errorMessage,
+              loading: false
             });
-            throw error;
+            throw new Error(errorMessage);
           }
         },
 

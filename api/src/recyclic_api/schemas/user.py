@@ -28,9 +28,19 @@ class UserUpdate(BaseModel):
 class UserStatusUpdate(BaseModel):
     status: UserStatus
 
+from pydantic import field_validator, ConfigDict
+
+
 class UserResponse(UserBase):
+    # Override to allow null telegram_id in DB
+    telegram_id: Optional[str] = None
     id: str
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('id', 'site_id', mode='before')
+    @classmethod
+    def _uuid_to_str(cls, v):
+        return str(v) if v is not None else v

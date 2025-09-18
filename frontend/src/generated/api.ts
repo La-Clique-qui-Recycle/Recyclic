@@ -1,7 +1,7 @@
 /**
  * Client API généré automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-17T00:08:31.870Z
+ * Généré le: 2025-09-17T23:34:24.042Z
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -20,7 +20,7 @@ import {
 // CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4433/api/v1';
+const API_BASE_URL = '/api/v1';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -33,10 +33,7 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor pour ajouter l'auth si nécessaire
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // TODO: Ajouter le token d'authentification si nécessaire
     return config;
   },
   (error) => {
@@ -223,38 +220,6 @@ export class SalesApi {
     const response: AxiosResponse<SaleResponse> = await apiClient.get(`/api/v1/sales/${sale_id}`);
     return response.data;
   }
-
-    /**
-   * Create Direct Sale
-   */
-  static async directsaleapiv1salesdirectpost(data?: any): Promise<SaleDirectResponse> {
-    const response: AxiosResponse<SaleDirectResponse> = await apiClient.post(`/api/v1/sales/direct`, data);
-    return response.data;
-  }
-
-    /**
-   * Get Direct Sale
-   */
-  static async directsaleapiv1salesdirectsaleidget(sale_id): Promise<SaleDirectResponse> {
-    const response: AxiosResponse<SaleDirectResponse> = await apiClient.get(`/api/v1/sales/direct/${sale_id}`);
-    return response.data;
-  }
-
-    /**
-   * Delete Direct Sale
-   */
-  static async directsaleapiv1salesdirectsaleiddelete(sale_id): Promise<any> {
-    const response: AxiosResponse<any> = await apiClient.delete(`/api/v1/sales/direct/${sale_id}`);
-    return response.data;
-  }
-
-    /**
-   * Get Direct Sales By Session
-   */
-  static async directsalesbysessionapiv1salesdirectsessioncashsessionidget(cash_session_id): Promise<SaleDirectResponse[]> {
-    const response: AxiosResponse<SaleDirectResponse[]> = await apiClient.get(`/api/v1/sales/direct/session/${cash_session_id}`);
-    return response.data;
-  }
 }
 export class CashSessionsApi {
     /**
@@ -356,6 +321,38 @@ export class AdminApi {
 }
 export class MonitoringApi {
     /**
+   * Send Test Email
+   */
+  static async testemailapiv1monitoringtestemailpost(data?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/monitoring/test-email`, data);
+    return response.data;
+  }
+
+    /**
+   * Get Email Metrics
+   */
+  static async emailmetricsapiv1monitoringemailmetricsget(params?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/monitoring/email/metrics?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Get Email Metrics Prometheus
+   */
+  static async emailmetricsprometheusapiv1monitoringemailmetricsprometheusget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/monitoring/email/metrics/prometheus`);
+    return response.data;
+  }
+
+    /**
+   * Reset Email Metrics
+   */
+  static async emailmetricsapiv1monitoringemailmetricsresetpost(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/monitoring/email/metrics/reset`);
+    return response.data;
+  }
+
+    /**
    * Get Classification Performance
    */
   static async classificationperformanceapiv1monitoringclassificationperformanceget(params?: any): Promise<any> {
@@ -402,13 +399,94 @@ export class MonitoringApi {
     const response: AxiosResponse<any> = await apiClient.post(`/api/v1/monitoring/classification/cache/export`);
     return response.data;
   }
+
+    /**
+   * Get Auth Metrics
+   */
+  static async authmetricsapiv1monitoringauthmetricsget(params?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/monitoring/auth/metrics?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Get Auth Metrics Prometheus
+   */
+  static async authmetricsprometheusapiv1monitoringauthmetricsprometheusget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/monitoring/auth/metrics/prometheus`);
+    return response.data;
+  }
+
+    /**
+   * Reset Auth Metrics
+   */
+  static async authmetricsapiv1monitoringauthmetricsresetpost(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/monitoring/auth/metrics/reset`);
+    return response.data;
+  }
 }
 export class AuthApi {
     /**
    * Login
    */
   static async apiv1authloginpost(data?: any): Promise<LoginResponse> {
-    const response: AxiosResponse<LoginResponse> = await apiClient.post(`/api/v1/auth/login`, data);
+    const response: AxiosResponse<LoginResponse> = await apiClient.post(`/auth/login`, data);
+    return response.data;
+  }
+
+    /**
+   * Signup
+   */
+  static async apiv1authsignuppost(data?: any): Promise<SignupResponse> {
+    const response: AxiosResponse<SignupResponse> = await apiClient.post(`/api/v1/auth/signup`, data);
+    return response.data;
+  }
+
+    /**
+   * Forgot Password
+   */
+  static async passwordapiv1authforgotpasswordpost(data?: any): Promise<ForgotPasswordResponse> {
+    const response: AxiosResponse<ForgotPasswordResponse> = await apiClient.post(`/api/v1/auth/forgot-password`, data);
+    return response.data;
+  }
+
+    /**
+   * Reset Password
+   */
+  static async passwordapiv1authresetpasswordpost(data?: any): Promise<ResetPasswordResponse> {
+    const response: AxiosResponse<ResetPasswordResponse> = await apiClient.post(`/api/v1/auth/reset-password`, data);
+    return response.data;
+  }
+}
+export class EmailApi {
+    /**
+   * Brevo Webhook
+   */
+  static async webhookapiv1emailwebhookpost(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/email/webhook`);
+    return response.data;
+  }
+
+    /**
+   * Get Email Status
+   */
+  static async emailstatusapiv1emailstatusemailaddressget(email_address, params?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/email/status/${email_address}?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Get Email Events
+   */
+  static async emaileventsapiv1emaileventsemailaddressget(email_address, params?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/email/events/${email_address}?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Email Service Health
+   */
+  static async servicehealthapiv1emailhealthget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/email/health`);
     return response.data;
   }
 }
@@ -429,19 +507,6 @@ export class DefaultApi {
     return response.data;
   }
 }
-
-// ============================================================================
-// RE-EXPORT DES TYPES
-// ============================================================================
-
-// Export des types de base nécessaires pour l'API
-export {
-  UserRole,
-  UserStatus,
-  LoginRequest,
-  LoginResponse,
-  AuthUser
-} from './types';
 
 // ============================================================================
 // EXPORT PAR DÉFAUT

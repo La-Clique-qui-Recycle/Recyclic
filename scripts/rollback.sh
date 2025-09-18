@@ -40,6 +40,13 @@ log_metrics() {
     # Créer le répertoire de logs s'il n'existe pas
     mkdir -p logs
     
+    # Collecter des métriques système détaillées
+    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 2>/dev/null || echo "N/A")
+    local memory_usage=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}' 2>/dev/null || echo "N/A")
+    local disk_usage=$(df -h / | awk 'NR==2{print $5}' | cut -d'%' -f1 2>/dev/null || echo "N/A")
+    local docker_containers=$(docker ps -q | wc -l 2>/dev/null || echo "0")
+    local docker_images=$(docker images | wc -l 2>/dev/null || echo "0")
+    
     # Enregistrer les métriques dans un fichier JSON
     cat >> logs/rollback-metrics.json << EOF
 {
@@ -49,9 +56,200 @@ log_metrics() {
   "duration_seconds": "$duration",
   "status": "$status",
   "hostname": "$(hostname)",
-  "user": "$(whoami)"
+  "user": "$(whoami)",
+  "system_metrics": {
+    "cpu_usage_percent": "$cpu_usage",
+    "memory_usage_percent": "$memory_usage",
+    "disk_usage_percent": "$disk_usage",
+    "docker_containers_running": "$docker_containers",
+    "docker_images_count": "$docker_images"
+  },
+  "performance": {
+    "rollback_speed": "$(calculate_rollback_speed $duration)",
+    "efficiency_score": "$(calculate_efficiency_score $duration $status)"
+  }
 }
 EOF
+}
+
+# Fonction pour calculer la vitesse de rollback
+calculate_rollback_speed() {
+    local duration="$1"
+    if [ "$duration" -lt 60 ]; then
+        echo "fast"
+    elif [ "$duration" -lt 180 ]; then
+        echo "normal"
+    else
+        echo "slow"
+    fi
+}
+
+# Fonction pour calculer un score d'efficacité
+calculate_efficiency_score() {
+    local duration="$1"
+    local status="$2"
+    
+    if [ "$status" = "success" ]; then
+        if [ "$duration" -lt 60 ]; then
+            echo "100"
+        elif [ "$duration" -lt 120 ]; then
+            echo "90"
+        elif [ "$duration" -lt 180 ]; then
+            echo "80"
+        else
+            echo "70"
+        fi
+    else
+        echo "0"
+    fi
+}
+
+# Fonction de notifications
+send_notifications() {
+    local status="$1"
+    local version="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local hostname=$(hostname)
+    local user=$(whoami)
+    
+    # Message de base
+    local message=""
+    local emoji=""
+    
+    if [ "$status" = "success" ]; then
+        emoji="✅"
+        message="Rollback réussi vers la version $version sur $hostname"
+    elif [ "$status" = "failed" ]; then
+        emoji="❌"
+        message="Échec du rollback vers la version $version sur $hostname"
+    elif [ "$status" = "cancelled" ]; then
+        emoji="⚠️"
+        message="Rollback annulé par $user sur $hostname"
+    fi
+    
+    # Notification console
+    log "$emoji NOTIFICATION: $message"
+    
+    # Notification Telegram (si configuré)
+    if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$ADMIN_TELEGRAM_IDS" ]; then
+        send_telegram_notification "$status" "$version" "$message" "$timestamp"
+    fi
+    
+    # Notification email (si configuré)
+    if [ -n "$NOTIFICATION_EMAIL" ]; then
+        send_email_notification "$status" "$version" "$message" "$timestamp"
+    fi
+}
+
+# Fonction de notification Telegram
+send_telegram_notification() {
+    local status="$1"
+    local version="$2"
+    local message="$3"
+    local timestamp="$4"
+    
+    # Emoji selon le statut
+    local emoji=""
+    if [ "$status" = "success" ]; then
+        emoji="✅"
+    elif [ "$status" = "failed" ]; then
+        emoji="❌"
+    elif [ "$status" = "cancelled" ]; then
+        emoji="⚠️"
+    fi
+    
+    # Construire le message formaté
+    local telegram_message="$emoji *ROLLBACK NOTIFICATION*
+
+$message
+
+📋 *Détails:*
+• Version: \`$version\`
+• Timestamp: \`$timestamp\`
+• Hostname: \`$(hostname)\`
+• User: \`$(whoami)\`
+
+🔗 *Logs:* \`logs/rollback-metrics.json\`"
+    
+    # Envoyer à tous les admins configurés
+    IFS=',' read -ra ADMIN_IDS <<< "$ADMIN_TELEGRAM_IDS"
+    for admin_id in "${ADMIN_IDS[@]}"; do
+        # Nettoyer l'ID (enlever les espaces)
+        admin_id=$(echo "$admin_id" | tr -d ' ')
+        
+        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+            -d "chat_id=$admin_id" \
+            -d "text=$telegram_message" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true" \
+            2>/dev/null || log_warning "Impossible d'envoyer la notification Telegram à l'admin $admin_id"
+    done
+}
+
+# Fonction de notification email
+send_email_notification() {
+    local status="$1"
+    local version="$2"
+    local message="$3"
+    local timestamp="$4"
+    
+    local subject="[Recyclic] Rollback $status - Version $version"
+    local body="
+Rollback Status: $status
+Version: $version
+Message: $message
+Timestamp: $timestamp
+Hostname: $(hostname)
+User: $(whoami)
+
+Logs disponibles dans: logs/rollback-metrics.json
+    "
+    
+    echo "$body" | mail -s "$subject" "$NOTIFICATION_EMAIL" 2>/dev/null || log_warning "Impossible d'envoyer l'email de notification"
+}
+
+# Fonction d'alerte d'urgence
+send_emergency_alert() {
+    local version="$1"
+    local error_message="$2"
+    
+    # Message d'urgence pour Telegram
+    local emergency_message="🚨 *ALERTE D'URGENCE - ROLLBACK ÉCHOUÉ* 🚨
+
+❌ Le rollback vers la version \`$version\` a échoué !
+
+🔍 *Erreur détectée:*
+\`$error_message\`
+
+⚠️ *Action requise immédiatement:*
+• Vérifier l'état des services
+• Consulter les logs détaillés
+• Contacter l'équipe de développement
+
+🕐 *Timestamp:* \`$(date '+%Y-%m-%d %H:%M:%S')\`
+🖥️ *Hostname:* \`$(hostname)\`
+👤 *User:* \`$(whoami)\`
+
+🔗 *Logs d'urgence:* \`logs/rollback-metrics.json\`"
+    
+    # Envoyer l'alerte d'urgence à tous les admins
+    if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$ADMIN_TELEGRAM_IDS" ]; then
+        IFS=',' read -ra ADMIN_IDS <<< "$ADMIN_TELEGRAM_IDS"
+        for admin_id in "${ADMIN_IDS[@]}"; do
+            admin_id=$(echo "$admin_id" | tr -d ' ')
+            
+            # Envoyer l'alerte avec priorité haute
+            curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+                -d "chat_id=$admin_id" \
+                -d "text=$emergency_message" \
+                -d "parse_mode=Markdown" \
+                -d "disable_web_page_preview=true" \
+                2>/dev/null || log_warning "Impossible d'envoyer l'alerte d'urgence à l'admin $admin_id"
+        done
+    fi
+    
+    # Log de l'alerte d'urgence
+    log_error "ALERTE D'URGENCE: Rollback échoué - $error_message"
 }
 
 # Vérifier que nous sommes dans le bon répertoire
@@ -133,6 +331,8 @@ rollback_to_version() {
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         log_metrics "rollback_failed" "$target_version" "$duration" "error"
+        send_notifications "failed" "$target_version"
+        send_emergency_alert "$target_version" "Version $target_version n'existe pas ou est incomplète"
         exit 1
     fi
     
@@ -165,6 +365,8 @@ EOF
     else
         log_error "Échec du rollback - les services ne sont pas démarrés correctement"
         log_metrics "rollback_failed" "$target_version" "$duration" "error"
+        send_notifications "failed" "$target_version"
+        send_emergency_alert "$target_version" "Services ne sont pas démarrés correctement après rollback"
         exit 1
     fi
     
@@ -218,11 +420,15 @@ main() {
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         log "Rollback annulé"
+        send_notifications "cancelled" "$target_version"
         exit 0
     fi
     
     # Effectuer le rollback
     rollback_to_version "$target_version"
+    
+    # Envoyer des notifications
+    send_notifications "success" "$target_version"
     
     log_success "Rollback terminé avec succès!"
 }

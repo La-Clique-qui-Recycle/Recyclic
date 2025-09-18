@@ -9,6 +9,8 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.site import Site
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.core.auth import create_access_token
+from recyclic_api.core.security import hash_password
+from recyclic_api.schemas.cash_session import CashSessionResponse, CashSessionListResponse, CashSessionStatus as SchemaCashSessionStatus
 
 
 @pytest.fixture
@@ -22,7 +24,8 @@ def test_cashier():
         "last_name": "Cashier",
         "role": UserRole.CASHIER,
         "status": UserStatus.APPROVED,
-        "is_active": True
+        "is_active": True,
+        "hashed_password": hash_password("testpassword123")
     }
 
 
@@ -37,7 +40,8 @@ def test_admin():
         "last_name": "Admin",
         "role": UserRole.ADMIN,
         "status": UserStatus.APPROVED,
-        "is_active": True
+        "is_active": True,
+        "hashed_password": hash_password("testpassword123")
     }
 
 @pytest.fixture
@@ -66,14 +70,14 @@ def admin_token(test_admin):
 class TestCashSessionEndpoints:
     """Tests pour les endpoints des sessions de caisse."""
     
-    def test_create_cash_session_success(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db):
+    def test_create_cash_session_success(self, client: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de création d'une session de caisse avec succès."""
         # Créer l'utilisateur et le site en base de données
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
 
         # Données de la session
         session_data = {
@@ -83,7 +87,7 @@ class TestCashSessionEndpoints:
         }
         
         # Créer la session
-        response = client_with_jwt_auth.post(
+        response = client.post(
             "/api/v1/cash-sessions/",
             json=session_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
@@ -94,9 +98,21 @@ class TestCashSessionEndpoints:
         assert response.status_code == 201
         data = response.json()
         
-        assert data["operator_id"] == str(test_cashier["id"])
-        assert data["initial_amount"] == 50.0
-        assert data["current_amount"] == 50.0
+        # Validation du schéma Pydantic de la réponse
+        try:
+            validated_session = CashSessionResponse(**data)
+        except Exception as e:
+            pytest.fail(f"Validation Pydantic échouée pour la session de caisse: {e}")
+        
+        # Vérifications sur le contenu
+        assert validated_session.operator_id == str(test_cashier["id"])
+        assert validated_session.site_id == str(test_site["id"])
+        assert validated_session.initial_amount == 50.0
+        assert validated_session.current_amount == 50.0
+        assert validated_session.status == SchemaCashSessionStatus.OPEN
+        assert validated_session.opened_at is not None
+        assert validated_session.closed_at is None
+        assert validated_session.id is not None
         assert data["status"] == "open"
         assert "id" in data
         assert "opened_at" in data
@@ -112,14 +128,14 @@ class TestCashSessionEndpoints:
         
         assert response.status_code == 403
     
-    def test_create_cash_session_invalid_amount(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db):
+    def test_create_cash_session_invalid_amount(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de création d'une session avec un montant invalide."""
         # Créer l'utilisateur et le site en base de données
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
 
         session_data = {
             "operator_id": str(str(test_cashier["id"])),
@@ -135,12 +151,12 @@ class TestCashSessionEndpoints:
         
         assert response.status_code == 422  # Validation error
     
-    def test_get_cash_sessions_list(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db):
+    def test_get_cash_sessions_list(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
         """Test de récupération de la liste des sessions."""
         # Créer l'utilisateur admin en base de données
         admin_user = User(**test_admin)
-        db.add(admin_user)
-        db.commit()
+        db_session.add(admin_user)
+        db_session.commit()
         
         response = client_with_jwt_auth.get(
             "/api/v1/cash-sessions/",
@@ -156,12 +172,12 @@ class TestCashSessionEndpoints:
         assert "limit" in data
         assert isinstance(data["data"], list)
     
-    def test_get_cash_sessions_with_filters(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db):
+    def test_get_cash_sessions_with_filters(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
         """Test de récupération des sessions avec filtres."""
         # Créer l'utilisateur admin en base de données
         admin_user = User(**test_admin)
-        db.add(admin_user)
-        db.commit()
+        db_session.add(admin_user)
+        db_session.commit()
         
         response = client_with_jwt_auth.get(
             "/api/v1/cash-sessions/?limit=10",
@@ -176,14 +192,14 @@ class TestCashSessionEndpoints:
         for session in data["data"]:
             assert session["status"] == "open"
     
-    def test_get_current_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db):
+    def test_get_current_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de récupération de la session courante."""
         # Créer l'utilisateur et le site en base de données
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
         
         # D'abord créer une session
         session_data = {
@@ -211,14 +227,14 @@ class TestCashSessionEndpoints:
         assert data["operator_id"] == str(test_cashier["id"])
         assert data["status"] == "open"
     
-    def test_get_cash_session_by_id(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db):
+    def test_get_cash_session_by_id(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de récupération d'une session par ID."""
         # Créer l'utilisateur et le site en base de données
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
         
         # Créer une session
         session_data = {
@@ -246,12 +262,12 @@ class TestCashSessionEndpoints:
         assert data["id"] == session_id
         assert data["operator_id"] == str(test_cashier["id"])
     
-    def test_get_cash_session_not_found(self, client_with_jwt_auth: TestClient, test_cashier, cashier_token, db):
+    def test_get_cash_session_not_found(self, client_with_jwt_auth: TestClient, test_cashier, cashier_token, db_session):
         """Test de récupération d'une session inexistante."""
         # Créer l'utilisateur caissier en base de données
         cashier_user = User(**test_cashier)
-        db.add(cashier_user)
-        db.commit()
+        db_session.add(cashier_user)
+        db_session.commit()
         
         response = client_with_jwt_auth.get(
             "/api/v1/cash-sessions/00000000-0000-0000-0000-000000000000",
@@ -260,14 +276,14 @@ class TestCashSessionEndpoints:
         
         assert response.status_code == 404
     
-    def test_update_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db):
+    def test_update_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de mise à jour d'une session."""
         # Créer l'utilisateur et le site en base de données
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
         
         # Créer une session
         session_data = {
@@ -303,14 +319,14 @@ class TestCashSessionEndpoints:
         assert data["total_sales"] == 25.0
         assert data["total_items"] == 3
     
-    def test_close_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db):
+    def test_close_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de fermeture d'une session."""
         # Créer l'utilisateur et le site en base de données
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
         
         # Créer une session
         session_data = {
@@ -338,14 +354,14 @@ class TestCashSessionEndpoints:
         assert data["status"] == "closed"
         assert data["closed_at"] is not None
     
-    def test_close_already_closed_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db):
+    def test_close_already_closed_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de fermeture d'une session déjà fermée."""
         # Créer l'utilisateur et le site en base de données
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
         
         # Créer et fermer une session
         session_data = {
@@ -377,12 +393,12 @@ class TestCashSessionEndpoints:
         assert response.status_code == 400
         assert "déjà fermée" in response.json()["detail"]
     
-    def test_get_cash_session_stats(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db):
+    def test_get_cash_session_stats(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
         """Test de récupération des statistiques des sessions."""
         # Créer l'utilisateur admin en base de données
         admin_user = User(**test_admin)
-        db.add(admin_user)
-        db.commit()
+        db_session.add(admin_user)
+        db_session.commit()
         
         response = client_with_jwt_auth.get(
             "/api/v1/cash-sessions/stats/summary",
@@ -399,16 +415,16 @@ class TestCashSessionEndpoints:
         assert "total_items" in data
         assert "average_session_duration" in data
     
-    def test_cashier_cannot_access_other_sessions(self, client_with_jwt_auth: TestClient, test_cashier, test_admin, test_site, cashier_token, db):
+    def test_cashier_cannot_access_other_sessions(self, client_with_jwt_auth: TestClient, test_cashier, test_admin, test_site, cashier_token, db_session):
         """Test qu'un caissier ne peut pas accéder aux sessions d'autres caissiers."""
         # Créer les utilisateurs et le site en base de données
         cashier_user = User(**test_cashier)
         admin_user = User(**test_admin)
         site = Site(**test_site)
-        db.add(cashier_user)
-        db.add(admin_user)
-        db.add(site)
-        db.commit()
+        db_session.add(cashier_user)
+        db_session.add(admin_user)
+        db_session.add(site)
+        db_session.commit()
         
         # Créer une session pour l'admin
         admin_session_data = {
@@ -431,18 +447,18 @@ class TestCashSessionEndpoints:
 class TestCashSessionService:
     """Tests pour le service des sessions de caisse."""
     
-    def test_create_session(self, db: Session, test_cashier, test_site):
+    def test_create_session(self, db_session: Session, test_cashier, test_site):
         """Test de création d'une session via le service."""
         from recyclic_api.services.cash_session_service import CashSessionService
         
-        service = CashSessionService(db)
+        service = CashSessionService(db_session)
         
         # Créer l'utilisateur et le site en base
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
         
         # Créer la session
         session = service.create_session(
@@ -458,18 +474,18 @@ class TestCashSessionService:
         assert session.status == CashSessionStatus.OPEN
         assert session.id is not None
     
-    def test_get_open_session_by_operator(self, db: Session, test_cashier, test_site):
+    def test_get_open_session_by_operator(self, db_session: Session, test_cashier, test_site):
         """Test de récupération de la session ouverte d'un opérateur."""
         from recyclic_api.services.cash_session_service import CashSessionService
 
-        service = CashSessionService(db)
+        service = CashSessionService(db_session)
 
         # Créer l'utilisateur, le site et la session
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
 
         session = service.create_session(
             operator_id=str(test_cashier["id"]),
@@ -484,18 +500,18 @@ class TestCashSessionService:
         assert open_session.id == session.id
         assert open_session.status == CashSessionStatus.OPEN
     
-    def test_close_session(self, db: Session, test_cashier, test_site):
+    def test_close_session(self, db_session: Session, test_cashier, test_site):
         """Test de fermeture d'une session."""
         from recyclic_api.services.cash_session_service import CashSessionService
 
-        service = CashSessionService(db)
+        service = CashSessionService(db_session)
 
         # Créer l'utilisateur, le site et la session
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
 
         session = service.create_session(
             operator_id=str(test_cashier["id"]),
@@ -510,18 +526,18 @@ class TestCashSessionService:
         assert closed_session.status == CashSessionStatus.CLOSED
         assert closed_session.closed_at is not None
     
-    def test_add_sale_to_session(self, db: Session, test_cashier, test_site):
+    def test_add_sale_to_session(self, db_session: Session, test_cashier, test_site):
         """Test d'ajout d'une vente à une session."""
         from recyclic_api.services.cash_session_service import CashSessionService
 
-        service = CashSessionService(db)
+        service = CashSessionService(db_session)
 
         # Créer l'utilisateur, le site et la session
         user = User(**test_cashier)
         site = Site(**test_site)
-        db.add(user)
-        db.add(site)
-        db.commit()
+        db_session.add(user)
+        db_session.add(site)
+        db_session.commit()
 
         session = service.create_session(
             operator_id=str(test_cashier["id"]),

@@ -138,7 +138,7 @@ describe('CashRegister Component', () => {
     
     // Check item was added
     expect(screen.getByText('EEE-1 x2 @ 15.5€')).toBeInTheDocument()
-    expect(screen.getByText('31.00€')).toBeInTheDocument()
+    expect(screen.getAllByText(/31\.00\s*€/).length).toBeGreaterThan(0)
   })
 
   it('should reset form after adding item', () => {
@@ -175,7 +175,7 @@ describe('CashRegister Component', () => {
     // Summary should appear
     expect(screen.getByText('Récapitulatif')).toBeInTheDocument()
     expect(screen.getByText('Total:')).toBeInTheDocument()
-    expect(screen.getByText('10.00€')).toBeInTheDocument()
+    expect(screen.getAllByText(/10\.00\s*€/).length).toBeGreaterThan(0)
   })
 
   it('should calculate total correctly for multiple items', () => {
@@ -194,7 +194,7 @@ describe('CashRegister Component', () => {
     fireEvent.click(screen.getByText('Ajouter l\'article'))
     
     // Check total
-    expect(screen.getByText('25.00€')).toBeInTheDocument()
+    expect(screen.getAllByText(/25\.00\s*€/).length).toBeGreaterThan(0)
   })
 
   it('should remove item when remove button clicked', () => {
@@ -247,7 +247,7 @@ describe('CashRegister Component', () => {
     fireEvent.click(screen.getByText('Ajouter l\'article'))
     
     // Check calculation
-    expect(screen.getByText('25.50€')).toBeInTheDocument()
+    expect(screen.getAllByText(/25\.50\s*€/).length).toBeGreaterThan(0)
   })
 
   it('should handle zero quantity correctly', () => {
@@ -256,7 +256,9 @@ describe('CashRegister Component', () => {
     // Set quantity to 0
     fireEvent.click(screen.getByTestId('category-EEE-1'))
     fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '0' } })
-    fireEvent.change(screen.getByDisplayValue('0'), { target: { value: '10' } })
+    const spinboxes = screen.getAllByRole('spinbutton')
+    const priceInput = spinboxes[1] as HTMLInputElement
+    fireEvent.change(priceInput, { target: { value: '10' } })
     
     const addButton = screen.getByText('Ajouter l\'article')
     expect(addButton).toBeDisabled()

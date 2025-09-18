@@ -44,8 +44,8 @@ describe('Signup Component', () => {
     expect(screen.getByText('Créer un compte')).toBeInTheDocument();
     expect(screen.getByLabelText(/nom d'utilisateur/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/mot de passe.*\*/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirmer le mot de passe/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Mot de passe *')).toBeInTheDocument();
+    expect(screen.getByLabelText('Confirmer le mot de passe *')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /créer le compte/i })).toBeInTheDocument();
   });
 
@@ -55,8 +55,8 @@ describe('Signup Component', () => {
 
     const usernameInput = screen.getByLabelText(/nom d'utilisateur/i);
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
     const submitButton = screen.getByRole('button', { name: /créer le compte/i });
 
     fireEvent.change(usernameInput, { target: { value: 'newuser' } });
@@ -76,8 +76,8 @@ describe('Signup Component', () => {
     renderSignup();
 
     const usernameInput = screen.getByLabelText(/nom d'utilisateur/i);
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
     const submitButton = screen.getByRole('button', { name: /créer le compte/i });
 
     fireEvent.change(usernameInput, { target: { value: 'newuser' } });
@@ -96,8 +96,8 @@ describe('Signup Component', () => {
     renderSignup();
 
     const usernameInput = screen.getByLabelText(/nom d'utilisateur/i);
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
     const submitButton = screen.getByRole('button', { name: /créer le compte/i });
 
     fireEvent.change(usernameInput, { target: { value: 'newuser' } });
@@ -120,8 +120,8 @@ describe('Signup Component', () => {
   it('should show password mismatch error', () => {
     renderSignup();
 
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
 
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.change(confirmPasswordInput, { target: { value: 'different123' } });
@@ -133,8 +133,8 @@ describe('Signup Component', () => {
   it('should disable submit button when passwords do not match', () => {
     renderSignup();
 
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
     const submitButton = screen.getByRole('button', { name: /créer le compte/i });
 
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
@@ -178,8 +178,8 @@ describe('Signup Component', () => {
     renderSignup();
 
     const usernameInput = screen.getByLabelText(/nom d'utilisateur/i);
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
     const submitButton = screen.getByRole('button', { name: /créer le compte/i });
 
     fireEvent.change(usernameInput, { target: { value: 'newuser' } });
@@ -208,8 +208,8 @@ describe('Signup Component', () => {
     renderSignup();
 
     const usernameInput = screen.getByLabelText(/nom d'utilisateur/i);
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
 
     expect(usernameInput).toHaveAttribute('required');
     expect(passwordInput).toHaveAttribute('required');
@@ -220,8 +220,8 @@ describe('Signup Component', () => {
     renderSignup();
 
     const usernameInput = screen.getByLabelText(/nom d'utilisateur/i);
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
 
     expect(usernameInput).toHaveAttribute('minLength', '3');
     expect(usernameInput).toHaveAttribute('maxLength', '50');
@@ -232,8 +232,8 @@ describe('Signup Component', () => {
   it('should clear password error when passwords match', () => {
     renderSignup();
 
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
 
     // D'abord créer une erreur
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
@@ -253,8 +253,8 @@ describe('Signup Component', () => {
     renderSignup();
 
     const usernameInput = screen.getByLabelText(/nom d'utilisateur/i);
-    const passwordInput = screen.getByLabelText(/mot de passe.*\*/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirmer le mot de passe/i);
+    const passwordInput = screen.getByLabelText('Mot de passe *');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe *');
     const submitButton = screen.getByRole('button', { name: /créer le compte/i });
 
     fireEvent.change(usernameInput, { target: { value: 'newuser' } });

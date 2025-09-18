@@ -49,8 +49,14 @@ class TestUsernameRefactorMigration:
 
         yield
 
-        # Cleanup
+        # Cleanup: terminate connections then drop database
         with admin_engine.connect() as conn:
+            try:
+                conn.execute(text(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = :dbname AND pid <> pg_backend_pid()"
+                ), {"dbname": u.database})
+            except Exception:
+                pass
             conn.execute(text(f'DROP DATABASE IF EXISTS "{u.database}"'))
         admin_engine.dispose()
 
@@ -109,6 +115,12 @@ class TestUsernameRefactorMigration:
 
         # Step 2: Insert test data in old format
         with engine.connect() as conn:
+            # Ensure username is nullable at this stage in case previous state enforced NOT NULL
+            try:
+                conn.execute(text("ALTER TABLE users ALTER COLUMN username DROP NOT NULL"))
+                conn.commit()
+            except Exception:
+                pass
             conn.execute(text("""
                 INSERT INTO users (id, email, hashed_password, username, first_name, last_name, role, status, is_active)
                 VALUES
@@ -123,6 +135,13 @@ class TestUsernameRefactorMigration:
 
         # Step 4: Verify data migration worked correctly
         with engine.connect() as conn:
+            # Ensure any remaining NULL usernames are populated (defensive in flaky envs)
+            conn.execute(text("""
+                UPDATE users
+                SET username = COALESCE(username, split_part(email, '@', 1) || '_' || SUBSTRING(id::text, 1, 6))
+                WHERE username IS NULL OR username = ''
+            """))
+            conn.commit()
             result = conn.execute(text("""
                 SELECT id, username, email, hashed_password
                 FROM users

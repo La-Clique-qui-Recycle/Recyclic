@@ -7,16 +7,16 @@ vi.mock('react-router-dom', async () => {
   const actual: any = await vi.importActual('react-router-dom');
   return {
     ...actual,
-    BrowserRouter: ({ children }: any) => React.createElement('div', { 'data-testid': 'browser-router' }, children),
+    BrowserRouter: actual.BrowserRouter,
     MemoryRouter: actual.MemoryRouter,
-    useSearchParams: () => [new URLSearchParams(), vi.fn()],
-    useNavigate: () => vi.fn(),
-    useLocation: () => ({ pathname: '/', search: '', hash: '', state: null }),
-    useParams: () => ({}),
-    Link: ({ children, to, ...props }: any) => React.createElement('a', { ...props, href: to }, children),
-    NavLink: ({ children, to, ...props }: any) => React.createElement('a', { ...props, href: to, 'data-testid': 'nav-link' }, children),
-    Routes: ({ children }: any) => React.createElement('div', { 'data-testid': 'routes' }, children),
-    Route: ({ element, ...props }: any) => React.createElement('div', { ...props, 'data-testid': 'route' }, element),
+    NavLink: actual.NavLink,
+    Link: actual.Link,
+    Routes: actual.Routes,
+    Route: actual.Route,
+    useSearchParams: actual.useSearchParams,
+    useNavigate: actual.useNavigate,
+    useLocation: actual.useLocation,
+    useParams: actual.useParams,
   };
 })
 
@@ -187,6 +187,12 @@ vi.mock('@tabler/icons-react', () => {
     IconEye: createIconComponent('IconEye', 'icon-eye'),
     IconEdit: createIconComponent('IconEdit', 'icon-edit'),
     IconTrash: createIconComponent('IconTrash', 'icon-trash'),
+    IconHistory: createIconComponent('IconHistory', 'icon-history'),
+    IconCheck: createIconComponent('IconCheck', 'icon-check'),
+    IconX: createIconComponent('IconX', 'icon-x'),
+    IconCalendar: createIconComponent('IconCalendar', 'icon-calendar'),
+    IconShoppingCart: createIconComponent('IconShoppingCart', 'icon-shopping-cart'),
+    IconTruck: createIconComponent('IconTruck', 'icon-truck'),
   };
 })
 
@@ -223,10 +229,8 @@ portalRoot.setAttribute('data-mantine-portal', 'true')
 document.body.appendChild(portalRoot)
 
 // Mock pour Mantine Portal et Modal - approche complète
-vi.mock('@mantine/core', async () => {
-  const actual = await vi.importActual('@mantine/core')
+vi.mock('@mantine/core', () => {
   return {
-    ...actual,
     MantineProvider: ({ children }: any) => {
       return React.createElement('div', { 'data-testid': 'mantine-provider' }, children)
     },
@@ -239,6 +243,8 @@ vi.mock('@mantine/core', async () => {
       // Rendre le contenu de la modal directement dans le DOM de test
       return React.createElement('div', { 
         ...props, 
+        role: 'dialog',
+        'aria-modal': 'true',
         'data-testid': 'role-change-modal',
         style: { display: 'block' }
       }, children)
@@ -254,15 +260,28 @@ vi.mock('@mantine/core', async () => {
         Td: ({ children, ...props }: any) => React.createElement('td', props, children),
       }
     ),
-    Select: ({ children, value, onChange, data, leftSection, ...props }: any) => {
-      return React.createElement('select', { 
-        ...props, 
-        'data-testid': 'role-select',
-        value,
-        onChange: (e: any) => onChange && onChange(e.target.value)
-      }, 
-        data?.map((option: any) => 
-          React.createElement('option', { key: option.value, value: option.value }, option.label)
+    Select: ({ children, value, onChange, data, leftSection, label, placeholder, name, ...props }: any) => {
+      const testId = props['data-testid'] || 'select'
+      const handleChange = (e: any) => {
+        const nextValue = e && e.target ? e.target.value : e
+        if (onChange) onChange(nextValue)
+      }
+      return React.createElement('div', {},
+        label && React.createElement('label', {}, label),
+        React.createElement('select', { 
+          ...props, 
+          name,
+          'data-testid': testId,
+          value,
+          onChange: handleChange
+        }, 
+          data?.map((option: any) => 
+            React.createElement('option', { 
+              key: option.value, 
+              value: option.value,
+              onClick: () => onChange && onChange(option.value)
+            }, option.label)
+          )
         )
       )
     },
@@ -315,11 +334,12 @@ vi.mock('@mantine/core', async () => {
       }, children)
     },
     Text: ({ children, fw, size, c, ...props }: any) => {
+      const testId = (props as any)['data-testid'] || 'text'
       return React.createElement('p', { 
         ...props, 
-        'data-testid': 'text',
+        'data-testid': testId,
         style: { 
-          fontWeight: fw === 500 ? '500' : 'normal',
+          fontWeight: fw ? String(fw) : 'normal',
           fontSize: size === 'sm' ? '14px' : '16px',
           color: c === 'dimmed' ? '#6c757d' : 'inherit',
           margin: 0
@@ -359,11 +379,212 @@ vi.mock('@mantine/core', async () => {
         }
       })
     },
-    Alert: ({ children, ...props }: any) => {
+    Alert: ({ children, title, icon, ...props }: any) => {
       return React.createElement('div', { 
         ...props, 
         'data-testid': 'error-message' 
+      }, 
+        title && React.createElement('div', { 'data-testid': 'alert-title' }, title),
+        children
+      )
+    },
+    Divider: ({ orientation = 'horizontal', ...props }: any) => {
+      const style = orientation === 'vertical' 
+        ? { width: '1px', height: '100%', background: '#e0e0e0' }
+        : { height: '1px', width: '100%', background: '#e0e0e0' };
+      return React.createElement('div', { ...props, 'data-testid': 'divider', style })
+    },
+    Container: ({ children, size, py, px, ...props }: any) => {
+      return React.createElement('div', {
+        ...props,
+        'data-testid': 'container',
+        style: {
+          maxWidth: size === 'xl' ? '1200px' : size === 'lg' ? '992px' : '100%',
+          margin: '0 auto',
+          paddingTop: py ? '16px' : undefined,
+          paddingBottom: py ? '16px' : undefined,
+          paddingLeft: px ? '16px' : undefined,
+          paddingRight: px ? '16px' : undefined,
+        }
       }, children)
     },
+    Textarea: ({ label, placeholder, value, onChange, ...props }: any) => {
+      return React.createElement('div', { ...props, 'data-testid': 'textarea-wrapper' },
+        label && React.createElement('label', {}, label),
+        React.createElement('textarea', {
+          placeholder,
+          value,
+          onChange,
+          style: { width: '100%', padding: '8px', margin: '8px 0 16px' }
+        })
+      )
+    },
+    Paper: ({ children, p, withBorder, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'paper',
+        style: { 
+          padding: p || '16px',
+          border: withBorder ? '1px solid #e0e0e0' : 'none',
+          borderRadius: '8px'
+        }
+      }, children)
+    },
+    // Replace Tabs mock with a component that has static subcomponents
+    Tabs: Object.assign(
+      ({ children, value, onChange, ...props }: any) => {
+        const enhancedChildren = React.Children.map(children, (child: any) => {
+          if (!child || typeof child !== 'object') return child;
+          return React.cloneElement(child, { onChange, 'data-tabs-value': value });
+        });
+        return React.createElement('div', { 
+          ...props, 
+          'data-testid': 'tabs',
+          'data-value': value
+        }, enhancedChildren)
+      },
+      {
+        List: ({ children, onChange, 'data-tabs-value': tabsValue, ...props }: any) => {
+          const enhancedChildren = React.Children.map(children, (child: any) => {
+            if (!child || typeof child !== 'object') return child;
+            return React.cloneElement(child, { onChange, 'data-tabs-value': tabsValue });
+          });
+          return React.createElement('div', { 
+            ...props, 
+            'data-testid': 'tabs-list',
+            style: { display: 'flex', gap: '8px' }
+          }, enhancedChildren)
+        },
+        Tab: ({ children, value, leftSection, onChange, 'data-tabs-value': tabsValue, ...props }: any) => {
+          const isActive = tabsValue === value;
+          const handleClick = () => {
+            if (onChange) onChange(value);
+          };
+          return React.createElement('button', { 
+            ...props, 
+            'data-testid': 'tabs-tab',
+            'data-value': value,
+            'data-active': isActive ? 'true' : 'false',
+            onClick: handleClick,
+            style: { 
+              padding: '8px 16px',
+              border: '1px solid #ccc',
+              background: isActive ? '#eef' : 'white',
+              cursor: 'pointer'
+            }
+          }, leftSection, children)
+        },
+        Panel: ({ children, value, 'data-tabs-value': tabsValue, ...props }: any) => {
+          const isActive = tabsValue === value;
+          return React.createElement('div', { 
+            ...props, 
+            'data-testid': 'tabs-panel',
+            'data-value': value,
+            style: { display: isActive ? 'block' : 'none' }
+          }, children)
+        }
+      }
+    ),
+    TextInput: ({ label, placeholder, leftSection, error, value, onChange, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'text-input'
+      }, 
+        label && React.createElement('label', {}, label),
+        React.createElement('input', { 
+          placeholder,
+          value,
+          onChange,
+          style: { 
+            padding: '8px 12px',
+            border: error ? '1px solid red' : '1px solid #ccc',
+            borderRadius: '4px',
+            width: '100%'
+          }
+        }),
+        error && React.createElement('span', { style: { color: 'red' } }, error)
+      )
+    },
+    Switch: ({ label, checked, onChange, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'switch'
+      }, 
+        React.createElement('input', { 
+          type: 'checkbox',
+          checked,
+          onChange: (e) => onChange && onChange(e.target.checked),
+          style: { marginRight: '8px' }
+        }),
+        label
+      )
+    },
+    Timeline: ({ children, active, bulletSize, lineWidth, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'timeline',
+        style: { position: 'relative' }
+      }, children)
+    },
+    'Timeline.Item': ({ children, bullet, title, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'timeline-item',
+        style: { marginBottom: '16px' }
+      }, 
+        bullet,
+        title && React.createElement('div', { 'data-testid': 'timeline-title' }, title),
+        children
+      )
+    },
+    Pagination: ({ value, onChange, total, size, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'pagination',
+        style: { display: 'flex', gap: '4px' }
+      }, 
+        Array.from({ length: total }, (_, i) => 
+          React.createElement('button', {
+            key: i + 1,
+            onClick: () => onChange && onChange(i + 1),
+            style: { 
+              padding: '4px 8px',
+              border: '1px solid #ccc',
+              background: value === i + 1 ? '#007bff' : 'white',
+              color: value === i + 1 ? 'white' : 'black',
+              cursor: 'pointer'
+            }
+          }, i + 1)
+        )
+      )
+    },
+    Avatar: ({ children, size, color, ...props }: any) => {
+      return React.createElement('div', { 
+        ...props, 
+        'data-testid': 'avatar',
+        style: { 
+          width: size === 'lg' ? '60px' : size === 'md' ? '40px' : '32px',
+          height: size === 'lg' ? '60px' : size === 'md' ? '40px' : '32px',
+          borderRadius: '50%',
+          backgroundColor: color === 'blue' ? '#007bff' : '#6c757d',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: size === 'lg' ? '24px' : '16px',
+          fontWeight: 'bold'
+        }
+      }, children)
+    },
+    Title: ({ children, order = 1, ...props }: any) => {
+      const Tag = `h${order}` as any
+      return React.createElement(Tag, { ...props, 'data-testid': 'title' }, children)
+    },
+    Grid: Object.assign(
+      ({ children, ...props }: any) => React.createElement('div', { ...props, 'data-testid': 'grid' }, children),
+      {
+        Col: ({ children, span, ...props }: any) => React.createElement('div', { ...props, 'data-testid': 'grid-col', 'data-span': JSON.stringify(span || null) }, children)
+      }
+    ),
   }
 })

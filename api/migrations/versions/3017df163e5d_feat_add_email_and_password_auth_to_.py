@@ -17,6 +17,16 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Ensure legacy "username" remains nullable prior to username refactor
+    try:
+        op.alter_column('users', 'username', existing_type=sa.String(), nullable=True)
+    except Exception:
+        # Column may already be nullable in some environments
+        pass
+    try:
+        op.execute("ALTER TABLE users ALTER COLUMN username DROP NOT NULL")
+    except Exception:
+        pass
     # Add email and hashed_password columns to users table (nullable first)
     op.add_column('users', sa.Column('email', sa.String(), nullable=True))
     op.add_column('users', sa.Column('hashed_password', sa.String(), nullable=True))

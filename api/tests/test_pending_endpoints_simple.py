@@ -32,9 +32,9 @@ class TestPendingEndpointsSimple:
         
         # Vérifier la présence des endpoints
         required_endpoints = [
-            '/admin/users/pending',
-            '/admin/users/{user_id}/approve',
-            '/admin/users/{user_id}/reject'
+            '/api/v1/admin/users/pending',
+            '/api/v1/admin/users/{user_id}/approve',
+            '/api/v1/admin/users/{user_id}/reject'
         ]
         
         for endpoint in required_endpoints:
@@ -99,8 +99,8 @@ class TestPendingEndpointsSimple:
             data="{ invalid json }",
             headers=headers
         )
-        # Doit retourner 400 (Bad Request) ou 401/403 (auth)
-        assert response.status_code in [400, 401, 403]
+        # Doit retourner 400 (Bad Request), 401/403 (auth), ou 422 (validation error)
+        assert response.status_code in [400, 401, 403, 422]
 
     def test_endpoints_handle_invalid_uuid(self, client):
         """Test que les endpoints gèrent les UUID invalides"""

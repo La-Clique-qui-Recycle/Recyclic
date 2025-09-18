@@ -1,0 +1,30 @@
+schema: 1
+story: "email.observability"
+story_title: "Observabilité des envois d’emails (métriques & logs)"
+gate: "PASS"
+status_reason: "Implémentation validée et testée"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-17T00:00:00Z"
+waiver: { active: false }
+top_issues: []
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+quality_score: 95
+expires: "2025-10-15T00:00:00Z"
+evidence: { tests_reviewed: 6, risks_identified: 0, trace: { ac_covered: [1,2,3,4], ac_gaps: [] } }
+nfr_validation:
+  security: { status: TBD, notes: "" }
+  performance: { status: TBD, notes: "" }
+  reliability: { status: TBD, notes: "" }
+  maintainability: { status: TBD, notes: "" }
+recommendations:
+  immediate: []
+  future: []
+final_assessment:
+  score: 95
+  status: "GOOD"
+  notes: "Observabilité en place, logs et métriques conformes" 
+

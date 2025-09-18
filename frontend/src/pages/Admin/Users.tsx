@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Title, Text, Group, Select, TextInput, Button, Stack, Alert, Pagination } from '@mantine/core';
+import { Container, Title, Text, Group, Select, TextInput, Button, Stack, Alert, Pagination, Grid, Paper } from '@mantine/core';
 import { IconSearch, IconRefresh, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useAdminStore } from '../../stores/adminStore';
 import { UserListTable } from '../../components/business/UserListTable';
+import { UserDetailView } from '../../components/business/UserDetailView';
 import { UserRole, UserStatus, AdminUser } from '../../services/adminService';
 
 const AdminUsers: React.FC = () => {
@@ -12,10 +13,12 @@ const AdminUsers: React.FC = () => {
     loading,
     error,
     filters,
+    selectedUser,
     fetchUsers,
     updateUserRole,
     filterUsers,
-    setFilters
+    setFilters,
+    setSelectedUser
   } = useAdminStore();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,18 +65,25 @@ const AdminUsers: React.FC = () => {
   };
 
   const handleViewUser = (user: AdminUser) => {
-    // TODO: Implémenter la vue détaillée de l'utilisateur
-    console.log('Voir utilisateur:', user);
+    setSelectedUser(user);
   };
 
   const handleEditUser = (user: AdminUser) => {
-    // TODO: Implémenter l'édition de l'utilisateur
-    console.log('Modifier utilisateur:', user);
+    setSelectedUser(user);
   };
 
   const handleDeleteUser = (user: AdminUser) => {
     // TODO: Implémenter la suppression de l'utilisateur
     console.log('Supprimer utilisateur:', user);
+  };
+
+  const handleUserUpdate = (updatedUser: AdminUser) => {
+    // Mettre à jour l'utilisateur dans la liste locale
+    const updatedUsers = users.map(user => 
+      user.id === updatedUser.id ? updatedUser : user
+    );
+    // Note: En production, on devrait utiliser une action du store pour cela
+    setSelectedUser(updatedUser);
   };
 
   return (
@@ -164,33 +174,56 @@ const AdminUsers: React.FC = () => {
           />
         </Group>
 
-        <UserListTable
-          users={users}
-          loading={loading}
-          onRoleChange={handleRoleChange}
-          onViewUser={handleViewUser}
-          onEditUser={handleEditUser}
-          onDeleteUser={handleDeleteUser}
-        />
+        {/* Structure Master-Detail */}
+        <Grid>
+          {/* Colonne Master - Liste des utilisateurs */}
+          <Grid.Col span={{ base: 12, lg: 6 }}>
+            <Paper p="md" withBorder>
+              <Stack gap="md">
+                <Text size="lg" fw={600}>
+                  Liste des utilisateurs
+                </Text>
+                <UserListTable
+                  users={users}
+                  loading={loading}
+                  onRoleChange={handleRoleChange}
+                  onViewUser={handleViewUser}
+                  onEditUser={handleEditUser}
+                  onDeleteUser={handleDeleteUser}
+                />
+                
+                {users.length > 0 && (
+                  <Group justify="center" mt="md">
+                    <Pagination
+                      value={currentPage}
+                      onChange={setCurrentPage}
+                      total={Math.ceil(users.length / (filters.limit || 20))}
+                      data-testid="pagination"
+                      size="sm"
+                    />
+                  </Group>
+                )}
 
-        {users.length > 0 && (
-          <Group justify="center" mt="md">
-            <Pagination
-              value={currentPage}
-              onChange={setCurrentPage}
-              total={Math.ceil(users.length / (filters.limit || 20))}
-              data-testid="pagination"
+                {users.length > 0 && (
+                  <Group justify="center" mt="sm">
+                    <Text size="sm" c="dimmed" data-testid="page-info">
+                      {((currentPage - 1) * (filters.limit || 20)) + 1}-{Math.min(currentPage * (filters.limit || 20), users.length)} sur {users.length} utilisateurs
+                    </Text>
+                  </Group>
+                )}
+              </Stack>
+            </Paper>
+          </Grid.Col>
+
+          {/* Colonne Detail - Vue détaillée */}
+          <Grid.Col span={{ base: 12, lg: 6 }}>
+            <UserDetailView
+              user={selectedUser}
+              loading={loading}
+              onUserUpdate={handleUserUpdate}
             />
-          </Group>
-        )}
-
-        {users.length > 0 && (
-          <Group justify="center" mt="sm">
-            <Text size="sm" c="dimmed" data-testid="page-info">
-              {((currentPage - 1) * (filters.limit || 20)) + 1}-{Math.min(currentPage * (filters.limit || 20), users.length)} sur {users.length} utilisateurs
-            </Text>
-          </Group>
-        )}
+          </Grid.Col>
+        </Grid>
       </Stack>
     </Container>
   );

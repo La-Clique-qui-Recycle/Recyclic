@@ -240,3 +240,9 @@ async def process_deposit_audio(audio_file_path: str) -> Dict[str, Any]:
         Processing results dictionary
     """
     return await audio_processing_service.process_audio_file(audio_file_path)
+async def process_deposit_audio(audio_file_path: str) -> dict:
+    """Compatibility helper used by older integration tests.
+    Processes an audio file and returns classification results.
+    """
+    service = AudioProcessingService()
+    return await service.process_audio_file(audio_file_path)

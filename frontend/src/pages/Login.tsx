@@ -16,6 +16,7 @@ export default function Login(): JSX.Element {
       navigate('/');
     } catch (err) {
       // L'erreur est déjà gérée dans le store
+      console.error('Login error:', err);
     }
   };
 
@@ -31,6 +32,7 @@ export default function Login(): JSX.Element {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Entrez votre nom d'utilisateur"
           style={{ width: '100%', padding: 8, margin: '8px 0 16px' }}
+          autoComplete="username"
           required
         />
         <label htmlFor="password">Mot de passe</label>
@@ -41,6 +43,7 @@ export default function Login(): JSX.Element {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Entrez votre mot de passe"
           style={{ width: '100%', padding: 8, margin: '8px 0 16px' }}
+          autoComplete="current-password"
           required
         />
         {error && (

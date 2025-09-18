@@ -54,7 +54,8 @@ def test_full_deposit_classification_workflow():
 
         # Verify classification results
         assert classified_data["id"] == deposit_id
-        assert classified_data["status"] == "classified"  # Should be classified now
+        # In Story 4.2 flow, after classification we await human validation
+        assert classified_data["status"] == "pending_validation"
         assert classified_data["category"] == "it_equipment"  # Based on our test file
         assert classified_data["ai_confidence"] == 0.7  # From fallback classification
         assert "ordinateur" in classified_data["description"].lower()  # Transcription

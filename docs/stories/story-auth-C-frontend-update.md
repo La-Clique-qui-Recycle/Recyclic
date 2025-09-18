@@ -2,7 +2,7 @@
 story_id: auth.C
 epic_id: auth-refactoring
 title: "Story C: Mise à Jour du Frontend pour l'Authentification"
-status: Ready
+status: Done
 ---
 
 ### User Story
@@ -48,9 +48,7 @@ L'epic mentionne un champ "Email". Ceci est incorrect. Le backend attend un `use
 
 ### Validation du Scrum Master (2025-09-17)
 
-**Statut :** ✅ **VALIDÉ ET FERMÉ**
-
-**Vérification :** L'ensemble des fichiers concernés (`Login.tsx`, `authStore.ts`, `ProtectedRoute.tsx` et les fichiers de test associés) ont été inspectés. L'implémentation est de haute qualité, respecte les exigences de l'architecture (notamment l'utilisation du client API généré) et est couverte par une suite de tests complète. La story est terminée.
+**Statut :** Done
 
 1.  **(AC: 1)** **Modifier le composant `Login.tsx`**: ✅
     -   [x] Remplacer les champs du formulaire de connexion existants par des champs `input` pour `username` et `password`.

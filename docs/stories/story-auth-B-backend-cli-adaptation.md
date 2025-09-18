@@ -47,9 +47,7 @@ L'epic mentionne l'utilisation de l'email pour la connexion. Cependant, la déci
 
 ### Revue du Scrum Master (2025-09-17) - MISE À JOUR
 
-**Statut :** ✅ **VALIDÉ ET FERMÉ**
-
-**Vérification :** Le fichier de test `api/tests/test_auth_login_endpoint.py` a été vérifié. Il contient désormais les tests d'intégration corrects et complets pour le login par `username`/`password`, conformément aux exigences. La story est maintenant terminée.
+**Statut :** Done
 
 ---
 

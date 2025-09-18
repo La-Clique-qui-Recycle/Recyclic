@@ -23,9 +23,7 @@ status: Done
 
 ### Validation du Scrum Master (2025-09-17)
 
-**Statut :** ✅ **VALIDÉ ET FERMÉ**
-
-**Vérification :** L'agent de développement a implémenté cette fonctionnalité en avance, en même temps que la Story D. Une vérification des fichiers a confirmé que les endpoints backend (`/forgot-password`, `/reset-password`) et les pages frontend (`ForgotPassword.tsx`, `ResetPassword.tsx`) sont bien présents et fonctionnels. La story est donc considérée comme terminée.
+**Statut :** Done
 
 ---
 

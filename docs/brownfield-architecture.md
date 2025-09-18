@@ -1,143 +1,144 @@
-# Recyclic - Architecture d'Analyse "Brownfield"
+# Recyclic Brownfield Architecture Document
 
 ## Introduction
 
-Ce document capture l'état **actuel et réel** de la base de code du projet Recyclic. Son objectif n'est pas de décrire une architecture idéale, mais de documenter le système tel qu'il existe aujourd'hui, y compris les dettes techniques, les incohérences et les modèles de conception réels. Il sert de référence factuelle pour planifier la restructuration et l'amélioration du projet.
+This document captures the CURRENT STATE of the Recyclic codebase as of 2025-09-17, following the completion of Story 5.2. It includes technical debt, real-world patterns, and serves as a reference for AI agents and developers. Its primary goal is to provide a clear snapshot of "where we are" to guide future development.
 
-### Périmètre du Document
+### Document Scope
 
-L'analyse couvre l'ensemble des services : Backend (`api`), Frontend (`frontend`) et le `bot` Telegram, avec un focus particulier sur les interactions entre ces services.
+This analysis focuses on the state of the system after the implementation of the "Interface Vente Multi-Modes" (Story 5.2) and highlights the technical debt identified in the subsequent PO validation report, leading to the creation of `story-debt-backend-tests-validation` and `story-debt-rollback-procedure-validation`.
 
-### Journal des Modifications
+### Change Log
 
-| Date       | Version | Description                     | Auteur        |
-| ---------- | ------- | ------------------------------- | ------------- |
-| 2025-09-14 | 1.0     | Analyse initiale "brownfield" | BMad Master   |
+| Date         | Version | Description                 | Author  |
+|--------------|---------|-----------------------------|---------|
+| 2025-09-17   | 1.0     | Initial brownfield analysis | Winston |
 
-## Références Rapides - Fichiers et Points d'Entrée Clés
+## Quick Reference - Key Files and Entry Points
 
-- **Configuration Globale**: `docker-compose.yml`, `env.example`
-- **Point d'Entrée API (Backend)**: `api/src/recyclic_api/main.py`
-- **Routeur Principal API**: `api/src/recyclic_api/api/api_v1/api.py`
-- **Point d'Entrée Frontend**: `frontend/src/App.jsx` (via `vite`)
-- **Service de communication API Frontend**: `frontend/src/services/api.js`, `frontend/src/services/adminService.ts`
-- **Point d'Entrée Bot**: `bot/src/main.py`
+### Critical Files for Understanding the System
 
-## Architecture Générale
+- **API Entry**: `api/src/recyclic_api/main.py` (FastAPI application)
+- **Frontend Entry**: `frontend/src/main.tsx` (React application)
+- **Bot Entry**: `bot/src/main.py` (python-telegram-bot)
+- **Configuration**: `.env.example` (root), `api/.env`, `bot/.env`
+- **Core Business Logic (API)**: `api/src/recyclic_api/services/`
+- **Database Models (API)**: `api/src/recyclic_api/models/`
+- **Database Migrations**: `api/migrations/` (Alembic)
+- **State Management (Frontend)**: `frontend/src/stores/` (Zustand)
+- **Deployment**: `docker-compose.yml`, `docker-compose.dev.yml`
 
-### Résumé Technique
+## High Level Architecture
 
-Le projet utilise une architecture de microservices containerisés via Docker Compose. Les services principaux sont une API backend en **FastAPI** (Python), une interface web en **React** (TypeScript/JavaScript), et un bot **Telegram** (Python). Les données sont persistées dans une base de données **PostgreSQL** et une instance **Redis** est utilisée pour le cache ou les tâches asynchrones.
+### Technical Summary
 
-### Stack Technologique Réelle
+Recyclic is a containerized application suite built with a microservices approach, composed of a FastAPI backend, a React (Vite) frontend, and a Python-based Telegram bot. The entire system is orchestrated via Docker Compose. Data persistence is handled by PostgreSQL, with database schema changes managed by Alembic. Redis is used for caching and potentially for background jobs.
 
-| Catégorie          | Technologie        | Version | Fichier de Référence      | Notes                               |
-| ------------------ | ------------------ | ------- | ------------------------- | ----------------------------------- |
-| **Backend**        |                    |         |                           |                                     |
-| Langage            | Python             | ~3.11+  | `api/pyproject.toml`      |                                     |
-| Framework          | FastAPI            | 0.104.1 | `api/pyproject.toml`      | Solide, bien structuré.             |
-| ORM                | SQLAlchemy         | 2.0.23  | `api/pyproject.toml`      | Standard pour l'accès BDD.         |
-| Migrations         | Alembic            | 1.12.1  | `api/pyproject.toml`      | Bonne pratique.                     |
-| **Frontend**       |                    |         |                           |                                     |
-| Langage            | TypeScript/JS (JSX)|         | `frontend/package.json`   | Cohabitation JS/TS.                 |
-| Framework          | React              | 18.2.0  | `frontend/package.json`   |                                     |
-| Bundler            | Vite               | 5.0.8   | `frontend/package.json`   | Moderne et performant.              |
-| Gestion d'état    | Zustand            | 5.0.8   | `frontend/package.json`   | Léger et efficace.                  |
-| Appels API         | Axios, React Query | ^1.6.0  | `frontend/package.json`   | Robuste pour la gestion des données.|
-| **Base de données**| PostgreSQL         | 15      | `docker-compose.yml`      |                                     |
-| **Cache**          | Redis              | 7-alpine| `docker-compose.yml`      |                                     |
-| **Infrastructure** | Docker Compose     |         | `docker-compose.yml`      | Simplifie le déploiement local.     |
+### Actual Tech Stack
 
-### Structure du Dépôt (Monorepo)
+| Category      | Technology            | Version          | Notes                               |
+|---------------|-----------------------|------------------|-------------------------------------|
+| **Backend**   |                       |                  |                                     |
+| Runtime       | Python                | (Not specified)  | via FastAPI/Uvicorn                 |
+| Framework     | FastAPI               | 0.104.1          |                                     |
+| Database      | PostgreSQL            | (Not specified)  | via psycopg2-binary                 |
+| ORM/Migration | SQLAlchemy / Alembic  | 2.0.23 / 1.12.1  |                                     |
+| AI/LangChain  | LangChain / Google    | 0.1.0 / 1.0.1    | For AI classification tasks         |
+| **Frontend**  |                       |                  |                                     |
+| Runtime       | Node.js               | (Not specified)  | via Vite                            |
+| Framework     | React                 | 18.2.0           |                                     |
+| UI Library    | Mantine               | ~8.3.1           |                                     |
+| State Mgmt    | Zustand               | ~5.0.8           |                                     |
+| Testing       | Vitest / Playwright   | ~1.0.4 / ~1.55.0 | Unit, Integration, and E2E tests    |
+| **Bot**       |                       |                  |                                     |
+| Framework     | python-telegram-bot   | 20.7             |                                     |
+| **Infra**     |                       |                  |                                     |
+| Orchestration | Docker / Docker Compose | (Not specified)  | `docker-compose.yml`                |
 
-La structure est celle d'un monorepo simple, sans outils spécifiques comme Lerna ou Nx, ce qui est suffisant pour la taille actuelle du projet.
+### Repository Structure Reality Check
 
-## Organisation du Code Source
+- **Type**: Monorepo containing distinct services (`api`, `frontend`, `bot`).
+- **Package Manager**: `pip` (for Python services) and `npm` (for frontend).
+- **Notable**: The project follows the BMad Method, emphasizing documentation-first development within the `docs/` directory.
 
-### Structure des Fichiers (Réalité)
+## Source Tree and Module Organization
 
 ```text
 recyclic/
 ├── api/
-│   ├── src/recyclic_api/
-│   │   ├── api/          # Logique des endpoints (contrôleurs)
-│   │   ├── core/         # Configuration, BDD, authentification
-│   │   ├── models/       # Modèles de données SQLAlchemy
-│   │   ├── schemas/      # Schémas de validation Pydantic
-│   │   └── services/     # Logique métier (partiellement implémenté)
-│   └── tests/
-├── bot/
-│   └── src/
-│       ├── handlers/     # Logique des commandes du bot
-│       └── main.py
+│   ├── src/recyclic_api/  # FastAPI application source
+│   │   ├── controllers/   # (Assumed) API endpoint handlers
+│   │   ├── services/      # Business logic
+│   │   ├── models/        # SQLAlchemy data models
+│   │   └── main.py        # FastAPI app entry point
+│   ├── migrations/        # Alembic database migrations
+│   └── requirements.txt   # Backend dependencies
 ├── frontend/
-│   └── src/
-│       ├── components/   # Composants React réutilisables
-│       ├── pages/        # Composants représentant les pages
-│       ├── services/     # Logique d'appel à l'API backend
-│       └── stores/       # Gestion d'état avec Zustand
-└── docs/                   # Documentation (prd.md, architecture.md, etc.)
+│   ├── src/
+│   │   ├── pages/         # React page components (e.g., Sale.tsx)
+│   │   ├── components/    # Reusable React components
+│   │   ├── stores/        # Zustand state management stores
+│   │   └── main.tsx       # React app entry point
+│   └── package.json       # Frontend dependencies
+├── bot/
+│   └── src/               # Telegram bot source
+├── docs/
+│   ├── architecture/      # Architecture documents
+│   ├── prd/               # Product Requirement Documents & Epics
+│   └── stories/           # User stories (including tech debt)
+└── docker-compose.yml     # Main service orchestration
 ```
 
-## Dette Technique et Problèmes Connus
+## Technical Debt and Known Issues
 
-Cette section est la plus critique. Elle documente les "grains de sable" identifiés.
+This analysis confirms the critical technical debt identified by the PO.
 
-### 1. Duplication des Types et Couplage Fort API/Frontend
+### 1. Insufficient Backend Test Validation
 
-C'est le problème principal qui cause les frictions de développement.
+- **Issue**: Existing backend integration tests primarily check for status codes (e.g., `200 OK`) but do not validate the content or schema of the API responses.
+- **Risk**: High. API regressions can go unnoticed, breaking the contract with the frontend and leading to UI bugs. The frontend cannot trust the API's data structure.
+- **Source**: `docs/stories/story-debt-backend-tests-validation.md`
+- **Action Required**: Refactor integration tests for critical endpoints (developed up to and including Story 5.2) to assert response schemas and content validity. The `TESTS_README.md` must be updated to reflect this new standard.
 
-- **Description**: Les types de données (en particulier les `Enum` comme `UserRole`) et les interfaces (comme `AdminUser`) sont définis manuellement et séparément dans le backend (Python/Pydantic) et dans le frontend (TypeScript).
-- **Impact**:
-    - **Risque d'Erreurs**: Une modification d'un côté (ex: ajout d'un nouveau rôle) sans synchronisation parfaite de l'autre casse l'application de manière silencieuse (pas d'erreur de compilation).
-    - **Maintenance Élevée**: Oblige les développeurs à travailler sur deux fichiers pour une seule modification logique, augmentant la charge cognitive et le risque d'oubli.
-- **Exemple Concret**: `api/src/recyclic_api/models/user.py` définit `UserRole`. `frontend/src/services/adminService.ts` re-définit exactement la même énumération en TypeScript.
+### 2. Undocumented and Untested Rollback Procedure
 
-### 2. Couplage de la Logique Métier
+- **Issue**: A `rollback.sh` script exists, but it has not been formally tested, and there is no documentation explaining how or when to use it.
+- **Risk**: High. A failed deployment could lead to extended downtime and data inconsistency because the recovery procedure is unreliable.
+- **Source**: `docs/stories/story-debt-rollback-procedure-validation.md`
+- **Action Required**: Create a formal test guide, execute and validate the script, and produce clear documentation for the rollback process, including post-mortem steps. This documentation should be located at `docs/architecture/deployment-and-rollback.md`.
 
-- **Description**: La logique d'appel à l'API est centralisée dans des fichiers de service frontend (`api.js`, `adminService.ts`), mais la gestion de l'état qui en découle (chargement, erreurs, données) est gérée dans des stores Zustand (`adminStore.ts`). Une modification de la "forme" des données par l'API a des répercussions à tous ces niveaux.
-- **Impact**: Une story qui semble simple ("ajouter un filtre") nécessite des modifications synchronisées à de multiples endroits du code frontend et backend, ce qui rend les stories "full-stack" complexes et lentes à développer. C'est la cause directe du sentiment de "déséquilibre" que vous avez.
+## Testing Reality
 
-### 3. Tests d'Intégration Backend Insuffisants
+### Current Test Coverage
 
-- **Description**: Les tests du backend (`api/tests/api/test_admin_endpoints.py`) se contentent de vérifier la disponibilité des endpoints (code de statut HTTP 200 ou 404). Ils ne valident pas le contenu des réponses.
-- **Impact**: La responsabilité de vérifier que l'API renvoie les bonnes données est entièrement reportée sur le développeur frontend ou sur les tests E2E. Des bugs de logique dans l'API peuvent passer inaperçus jusqu'à une phase très tardive du développement.
+- **Backend**: Unit and integration tests exist (`pytest`) but lack depth, as noted in the technical debt section.
+- **Frontend**: The frontend has a more mature testing setup with Vitest for unit/component tests and Playwright for E2E tests. Story 5.2 included the creation of comprehensive tests for the new UI components and state management logic, indicating a good testing culture on the frontend side.
+- **E2E**: The presence of Playwright suggests E2E testing capability, but the overall coverage is unknown.
 
-## Recommandations pour la Restructuration
+### Running Tests
 
-Pour adresser ces problèmes, voici un plan d'action concret.
+```bash
+# Backend (from api/ directory)
+pytest
 
-### 1. Établir un Contrat d'API Fort avec Génération de Code
+# Frontend (from frontend/ directory)
+npm test
+npm run test:coverage
+```
 
-- **Action**: Mettre en place la génération automatique de la spécification OpenAPI à partir du code FastAPI. Utiliser ensuite un outil (ex: `openapi-typescript-codegen`) pour générer automatiquement le client TypeScript et toutes les interfaces/types nécessaires pour le frontend.
-- **Bénéfices**:
-    - **Fin de la duplication**: Le frontend et le backend partagent une source de vérité unique pour les types de données.
-    - **Développement accéléré**: Le client API frontend est généré, pas besoin de l'écrire à la main.
-    - **Sécurité**: Les erreurs de type entre front et back sont détectées à la compilation, pas en production.
+## Impact Analysis from Story 5.2
 
-### 2. Renforcer les Tests Backend
+The completion of **Story 5.2: Interface Vente Multi-Modes** introduced significant functionality and established key frontend patterns.
 
-- **Action**: Enrichir les tests d'intégration du backend pour qu'ils valident le schéma et le contenu des réponses JSON. Par exemple, un test pour `GET /admin/users?role=admin` doit vérifier que la réponse est une liste et que chaque utilisateur dans la liste a bien le rôle "admin".
-- **Bénéfices**:
-    - **Confiance accrue dans l'API**: Le backend garantit le contrat qu'il expose.
-    - **Développement frontend découplé**: L'équipe frontend peut travailler en toute confiance contre une version "mockée" de l'API en se basant sur la spécification OpenAPI.
+### New Files and Modules
 
-### 3. Revoir le Découpage des Stories
+- **Page**: `frontend/src/pages/CashRegister/Sale.tsx`
+- **State**: The `cashSessionStore.ts` in Zustand was extended to manage the state of an in-progress sale.
+- **Components**: `ModeSelector`, `CategorySelector`, `Numpad`.
+- **API Endpoint**: A new `POST /sales` endpoint was required on the backend to persist sales.
 
-- **Action**: Adopter un découpage qui minimise les dépendances synchrones.
-    - **Option A (Backend-First)**: Une story pour créer l'endpoint API (avec ses tests renforcés) et le valider. Une story *séparée* pour que le frontend consomme cet endpoint (qui est maintenant stable et fiable).
-    - **Option B (Contract-First)**: Se mettre d'accord sur la "forme" de l'API (le contrat OpenAPI), puis les équipes front et back peuvent travailler en parallèle en se basant sur ce contrat.
-- **Bénéfices**:
-    - **Réduction de la complexité**: Chaque story a un périmètre plus petit et plus clair.
-    - **Parallélisation possible** et réduction des blocages entre développeurs.
+### Established Patterns
 
-## Prochaines Étapes
-
-Ce document constitue notre base de travail. Je vous propose de le sauvegarder sous `docs/brownfield-architecture.md`.
-
-La prochaine étape logique est de transformer ces recommandations en un plan d'action concret, potentiellement en créant des stories techniques dans votre backlog pour :
-1.  Mettre en place la génération de client TypeScript depuis l'API.
-2.  Renforcer les tests d'intégration de l'endpoint `admin/users`.
-3.  Appliquer ce nouveau modèle de découpage à la prochaine fonctionnalité.
-
-Je suis prêt à vous aider à créer ces tâches.
+- **Offline-First**: The implementation of Story 5.2 reinforced the "Offline-First" principle, requiring sales to be saved locally if the network is unavailable. This is a critical pattern for all future frontend development.
+- **Sequential UI Flow**: The story implemented a sequential, state-driven UI for data entry (Category -> Quantity -> Price), which may serve as a pattern for future forms.
+- **Component Testing**: The QA review for Story 5.2 shows that comprehensive unit tests were created for new components and state logic, setting a high standard for future frontend work.

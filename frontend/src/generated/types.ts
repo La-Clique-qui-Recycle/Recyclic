@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-17T00:08:31.866Z
+ * Généré le: 2025-09-17T23:34:24.035Z
  */
 
 // ============================================================================
@@ -32,12 +32,6 @@ export enum EEECategory {
   MONITORING_CONTROL = 'monitoring_control',
   AUTOMATIC_DISPENSERS = 'automatic_dispensers',
   OTHER = 'other'
-}
-export enum PaymentMethod {
-  CASH = 'cash',
-  CARD = 'card',
-  MOBILE_PAYMENT = 'mobile_payment',
-  VOUCHER = 'voucher'
 }
 export enum UserRole {
   SUPER_ADMIN = 'super-admin',
@@ -170,6 +164,12 @@ export interface DepositResponse {
   created_at: string;
   updated_at: string;
 }
+export interface ForgotPasswordRequest {
+  email: string;
+}
+export interface ForgotPasswordResponse {
+  message: string;
+}
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -193,26 +193,17 @@ export interface PendingUserResponse {
   status: UserStatus;
   created_at: string;
 }
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+}
+export interface ResetPasswordResponse {
+  message: string;
+}
 export interface SaleCreate {
   cash_session_id: string;
-  deposit_id: string;
-  amount: number;
-  payment_method: PaymentMethod;
-}
-export interface SaleDirectCreate {
-  cash_session_id: string;
-  total_amount: number;
-  payment_method?: PaymentMethod;
   items: SaleItemCreate[];
-}
-export interface SaleDirectResponse {
-  cash_session_id: string;
   total_amount: number;
-  payment_method?: PaymentMethod;
-  id: string;
-  created_at: string;
-  updated_at: string;
-  items?: SaleItemResponse[];
 }
 export interface SaleItemCreate {
   category: string;
@@ -227,17 +218,24 @@ export interface SaleItemResponse {
   total_price: number;
   id: string;
   sale_id: string;
-  created_at: string;
-  updated_at: string;
 }
 export interface SaleResponse {
   cash_session_id: string;
-  deposit_id: string;
-  amount: number;
-  payment_method: PaymentMethod;
+  total_amount: number;
   id: string;
   created_at: string;
   updated_at: string;
+  items?: SaleItemResponse[];
+}
+export interface SignupRequest {
+  username: string;
+  password: string;
+  email?: string | any;
+}
+export interface SignupResponse {
+  message: string;
+  user_id: string;
+  status: string;
 }
 export interface SiteCreate {
   name: string;
@@ -253,6 +251,9 @@ export interface SiteResponse {
   id: string;
   created_at: string;
   updated_at: string;
+}
+export interface TestEmailRequest {
+  to_email: string;
 }
 export interface UserApprovalRequest {
   message?: string | any;

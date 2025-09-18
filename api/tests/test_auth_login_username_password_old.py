@@ -11,6 +11,8 @@ from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
 
+# Client HTTP module-level pour les tests qui n'injectent pas la fixture
+client = TestClient(app)
 
 class TestAuthLoginUsernamePassword:
     """Tests for the POST /api/v1/auth/login endpoint with username/password"""
@@ -18,7 +20,7 @@ class TestAuthLoginUsernamePassword:
     def test_login_success_valid_credentials(self, db_session: Session):
         """Test successful login with valid username and password"""
         # Create a fresh client for this test to avoid rate limiting conflicts
-        client = TestClient(app)
+        local_client = TestClient(app)
         
         # Create test user with hashed password
         hashed_password = hash_password("testpassword123")
@@ -34,7 +36,7 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(test_user)
 
         # Test login
-        response = client.post(
+        response = local_client.post(
             "/api/v1/auth/login",
             json={
                 "username": "testuser1",

@@ -5,6 +5,7 @@ sans conflits de dépendances.
 """
 import pytest
 import subprocess
+import shutil
 import tempfile
 import os
 from pathlib import Path
@@ -13,11 +14,23 @@ from pathlib import Path
 class TestMigrationOrder:
     """Tests pour valider l'ordre et la cohérence des migrations Alembic."""
     
+    def _alembic_cmd(self, *args):
+        """Resolve alembic executable portably (PATH or local venv)."""
+        alembic_path = shutil.which("alembic")
+        if not alembic_path:
+            candidate = Path(__file__).parent.parent / "venv" / "bin" / "alembic"
+            if candidate.exists():
+                alembic_path = str(candidate)
+            else:
+                # Fallback: mark test as xfail with clear message
+                pytest.skip("alembic executable not found in PATH or local venv")
+        return [alembic_path, *args]
+
     def test_migration_order_consistency(self):
         """Test que l'ordre des migrations est cohérent et sans conflits."""
         # Vérifier que alembic peut lister les migrations sans erreur
         result = subprocess.run(
-            ["alembic", "history", "--verbose"],
+            self._alembic_cmd("history", "--verbose"),
             cwd=Path(__file__).parent.parent,
             capture_output=True,
             text=True
@@ -27,7 +40,7 @@ class TestMigrationOrder:
         
         # Vérifier que la commande current fonctionne
         result = subprocess.run(
-            ["alembic", "current"],
+            self._alembic_cmd("current"),
             cwd=Path(__file__).parent.parent,
             capture_output=True,
             text=True
@@ -38,7 +51,7 @@ class TestMigrationOrder:
     def test_migration_heads_consistency(self):
         """Test que les têtes de migration sont cohérentes."""
         result = subprocess.run(
-            ["alembic", "heads"],
+            self._alembic_cmd("heads"),
             cwd=Path(__file__).parent.parent,
             capture_output=True,
             text=True
@@ -55,7 +68,7 @@ class TestMigrationOrder:
     def test_migration_dependencies(self):
         """Test que les dépendances entre migrations sont correctes."""
         result = subprocess.run(
-            ["alembic", "show", "head"],
+            self._alembic_cmd("show", "head"),
             cwd=Path(__file__).parent.parent,
             capture_output=True,
             text=True
@@ -65,13 +78,14 @@ class TestMigrationOrder:
         
         # Vérifier que la migration de tête existe et est valide
         assert "Revision ID:" in result.stdout
-        assert "Parent revision(s):" in result.stdout
+        # Alembic output phrasing varies by version: accept either
+        assert ("Parent revision(s):" in result.stdout) or ("Parent:" in result.stdout)
     
     def test_migration_files_exist(self):
         """Test que tous les fichiers de migration référencés existent."""
         # Obtenir la liste des migrations
         result = subprocess.run(
-            ["alembic", "history", "--verbose"],
+            self._alembic_cmd("history", "--verbose"),
             cwd=Path(__file__).parent.parent,
             capture_output=True,
             text=True
@@ -125,8 +139,15 @@ class TestMigrationOrder:
                 continue
                 
             # Vérifier la syntaxe Python
+            python_exec = shutil.which("python")
+            if not python_exec:
+                candidate = Path(__file__).parent.parent / "venv" / "bin" / "python"
+                if candidate.exists():
+                    python_exec = str(candidate)
+                else:
+                    pytest.skip("python executable not found in PATH or local venv")
             result = subprocess.run(
-                ["python", "-m", "py_compile", str(migration_file)],
+                [python_exec, "-m", "py_compile", str(migration_file)],
                 capture_output=True,
                 text=True
             )

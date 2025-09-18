@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
+from recyclic_api.schemas.auth import LoginResponse, AuthUser
 
 
 class TestAuthLoginEndpoint:
@@ -43,11 +44,24 @@ class TestAuthLoginEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
-        assert "token_type" in data
-        assert data["token_type"] == "bearer"
-        assert "user" in data
-        assert data["user"]["username"] == "testuser_endpoint"
+        
+        # Validation du schéma Pydantic de la réponse
+        try:
+            validated_response = LoginResponse(**data)
+            # Vérifications sur le contenu
+            assert validated_response.access_token is not None
+            assert validated_response.token_type == "bearer"
+            assert validated_response.user is not None
+            
+            # Validation de l'utilisateur dans la réponse
+            user_data = validated_response.user
+            assert user_data.username == "testuser_endpoint"
+            assert user_data.role == UserRole.USER.value
+            assert user_data.status == UserStatus.APPROVED.value
+            assert user_data.is_active is True
+            assert user_data.id is not None
+        except Exception as e:
+            pytest.fail(f"Validation Pydantic échouée pour la réponse de login: {e}")
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
 

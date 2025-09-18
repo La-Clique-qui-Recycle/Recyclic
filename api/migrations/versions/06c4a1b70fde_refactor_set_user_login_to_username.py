@@ -21,8 +21,8 @@ def upgrade() -> None:
     # Set username from email (removing @domain.com) for users without username
     op.execute("""
         UPDATE users
-        SET username = split_part(email, '@', 1) || '_' || SUBSTRING(id::text, 1, 6)
-        WHERE username IS NULL
+        SET username = COALESCE(NULLIF(username, ''), split_part(email, '@', 1) || '_' || SUBSTRING(id::text, 1, 6))
+        WHERE username IS NULL OR username = ''
     """)
 
     # Step 2: Make username unique and not null

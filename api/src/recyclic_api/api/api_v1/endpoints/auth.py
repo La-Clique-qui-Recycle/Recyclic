@@ -5,15 +5,22 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
+import logging
+import time
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.security import create_access_token, verify_password, hash_password, create_reset_token, verify_reset_token
 from recyclic_api.models.user import User, UserRole, UserStatus
+from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse
+from recyclic_api.utils.auth_metrics import auth_metrics
 
 # Create rate limiter with Redis backend (using existing Redis connection)
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(tags=["auth"])
+
+# Configure logger for authentication events
+logger = logging.getLogger(__name__)
 
 # Add rate limit exception handler (should be added to main app, not router)
 # router.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -32,8 +39,12 @@ def conditional_rate_limit(limit_str):
     return decorator
 
 @router.post("/login", response_model=LoginResponse)
+@conditional_rate_limit("10/minute")
 async def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
     """Authentifie un utilisateur via son nom d'utilisateur et mot de passe, et retourne un JWT."""
+
+    start_time = time.time()
+    client_ip = getattr(request.client, 'host', 'unknown') if request.client else 'unknown'
 
     # Récupérer l'utilisateur par son nom d'utilisateur
     result = db.execute(select(User).where(User.username == payload.username))
@@ -41,6 +52,33 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
 
     # Vérifier si l'utilisateur existe et est actif
     if not user or not user.is_active:
+        # Log failed login attempt
+        logger.warning(f"Failed login attempt for username: {payload.username}, IP: {client_ip}")
+
+        # Record metrics for failed login
+        elapsed_ms = (time.time() - start_time) * 1000
+        auth_metrics.record_login_attempt(
+            username=payload.username,
+            success=False,
+            elapsed_ms=elapsed_ms,
+            client_ip=client_ip,
+            error_type="invalid_user_or_inactive"
+        )
+
+        # Persist failed login attempt
+        try:
+            db.add(LoginHistory(
+                id=__import__("uuid").uuid4(),
+                user_id=None,
+                username=payload.username,
+                success=False,
+                client_ip=client_ip,
+                error_type="invalid_user_or_inactive",
+            ))
+            db.commit()
+        except Exception:
+            db.rollback()
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiants invalides ou utilisateur inactif",
@@ -48,6 +86,33 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
 
     # Vérifier le mot de passe
     if not verify_password(payload.password, user.hashed_password):
+        # Log failed login attempt due to invalid password
+        logger.warning(f"Failed login attempt for username: {payload.username}, IP: {client_ip}")
+
+        # Record metrics for failed login
+        elapsed_ms = (time.time() - start_time) * 1000
+        auth_metrics.record_login_attempt(
+            username=payload.username,
+            success=False,
+            elapsed_ms=elapsed_ms,
+            client_ip=client_ip,
+            error_type="invalid_password"
+        )
+
+        # Persist failed login attempt
+        try:
+            db.add(LoginHistory(
+                id=__import__("uuid").uuid4(),
+                user_id=user.id if user else None,
+                username=payload.username,
+                success=False,
+                client_ip=client_ip,
+                error_type="invalid_password",
+            ))
+            db.commit()
+        except Exception:
+            db.rollback()
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiants invalides ou utilisateur inactif",
@@ -55,6 +120,33 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
 
     # Créer le token JWT
     token = create_access_token({"sub": str(user.id)})
+
+    # Log successful login
+    logger.info(f"Successful login for user_id: {user.id}")
+
+    # Record metrics for successful login
+    elapsed_ms = (time.time() - start_time) * 1000
+    auth_metrics.record_login_attempt(
+        username=payload.username,
+        success=True,
+        elapsed_ms=elapsed_ms,
+        client_ip=client_ip,
+        user_id=str(user.id)
+    )
+
+    # Persist successful login
+    try:
+        db.add(LoginHistory(
+            id=__import__("uuid").uuid4(),
+            user_id=user.id,
+            username=payload.username,
+            success=True,
+            client_ip=client_ip,
+            error_type=None,
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
 
     return LoginResponse(
         access_token=token,
@@ -78,6 +170,15 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
 @conditional_rate_limit("5/minute")
 async def signup(request: Request, payload: SignupRequest, db: Session = Depends(get_db)) -> SignupResponse:
     """Crée un nouveau compte utilisateur en attente de validation."""
+
+    # Validation simple de l'email si fourni
+    if payload.email is not None:
+        email_val = str(payload.email)
+        if "@" not in email_val or "." not in email_val:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Email invalide",
+            )
 
     # Vérifier si le nom d'utilisateur existe déjà
     result = db.execute(select(User).where(User.username == payload.username))
@@ -163,9 +264,18 @@ async def reset_password(payload: ResetPasswordRequest, db: Session = Depends(ge
     from recyclic_api.core.security import validate_password_strength
     is_valid, errors = validate_password_strength(payload.new_password)
     if not is_valid:
+        # Translate common English messages to French keywords expected by tests
+        translations = {
+            "Password must be at least 8 characters long": "Le mot de passe doit contenir au moins 8 caractères",
+            "Password must contain at least one uppercase letter": "Le mot de passe doit contenir au moins une lettre majuscule",
+            "Password must contain at least one lowercase letter": "Le mot de passe doit contenir au moins une lettre minuscule",
+            "Password must contain at least one digit": "Le mot de passe doit contenir au moins un chiffre",
+            "Password must contain at least one special character": "Le mot de passe doit contenir au moins un caractère spécial",
+        }
+        fr_errors = [translations.get(e, e) for e in errors]
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Mot de passe invalide: {' '.join(errors)}",
+            detail=f"Mot de passe invalide: {' '.join(fr_errors)}",
         )
 
     # Hasher le nouveau mot de passe

@@ -22,6 +22,7 @@ class UserStatus(str, enum.Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+    ACTIVE = "active"
 
 class User(Base):
     __tablename__ = "users"
@@ -43,6 +44,7 @@ class User(Base):
     # Relationships
     deposits = relationship("Deposit", back_populates="user")
     cash_sessions = relationship("CashSession", back_populates="operator")
+    status_history = relationship("UserStatusHistory", foreign_keys="UserStatusHistory.user_id", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, telegram_id={self.telegram_id}, role={self.role}, status={self.status})>"

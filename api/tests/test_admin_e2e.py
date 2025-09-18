@@ -14,7 +14,9 @@ from recyclic_api.main import app
 from recyclic_api.core.database import get_db
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.auth import create_access_token
+from recyclic_api.core.security import hash_password
 from recyclic_api.core.config import settings
+from recyclic_api.schemas.admin import AdminResponse, AdminUser
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine.url import make_url
@@ -112,7 +114,8 @@ def e2e_client() -> Generator[TestClient, None, None]:
             last_name=TEST_ADMIN_USER["last_name"],
             role=TEST_ADMIN_USER["role"],
             status=TEST_ADMIN_USER["status"],
-            is_active=TEST_ADMIN_USER["is_active"]
+            is_active=TEST_ADMIN_USER["is_active"],
+            hashed_password=hash_password("AdminTest123!")
         )
 
         # Create regular test user (generate UUID from string ID for consistency)
@@ -124,7 +127,8 @@ def e2e_client() -> Generator[TestClient, None, None]:
             last_name=TEST_USER["last_name"],
             role=TEST_USER["role"],
             status=TEST_USER["status"],
-            is_active=TEST_USER["is_active"]
+            is_active=TEST_USER["is_active"],
+            hashed_password=hash_password("UserTest123!")
         )
 
         db.add(admin_user)
@@ -161,10 +165,45 @@ def user_headers(user_token):
     return {"Authorization": f"Bearer {user_token}"}
 
 @pytest.fixture
-def test_db():
+def test_db(db_session):
     """Base de données de test avec des utilisateurs"""
-    # Cette fixture sera configurée par pytest avec la base de test
-    pass
+    admin_uuid = uuid.UUID(get_admin_uuid())
+    user_uuid = uuid.UUID(get_user_uuid())
+    
+    # Vérifier si l'utilisateur admin existe déjà
+    existing_admin = db_session.query(User).filter(User.id == admin_uuid).first()
+    if not existing_admin:
+        admin_user = User(
+            id=admin_uuid,
+            telegram_id=TEST_ADMIN_USER["telegram_id"],
+            username=TEST_ADMIN_USER["username"],
+            first_name=TEST_ADMIN_USER["first_name"],
+            last_name=TEST_ADMIN_USER["last_name"],
+            role=TEST_ADMIN_USER["role"],
+            status=TEST_ADMIN_USER["status"],
+            is_active=TEST_ADMIN_USER["is_active"],
+            hashed_password=hash_password("admin_password")
+        )
+        db_session.add(admin_user)
+    
+    # Vérifier si l'utilisateur normal existe déjà
+    existing_user = db_session.query(User).filter(User.id == user_uuid).first()
+    if not existing_user:
+        normal_user = User(
+            id=user_uuid,
+            telegram_id=TEST_USER["telegram_id"],
+            username=TEST_USER["username"],
+            first_name=TEST_USER["first_name"],
+            last_name=TEST_USER["last_name"],
+            role=TEST_USER["role"],
+            status=TEST_USER["status"],
+            is_active=TEST_USER["is_active"],
+            hashed_password=hash_password("user_password")
+        )
+        db_session.add(normal_user)
+    
+    db_session.commit()
+    return db_session
 
 class TestAdminE2E:
     """Tests d'intégration E2E pour l'administration"""
@@ -178,14 +217,20 @@ class TestAdminE2E:
         assert isinstance(data, list)
         assert len(data) >= 0  # Au moins 0 utilisateurs (peut être vide)
         
-        # Vérifier la structure des données
-        if data:
-            user = data[0]
-            assert "id" in user
-            assert "telegram_id" in user
-            assert "role" in user
-            assert "status" in user
-            assert "is_active" in user
+        # Validation du schéma Pydantic pour chaque utilisateur
+        for user_data in data:
+            try:
+                validated_user = AdminUser(**user_data)
+                # Vérifications supplémentaires sur le contenu
+                assert validated_user.id is not None
+                assert validated_user.telegram_id is not None
+                assert validated_user.role in [role.value for role in UserRole]
+                assert validated_user.status in [status.value for status in UserStatus]
+                assert isinstance(validated_user.is_active, bool)
+                assert validated_user.created_at is not None
+                assert validated_user.updated_at is not None
+            except Exception as e:
+                pytest.fail(f"Validation Pydantic échouée pour l'utilisateur {user_data}: {e}")
     
     def test_admin_can_filter_users_by_role(self, e2e_client: TestClient, admin_headers, test_db):
         """Test : Un admin peut filtrer les utilisateurs par rôle"""
@@ -198,9 +243,19 @@ class TestAdminE2E:
         data = response.json()
         assert isinstance(data, list)
         
-        # Vérifier que tous les utilisateurs retournés ont le rôle "user"
-        for user in data:
-            assert user["role"] == "user"
+        # Validation du schéma Pydantic et vérification du contenu
+        for user_data in data:
+            try:
+                validated_user = AdminUser(**user_data)
+                # Vérifier que tous les utilisateurs retournés ont le rôle "user"
+                assert validated_user.role == UserRole.USER
+                # Vérifications supplémentaires
+                assert validated_user.id is not None
+                assert validated_user.telegram_id is not None
+                assert validated_user.status in [status.value for status in UserStatus]
+                assert isinstance(validated_user.is_active, bool)
+            except Exception as e:
+                pytest.fail(f"Validation Pydantic échouée pour l'utilisateur {user_data}: {e}")
     
     def test_admin_can_filter_users_by_status(self, e2e_client: TestClient, admin_headers, test_db):
         """Test : Un admin peut filtrer les utilisateurs par statut"""
@@ -213,14 +268,24 @@ class TestAdminE2E:
         data = response.json()
         assert isinstance(data, list)
         
-        # Vérifier que tous les utilisateurs retournés ont le statut "approved"
-        for user in data:
-            assert user["status"] == "approved"
+        # Validation du schéma Pydantic et vérification du contenu
+        for user_data in data:
+            try:
+                validated_user = AdminUser(**user_data)
+                # Vérifier que tous les utilisateurs retournés ont le statut "approved"
+                assert validated_user.status == UserStatus.APPROVED
+                # Vérifications supplémentaires
+                assert validated_user.id is not None
+                assert validated_user.telegram_id is not None
+                assert validated_user.role in [role.value for role in UserRole]
+                assert isinstance(validated_user.is_active, bool)
+            except Exception as e:
+                pytest.fail(f"Validation Pydantic échouée pour l'utilisateur {user_data}: {e}")
     
     def test_admin_can_update_user_role(self, e2e_client: TestClient, admin_headers, test_db):
         """Test : Un admin peut modifier le rôle d'un utilisateur"""
         # Utilise l'ID UUID généré pour l'utilisateur de test
-        user_id = get_user_uuid()
+        user_id = uuid.UUID(get_user_uuid())
         new_role = "cashier"
         
         response = e2e_client.put(
@@ -231,13 +296,26 @@ class TestAdminE2E:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["role"] == new_role
-        assert "previous_role" in data["data"]
+        
+        # Validation du schéma Pydantic de la réponse
+        try:
+            validated_response = AdminResponse(**data)
+            assert validated_response.success is True
+            assert validated_response.message is not None
+            assert validated_response.data is not None
+            
+            # Vérifications sur le contenu des données
+            response_data = validated_response.data
+            assert response_data["role"] == new_role
+            assert "previous_role" in response_data
+            assert response_data["previous_role"] in [role.value for role in UserRole]
+            assert response_data["role"] in [role.value for role in UserRole]
+        except Exception as e:
+            pytest.fail(f"Validation Pydantic échouée pour la réponse de mise à jour: {e}")
     
     def test_admin_cannot_downgrade_own_role(self, e2e_client: TestClient, admin_headers, test_db):
         """Test : Un admin ne peut pas se déclasser lui-même"""
-        admin_id = get_admin_uuid()
+        admin_id = uuid.UUID(get_admin_uuid())
         new_role = "user"
         
         response = e2e_client.put(
@@ -293,7 +371,7 @@ class TestAdminE2E:
     
     def test_invalid_role_update_fails(self, e2e_client: TestClient, admin_headers, test_db):
         """Test : Mise à jour avec un rôle invalide échoue"""
-        user_id = get_user_uuid()
+        user_id = uuid.UUID(get_user_uuid())
         
         response = e2e_client.put(
             f"/api/v1/admin/users/{user_id}/role",

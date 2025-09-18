@@ -31,6 +31,10 @@ target_metadata = Base.metadata
 # ... etc.
 
 def get_url():
+    # Prefer URL provided by Alembic config (e.g., tests), fallback to settings
+    cfg_url = config.get_main_option("sqlalchemy.url")
+    if cfg_url:
+        return cfg_url
     return settings.DATABASE_URL
 
 def run_migrations_offline() -> None:

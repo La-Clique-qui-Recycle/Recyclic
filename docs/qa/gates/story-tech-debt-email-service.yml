@@ -1,0 +1,54 @@
+schema: 1
+story: "tech-debt.email"
+story_title: "Mise en place du service d'envoi d'emails"
+gate: "PASS"
+status_reason: "Tous les critères d'acceptation satisfaits, couverture de tests adéquate, implémentation propre et maintenable."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-17T00:00:00Z"
+
+# Always present but only active when WAIVED
+waiver: { active: false }
+
+# Issues (if any) - Use fixed severity: low | medium | high
+top_issues: []
+
+# Risk summary (from risk-profile task if run)
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+# Quality and expiry
+quality_score: 95
+expires: "2025-10-01T00:00:00Z"
+
+# Evidence
+evidence:
+  tests_reviewed: 10
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+# NFR validation
+nfr_validation:
+  security: { status: PASS, notes: "Clé API via env; aucune fuite; gestion erreurs" }
+  performance: { status: PASS, notes: "Appels ponctuels; impact faible" }
+  reliability: { status: PASS, notes: "Gestion ApiException et exceptions génériques" }
+  maintainability: { status: PASS, notes: "Service dédié, lazy init, tests complets" }
+
+# Recommendations
+recommendations:
+  immediate: []
+  future:
+    - action: "Metrics & logs email (observabilité) — DONE"
+    - action: "Webhooks Brevo (bounces/spam) — DONE"
+    - action: "Expéditeur par env + runbook secrets — DONE"
+
+# Final Assessment
+final_assessment:
+  score: 95
+  status: "GOOD"
+  notes: "Implémentation conforme avec bonnes pratiques; quelques améliorations futures proposées."
+

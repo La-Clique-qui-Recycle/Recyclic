@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-09-17T16:36:41Z",
+  "event": "rollback_failed",
+  "version": "version-inexistante",
+  "duration_seconds": "1",
+  "status": "error",
+  "hostname": "Strophe-AI",
+  "user": "strophe"
+}

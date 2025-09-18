@@ -52,7 +52,11 @@
       "Bash(npm run codegen:*)",
       "Bash(npm test:*)",
       "Bash(pip install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

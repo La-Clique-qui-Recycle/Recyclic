@@ -1,26 +1,31 @@
-FROM node:18-alpine
-
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+# Étape 1: Builder l'application React
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copier les fichiers de dépendances et les installer
 COPY package*.json ./
-
-# Change ownership and switch to non-root user
-RUN chown -R node:node /app
-USER node
-
-# Install dependencies as non-root user
 RUN npm ci
 
-# Copy source code
-COPY index.html ./
-COPY src/ ./src/
-COPY public/ ./public/
-COPY vite.config.js ./
+# Copier le reste du code source
+COPY . .
 
-EXPOSE 3000
+# Définir les arguments de build pour les variables d'environnement
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Construire l'application pour la production
+RUN npm run build
+
+# Étape 2: Servir l'application avec Nginx
+FROM nginx:stable-alpine
+
+# Copier les fichiers de build de l'étape précédente
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copier la configuration Nginx personnalisée
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

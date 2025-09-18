@@ -3,7 +3,7 @@ Module d'audit pour tracer les actions importantes
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 
@@ -43,7 +43,7 @@ def log_role_change(
         "old_role": old_role,
         "new_role": new_role,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error_message:
@@ -77,7 +77,7 @@ def log_admin_access(
         "username": username,
         "endpoint": endpoint,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error_message:
@@ -111,7 +111,7 @@ def log_user_creation(
         "new_user_id": new_user_id,
         "new_username": new_username,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error_message:
@@ -144,7 +144,7 @@ def log_security_event(
         "username": username,
         "details": details,
         "severity": severity,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if severity == "error":
@@ -182,7 +182,7 @@ def log_cash_session_opening(
         "initial_amount": initial_amount,
         "site_id": site_id,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error_message:
@@ -221,7 +221,7 @@ def log_cash_session_closing(
         "total_sales": total_sales,
         "total_items": total_items,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error_message:
@@ -262,7 +262,7 @@ def log_cash_sale(
         "payment_method": payment_method,
         "deposit_id": deposit_id,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error_message:
@@ -297,7 +297,7 @@ def log_cash_session_access(
         "session_id": session_id,
         "access_action": action,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error_message:

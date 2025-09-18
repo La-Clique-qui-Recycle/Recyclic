@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from recyclic_api.core.database import get_db
-from recyclic_api.core.auth import get_current_user, require_role
+from recyclic_api.core.auth import get_current_user, require_role, require_role_strict
 from recyclic_api.core.audit import (
     log_cash_session_opening,
     log_cash_session_closing,
@@ -88,7 +88,7 @@ router = APIRouter()
 async def create_cash_session(
     session_data: CashSessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     
@@ -205,7 +205,7 @@ async def get_cash_sessions(
     date_from: Optional[datetime] = Query(None, description="Date de début (ISO 8601)"),
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     
@@ -231,7 +231,7 @@ async def get_cash_sessions(
 @router.get("/current", response_model=Optional[CashSessionResponse])
 async def get_current_cash_session(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté.
@@ -250,7 +250,7 @@ async def get_current_cash_session(
 async def get_cash_session(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Récupère une session de caisse par son ID.
@@ -452,7 +452,7 @@ async def get_cash_session_stats(
     date_from: Optional[datetime] = Query(None),
     date_to: Optional[datetime] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Récupère les statistiques des sessions de caisse.

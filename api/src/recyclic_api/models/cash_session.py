@@ -1,8 +1,8 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, ForeignKey, Enum
+from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum as PyEnum
 import uuid
 
@@ -38,7 +38,11 @@ class CashSession(Base):
     current_amount = Column(Float, nullable=False, default=0.0)
     
     # Statut de la session
-    status = Column(Enum(CashSessionStatus), nullable=False, default=CashSessionStatus.OPEN)
+    status = Column(
+        SAEnum(CashSessionStatus, values_callable=lambda obj: [e.name for e in obj]),
+        nullable=False,
+        default=CashSessionStatus.OPEN,
+    )
     
     # Timestamps
     opened_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
@@ -50,6 +54,39 @@ class CashSession(Base):
     
     # Relations
     sales = relationship("Sale", back_populates="cash_session", cascade="all, delete-orphan")
+
+    def __init__(self, **kwargs):
+        op_id = kwargs.get("operator_id")
+        if isinstance(op_id, str):
+            try:
+                kwargs["operator_id"] = uuid.UUID(op_id)
+            except Exception:
+                pass
+        st_id = kwargs.get("site_id")
+        if isinstance(st_id, str):
+            try:
+                kwargs["site_id"] = uuid.UUID(st_id)
+            except Exception:
+                pass
+        _id = kwargs.get("id")
+        if isinstance(_id, str):
+            try:
+                kwargs["id"] = uuid.UUID(_id)
+            except Exception:
+                pass
+        # Normalize status
+        s = kwargs.get("status")
+        if isinstance(s, str):
+            try:
+                s_norm = s.strip().lower()
+                if s_norm in ("open", "closed"):
+                    kwargs["status"] = CashSessionStatus.OPEN if s_norm == "open" else CashSessionStatus.CLOSED
+                else:
+                    # Try by enum name
+                    kwargs["status"] = CashSessionStatus[s]
+            except Exception:
+                pass
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return f"<CashSession(id='{self.id}', operator_id='{self.operator_id}', status='{self.status.value}')>"
@@ -71,7 +108,7 @@ class CashSession(Base):
     def close_session(self):
         """Ferme la session de caisse."""
         self.status = CashSessionStatus.CLOSED
-        self.closed_at = datetime.utcnow()
+        self.closed_at = datetime.now(timezone.utc)
 
     def add_sale(self, amount: float):
         """Ajoute une vente à la session."""

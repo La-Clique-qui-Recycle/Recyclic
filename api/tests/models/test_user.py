@@ -43,13 +43,20 @@ def db_setup():
     ensure_test_database(TEST_DB_URL)
     create_schema(TEST_DB_URL)
     yield
-    # Cleanup by dropping the test database completely
-    u = make_url(TEST_DB_URL)
-    admin_url = u.set(database="postgres")
-    admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
-    with admin_engine.connect() as conn:
-        conn.execute(text(f'DROP DATABASE IF EXISTS "{u.database}"'))
-    admin_engine.dispose()
+    # Cleanup: attempt to drop the test database (best-effort)
+    try:
+        u = make_url(TEST_DB_URL)
+        admin_url = u.set(database="postgres")
+        admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+        with admin_engine.connect() as conn:
+            try:
+                conn.execute(text(f'DROP DATABASE IF EXISTS "{u.database}"'))
+            except Exception:
+                # Ignore if DB is in use; leave for global cleanup
+                pass
+        admin_engine.dispose()
+    except Exception:
+        pass
 
 @pytest.fixture(scope="function")
 def db_session(db_setup):
@@ -217,4 +224,3 @@ def test_user_username_required(db_session):
     db_session.add(user)
     with pytest.raises(IntegrityError):  # Should raise integrity error due to null username
         db_session.commit()
-

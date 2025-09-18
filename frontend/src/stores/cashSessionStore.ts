@@ -26,10 +26,30 @@ export interface CashSessionUpdate {
   total_items?: number;
 }
 
+export interface SaleItem {
+  id: string;
+  category: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+export interface SaleCreate {
+  cash_session_id: string;
+  items: {
+    category: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+  }[];
+  total_amount: number;
+}
+
 interface CashSessionState {
   // State
   currentSession: CashSession | null;
   sessions: CashSession[];
+  currentSaleItems: SaleItem[];
   loading: boolean;
   error: string | null;
   
@@ -39,6 +59,12 @@ interface CashSessionState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
+
+  // Sale actions
+  addSaleItem: (item: Omit<SaleItem, 'id'>) => void;
+  removeSaleItem: (itemId: string) => void;
+  clearCurrentSale: () => void;
+  submitSale: (items: SaleItem[]) => Promise<boolean>;
   
   // Async actions
   openSession: (data: CashSessionCreate) => Promise<CashSession | null>;
@@ -56,6 +82,7 @@ export const useCashSessionStore = create<CashSessionState>()(
         // Initial state
         currentSession: null,
         sessions: [],
+        currentSaleItems: [],
         loading: false,
         error: null,
 
@@ -65,6 +92,77 @@ export const useCashSessionStore = create<CashSessionState>()(
         setLoading: (loading) => set({ loading }),
         setError: (error) => set({ error }),
         clearError: () => set({ error: null }),
+
+        // Sale actions
+        addSaleItem: (item: Omit<SaleItem, 'id'>) => {
+          const newItem: SaleItem = {
+            ...item,
+            id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          };
+
+          set((state) => ({
+            currentSaleItems: [...state.currentSaleItems, newItem]
+          }));
+        },
+
+        removeSaleItem: (itemId: string) => {
+          set((state) => ({
+            currentSaleItems: state.currentSaleItems.filter(item => item.id !== itemId)
+          }));
+        },
+
+        clearCurrentSale: () => {
+          set({ currentSaleItems: [] });
+        },
+
+        submitSale: async (items: SaleItem[]): Promise<boolean> => {
+          const { currentSession } = get();
+
+          if (!currentSession) {
+            set({ error: 'Aucune session de caisse active' });
+            return false;
+          }
+
+          set({ loading: true, error: null });
+
+          try {
+            const saleData: SaleCreate = {
+              cash_session_id: currentSession.id,
+              items: items.map(item => ({
+                category: item.category,
+                quantity: item.quantity,
+                unit_price: item.price,
+                total_price: item.total
+              })),
+              total_amount: items.reduce((sum, item) => sum + item.total, 0)
+            };
+
+            // Call API to create sale
+            const response = await fetch('/api/v1/sales', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(saleData)
+            });
+
+            if (!response.ok) {
+              throw new Error('Erreur lors de l\'enregistrement de la vente');
+            }
+
+            // Clear current sale on success
+            set({
+              currentSaleItems: [],
+              loading: false
+            });
+
+            return true;
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'enregistrement de la vente';
+            set({ error: errorMessage, loading: false });
+            return false;
+          }
+        },
 
         // Async actions
         openSession: async (data: CashSessionCreate): Promise<CashSession | null> => {
@@ -189,8 +287,9 @@ export const useCashSessionStore = create<CashSessionState>()(
       }),
       {
         name: 'cash-session-store',
-        partialize: (state) => ({ 
-          currentSession: state.currentSession 
+        partialize: (state) => ({
+          currentSession: state.currentSession,
+          currentSaleItems: state.currentSaleItems
         })
       }
     ),

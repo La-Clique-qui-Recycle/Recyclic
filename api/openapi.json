@@ -864,7 +864,7 @@
           "sales"
         ],
         "summary": "Create Sale",
-        "description": "Create new sale",
+        "description": "Create new sale with items",
         "operationId": "create_sale_api_v1_sales__post",
         "requestBody": {
           "required": true,
@@ -926,195 +926,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaleResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sales/direct": {
-      "post": {
-        "tags": [
-          "sales"
-        ],
-        "summary": "Create Direct Sale",
-        "description": "Créer une nouvelle vente directe",
-        "operationId": "create_direct_sale_api_v1_sales_direct_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaleDirectCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SaleDirectResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/sales/direct/{sale_id}": {
-      "get": {
-        "tags": [
-          "sales"
-        ],
-        "summary": "Get Direct Sale",
-        "description": "Récupérer une vente directe par son ID",
-        "operationId": "get_direct_sale_api_v1_sales_direct__sale_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "sale_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Sale Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SaleDirectResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "sales"
-        ],
-        "summary": "Delete Direct Sale",
-        "description": "Supprimer une vente directe",
-        "operationId": "delete_direct_sale_api_v1_sales_direct__sale_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "sale_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Sale Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sales/direct/session/{cash_session_id}": {
-      "get": {
-        "tags": [
-          "sales"
-        ],
-        "summary": "Get Direct Sales By Session",
-        "description": "Récupérer toutes les ventes directes d'une session de caisse",
-        "operationId": "get_direct_sales_by_session_api_v1_sales_direct_session__cash_session_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cash_session_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cash Session Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SaleDirectResponse"
-                  },
-                  "title": "Response Get Direct Sales By Session Api V1 Sales Direct Session  Cash Session Id  Get"
                 }
               }
             }
@@ -1992,6 +1803,132 @@
         }
       }
     },
+    "/api/v1/monitoring/test-email": {
+      "post": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Send Test Email",
+        "description": "Send a test email to verify email service functionality.\n\nThis endpoint is temporary and used for testing the email service configuration.\n\nArgs:\n    request: Contains the recipient email address\n\nReturns:\n    Success/failure status of the email send operation",
+        "operationId": "send_test_email_api_v1_monitoring_test_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/email/metrics": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Email Metrics",
+        "description": "Get email sending metrics for monitoring and observability.\n\nArgs:\n    hours: Number of hours to include in metrics summary\n\nReturns:\n    Email metrics summary including counters, latencies, and error breakdown",
+        "operationId": "get_email_metrics_api_v1_monitoring_email_metrics_get",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 168,
+              "minimum": 1,
+              "description": "Number of hours to include in metrics (1-168)",
+              "default": 24,
+              "title": "Hours"
+            },
+            "description": "Number of hours to include in metrics (1-168)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/email/metrics/prometheus": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Email Metrics Prometheus",
+        "description": "Get email metrics in Prometheus format.\n\nReturns:\n    Prometheus-formatted metrics as plain text",
+        "operationId": "get_email_metrics_prometheus_api_v1_monitoring_email_metrics_prometheus_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/email/metrics/reset": {
+      "post": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Reset Email Metrics",
+        "description": "Reset email metrics (for testing purposes).\n\nReturns:\n    Confirmation of metrics reset",
+        "operationId": "reset_email_metrics_api_v1_monitoring_email_metrics_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/monitoring/classification/performance": {
       "get": {
         "tags": [
@@ -2168,6 +2105,92 @@
         }
       }
     },
+    "/api/v1/monitoring/auth/metrics": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Auth Metrics",
+        "description": "Get authentication metrics for monitoring and observability.\n\nArgs:\n    hours: Number of hours to include in metrics summary\n\nReturns:\n    Authentication metrics summary including login success rates and error breakdown",
+        "operationId": "get_auth_metrics_api_v1_monitoring_auth_metrics_get",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 168,
+              "minimum": 1,
+              "description": "Number of hours to include in metrics (1-168)",
+              "default": 24,
+              "title": "Hours"
+            },
+            "description": "Number of hours to include in metrics (1-168)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/auth/metrics/prometheus": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Auth Metrics Prometheus",
+        "description": "Get authentication metrics in Prometheus format.\n\nReturns:\n    Prometheus-formatted metrics as plain text",
+        "operationId": "get_auth_metrics_prometheus_api_v1_monitoring_auth_metrics_prometheus_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/auth/metrics/reset": {
+      "post": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Reset Auth Metrics",
+        "description": "Reset authentication metrics (for testing purposes).\n\nReturns:\n    Confirmation of metrics reset",
+        "operationId": "reset_auth_metrics_api_v1_monitoring_auth_metrics_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "tags": [
@@ -2205,6 +2228,317 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/signup": {
+      "post": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Signup",
+        "description": "Crée un nouveau compte utilisateur en attente de validation.",
+        "operationId": "signup_api_v1_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Forgot Password",
+        "description": "Génère un token de réinitialisation et l'envoie par email (ou le log).",
+        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgotPasswordResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Reset Password",
+        "description": "Réinitialise le mot de passe avec un token valide.",
+        "operationId": "reset_password_api_v1_auth_reset_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/webhook": {
+      "post": {
+        "tags": [
+          "email"
+        ],
+        "summary": "Brevo Webhook",
+        "description": "Handle Brevo webhook events for email delivery status updates.\n\nThis endpoint receives notifications from Brevo about email events\nlike deliveries, bounces, spam complaints, etc.\n\nArgs:\n    request: FastAPI request object containing the webhook payload\n    db: Database session\n    x_mailin_signature: Brevo webhook signature for verification\n\nReturns:\n    Confirmation of webhook processing",
+        "operationId": "brevo_webhook_api_v1_email_webhook_post",
+        "parameters": [
+          {
+            "name": "X-Mailin-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Mailin-Signature"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/status/{email_address}": {
+      "get": {
+        "tags": [
+          "email"
+        ],
+        "summary": "Get Email Status",
+        "description": "Get the current delivery status of an email.\n\nArgs:\n    email_address: Email address to check status for\n    message_id: Optional message ID for specific email lookup\n    db: Database session\n\nReturns:\n    Email status information",
+        "operationId": "get_email_status_api_v1_email_status__email_address__get",
+        "parameters": [
+          {
+            "name": "email_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Email Address"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional message ID for specific lookup",
+              "title": "Message Id"
+            },
+            "description": "Optional message ID for specific lookup"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/events/{email_address}": {
+      "get": {
+        "tags": [
+          "email"
+        ],
+        "summary": "Get Email Events",
+        "description": "Get recent events for an email address.\n\nArgs:\n    email_address: Email address to get events for\n    limit: Maximum number of events to return (1-100)\n    db: Database session\n\nReturns:\n    List of recent email events",
+        "operationId": "get_email_events_api_v1_email_events__email_address__get",
+        "parameters": [
+          {
+            "name": "email_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Email Address"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Maximum number of events to return",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Maximum number of events to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/health": {
+      "get": {
+        "tags": [
+          "email"
+        ],
+        "summary": "Email Service Health",
+        "description": "Health check for email service components.\n\nReturns:\n    Health status of email service dependencies",
+        "operationId": "email_service_health_api_v1_email_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -3201,6 +3535,37 @@
         ],
         "title": "EEECategory"
       },
+      "ForgotPasswordRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "Adresse email de l'utilisateur"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ForgotPasswordRequest",
+        "description": "Schéma de requête pour demander la réinitialisation du mot de passe."
+      },
+      "ForgotPasswordResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Message de confirmation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ForgotPasswordResponse",
+        "description": "Réponse pour la demande de réinitialisation du mot de passe."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3259,16 +3624,6 @@
         ],
         "title": "LoginResponse",
         "description": "Réponse d'authentification contenant le token et l'utilisateur."
-      },
-      "PaymentMethod": {
-        "type": "string",
-        "enum": [
-          "cash",
-          "card",
-          "mobile_payment",
-          "voucher"
-        ],
-        "title": "PaymentMethod"
       },
       "PendingUserResponse": {
         "properties": {
@@ -3362,92 +3717,147 @@
         "title": "PendingUserResponse",
         "description": "Schéma pour la réponse des utilisateurs en attente"
       },
+      "ResetPasswordRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Token de réinitialisation"
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 8,
+            "title": "New Password",
+            "description": "Nouveau mot de passe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "ResetPasswordRequest",
+        "description": "Schéma de requête pour réinitialiser le mot de passe."
+      },
+      "ResetPasswordResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Message de confirmation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ResetPasswordResponse",
+        "description": "Réponse pour la réinitialisation du mot de passe."
+      },
       "SaleCreate": {
         "properties": {
           "cash_session_id": {
             "type": "string",
             "title": "Cash Session Id"
           },
-          "deposit_id": {
-            "type": "string",
-            "title": "Deposit Id"
-          },
-          "amount": {
-            "type": "number",
-            "title": "Amount"
-          },
-          "payment_method": {
-            "$ref": "#/components/schemas/PaymentMethod"
-          }
-        },
-        "type": "object",
-        "required": [
-          "cash_session_id",
-          "deposit_id",
-          "amount",
-          "payment_method"
-        ],
-        "title": "SaleCreate"
-      },
-      "SaleDirectCreate": {
-        "properties": {
-          "cash_session_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Cash Session Id",
-            "description": "ID de la session de caisse"
-          },
-          "total_amount": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Total Amount",
-            "description": "Montant total de la vente"
-          },
-          "payment_method": {
-            "$ref": "#/components/schemas/PaymentMethod",
-            "description": "Méthode de paiement",
-            "default": "cash"
-          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/SaleItemCreate"
             },
             "type": "array",
-            "minItems": 1,
-            "title": "Items",
-            "description": "Articles de la vente"
+            "title": "Items"
+          },
+          "total_amount": {
+            "type": "number",
+            "title": "Total Amount"
           }
         },
         "type": "object",
         "required": [
           "cash_session_id",
-          "total_amount",
-          "items"
+          "items",
+          "total_amount"
         ],
-        "title": "SaleDirectCreate"
+        "title": "SaleCreate"
       },
-      "SaleDirectResponse": {
+      "SaleItemCreate": {
         "properties": {
-          "cash_session_id": {
+          "category": {
             "type": "string",
-            "format": "uuid",
-            "title": "Cash Session Id",
-            "description": "ID de la session de caisse"
+            "title": "Category"
           },
-          "total_amount": {
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "unit_price": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Total Amount",
-            "description": "Montant total de la vente"
+            "title": "Unit Price"
           },
-          "payment_method": {
-            "$ref": "#/components/schemas/PaymentMethod",
-            "description": "Méthode de paiement",
-            "default": "cash"
+          "total_price": {
+            "type": "number",
+            "title": "Total Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "quantity",
+          "unit_price",
+          "total_price"
+        ],
+        "title": "SaleItemCreate"
+      },
+      "SaleItemResponse": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "type": "number",
+            "title": "Unit Price"
+          },
+          "total_price": {
+            "type": "number",
+            "title": "Total Price"
           },
           "id": {
             "type": "string",
-            "format": "uuid",
+            "title": "Id"
+          },
+          "sale_id": {
+            "type": "string",
+            "title": "Sale Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "quantity",
+          "unit_price",
+          "total_price",
+          "id",
+          "sale_id"
+        ],
+        "title": "SaleItemResponse"
+      },
+      "SaleResponse": {
+        "properties": {
+          "cash_session_id": {
+            "type": "string",
+            "title": "Cash Session Id"
+          },
+          "total_amount": {
+            "type": "number",
+            "title": "Total Amount"
+          },
+          "id": {
+            "type": "string",
             "title": "Id"
           },
           "created_at": {
@@ -3477,145 +3887,70 @@
           "created_at",
           "updated_at"
         ],
-        "title": "SaleDirectResponse"
-      },
-      "SaleItemCreate": {
-        "properties": {
-          "category": {
-            "type": "string",
-            "title": "Category",
-            "description": "Catégorie EEE (ex: EEE-1)"
-          },
-          "quantity": {
-            "type": "integer",
-            "exclusiveMinimum": 0.0,
-            "title": "Quantity",
-            "description": "Quantité"
-          },
-          "unit_price": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Unit Price",
-            "description": "Prix unitaire"
-          },
-          "total_price": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Total Price",
-            "description": "Prix total"
-          }
-        },
-        "type": "object",
-        "required": [
-          "category",
-          "quantity",
-          "unit_price",
-          "total_price"
-        ],
-        "title": "SaleItemCreate"
-      },
-      "SaleItemResponse": {
-        "properties": {
-          "category": {
-            "type": "string",
-            "title": "Category",
-            "description": "Catégorie EEE (ex: EEE-1)"
-          },
-          "quantity": {
-            "type": "integer",
-            "exclusiveMinimum": 0.0,
-            "title": "Quantity",
-            "description": "Quantité"
-          },
-          "unit_price": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Unit Price",
-            "description": "Prix unitaire"
-          },
-          "total_price": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Total Price",
-            "description": "Prix total"
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "sale_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Sale Id"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "category",
-          "quantity",
-          "unit_price",
-          "total_price",
-          "id",
-          "sale_id",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "SaleItemResponse"
-      },
-      "SaleResponse": {
-        "properties": {
-          "cash_session_id": {
-            "type": "string",
-            "title": "Cash Session Id"
-          },
-          "deposit_id": {
-            "type": "string",
-            "title": "Deposit Id"
-          },
-          "amount": {
-            "type": "number",
-            "title": "Amount"
-          },
-          "payment_method": {
-            "$ref": "#/components/schemas/PaymentMethod"
-          },
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "cash_session_id",
-          "deposit_id",
-          "amount",
-          "payment_method",
-          "id",
-          "created_at",
-          "updated_at"
-        ],
         "title": "SaleResponse"
+      },
+      "SignupRequest": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Username",
+            "description": "Nom d'utilisateur"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Password",
+            "description": "Mot de passe"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "Adresse email (optionnelle)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "SignupRequest",
+        "description": "Schéma de requête pour l'inscription d'un nouvel utilisateur."
+      },
+      "SignupResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Message de confirmation"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "ID de l'utilisateur créé"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Statut du compte"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "user_id",
+          "status"
+        ],
+        "title": "SignupResponse",
+        "description": "Réponse d'inscription d'un nouvel utilisateur."
       },
       "SiteCreate": {
         "properties": {
@@ -3715,6 +4050,20 @@
           "updated_at"
         ],
         "title": "SiteResponse"
+      },
+      "TestEmailRequest": {
+        "properties": {
+          "to_email": {
+            "type": "string",
+            "format": "email",
+            "title": "To Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "to_email"
+        ],
+        "title": "TestEmailRequest"
       },
       "UserApprovalRequest": {
         "properties": {

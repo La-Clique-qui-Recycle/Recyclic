@@ -13,6 +13,8 @@ import os
 from recyclic_api.utils.performance_monitor import performance_monitor
 from recyclic_api.utils.classification_cache import classification_cache
 from recyclic_api.core.email_service import send_email
+from recyclic_api.utils.email_metrics import email_metrics
+from recyclic_api.utils.auth_metrics import auth_metrics
 
 router = APIRouter()
 
@@ -76,6 +78,62 @@ async def send_test_email(request: TestEmailRequest):
             status_code=500,
             detail=f"Erreur lors de l'envoi de l'email de test: {str(e)}"
         )
+
+
+@router.get("/email/metrics")
+async def get_email_metrics(
+    hours: int = Query(default=24, ge=1, le=168, description="Number of hours to include in metrics (1-168)")
+):
+    """
+    Get email sending metrics for monitoring and observability.
+
+    Args:
+        hours: Number of hours to include in metrics summary
+
+    Returns:
+        Email metrics summary including counters, latencies, and error breakdown
+    """
+    try:
+        metrics_summary = email_metrics.get_metrics_summary(hours=hours)
+        return {
+            "success": True,
+            "metrics": metrics_summary
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get email metrics: {str(e)}")
+
+
+@router.get("/email/metrics/prometheus")
+async def get_email_metrics_prometheus():
+    """
+    Get email metrics in Prometheus format.
+
+    Returns:
+        Prometheus-formatted metrics as plain text
+    """
+    try:
+        prometheus_metrics = email_metrics.get_prometheus_metrics()
+        return "\n".join(prometheus_metrics)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get Prometheus metrics: {str(e)}")
+
+
+@router.post("/email/metrics/reset")
+async def reset_email_metrics():
+    """
+    Reset email metrics (for testing purposes).
+
+    Returns:
+        Confirmation of metrics reset
+    """
+    try:
+        email_metrics.reset_metrics()
+        return {
+            "success": True,
+            "message": "Email metrics reset successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset email metrics: {str(e)}")
 
 
 @router.get("/classification/performance", response_model=Dict[str, Any])
@@ -253,3 +311,59 @@ async def export_classification_cache():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to export cache: {str(e)}")
+
+
+@router.get("/auth/metrics")
+async def get_auth_metrics(
+    hours: int = Query(default=24, ge=1, le=168, description="Number of hours to include in metrics (1-168)")
+):
+    """
+    Get authentication metrics for monitoring and observability.
+
+    Args:
+        hours: Number of hours to include in metrics summary
+
+    Returns:
+        Authentication metrics summary including login success rates and error breakdown
+    """
+    try:
+        metrics_summary = auth_metrics.get_metrics_summary(hours=hours)
+        return {
+            "success": True,
+            "metrics": metrics_summary
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get auth metrics: {str(e)}")
+
+
+@router.get("/auth/metrics/prometheus")
+async def get_auth_metrics_prometheus():
+    """
+    Get authentication metrics in Prometheus format.
+
+    Returns:
+        Prometheus-formatted metrics as plain text
+    """
+    try:
+        prometheus_metrics = auth_metrics.get_prometheus_metrics()
+        return "\n".join(prometheus_metrics)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get Prometheus auth metrics: {str(e)}")
+
+
+@router.post("/auth/metrics/reset")
+async def reset_auth_metrics():
+    """
+    Reset authentication metrics (for testing purposes).
+
+    Returns:
+        Confirmation of metrics reset
+    """
+    try:
+        auth_metrics.reset_metrics()
+        return {
+            "success": True,
+            "message": "Authentication metrics reset successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset auth metrics: {str(e)}")

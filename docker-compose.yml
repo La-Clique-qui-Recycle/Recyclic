@@ -74,12 +74,13 @@ services:
       - recyclic-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: http://api:8000
     image: recyclic-frontend:${FRONTEND_IMAGE_TAG:-latest}
-    environment:
-      REACT_APP_API_URL: http://localhost:8000
     ports:
-      - "4444:5173"
+      - "4444:80"
     depends_on:
       - api
     healthcheck:

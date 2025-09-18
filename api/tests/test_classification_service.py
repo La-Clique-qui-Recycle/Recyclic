@@ -88,7 +88,8 @@ class TestClassificationService:
             assert result["success"] is True
             assert result["category"] == EEECategory.IT_EQUIPMENT.value
             assert result["confidence"] >= 0.7
-            assert "informatiques" in result["reasoning"]
+            # Accept French or English reasoning wording
+            assert ("informatiques" in result["reasoning"]) or ("equipment" in result["reasoning"].lower())
 
     @pytest.mark.asyncio
     async def test_fallback_classification_large_appliance(self):

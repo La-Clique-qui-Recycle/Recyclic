@@ -15,6 +15,14 @@ Digitaliser les processus des ressourceries pour réduire le temps administratif
 docker-compose up
 ```
 
+### Création du premier Super Administrateur
+
+Une fois les services démarrés, pour créer le premier utilisateur avec les droits d'administration, exécutez la commande suivante depuis votre terminal, en remplaçant `votre_nom_utilisateur` et `votre_mot_de_passe` :
+
+```bash
+docker-compose exec api sh /app/create_admin.sh votre_nom_utilisateur votre_mot_de_passe_securise
+```
+
 ## Services
 - API: http://localhost:4433
 - Frontend: http://localhost:4444
