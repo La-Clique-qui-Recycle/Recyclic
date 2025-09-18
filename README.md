@@ -40,8 +40,31 @@ Ce projet est développé avec la **BMad Method** - une approche agile AI-driven
 - Tests pyramidaux (Unit/Integration/E2E)
 - Standards de code stricts (TypeScript/Python)
 
+### Secrets Email (Brevo)
+
+1. Copier `env.example` vers `api/.env` et renseigner:
+   - `BREVO_API_KEY` (dev: placeholder possible)
+   - `BREVO_WEBHOOK_SECRET` (laisser vide en dev → signature ignorée)
+   - `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS`
+
+2. En production (après déploiement de l’API):
+   - Créer un webhook Brevo vers `/api/v1/email/webhook`
+   - Récupérer la “Signing key” (secret) et la mettre dans `BREVO_WEBHOOK_SECRET`
+   - Activer les événements (delivered, bounce, spam…)
+
+3. Vérification rapide (dev):
+```bash
+export PYTHONPATH=src
+./venv/bin/python - << 'PY'
+from fastapi.testclient import TestClient
+from recyclic_api.main import app
+client = TestClient(app)
+print(client.get('/api/v1/email/health').json()['status'])
+PY
+```
+
 ## Équipe
 La Clique Qui Recycle - Solution open source pour le secteur du réemploi
 
 ## 📄 Licence
-MIT - Voir le fichier `LICENSE` pour plus de détails
+MIT - Voir le fichier `LICENSE` pour plus de détails# Test change for rollback
