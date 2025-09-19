@@ -2,7 +2,7 @@
 story_id: 3.3
 epic_id: 3
 title: "Ticket Temps Réel & Gestion Erreurs"
-status: Ready
+status: Ready for Dev
 ---
 
 ### User Story

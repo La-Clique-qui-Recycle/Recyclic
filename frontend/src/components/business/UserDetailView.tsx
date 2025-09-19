@@ -175,3 +175,5 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
 
 export default UserDetailView;
 
+
+
