@@ -20,7 +20,7 @@ import {
 // CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = '/api/v1';
+const API_BASE_URL = '';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

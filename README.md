@@ -48,6 +48,19 @@ Ce projet est développé avec la **BMad Method** - une approche agile AI-driven
 - Tests pyramidaux (Unit/Integration/E2E)
 - Standards de code stricts (TypeScript/Python)
 
+### Sessions et Authentification
+
+**Politique de Session :**
+- **Persistance** : Sessions stockées dans le `localStorage` du navigateur
+- **Durée de validité** : Tokens JWT valides pendant **30 minutes**
+- **Renouvellement** : Les utilisateurs doivent se reconnecter après expiration
+- **Déconnexion** : Suppression automatique du token lors du logout
+
+**Rôles et Permissions :**
+- **Caisse** : Accessible aux rôles `cashier`, `admin`, `super-admin`
+- **Administration** : Accessible aux rôles `admin`, `super-admin` uniquement
+- **Autres sections** : Accessibles à tous les utilisateurs authentifiés
+
 ### Secrets Email (Brevo)
 
 1. Copier `env.example` vers `api/.env` et renseigner:
@@ -55,9 +68,9 @@ Ce projet est développé avec la **BMad Method** - une approche agile AI-driven
    - `BREVO_WEBHOOK_SECRET` (laisser vide en dev → signature ignorée)
    - `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS`
 
-2. En production (après déploiement de l’API):
+2. En production (après déploiement de l'API):
    - Créer un webhook Brevo vers `/api/v1/email/webhook`
-   - Récupérer la “Signing key” (secret) et la mettre dans `BREVO_WEBHOOK_SECRET`
+   - Récupérer la "Signing key" (secret) et la mettre dans `BREVO_WEBHOOK_SECRET`
    - Activer les événements (delivered, bounce, spam…)
 
 3. Vérification rapide (dev):

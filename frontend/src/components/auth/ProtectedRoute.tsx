@@ -28,8 +28,14 @@ export default function ProtectedRoute({
     if (!isAdmin) return <Navigate to={adminPathFallback} replace />;
   }
 
-  if (requiredRole && currentUser?.role !== requiredRole) {
-    return <Navigate to={adminPathFallback} replace />;
+  if (requiredRole) {
+    const userRole = currentUser?.role;
+    const hasRequiredRole = userRole === requiredRole ||
+                           (requiredRole === 'cashier' && (userRole === 'admin' || userRole === 'super-admin'));
+
+    if (!hasRequiredRole) {
+      return <Navigate to={adminPathFallback} replace />;
+    }
   }
 
   return children;

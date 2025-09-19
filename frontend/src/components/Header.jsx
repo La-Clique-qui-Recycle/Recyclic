@@ -1,7 +1,6 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Recycle, Home, Calculator, Package, BarChart3 } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Recycle, Home, Calculator, Package, BarChart3, Users } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 const HeaderContainer = styled.header`
@@ -54,8 +53,11 @@ const NavLink = styled(Link)`
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
+  const isAdmin = useAuthStore((s) => s.isAdmin());
+  const isCashier = useAuthStore((s) => s.isCashier());
 
   const onLogout = () => {
     logout();
@@ -64,10 +66,19 @@ export default function Header() {
 
   const navItems = [
     { path: '/', label: 'Tableau de bord', icon: Home },
-    { path: '/caisse', label: 'Caisse', icon: Calculator },
     { path: '/depots', label: 'Dépôts', icon: Package },
     { path: '/rapports', label: 'Rapports', icon: BarChart3 },
   ];
+
+  // Caisse accessible aux caissiers et admins
+  if (isCashier) {
+    navItems.splice(1, 0, { path: '/caisse', label: 'Caisse', icon: Calculator });
+  }
+
+  // Administration accessible aux admins uniquement
+  if (isAdmin) {
+    navItems.push({ path: '/admin/users', label: 'Administration', icon: Users });
+  }
   
   return (
     <HeaderContainer>
@@ -87,11 +98,26 @@ export default function Header() {
               {label}
             </NavLink>
           ))}
+          {isAuthenticated && (
+            <button 
+              onClick={onLogout}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              Déconnexion
+            </button>
+          )}
         </NavLinks>
       </Nav>
-      {isAuthenticated && (
-        <button onClick={onLogout}>Déconnexion</button>
-      )}
     </HeaderContainer>
   );
 }
