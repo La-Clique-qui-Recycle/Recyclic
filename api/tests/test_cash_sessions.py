@@ -343,8 +343,13 @@ class TestCashSessionEndpoints:
         session_id = create_response.json()["id"]
         
         # Fermer la session
+        close_data = {
+            "actual_amount": 50.0,
+            "variance_comment": None
+        }
         response = client_with_jwt_auth.post(
             f"/api/v1/cash-sessions/{session_id}/close",
+            json=close_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         
@@ -378,8 +383,13 @@ class TestCashSessionEndpoints:
         session_id = create_response.json()["id"]
         
         # Fermer la session une première fois
+        close_data = {
+            "actual_amount": 50.0,
+            "variance_comment": None
+        }
         close_response = client_with_jwt_auth.post(
             f"/api/v1/cash-sessions/{session_id}/close",
+            json=close_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         assert close_response.status_code == 200
@@ -387,6 +397,7 @@ class TestCashSessionEndpoints:
         # Essayer de fermer à nouveau
         response = client_with_jwt_auth.post(
             f"/api/v1/cash-sessions/{session_id}/close",
+            json=close_data,
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         

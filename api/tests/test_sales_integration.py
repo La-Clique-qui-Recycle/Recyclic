@@ -25,7 +25,7 @@ class TestSalesIntegration:
         return TestClient(app)
 
     @pytest.fixture
-    def test_cashier(self):
+    def test_cashier(self, client):
         """Données de test pour un caissier"""
         return {
             "id": uuid.uuid4(),
@@ -37,7 +37,7 @@ class TestSalesIntegration:
         }
 
     @pytest.fixture
-    def test_site(self):
+    def test_site(self, client):
         """Données de test pour un site"""
         return {
             "id": uuid.uuid4(),
@@ -49,7 +49,7 @@ class TestSalesIntegration:
         }
 
     @pytest.fixture
-    def test_cash_session(self, test_cashier, test_site):
+    def test_cash_session(self, client, test_cashier, test_site):
         """Données de test pour une session de caisse"""
         return {
             "id": uuid.uuid4(),

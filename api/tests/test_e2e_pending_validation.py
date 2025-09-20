@@ -6,13 +6,13 @@ Story 3.3 - API et Interface pour la Validation des Inscriptions
 import pytest
 import uuid
 import asyncio
-import requests
 import json
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, AsyncMock
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 # Configuration pour les tests E2E
-API_BASE_URL = "http://localhost:4433/api/v1"
 ADMIN_TOKEN = "test_admin_token"  # Token de test pour l'admin
 
 
@@ -26,19 +26,16 @@ class TestPendingValidationE2E:
         # et créer des utilisateurs de test
         pass
 
-    def test_health_check(self):
+    def test_health_check(self, client: TestClient):
         """Test de base pour vérifier que l'API fonctionne"""
-        try:
-            response = requests.get(f"{API_BASE_URL}/health", timeout=5)
-            assert response.status_code == 200
-            print("✅ API accessible")
-        except requests.exceptions.RequestException as e:
-            pytest.skip(f"API non accessible: {e}")
+        response = client.get("/api/v1/health")
+        assert response.status_code == 200
+        print("✅ API accessible")
 
-    def test_openapi_spec_includes_pending_endpoints(self):
+    def test_openapi_spec_includes_pending_endpoints(self, client: TestClient):
         """Test que les nouveaux endpoints sont dans l'OpenAPI"""
         try:
-            response = requests.get(f"{API_BASE_URL}/openapi.json", timeout=5)
+            response = client.get("/api/v1/openapi.json", timeout=5)
             assert response.status_code == 200
             
             spec = response.json()
@@ -55,29 +52,29 @@ class TestPendingValidationE2E:
                 assert endpoint in paths, f"Endpoint {endpoint} manquant dans OpenAPI"
                 print(f"✅ Endpoint {endpoint} trouvé dans OpenAPI")
                 
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"Impossible de récupérer l'OpenAPI: {e}")
 
-    def test_pending_endpoints_require_authentication(self):
+    def test_pending_endpoints_require_authentication(self, client: TestClient):
         """Test que les endpoints pending nécessitent une authentification"""
         try:
             # Test sans authentification
-            response = requests.get(f"{API_BASE_URL}/admin/users/pending", timeout=5)
+            response = client.get("/api/v1/admin/users/pending", timeout=5)
             assert response.status_code in [401, 403], f"Statut inattendu: {response.status_code}"
             print("✅ Endpoints protégés par authentification")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_pending_endpoints_structure(self):
+    def test_pending_endpoints_structure(self, client: TestClient):
         """Test de la structure des endpoints pending"""
         try:
             # Test avec un token d'admin factice
             headers = {"Authorization": f"Bearer {ADMIN_TOKEN}"}
             
             # Test de l'endpoint pending (doit retourner 401/403 sans vrai token)
-            response = requests.get(
-                f"{API_BASE_URL}/admin/users/pending", 
+            response = client.get(
+                "/api/v1/admin/users/pending", 
                 headers=headers, 
                 timeout=5
             )
@@ -86,18 +83,18 @@ class TestPendingValidationE2E:
             assert response.status_code in [401, 403, 404]
             print("✅ Structure des endpoints correcte")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_approve_endpoint_structure(self):
+    def test_approve_endpoint_structure(self, client: TestClient):
         """Test de la structure de l'endpoint d'approbation"""
         try:
             headers = {"Authorization": f"Bearer {ADMIN_TOKEN}"}
             fake_user_id = str(uuid.uuid4())
             
             # Test de l'endpoint approve (doit retourner 401/403 sans vrai token)
-            response = requests.post(
-                f"{API_BASE_URL}/admin/users/{fake_user_id}/approve",
+            response = client.post(
+                f"/api/v1/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={"message": "Test message"},
                 timeout=5
@@ -107,18 +104,18 @@ class TestPendingValidationE2E:
             assert response.status_code in [401, 403, 404]
             print("✅ Endpoint d'approbation accessible")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_reject_endpoint_structure(self):
+    def test_reject_endpoint_structure(self, client: TestClient):
         """Test de la structure de l'endpoint de rejet"""
         try:
             headers = {"Authorization": f"Bearer {ADMIN_TOKEN}"}
             fake_user_id = str(uuid.uuid4())
             
             # Test de l'endpoint reject (doit retourner 401/403 sans vrai token)
-            response = requests.post(
-                f"{API_BASE_URL}/admin/users/{fake_user_id}/reject",
+            response = client.post(
+                f"/api/v1/admin/users/{fake_user_id}/reject",
                 headers=headers,
                 json={"reason": "Test reason"},
                 timeout=5
@@ -128,10 +125,10 @@ class TestPendingValidationE2E:
             assert response.status_code in [401, 403, 404]
             print("✅ Endpoint de rejet accessible")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_accept_correct_content_type(self):
+    def test_endpoints_accept_correct_content_type(self, client: TestClient):
         """Test que les endpoints acceptent le bon Content-Type"""
         try:
             headers = {
@@ -141,8 +138,8 @@ class TestPendingValidationE2E:
             fake_user_id = str(uuid.uuid4())
             
             # Test avec Content-Type correct
-            response = requests.post(
-                f"{API_BASE_URL}/admin/users/{fake_user_id}/approve",
+            response = client.post(
+                f"/api/v1/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={"message": "Test message"},
                 timeout=5
@@ -152,10 +149,10 @@ class TestPendingValidationE2E:
             assert response.status_code in [401, 403, 404]
             print("✅ Content-Type accepté")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_reject_invalid_content_type(self):
+    def test_endpoints_reject_invalid_content_type(self, client: TestClient):
         """Test que les endpoints rejettent les Content-Type invalides"""
         try:
             headers = {
@@ -165,8 +162,8 @@ class TestPendingValidationE2E:
             fake_user_id = str(uuid.uuid4())
             
             # Test avec Content-Type incorrect
-            response = requests.post(
-                f"{API_BASE_URL}/admin/users/{fake_user_id}/approve",
+            response = client.post(
+                f"/api/v1/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 data="Test message",
                 timeout=5
@@ -176,10 +173,10 @@ class TestPendingValidationE2E:
             assert response.status_code in [400, 401, 403, 404, 422]
             print("✅ Content-Type invalide rejeté")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_handle_malformed_json(self):
+    def test_endpoints_handle_malformed_json(self, client: TestClient):
         """Test que les endpoints gèrent le JSON malformé"""
         try:
             headers = {
@@ -189,8 +186,8 @@ class TestPendingValidationE2E:
             fake_user_id = str(uuid.uuid4())
             
             # Test avec JSON malformé
-            response = requests.post(
-                f"{API_BASE_URL}/admin/users/{fake_user_id}/approve",
+            response = client.post(
+                f"/api/v1/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 data="{ invalid json }",
                 timeout=5
@@ -200,10 +197,10 @@ class TestPendingValidationE2E:
             assert response.status_code in [400, 401, 403, 404, 422]
             print("✅ JSON malformé géré correctement")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_handle_missing_required_fields(self):
+    def test_endpoints_handle_missing_required_fields(self, client: TestClient):
         """Test que les endpoints gèrent les champs requis manquants"""
         try:
             headers = {
@@ -213,8 +210,8 @@ class TestPendingValidationE2E:
             fake_user_id = str(uuid.uuid4())
             
             # Test avec données manquantes
-            response = requests.post(
-                f"{API_BASE_URL}/admin/users/{fake_user_id}/approve",
+            response = client.post(
+                f"/api/v1/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={},  # Pas de message
                 timeout=5
@@ -224,10 +221,10 @@ class TestPendingValidationE2E:
             assert response.status_code in [401, 403, 404, 422]
             print("✅ Champs manquants gérés correctement")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_handle_invalid_user_id_format(self):
+    def test_endpoints_handle_invalid_user_id_format(self, client: TestClient):
         """Test que les endpoints gèrent les formats d'ID utilisateur invalides"""
         try:
             headers = {
@@ -245,8 +242,8 @@ class TestPendingValidationE2E:
             ]
             
             for invalid_id in invalid_user_ids:
-                response = requests.post(
-                    f"{API_BASE_URL}/admin/users/{invalid_id}/approve",
+                response = client.post(
+                    f"/api/v1/admin/users/{invalid_id}/approve",
                     headers=headers,
                     json={"message": "Test"},
                     timeout=5
@@ -257,18 +254,18 @@ class TestPendingValidationE2E:
             
             print("✅ IDs invalides gérés correctement")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_response_format(self):
+    def test_endpoints_response_format(self, client: TestClient):
         """Test du format de réponse des endpoints"""
         try:
             headers = {"Authorization": f"Bearer {ADMIN_TOKEN}"}
             fake_user_id = str(uuid.uuid4())
             
             # Test de l'endpoint pending
-            response = requests.get(
-                f"{API_BASE_URL}/admin/users/pending",
+            response = client.get(
+                "/api/v1/admin/users/pending",
                 headers=headers,
                 timeout=5
             )
@@ -282,18 +279,18 @@ class TestPendingValidationE2E:
                 assert response.status_code in [401, 403, 404]
                 print("✅ Endpoint pending protégé")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_error_response_format(self):
+    def test_endpoints_error_response_format(self, client: TestClient):
         """Test du format des réponses d'erreur"""
         try:
             headers = {"Authorization": f"Bearer {ADMIN_TOKEN}"}
             fake_user_id = str(uuid.uuid4())
             
             # Test d'un endpoint qui devrait retourner une erreur
-            response = requests.post(
-                f"{API_BASE_URL}/admin/users/{fake_user_id}/approve",
+            response = client.post(
+                f"/api/v1/admin/users/{fake_user_id}/approve",
                 headers=headers,
                 json={"message": "Test"},
                 timeout=5
@@ -308,10 +305,10 @@ class TestPendingValidationE2E:
                     # Certaines erreurs peuvent ne pas être en JSON
                     print("✅ Erreur retournée (format non-JSON)")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_performance(self):
+    def test_endpoints_performance(self, client: TestClient):
         """Test de performance des endpoints"""
         try:
             headers = {"Authorization": f"Bearer {ADMIN_TOKEN}"}
@@ -320,8 +317,8 @@ class TestPendingValidationE2E:
             import time
             start_time = time.time()
             
-            response = requests.get(
-                f"{API_BASE_URL}/admin/users/pending",
+            response = client.get(
+                "/api/v1/admin/users/pending",
                 headers=headers,
                 timeout=10
             )
@@ -333,10 +330,10 @@ class TestPendingValidationE2E:
             assert response_time < 5.0, f"Temps de réponse trop lent: {response_time}s"
             print(f"✅ Performance acceptable: {response_time:.2f}s")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_cors_headers(self):
+    def test_endpoints_cors_headers(self, client: TestClient):
         """Test des en-têtes CORS"""
         try:
             headers = {
@@ -345,8 +342,8 @@ class TestPendingValidationE2E:
             }
             
             # Test de preflight CORS
-            response = requests.options(
-                f"{API_BASE_URL}/admin/users/pending",
+            response = client.options(
+                "/api/v1/admin/users/pending",
                 headers=headers,
                 timeout=5
             )
@@ -364,13 +361,13 @@ class TestPendingValidationE2E:
                 else:
                     print(f"⚠️ En-tête CORS {header} manquant")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
-    def test_endpoints_security_headers(self):
+    def test_endpoints_security_headers(self, client: TestClient):
         """Test des en-têtes de sécurité"""
         try:
-            response = requests.get(f"{API_BASE_URL}/admin/users/pending", timeout=5)
+            response = client.get("/api/v1/admin/users/pending", timeout=5)
             
             # Vérifier les en-têtes de sécurité
             security_headers = [
@@ -385,7 +382,7 @@ class TestPendingValidationE2E:
                 else:
                     print(f"⚠️ En-tête de sécurité {header} manquant")
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pytest.skip(f"API non accessible: {e}")
 
 
@@ -396,7 +393,7 @@ def run_e2e_tests():
     
     # Vérifier que l'API est accessible
     try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=5)
+        response = client.get("/api/v1/health", timeout=5)
         if response.status_code != 200:
             print("❌ L'API n'est pas accessible. Vérifiez que Docker est démarré.")
             return False

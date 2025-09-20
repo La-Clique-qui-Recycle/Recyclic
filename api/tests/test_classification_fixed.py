@@ -12,12 +12,10 @@ from recyclic_api.main import app
 TEST_BOT_TOKEN = "test_bot_token_123"
 
 
-def test_full_deposit_classification_workflow():
+def test_full_deposit_classification_workflow(client):
     """Test the complete workflow: create deposit -> classify -> verify results."""
 
     with patch('recyclic_api.core.config.settings.TELEGRAM_BOT_TOKEN', TEST_BOT_TOKEN):
-        client = TestClient(app)
-
         # Step 1: Create a deposit from bot
         create_payload = {
             "telegram_user_id": "12345",

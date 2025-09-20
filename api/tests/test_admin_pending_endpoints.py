@@ -117,8 +117,9 @@ class TestPendingUsersEndpoints:
                 assert data[1]["username"] == "pending_user_1"
                 assert data[2]["username"] == "pending_user_2"
         finally:
-            # Nettoyer les overrides
-            app.dependency_overrides.clear()
+            # Nettoyer les overrides ciblés
+            app.dependency_overrides.pop(get_db, None)
+            app.dependency_overrides.pop(get_current_user, None)
 
     def test_get_pending_users_empty_list(self, client, mock_db, mock_admin_user):
         """Test avec une liste vide d'utilisateurs en attente"""
@@ -137,8 +138,9 @@ class TestPendingUsersEndpoints:
                 data = response.json()
                 assert len(data) == 0
         finally:
-            # Nettoyer les overrides
-            app.dependency_overrides.clear()
+            # Nettoyer les overrides ciblés
+            app.dependency_overrides.pop(get_db, None)
+            app.dependency_overrides.pop(get_current_user, None)
 
     def test_get_pending_users_unauthorized(self, client, mock_db):
         """Test d'accès non autorisé (sans authentification)"""

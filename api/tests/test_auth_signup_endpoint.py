@@ -16,10 +16,8 @@ from recyclic_api.core.security import hash_password, verify_password
 class TestAuthSignupEndpoint:
     """Tests d'intégration pour l'endpoint POST /api/v1/auth/signup"""
 
-    def test_signup_success_valid_data(self, db_session: Session):
+    def test_signup_success_valid_data(self, client: TestClient, db_session: Session):
         """Test d'inscription réussie avec des données valides"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={
@@ -51,10 +49,8 @@ class TestAuthSignupEndpoint:
         # Vérifier que le mot de passe est bien haché
         assert verify_password("validpassword123", created_user.hashed_password)
 
-    def test_signup_success_without_email(self, db_session: Session):
+    def test_signup_success_without_email(self, client: TestClient, db_session: Session):
         """Test d'inscription réussie sans email (optionnel)"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={
@@ -73,10 +69,8 @@ class TestAuthSignupEndpoint:
         assert created_user is not None
         assert created_user.email is None
 
-    def test_signup_failure_username_already_exists(self, db_session: Session):
+    def test_signup_failure_username_already_exists(self, client: TestClient, db_session: Session):
         """Test d'échec d'inscription avec un nom d'utilisateur déjà existant"""
-        client = TestClient(app)
-
         # Créer un utilisateur existant
         existing_user = User(
             username="existing_user",
@@ -100,10 +94,8 @@ class TestAuthSignupEndpoint:
         assert "detail" in data
         assert "nom d'utilisateur est déjà pris" in data["detail"]
 
-    def test_signup_validation_error_missing_username(self):
+    def test_signup_validation_error_missing_username(self, client: TestClient):
         """Test de validation avec username manquant"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={"password": "validpassword123"}
@@ -113,10 +105,8 @@ class TestAuthSignupEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_signup_validation_error_missing_password(self):
+    def test_signup_validation_error_missing_password(self, client: TestClient):
         """Test de validation avec password manquant"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={"username": "testuser"}
@@ -126,10 +116,8 @@ class TestAuthSignupEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_signup_validation_error_short_username(self):
+    def test_signup_validation_error_short_username(self, client: TestClient):
         """Test de validation avec username trop court"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={
@@ -142,10 +130,8 @@ class TestAuthSignupEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_signup_validation_error_long_username(self):
+    def test_signup_validation_error_long_username(self, client: TestClient):
         """Test de validation avec username trop long"""
-        client = TestClient(app)
-
         long_username = "a" * 51  # Plus de 50 caractères
         response = client.post(
             "/api/v1/auth/signup",
@@ -159,10 +145,8 @@ class TestAuthSignupEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_signup_validation_error_short_password(self):
+    def test_signup_validation_error_short_password(self, client: TestClient):
         """Test de validation avec password trop court"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={
@@ -175,10 +159,8 @@ class TestAuthSignupEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_signup_validation_error_invalid_email(self):
+    def test_signup_validation_error_invalid_email(self, client: TestClient):
         """Test de validation avec email invalide"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={
@@ -192,10 +174,8 @@ class TestAuthSignupEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_signup_creates_user_with_correct_defaults(self, db_session: Session):
+    def test_signup_creates_user_with_correct_defaults(self, client: TestClient, db_session: Session):
         """Test que l'inscription crée un utilisateur avec les bonnes valeurs par défaut"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={
@@ -217,10 +197,8 @@ class TestAuthSignupEndpoint:
         assert created_user.first_name is None
         assert created_user.last_name is None
 
-    def test_signup_password_hashing(self, db_session: Session):
+    def test_signup_password_hashing(self, client: TestClient, db_session: Session):
         """Test que le mot de passe est bien haché et non stocké en clair"""
-        client = TestClient(app)
-
         plain_password = "testhashpassword123"
         response = client.post(
             "/api/v1/auth/signup",
@@ -244,10 +222,8 @@ class TestAuthSignupEndpoint:
         assert verify_password(plain_password, created_user.hashed_password)
         assert not verify_password("wrongpassword", created_user.hashed_password)
 
-    def test_signup_response_structure(self, db_session: Session):
+    def test_signup_response_structure(self, client: TestClient, db_session: Session):
         """Test de la structure de réponse de l'endpoint signup"""
-        client = TestClient(app)
-
         response = client.post(
             "/api/v1/auth/signup",
             json={
@@ -278,10 +254,8 @@ class TestAuthSignupEndpoint:
         except ValueError:
             pytest.fail("user_id should be a valid UUID")
 
-    def test_signup_case_sensitive_username(self, db_session: Session):
+    def test_signup_case_sensitive_username(self, client: TestClient, db_session: Session):
         """Test que les noms d'utilisateur sont sensibles à la casse"""
-        client = TestClient(app)
-
         # Créer un utilisateur avec un username en minuscules
         response1 = client.post(
             "/api/v1/auth/signup",

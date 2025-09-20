@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Recycle, Home, Calculator, Package, BarChart3, Users } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { useCashSessionStore } from '../stores/cashSessionStore';
 
 const HeaderContainer = styled.header`
   background-color: #2e7d32;
@@ -58,6 +59,7 @@ export default function Header() {
   const logout = useAuthStore((s) => s.logout);
   const isAdmin = useAuthStore((s) => s.isAdmin());
   const isCashier = useAuthStore((s) => s.isCashier());
+  const currentSession = useCashSessionStore((s) => s.currentSession);
 
   const onLogout = () => {
     logout();
@@ -72,7 +74,8 @@ export default function Header() {
 
   // Caisse accessible aux caissiers et admins
   if (isCashier) {
-    navItems.splice(1, 0, { path: '/caisse', label: 'Caisse', icon: Calculator });
+    const caissePath = currentSession && currentSession.status === 'open' ? '/cash-register/sale' : '/cash-register/session/open';
+    navItems.splice(1, 0, { path: caissePath, label: 'Caisse', icon: Calculator });
   }
 
   // Administration accessible aux admins uniquement

@@ -16,9 +16,8 @@ from recyclic_api.schemas.auth import LoginResponse, AuthUser
 class TestAuthLoginEndpoint:
     """Tests d'intégration pour l'endpoint POST /api/v1/auth/login avec username/password"""
 
-    def test_login_success_valid_credentials(self, db_session: Session):
+    def test_login_success_valid_credentials(self, client: TestClient, db_session: Session):
         """Test de connexion réussie avec des identifiants valides"""
-        client = TestClient(app)
         
         # Créer un utilisateur de test avec mot de passe haché
         hashed_password = hash_password("testpassword123")
@@ -65,9 +64,8 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
 
-    def test_login_failure_invalid_username(self, db_session: Session):
+    def test_login_failure_invalid_username(self, client: TestClient, db_session: Session):
         """Test d'échec de connexion avec un nom d'utilisateur invalide"""
-        client = TestClient(app)
         
         response = client.post(
             "/api/v1/auth/login",
@@ -82,9 +80,8 @@ class TestAuthLoginEndpoint:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_failure_invalid_password(self, db_session: Session):
+    def test_login_failure_invalid_password(self, client: TestClient, db_session: Session):
         """Test d'échec de connexion avec un mot de passe incorrect"""
-        client = TestClient(app)
         
         # Créer un utilisateur de test
         hashed_password = hash_password("correctpassword")
@@ -111,9 +108,8 @@ class TestAuthLoginEndpoint:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_failure_inactive_user(self, db_session: Session):
+    def test_login_failure_inactive_user(self, client: TestClient, db_session: Session):
         """Test d'échec de connexion avec un utilisateur inactif"""
-        client = TestClient(app)
         
         # Créer un utilisateur inactif
         hashed_password = hash_password("testpassword123")
@@ -140,9 +136,8 @@ class TestAuthLoginEndpoint:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_validation_error_missing_username(self):
+    def test_login_validation_error_missing_username(self, client: TestClient):
         """Test de validation avec username manquant"""
-        client = TestClient(app)
         
         response = client.post(
             "/api/v1/auth/login",
@@ -153,9 +148,8 @@ class TestAuthLoginEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_login_validation_error_missing_password(self):
+    def test_login_validation_error_missing_password(self, client: TestClient):
         """Test de validation avec password manquant"""
-        client = TestClient(app)
         
         response = client.post(
             "/api/v1/auth/login",
@@ -166,9 +160,8 @@ class TestAuthLoginEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_login_validation_error_empty_credentials(self):
+    def test_login_validation_error_empty_credentials(self, client: TestClient):
         """Test de validation avec des identifiants vides"""
-        client = TestClient(app)
         
         response = client.post(
             "/api/v1/auth/login",
@@ -179,9 +172,8 @@ class TestAuthLoginEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_login_success_admin_user(self, db_session: Session):
+    def test_login_success_admin_user(self, client: TestClient, db_session: Session):
         """Test de connexion réussie avec un utilisateur admin"""
-        client = TestClient(app)
         
         hashed_password = hash_password("adminpass123")
         admin_user = User(
@@ -208,9 +200,8 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "admin"
         assert "access_token" in data
 
-    def test_login_success_super_admin_user(self, db_session: Session):
+    def test_login_success_super_admin_user(self, client: TestClient, db_session: Session):
         """Test de connexion réussie avec un super-admin"""
-        client = TestClient(app)
         
         hashed_password = hash_password("superadminpass123")
         super_admin = User(
@@ -237,9 +228,8 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "super-admin"
         assert "access_token" in data
 
-    def test_jwt_token_structure(self, db_session: Session):
+    def test_jwt_token_structure(self, client: TestClient, db_session: Session):
         """Test de la structure du token JWT généré"""
-        client = TestClient(app)
         
         hashed_password = hash_password("tokentest123")
         test_user = User(
@@ -272,9 +262,8 @@ class TestAuthLoginEndpoint:
         assert "." in data["access_token"]
         assert data["access_token"].count(".") == 2
 
-    def test_password_case_sensitivity(self, db_session: Session):
+    def test_password_case_sensitivity(self, client: TestClient, db_session: Session):
         """Test que l'authentification par mot de passe est sensible à la casse"""
-        client = TestClient(app)
         
         hashed_password = hash_password("CaseSensitive123")
         test_user = User(

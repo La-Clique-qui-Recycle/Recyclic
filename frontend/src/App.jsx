@@ -7,6 +7,9 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 // Lazy loading des pages pour le code-splitting
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const CashRegister = lazy(() => import('./pages/CashRegister.jsx'));
+const OpenCashSession = lazy(() => import('./pages/CashRegister/OpenCashSession.tsx'));
+const Sale = lazy(() => import('./pages/CashRegister/Sale.tsx'));
+const CloseSession = lazy(() => import('./pages/CashRegister/CloseSession.tsx'));
 const Deposits = lazy(() => import('./pages/Deposits.jsx'));
 const Reports = lazy(() => import('./pages/Reports.jsx'));
 const Registration = lazy(() => import('./pages/Registration.jsx'));
@@ -55,6 +58,9 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/caisse" element={<ProtectedRoute requiredRole="cashier"><CashRegister /></ProtectedRoute>} />
+            <Route path="/cash-register/session/open" element={<ProtectedRoute requiredRole="cashier"><OpenCashSession /></ProtectedRoute>} />
+            <Route path="/cash-register/sale" element={<ProtectedRoute requiredRole="cashier"><Sale /></ProtectedRoute>} />
+            <Route path="/cash-register/session/close" element={<ProtectedRoute requiredRole="cashier"><CloseSession /></ProtectedRoute>} />
             <Route path="/depots" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
             <Route path="/rapports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/inscription" element={<ProtectedRoute><Registration /></ProtectedRoute>} />

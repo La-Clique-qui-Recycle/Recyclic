@@ -1,5 +1,14 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+
+@pytest.fixture
+def mock_redis():
+    """Mock Redis fixture for infrastructure tests."""
+    with patch('recyclic_api.core.redis.get_redis') as mock_get_redis:
+        mock_redis_instance = MagicMock()
+        mock_redis_instance.ping.return_value = True
+        mock_get_redis.return_value = mock_redis_instance
+        yield mock_redis_instance
 
 def test_root_endpoint(client):
     """Test root endpoint"""

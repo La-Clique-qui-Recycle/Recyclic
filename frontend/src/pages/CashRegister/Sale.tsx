@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { Calculator, LogOut } from 'lucide-react';
 import { useCashSessionStore } from '../../stores/cashSessionStore';
 import CategorySelector from '../../components/business/CategorySelector';
+import Ticket from '../../components/business/Ticket';
 
 const Container = styled.div`
   display: flex;
@@ -16,12 +18,42 @@ const Header = styled.div`
   padding: 1rem 2rem;
   border-bottom: 1px solid #ddd;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const Title = styled.h1`
   margin: 0;
   color: #2c5530;
   font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const CloseButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: #b71c1c;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
 `;
 
 const Content = styled.div`
@@ -141,32 +173,6 @@ const ErrorMessage = styled.div`
   min-height: 1.25rem;
 `;
 
-const SalesSummary = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-`;
-
-const SummaryTitle = styled.h3`
-  margin: 0 0 1rem 0;
-  color: #2c5530;
-`;
-
-const SummaryItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
-
-  &:last-child {
-    border-bottom: none;
-    font-weight: bold;
-    border-top: 2px solid #ddd;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-  }
-`;
 
 type Mode = 'category' | 'quantity' | 'price';
 
@@ -176,6 +182,8 @@ const Sale: React.FC = () => {
     currentSession,
     currentSaleItems,
     addSaleItem,
+    removeSaleItem,
+    updateSaleItem,
     clearCurrentSale,
     submitSale,
     loading
@@ -306,8 +314,10 @@ const Sale: React.FC = () => {
     }
   };
 
-  const totalAmount = currentSaleItems.reduce((sum, item) => sum + item.total, 0);
-  const totalItems = currentSaleItems.reduce((sum, item) => sum + item.quantity, 0);
+  const handleCloseSession = () => {
+    navigate('/cash-register/session/close');
+  };
+
 
   const renderModeContent = () => {
     switch (currentMode) {
@@ -402,7 +412,14 @@ const Sale: React.FC = () => {
   return (
     <Container>
       <Header>
-        <Title>Interface de Vente</Title>
+        <Title>
+          <Calculator size={24} />
+          Interface de Vente
+        </Title>
+        <CloseButton onClick={handleCloseSession}>
+          <LogOut size={20} />
+          Fermer la Session
+        </CloseButton>
       </Header>
 
       <Content>
@@ -435,43 +452,13 @@ const Sale: React.FC = () => {
         </LeftPanel>
 
         <RightPanel>
-          <SalesSummary>
-            <SummaryTitle>Résumé de la vente</SummaryTitle>
-            {currentSaleItems.length === 0 ? (
-              <p>Aucun article ajouté</p>
-            ) : (
-              <>
-                {currentSaleItems.map((item) => (
-                  <SummaryItem key={item.id}>
-                    <span>{item.category} × {item.quantity}</span>
-                    <span>{item.total.toFixed(2)} €</span>
-                  </SummaryItem>
-                ))}
-                <SummaryItem>
-                  <span>{totalItems} articles</span>
-                  <span>{totalAmount.toFixed(2)} €</span>
-                </SummaryItem>
-              </>
-            )}
-          </SalesSummary>
-
-          {currentSaleItems.length > 0 && (
-            <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
-              <ActionButton
-                $variant="primary"
-                onClick={handleFinalizeSale}
-                disabled={loading}
-              >
-                Finaliser la vente
-              </ActionButton>
-              <ActionButton
-                onClick={clearCurrentSale}
-                disabled={loading}
-              >
-                Vider le panier
-              </ActionButton>
-            </div>
-          )}
+          <Ticket
+            items={currentSaleItems}
+            onRemoveItem={removeSaleItem}
+            onUpdateItem={updateSaleItem}
+            onFinalizeSale={handleFinalizeSale}
+            loading={loading}
+          />
         </RightPanel>
       </Content>
     </Container>

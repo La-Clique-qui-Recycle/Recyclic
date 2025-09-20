@@ -30,7 +30,11 @@ vi.mock('lucide-react', () => ({
   Receipt: () => React.createElement('div', { 'data-testid': 'receipt-icon' }, 'Receipt'),
   DollarSign: () => React.createElement('div', { 'data-testid': 'dollarsign-icon' }, 'DollarSign'),
   Calendar: () => React.createElement('div', { 'data-testid': 'calendar-icon' }, 'Calendar'),
-  Users: () => React.createElement('div', { 'data-testid': 'users-icon' }, 'Users')
+  Users: () => React.createElement('div', { 'data-testid': 'users-icon' }, 'Users'),
+  ArrowLeft: () => React.createElement('div', { 'data-testid': 'arrow-left-icon' }, 'ArrowLeft'),
+  AlertTriangle: () => React.createElement('div', { 'data-testid': 'alert-triangle-icon' }, 'AlertTriangle'),
+  CheckCircle: () => React.createElement('div', { 'data-testid': 'check-circle-icon' }, 'CheckCircle'),
+  LogOut: () => React.createElement('div', { 'data-testid': 'log-out-icon' }, 'LogOut')
 }))
 
 // Mock pour styled-components - approche avec styles simulés

@@ -2,77 +2,8 @@
 Tests for User model
 """
 import pytest
-import os
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import IntegrityError
 from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.core.database import Base
-from recyclic_api.core.config import settings
-
-# Use Postgres test database
-TEST_DB_URL = os.getenv("TEST_DATABASE_URL") or settings.TEST_DATABASE_URL or "postgresql://recyclic:recyclic_secure_password_2024@localhost:5432/recyclic_test"
-
-def ensure_test_database(url: str) -> None:
-    u = make_url(url)
-    admin_url = u.set(database="postgres")
-    dbname = u.database
-    admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
-    with admin_engine.connect() as conn:
-        exists = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :d"), {"d": dbname}).scalar()
-        if not exists:
-            conn.execute(text(f'CREATE DATABASE "{dbname}"'))
-    admin_engine.dispose()
-
-def create_schema(url: str) -> None:
-    """Create schema using SQLAlchemy directly"""
-    engine = create_engine(url)
-    Base.metadata.create_all(bind=engine)
-    engine.dispose()
-
-def drop_schema(url: str) -> None:
-    """Drop schema using SQLAlchemy directly"""
-    engine = create_engine(url)
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
-
-@pytest.fixture(scope="module")
-def db_setup():
-    """Set up database schema for all tests in module"""
-    ensure_test_database(TEST_DB_URL)
-    create_schema(TEST_DB_URL)
-    yield
-    # Cleanup: attempt to drop the test database (best-effort)
-    try:
-        u = make_url(TEST_DB_URL)
-        admin_url = u.set(database="postgres")
-        admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
-        with admin_engine.connect() as conn:
-            try:
-                conn.execute(text(f'DROP DATABASE IF EXISTS "{u.database}"'))
-            except Exception:
-                # Ignore if DB is in use; leave for global cleanup
-                pass
-        admin_engine.dispose()
-    except Exception:
-        pass
-
-@pytest.fixture(scope="function")
-def db_session(db_setup):
-    """Create a test database session"""
-    engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = TestingSessionLocal()
-    try:
-        # Clean up any existing data before each test
-        db.execute(text("TRUNCATE users RESTART IDENTITY CASCADE"))
-        db.commit()
-        yield db
-    finally:
-        db.rollback()  # Rollback any uncommitted transactions
-        db.close()
-        engine.dispose()
 
 def test_user_role_enum_values():
     """Test that UserRole enum has all expected values"""

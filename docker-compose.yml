@@ -92,6 +92,34 @@ services:
     networks:
       - recyclic-network
 
+  # Service dédié pour les tests avec volumes pour développement rapide
+  api-tests:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.tests
+    image: recyclic-api-tests:${API_TESTS_IMAGE_TAG:-latest}
+    environment:
+      TESTING: "true"
+      ENVIRONMENT: "test"
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+      TEST_DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY}
+    volumes:
+      # Volumes pour éviter les rebuilds lors du développement
+      - ./api/src:/app/src:ro
+      - ./api/tests:/app/tests:ro
+      - ./api/migrations:/app/migrations:ro
+      - ./api/alembic.ini:/app/alembic.ini:ro
+      - ./api/pytest.ini:/app/pytest.ini:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+
 volumes:
   postgres_data:
 

@@ -12,16 +12,11 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
 
 # Client HTTP module-level pour les tests qui n'injectent pas la fixture
-client = TestClient(app)
-
 class TestAuthLoginUsernamePassword:
     """Tests for the POST /api/v1/auth/login endpoint with username/password"""
 
-    def test_login_success_valid_credentials(self, db_session: Session):
+    def test_login_success_valid_credentials(self, client: TestClient, db_session: Session):
         """Test successful login with valid username and password"""
-        # Create a fresh client for this test to avoid rate limiting conflicts
-        local_client = TestClient(app)
-        
         # Create test user with hashed password
         hashed_password = hash_password("testpassword123")
         test_user = User(
@@ -36,7 +31,7 @@ class TestAuthLoginUsernamePassword:
         db_session.refresh(test_user)
 
         # Test login
-        response = local_client.post(
+        response = client.post(
             "/api/v1/auth/login",
             json={
                 "username": "testuser1",
@@ -54,7 +49,7 @@ class TestAuthLoginUsernamePassword:
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
 
-    def test_login_failure_invalid_username(self, db_session: Session):
+    def test_login_failure_invalid_username(self, client: TestClient, db_session: Session):
         """Test login failure with non-existent username"""
         response = client.post(
             "/api/v1/auth/login",
@@ -69,7 +64,7 @@ class TestAuthLoginUsernamePassword:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_failure_invalid_password(self, db_session: Session):
+    def test_login_failure_invalid_password(self, client: TestClient, db_session: Session):
         """Test login failure with invalid password"""
         # Create test user
         hashed_password = hash_password("correctpassword")
@@ -97,7 +92,7 @@ class TestAuthLoginUsernamePassword:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_failure_inactive_user(self, db_session: Session):
+    def test_login_failure_inactive_user(self, client: TestClient, db_session: Session):
         """Test login failure with inactive user"""
         # Create inactive user
         hashed_password = hash_password("testpassword123")
@@ -124,7 +119,7 @@ class TestAuthLoginUsernamePassword:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_validation_error_missing_username(self):
+    def test_login_validation_error_missing_username(self, client: TestClient):
         """Test validation error with missing username"""
         response = client.post(
             "/api/v1/auth/login",
@@ -135,7 +130,7 @@ class TestAuthLoginUsernamePassword:
         data = response.json()
         assert "detail" in data
 
-    def test_login_validation_error_missing_password(self):
+    def test_login_validation_error_missing_password(self, client: TestClient):
         """Test validation error with missing password"""
         response = client.post(
             "/api/v1/auth/login",
@@ -146,7 +141,7 @@ class TestAuthLoginUsernamePassword:
         data = response.json()
         assert "detail" in data
 
-    def test_login_validation_error_empty_credentials(self):
+    def test_login_validation_error_empty_credentials(self, client: TestClient):
         """Test validation error with empty credentials"""
         response = client.post(
             "/api/v1/auth/login",
@@ -157,7 +152,7 @@ class TestAuthLoginUsernamePassword:
         data = response.json()
         assert "detail" in data
 
-    def test_login_success_admin_user(self, db_session: Session):
+    def test_login_success_admin_user(self, client: TestClient, db_session: Session):
         """Test successful login with admin user"""
         hashed_password = hash_password("adminpass123")
         admin_user = User(
@@ -184,7 +179,7 @@ class TestAuthLoginUsernamePassword:
         assert data["user"]["role"] == "admin"
         assert "access_token" in data
 
-    def test_login_success_super_admin_user(self, db_session: Session):
+    def test_login_success_super_admin_user(self, client: TestClient, db_session: Session):
         """Test successful login with super-admin user"""
         hashed_password = hash_password("superadminpass123")
         super_admin = User(
@@ -211,7 +206,7 @@ class TestAuthLoginUsernamePassword:
         assert data["user"]["role"] == "super-admin"
         assert "access_token" in data
 
-    def test_jwt_token_structure(self, db_session: Session):
+    def test_jwt_token_structure(self, client: TestClient, db_session: Session):
         """Test JWT token structure"""
         hashed_password = hash_password("tokentest123")
         test_user = User(
@@ -244,7 +239,7 @@ class TestAuthLoginUsernamePassword:
         assert "." in data["access_token"]
         assert data["access_token"].count(".") == 2
 
-    def test_password_case_sensitivity(self, db_session: Session):
+    def test_password_case_sensitivity(self, client: TestClient, db_session: Session):
         """Test that password authentication is case-sensitive"""
         hashed_password = hash_password("CaseSensitive123")
         test_user = User(

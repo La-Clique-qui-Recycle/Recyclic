@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY src/ ./src/
 
+# Copy tests
+COPY tests/ ./tests/
+
 # Copy the admin creation script and make it executable
 COPY create_admin.sh .
 RUN chmod +x create_admin.sh
@@ -21,6 +24,9 @@ RUN chmod +x create_admin.sh
 # Copy Alembic configuration and migrations
 COPY alembic.ini .
 COPY migrations/ ./migrations/
+
+# Copy pytest configuration
+COPY pytest.ini .
 
 
 

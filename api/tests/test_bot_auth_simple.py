@@ -12,11 +12,9 @@ from recyclic_api.main import app
 TEST_BOT_TOKEN = "test_bot_token_123"
 
 
-def test_bot_auth_missing_token():
+def test_bot_auth_missing_token(client):
     """Test that missing token returns 401."""
     # Test without any token configuration
-    client = TestClient(app)
-
     payload = {
         "telegram_user_id": "12345",
         "audio_file_path": "/audio/test_deposit.ogg",
@@ -31,11 +29,9 @@ def test_bot_auth_missing_token():
     assert "Missing X-Bot-Token header" in response.json()["detail"]
 
 
-def test_bot_auth_with_configured_token():
+def test_bot_auth_with_configured_token(client):
     """Test that valid token works when configured."""
     with patch('recyclic_api.core.config.settings.TELEGRAM_BOT_TOKEN', TEST_BOT_TOKEN):
-        client = TestClient(app)
-
         payload = {
             "telegram_user_id": "12345",
             "audio_file_path": "/audio/test_deposit.ogg",
@@ -55,11 +51,9 @@ def test_bot_auth_with_configured_token():
         assert data["telegram_user_id"] == "12345"
 
 
-def test_bot_auth_invalid_token():
+def test_bot_auth_invalid_token(client):
     """Test that invalid token returns 401."""
     with patch('recyclic_api.core.config.settings.TELEGRAM_BOT_TOKEN', TEST_BOT_TOKEN):
-        client = TestClient(app)
-
         payload = {
             "telegram_user_id": "12345",
             "audio_file_path": "/audio/test_deposit.ogg",
@@ -78,11 +72,9 @@ def test_bot_auth_invalid_token():
         assert "Invalid bot token" in response.json()["detail"]
 
 
-def test_bot_auth_no_token_configured():
+def test_bot_auth_no_token_configured(client):
     """Test that endpoints fail gracefully when no token is configured."""
     with patch('recyclic_api.core.config.settings.TELEGRAM_BOT_TOKEN', None):
-        client = TestClient(app)
-
         payload = {
             "telegram_user_id": "12345",
             "audio_file_path": "/audio/test_deposit.ogg",

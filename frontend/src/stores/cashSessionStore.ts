@@ -63,6 +63,7 @@ interface CashSessionState {
   // Sale actions
   addSaleItem: (item: Omit<SaleItem, 'id'>) => void;
   removeSaleItem: (itemId: string) => void;
+  updateSaleItem: (itemId: string, newQty: number, newPrice: number) => void;
   clearCurrentSale: () => void;
   submitSale: (items: SaleItem[]) => Promise<boolean>;
   
@@ -108,6 +109,21 @@ export const useCashSessionStore = create<CashSessionState>()(
         removeSaleItem: (itemId: string) => {
           set((state) => ({
             currentSaleItems: state.currentSaleItems.filter(item => item.id !== itemId)
+          }));
+        },
+
+        updateSaleItem: (itemId: string, newQty: number, newPrice: number) => {
+          set((state) => ({
+            currentSaleItems: state.currentSaleItems.map(item => 
+              item.id === itemId 
+                ? { 
+                    ...item, 
+                    quantity: newQty, 
+                    price: newPrice, 
+                    total: newQty * newPrice 
+                  }
+                : item
+            )
           }));
         },
 
@@ -186,11 +202,24 @@ export const useCashSessionStore = create<CashSessionState>()(
           }
         },
 
-        closeSession: async (sessionId: string): Promise<boolean> => {
+        closeSession: async (sessionId: string, closeData?: { actual_amount: number; variance_comment?: string }): Promise<boolean> => {
           set({ loading: true, error: null });
           
           try {
-            const success = await cashSessionService.closeSession(sessionId);
+            let success: boolean;
+            
+            if (closeData) {
+              // Fermeture avec contrôle des montants
+              const closedSession = await cashSessionService.closeSessionWithAmounts(
+                sessionId, 
+                closeData.actual_amount, 
+                closeData.variance_comment
+              );
+              success = !!closedSession;
+            } else {
+              // Fermeture simple
+              success = await cashSessionService.closeSession(sessionId);
+            }
             
             if (success) {
               set({ 

@@ -19,7 +19,7 @@ class TestUsernameRefactorMigration:
     @pytest.fixture(scope="class")
     def temp_db_url(self):
         """Create a temporary test database for migration testing"""
-        return "postgresql://recyclic:recyclic_secure_password_2024@localhost:5432/recyclic_migration_test"
+        return "postgresql://recyclic:recyclic_secure_password_2024@postgres:5432/recyclic_migration_test"
 
     @pytest.fixture(scope="class")
     def alembic_config(self, temp_db_url):

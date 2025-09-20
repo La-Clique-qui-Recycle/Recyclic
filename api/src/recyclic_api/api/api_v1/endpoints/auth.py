@@ -27,7 +27,12 @@ logger = logging.getLogger(__name__)
 
 # Check if we're in test mode
 def is_test_mode():
-    return os.getenv("PYTEST_CURRENT_TEST") is not None or os.getenv("TESTING") == "true"
+    import os
+    return (
+        os.getenv("PYTEST_CURRENT_TEST") is not None
+        or os.getenv("TESTING") == "true"
+        or os.getenv("ENVIRONMENT") == "test"
+    )
 
 # Conditional rate limiting decorator
 def conditional_rate_limit(limit_str):

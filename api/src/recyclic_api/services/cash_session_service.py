@@ -119,6 +119,23 @@ class CashSessionService:
         self.db.refresh(session)
         
         return session
+
+    def close_session_with_amounts(self, session_id: str, actual_amount: float, variance_comment: str = None) -> Optional[CashSession]:
+        """Ferme une session de caisse avec contrôle des montants."""
+        session = self.get_session_by_id(session_id)
+        if not session:
+            return None
+        
+        if session.status == CashSessionStatus.CLOSED:
+            return session
+        
+        # Utiliser la nouvelle méthode du modèle
+        session.close_with_amounts(actual_amount, variance_comment)
+        
+        self.db.commit()
+        self.db.refresh(session)
+        
+        return session
     
     def add_sale_to_session(self, session_id: str, amount: float) -> bool:
         """Ajoute une vente à une session."""

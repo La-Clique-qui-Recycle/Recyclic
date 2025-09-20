@@ -48,6 +48,19 @@ class CashSessionUpdate(BaseModel):
     total_items: Optional[int] = Field(None, ge=0, description="Nombre total d'articles vendus")
 
 
+class CashSessionClose(BaseModel):
+    """Schéma pour la fermeture d'une session de caisse avec contrôle des montants."""
+    actual_amount: float = Field(..., ge=0, description="Montant physique compté en caisse")
+    variance_comment: Optional[str] = Field(None, description="Commentaire obligatoire en cas d'écart")
+    
+    @field_validator('actual_amount')
+    @classmethod
+    def validate_actual_amount(cls, v):
+        if v < 0:
+            raise ValueError('Le montant physique ne peut pas être négatif')
+        return v
+
+
 class CashSessionResponse(CashSessionBase):
     """Schéma de réponse pour une session de caisse."""
     id: str = Field(..., description="ID unique de la session")
@@ -57,6 +70,10 @@ class CashSessionResponse(CashSessionBase):
     closed_at: Optional[datetime] = Field(None, description="Date et heure de fermeture")
     total_sales: Optional[float] = Field(None, description="Total des ventes")
     total_items: Optional[int] = Field(None, description="Nombre total d'articles vendus")
+    closing_amount: Optional[float] = Field(None, description="Montant théorique calculé à la fermeture")
+    actual_amount: Optional[float] = Field(None, description="Montant physique compté à la fermeture")
+    variance: Optional[float] = Field(None, description="Écart entre théorique et physique")
+    variance_comment: Optional[str] = Field(None, description="Commentaire sur l'écart")
     
     @field_validator('id', mode='before')
     @classmethod

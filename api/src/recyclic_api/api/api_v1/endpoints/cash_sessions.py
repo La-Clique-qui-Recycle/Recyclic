@@ -16,6 +16,7 @@ from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.schemas.cash_session import (
     CashSessionCreate,
     CashSessionUpdate,
+    CashSessionClose,
     CashSessionResponse,
     CashSessionListResponse,
     CashSessionFilters,
@@ -367,6 +368,7 @@ async def update_cash_session(
 )
 async def close_cash_session(
     session_id: str,
+    close_data: CashSessionClose,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
@@ -415,8 +417,32 @@ async def close_cash_session(
             )
             raise HTTPException(status_code=400, detail="La session est déjà fermée")
         
-        # Fermer la session
-        closed_session = service.close_session(session_id)
+        # Valider que le commentaire est fourni si il y a un écart
+        theoretical_amount = session.initial_amount + (session.total_sales or 0)
+        variance = close_data.actual_amount - theoretical_amount
+        
+        if abs(variance) > 0.01 and not close_data.variance_comment:  # Tolérance de 1 centime
+            log_cash_session_closing(
+                operator_id=current_user.id,
+                operator_username=current_user.username or "Unknown",
+                session_id=session_id,
+                final_amount=close_data.actual_amount,
+                total_sales=session.total_sales or 0,
+                total_items=session.total_items or 0,
+                success=False,
+                error_message="Commentaire obligatoire pour les écarts"
+            )
+            raise HTTPException(
+                status_code=400, 
+                detail="Un commentaire est obligatoire en cas d'écart entre le montant théorique et le montant physique"
+            )
+        
+        # Fermer la session avec contrôle des montants
+        closed_session = service.close_session_with_amounts(
+            session_id, 
+            close_data.actual_amount, 
+            close_data.variance_comment
+        )
         
         # Log de la fermeture de session
         log_cash_session_closing(

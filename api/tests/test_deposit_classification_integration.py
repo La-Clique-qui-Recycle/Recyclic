@@ -26,13 +26,12 @@ class TestDepositClassificationIntegration:
     def setup_method(self):
         """Setup method to patch the bot token for all tests."""
         with patch('recyclic_api.core.config.settings.TELEGRAM_BOT_TOKEN', TEST_BOT_TOKEN):
-            self.client = TestClient(app)
             self.headers = {
                 "X-Bot-Token": TEST_BOT_TOKEN,
                 "Content-Type": "application/json"
             }
 
-    def test_story_4_2_complete_workflow_success(self):
+    def test_story_4_2_complete_workflow_success(self, client):
         """Test the complete Story 4.2 workflow: create -> classify -> verify new fields."""
 
         # Step 1: Create a deposit from bot
@@ -42,7 +41,7 @@ class TestDepositClassificationIntegration:
             "status": "pending_audio"
         }
 
-        create_response = self.client.post(
+        create_response = client.post(
             "/api/v1/deposits/from-bot",
             json=create_payload,
             headers=self.headers
@@ -57,7 +56,7 @@ class TestDepositClassificationIntegration:
         assert deposit_data["category"] is None
 
         # Step 2: Classify the deposit
-        classify_response = self.client.post(
+        classify_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
@@ -77,7 +76,7 @@ class TestDepositClassificationIntegration:
         print(f"   Final Status: {classified_data['status']}")
         print(f"   Category: {classified_data['category']}")
 
-    def test_classification_with_low_confidence_alternatives(self):
+    def test_classification_with_low_confidence_alternatives(self, client):
         """Test classification workflow that generates alternatives for low confidence."""
 
         # Create deposit with audio that should generate alternatives
@@ -87,7 +86,7 @@ class TestDepositClassificationIntegration:
             "status": "pending_audio"
         }
 
-        create_response = self.client.post(
+        create_response = client.post(
             "/api/v1/deposits/from-bot",
             json=create_payload,
             headers=self.headers
@@ -97,7 +96,7 @@ class TestDepositClassificationIntegration:
         deposit_id = create_response.json()["id"]
 
         # Classify the deposit
-        classify_response = self.client.post(
+        classify_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
@@ -113,7 +112,7 @@ class TestDepositClassificationIntegration:
         print(f"   Category: {classified_data['category']}")
         print(f"   Status: {classified_data['status']}")
 
-    def test_classification_failure_handling(self):
+    def test_classification_failure_handling(self, client):
         """Test classification failure handling according to Story 4.2."""
 
         # Create deposit with invalid audio path
@@ -123,7 +122,7 @@ class TestDepositClassificationIntegration:
             "status": "pending_audio"
         }
 
-        create_response = self.client.post(
+        create_response = client.post(
             "/api/v1/deposits/from-bot",
             json=create_payload,
             headers=self.headers
@@ -133,7 +132,7 @@ class TestDepositClassificationIntegration:
         deposit_id = create_response.json()["id"]
 
         # Attempt to classify the deposit
-        classify_response = self.client.post(
+        classify_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
@@ -148,7 +147,7 @@ class TestDepositClassificationIntegration:
         print(f"✅ Failure handling test passed!")
         print(f"   Status: {classified_data['status']}")
 
-    def test_retry_classification_after_failure(self):
+    def test_retry_classification_after_failure(self, client):
         """Test retrying classification after initial failure."""
 
         # Create deposit
@@ -158,7 +157,7 @@ class TestDepositClassificationIntegration:
             "status": "pending_audio"
         }
 
-        create_response = self.client.post(
+        create_response = client.post(
             "/api/v1/deposits/from-bot",
             json=create_payload,
             headers=self.headers
@@ -166,7 +165,7 @@ class TestDepositClassificationIntegration:
         deposit_id = create_response.json()["id"]
 
         # First classification attempt (should fail)
-        classify_response = self.client.post(
+        classify_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
@@ -177,7 +176,7 @@ class TestDepositClassificationIntegration:
 
         # Retry classification (should be allowed from classification_failed status)
         # First, let's check if we can retry from failed status
-        retry_response = self.client.post(
+        retry_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
@@ -187,7 +186,7 @@ class TestDepositClassificationIntegration:
 
         print(f"✅ Retry after failure test passed!")
 
-    def test_invalid_status_for_classification(self):
+    def test_invalid_status_for_classification(self, client):
         """Test that classification is rejected for deposits not in valid status."""
 
         # Create and manually update deposit to completed status
@@ -197,7 +196,7 @@ class TestDepositClassificationIntegration:
             "status": "pending_audio"
         }
 
-        create_response = self.client.post(
+        create_response = client.post(
             "/api/v1/deposits/from-bot",
             json=create_payload,
             headers=self.headers
@@ -205,14 +204,14 @@ class TestDepositClassificationIntegration:
         deposit_id = create_response.json()["id"]
 
         # First, successfully classify it
-        classify_response = self.client.post(
+        classify_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
         assert classify_response.status_code == 200
 
         # Try to classify again (should be rejected)
-        second_classify_response = self.client.post(
+        second_classify_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
@@ -224,7 +223,7 @@ class TestDepositClassificationIntegration:
 
         print(f"✅ Invalid status rejection test passed!")
 
-    def test_no_audio_file_error(self):
+    def test_no_audio_file_error(self, client):
         """Test classification failure when no audio file is attached."""
 
         # Create deposit without audio file
@@ -234,7 +233,7 @@ class TestDepositClassificationIntegration:
             "status": "pending_audio"
         }
 
-        create_response = self.client.post(
+        create_response = client.post(
             "/api/v1/deposits/from-bot",
             json=create_payload,
             headers=self.headers
@@ -242,7 +241,7 @@ class TestDepositClassificationIntegration:
         deposit_id = create_response.json()["id"]
 
         # Try to classify without audio file
-        classify_response = self.client.post(
+        classify_response = client.post(
             f"/api/v1/deposits/{deposit_id}/classify",
             headers=self.headers
         )
@@ -253,11 +252,11 @@ class TestDepositClassificationIntegration:
 
         print(f"✅ No audio file error test passed!")
 
-    def test_deposit_not_found_error(self):
+    def test_deposit_not_found_error(self, client):
         """Test classification with non-existent deposit ID."""
 
         # Try to classify non-existent deposit
-        classify_response = self.client.post(
+        classify_response = client.post(
             "/api/v1/deposits/00000000-0000-0000-0000-000000000000/classify",
             headers=self.headers
         )
@@ -272,7 +271,7 @@ class TestDepositClassificationIntegration:
 class TestDepositModelStory42Fields:
     """Test that the new Story 4.2 fields are properly stored in the database."""
 
-    def test_new_deposit_status_enum_values(self):
+    def test_new_deposit_status_enum_values(self, client):
         """Test that new DepositStatus enum values are available."""
 
         # Verify new status values exist
@@ -285,7 +284,7 @@ class TestDepositModelStory42Fields:
 
         print(f"✅ New DepositStatus enum values test passed!")
 
-    def test_deposit_model_has_new_fields(self):
+    def test_deposit_model_has_new_fields(self, client):
         """Test that Deposit model has the new Story 4.2 fields."""
         from recyclic_api.models.deposit import Deposit
 

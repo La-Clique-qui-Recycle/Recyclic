@@ -1,0 +1,39 @@
+schema: 1
+story: 'debt.atomic-deployment'
+story_title: 'Rendre le script de déploiement atomique'
+gate: PASS
+status_reason: 'Implémentation excellente avec gestion complète des erreurs, tests robustes et documentation complète.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-27T15:30:00Z'
+
+top_issues: [] # Aucun problème identifié
+waiver: { active: false }
+
+# Extended fields
+quality_score: 100 # Score parfait - aucune amélioration nécessaire
+expires: '2025-02-10T15:30:00Z' # 2 semaines
+
+evidence:
+  tests_reviewed: 9
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5] # Tous les critères d'acceptation couverts
+    ac_gaps: [] # Aucun gap identifié
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Scripts sécurisés avec validation des entrées et nettoyage automatique'
+  performance:
+    status: PASS
+    notes: 'Performance optimisée avec timeouts configurables et vérifications efficaces'
+  reliability:
+    status: PASS
+    notes: 'Rollback automatique et gestion d\'erreurs robuste implémentés'
+  maintainability:
+    status: PASS
+    notes: 'Code bien structuré, documenté et testé avec logs détaillés'
+
+recommendations:
+  immediate: [] # Aucune action immédiate requise
+  future: [] # Aucune amélioration future identifiée

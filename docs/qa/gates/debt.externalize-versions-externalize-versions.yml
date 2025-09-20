@@ -1,0 +1,40 @@
+schema: 1
+story: 'debt.externalize-versions'
+story_title: 'Externaliser les versions de Node.js et Python du workflow CI/CD'
+gate: PASS
+status_reason: 'Tous les critères d\'acceptation sont satisfaits avec une implémentation propre et bien testée.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-27T10:30:00Z'
+
+top_issues: []
+waiver: { active: false }
+
+quality_score: 95
+expires: '2025-02-10T10:30:00Z'
+
+evidence:
+  tests_reviewed: 4
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Aucun impact sur la sécurité - externalisation de configuration uniquement'
+  performance:
+    status: PASS
+    notes: 'Aucun impact sur les performances - configuration statique'
+  reliability:
+    status: PASS
+    notes: 'Améliore la fiabilité en centralisant la gestion des versions'
+  maintainability:
+    status: PASS
+    notes: 'Améliore significativement la maintenabilité - versions centralisées'
+
+recommendations:
+  immediate: []
+  future:
+    - action: 'Considérer l\'ajout de .nvmrc et .python-version dans .gitignore si nécessaire'
+      refs: ['frontend/.nvmrc', 'api/.python-version']

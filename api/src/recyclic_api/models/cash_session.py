@@ -52,6 +52,12 @@ class CashSession(Base):
     total_sales = Column(Float, nullable=True, default=0.0)
     total_items = Column(Integer, nullable=True, default=0)
     
+    # Champs de fermeture avec contrôle des montants
+    closing_amount = Column(Float, nullable=True, comment="Montant théorique calculé à la fermeture")
+    actual_amount = Column(Float, nullable=True, comment="Montant physique compté à la fermeture")
+    variance = Column(Float, nullable=True, comment="Écart entre théorique et physique")
+    variance_comment = Column(String, nullable=True, comment="Commentaire sur l'écart")
+    
     # Relations
     sales = relationship("Sale", back_populates="cash_session", cascade="all, delete-orphan")
 
@@ -102,13 +108,35 @@ class CashSession(Base):
             "opened_at": self.opened_at.isoformat() if self.opened_at else None,
             "closed_at": self.closed_at.isoformat() if self.closed_at else None,
             "total_sales": self.total_sales,
-            "total_items": self.total_items
+            "total_items": self.total_items,
+            "closing_amount": self.closing_amount,
+            "actual_amount": self.actual_amount,
+            "variance": self.variance,
+            "variance_comment": self.variance_comment
         }
 
     def close_session(self):
         """Ferme la session de caisse."""
         self.status = CashSessionStatus.CLOSED
         self.closed_at = datetime.now(timezone.utc)
+
+    def close_with_amounts(self, actual_amount: float, variance_comment: str = None):
+        """Ferme la session avec contrôle des montants."""
+        # Calculer le montant théorique (fond initial + ventes)
+        self.closing_amount = self.initial_amount + (self.total_sales or 0)
+        
+        # Enregistrer le montant physique compté
+        self.actual_amount = actual_amount
+        
+        # Calculer l'écart
+        self.variance = actual_amount - self.closing_amount
+        
+        # Enregistrer le commentaire si fourni
+        if variance_comment:
+            self.variance_comment = variance_comment
+        
+        # Fermer la session
+        self.close_session()
 
     def add_sale(self, amount: float):
         """Ajoute une vente à la session."""

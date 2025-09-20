@@ -1,0 +1,42 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies for testing
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY src/ ./src/
+
+# Copy tests (optimized for tests)
+COPY tests/ ./tests/
+
+# Copy the admin creation script and make it executable
+COPY create_admin.sh .
+RUN chmod +x create_admin.sh
+
+# Copy Alembic configuration and migrations
+COPY alembic.ini .
+COPY migrations/ ./migrations/
+
+# Copy pytest configuration
+COPY pytest.ini .
+
+# Add src to Python path
+ENV PYTHONPATH=/app/src
+
+# Configuration spécifique aux tests
+ENV TESTING=true
+
+# Create non-root user
+RUN useradd -m -u 1000 recyclic && chown -R recyclic:recyclic /app
+USER recyclic
+
+# Commande par défaut pour les tests
+CMD ["python", "-m", "pytest", "-v", "--tb=short"]

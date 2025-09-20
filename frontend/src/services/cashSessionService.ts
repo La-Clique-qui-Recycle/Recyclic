@@ -153,6 +153,36 @@ export const cashSessionService = {
   },
 
   /**
+   * Ferme une session de caisse avec contrôle des montants
+   */
+  async closeSessionWithAmounts(sessionId: string, actualAmount: number, varianceComment?: string): Promise<CashSession> {
+    try {
+      const response = await ApiClient.client.post(`/api/v1/cash-sessions/${sessionId}/close`, {
+        actual_amount: actualAmount,
+        variance_comment: varianceComment
+      });
+      
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Erreur lors de la fermeture de la session');
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de la fermeture de la session:', error);
+      
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Erreur lors de la fermeture de la session');
+      }
+    }
+  },
+
+  /**
    * Récupère la session de caisse actuellement ouverte
    */
   async getCurrentSession(): Promise<CashSession | null> {

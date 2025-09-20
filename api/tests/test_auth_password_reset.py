@@ -15,9 +15,8 @@ from recyclic_api.core.security import hash_password, create_reset_token, verify
 class TestAuthPasswordResetEndpoints:
     """Tests d'intégration pour les endpoints de réinitialisation de mot de passe"""
 
-    def test_forgot_password_success_existing_user(self, db_session: Session):
+    def test_forgot_password_success_existing_user(self, client, db_session: Session):
         """Test de demande de réinitialisation réussie avec un utilisateur existant"""
-        client = TestClient(app)
 
         # Créer un utilisateur de test
         test_user = User(
@@ -43,9 +42,8 @@ class TestAuthPasswordResetEndpoints:
         assert "message" in data
         assert "Si un compte est associé à cet email" in data["message"]
 
-    def test_forgot_password_nonexistent_user(self, db_session: Session):
+    def test_forgot_password_nonexistent_user(self, client, db_session: Session):
         """Test de demande de réinitialisation avec un email inexistant"""
-        client = TestClient(app)
 
         response = client.post(
             "/api/v1/auth/forgot-password",
@@ -58,9 +56,8 @@ class TestAuthPasswordResetEndpoints:
         assert "message" in data
         assert "Si un compte est associé à cet email" in data["message"]
 
-    def test_forgot_password_inactive_user(self, db_session: Session):
+    def test_forgot_password_inactive_user(self, client: TestClient, db_session: Session):
         """Test de demande de réinitialisation avec un utilisateur inactif"""
-        client = TestClient(app)
 
         # Créer un utilisateur inactif
         inactive_user = User(
@@ -84,9 +81,8 @@ class TestAuthPasswordResetEndpoints:
         data = response.json()
         assert "message" in data
 
-    def test_forgot_password_validation_missing_email(self):
+    def test_forgot_password_validation_missing_email(self, client: TestClient):
         """Test de validation avec email manquant"""
-        client = TestClient(app)
 
         response = client.post(
             "/api/v1/auth/forgot-password",
@@ -97,9 +93,8 @@ class TestAuthPasswordResetEndpoints:
         data = response.json()
         assert "detail" in data
 
-    def test_forgot_password_validation_invalid_email_format(self):
+    def test_forgot_password_validation_invalid_email_format(self, client: TestClient):
         """Test de validation avec format d'email invalide"""
-        client = TestClient(app)
 
         response = client.post(
             "/api/v1/auth/forgot-password",
@@ -110,9 +105,8 @@ class TestAuthPasswordResetEndpoints:
         data = response.json()
         assert "detail" in data
 
-    def test_reset_password_success_valid_token(self, db_session: Session):
+    def test_reset_password_success_valid_token(self, client: TestClient, db_session: Session):
         """Test de réinitialisation réussie avec un token valide"""
-        client = TestClient(app)
 
         # Créer un utilisateur de test
         test_user = User(
@@ -149,9 +143,8 @@ class TestAuthPasswordResetEndpoints:
         from recyclic_api.core.security import verify_password
         assert verify_password("NewPassword123!", test_user.hashed_password)
 
-    def test_reset_password_invalid_token(self):
+    def test_reset_password_invalid_token(self, client: TestClient):
         """Test de réinitialisation avec un token invalide"""
-        client = TestClient(app)
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -166,9 +159,8 @@ class TestAuthPasswordResetEndpoints:
         assert "detail" in data
         assert "Token invalide" in data["detail"]
 
-    def test_reset_password_expired_token(self, db_session: Session):
+    def test_reset_password_expired_token(self, client: TestClient, db_session: Session):
         """Test de réinitialisation avec un token expiré"""
-        client = TestClient(app)
 
         # Créer un utilisateur de test
         test_user = User(
@@ -200,9 +192,8 @@ class TestAuthPasswordResetEndpoints:
         assert "detail" in data
         assert "Token invalide ou expiré" in data["detail"]
 
-    def test_reset_password_wrong_scope_token(self, db_session: Session):
+    def test_reset_password_wrong_scope_token(self, client: TestClient, db_session: Session):
         """Test de réinitialisation avec un token ayant un mauvais scope"""
-        client = TestClient(app)
 
         # Créer un utilisateur de test
         test_user = User(
@@ -234,9 +225,8 @@ class TestAuthPasswordResetEndpoints:
         assert "detail" in data
         assert "Token invalide pour cette opération" in data["detail"]
 
-    def test_reset_password_nonexistent_user(self):
+    def test_reset_password_nonexistent_user(self, client: TestClient):
         """Test de réinitialisation avec un token pour un utilisateur inexistant"""
-        client = TestClient(app)
 
         # Générer un token pour un ID d'utilisateur inexistant
         fake_user_id = "99999999-9999-9999-9999-999999999999"
@@ -255,9 +245,8 @@ class TestAuthPasswordResetEndpoints:
         assert "detail" in data
         assert "Utilisateur introuvable" in data["detail"]
 
-    def test_reset_password_inactive_user(self, db_session: Session):
+    def test_reset_password_inactive_user(self, client: TestClient, db_session: Session):
         """Test de réinitialisation pour un utilisateur inactif"""
-        client = TestClient(app)
 
         # Créer un utilisateur inactif
         inactive_user = User(
@@ -288,9 +277,8 @@ class TestAuthPasswordResetEndpoints:
         assert "detail" in data
         assert "Utilisateur introuvable ou inactif" in data["detail"]
 
-    def test_reset_password_validation_missing_token(self):
+    def test_reset_password_validation_missing_token(self, client: TestClient):
         """Test de validation avec token manquant"""
-        client = TestClient(app)
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -301,9 +289,8 @@ class TestAuthPasswordResetEndpoints:
         data = response.json()
         assert "detail" in data
 
-    def test_reset_password_validation_missing_password(self):
+    def test_reset_password_validation_missing_password(self, client: TestClient):
         """Test de validation avec nouveau mot de passe manquant"""
-        client = TestClient(app)
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -314,9 +301,8 @@ class TestAuthPasswordResetEndpoints:
         data = response.json()
         assert "detail" in data
 
-    def test_reset_password_validation_short_password(self, db_session: Session):
+    def test_reset_password_validation_short_password(self, client: TestClient, db_session: Session):
         """Test de validation avec un mot de passe trop court"""
-        client = TestClient(app)
 
         # Créer un utilisateur de test
         test_user = User(
@@ -346,9 +332,8 @@ class TestAuthPasswordResetEndpoints:
         assert "detail" in data
         assert "Mot de passe invalide" in data["detail"]
 
-    def test_reset_password_validation_weak_password(self, db_session: Session):
+    def test_reset_password_validation_weak_password(self, client: TestClient, db_session: Session):
         """Test de validation avec un mot de passe faible (sans majuscule)"""
-        client = TestClient(app)
 
         # Créer un utilisateur de test
         test_user = User(
@@ -403,11 +388,10 @@ class TestAuthPasswordResetEndpoints:
         verified_user_id = verify_reset_token(token)
         assert verified_user_id == str(test_user.id)
 
-    def test_rate_limiting_forgot_password(self, db_session: Session):
+    def test_rate_limiting_forgot_password(self, client: TestClient, db_session: Session):
         """Test du rate limiting sur l'endpoint forgot-password"""
         # Note: Ce test pourrait être plus complexe selon la configuration du rate limiting
         # Pour l'instant, on vérifie juste que l'endpoint fonctionne normalement
-        client = TestClient(app)
 
         test_user = User(
             username="rate_limit_user",

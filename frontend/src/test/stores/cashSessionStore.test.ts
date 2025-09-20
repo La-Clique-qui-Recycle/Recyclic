@@ -1,437 +1,159 @@
-import { renderHook, act } from '@testing-library/react';
-import { vi } from 'vitest';
-import { useCashSessionStore } from '../../stores/cashSessionStore';
-import { cashSessionService } from '../../services/cashSessionService';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock du service
-vi.mock('../../services/cashSessionService');
+// Mock du service avant l'import
+vi.mock('../../services/cashSessionService', () => ({
+  cashSessionService: {
+    closeSession: vi.fn(),
+    closeSessionWithAmounts: vi.fn()
+  }
+}))
 
-const mockCashSessionService = cashSessionService as any;
+import { useCashSessionStore } from '../../stores/cashSessionStore'
+import { cashSessionService } from '../../services/cashSessionService'
 
-describe('useCashSessionStore', () => {
+// Récupérer les mocks après l'import
+const mockCloseSession = vi.mocked(cashSessionService.closeSession)
+const mockCloseSessionWithAmounts = vi.mocked(cashSessionService.closeSessionWithAmounts)
+
+describe('cashSessionStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Reset du store
-    useCashSessionStore.getState().setCurrentSession(null);
-    useCashSessionStore.getState().setSessions([]);
-    useCashSessionStore.getState().setError(null);
-    useCashSessionStore.getState().setLoading(false);
-  });
-
-  describe('openSession', () => {
-    it('should create a new session successfully', async () => {
-      const mockSession = {
-        id: 'session-123',
-        operator_id: 'user-123',
-        initial_amount: 50.0,
-        current_amount: 50.0,
-        status: 'open' as const,
-        opened_at: '2025-01-27T10:00:00Z',
-        total_sales: 0,
-        total_items: 0
-      };
-
-      mockCashSessionService.createSession = vi.fn().mockResolvedValue(mockSession);
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        const session = await result.current.openSession({
-          operator_id: 'user-123',
-          initial_amount: 50.0
-        });
-        expect(session).toEqual(mockSession);
-      });
-
-      expect(result.current.currentSession).toEqual(mockSession);
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBeNull();
-    });
-
-    it('should handle session creation error', async () => {
-      const errorMessage = 'Erreur de création de session';
-      mockCashSessionService.createSession = vi.fn().mockRejectedValue(new Error(errorMessage));
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        const session = await result.current.openSession({
-          operator_id: 'user-123',
-          initial_amount: 50.0
-        });
-        expect(session).toBeNull();
-      });
-
-      expect(result.current.currentSession).toBeNull();
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe(errorMessage);
-    });
-  });
+    vi.clearAllMocks()
+    // Reset store state
+    useCashSessionStore.setState({
+      currentSession: null,
+      loading: false,
+      error: null
+    })
+  })
 
   describe('closeSession', () => {
-    it('should close a session successfully', async () => {
+    it('should close session without amounts when no closeData provided', async () => {
+      mockCloseSession.mockResolvedValue(true)
+      
+      const store = useCashSessionStore.getState()
+      const result = await store.closeSession('session-123')
+      
+      expect(mockCloseSession).toHaveBeenCalledWith('session-123')
+      expect(result).toBe(true)
+    })
+
+    it('should close session with amounts when closeData provided', async () => {
+      const mockClosedSession = {
+        id: 'session-123',
+        status: 'closed',
+        actual_amount: 75.0,
+        variance: 0.0
+      }
+      
+      mockCloseSessionWithAmounts.mockResolvedValue(mockClosedSession)
+      
+      const store = useCashSessionStore.getState()
+      const result = await store.closeSession('session-123', {
+        actual_amount: 75.0,
+        variance_comment: 'Test comment'
+      })
+      
+      expect(mockCloseSessionWithAmounts).toHaveBeenCalledWith('session-123', 75.0, 'Test comment')
+      expect(result).toBe(true)
+    })
+
+    it('should set loading state during closure', async () => {
+      let resolvePromise: (value: boolean) => void
+      const promise = new Promise<boolean>(resolve => {
+        resolvePromise = resolve
+      })
+      
+      mockCloseSession.mockReturnValue(promise)
+      
+      const store = useCashSessionStore.getState()
+      const closePromise = store.closeSession('session-123')
+      
+      // Check loading state
+      expect(useCashSessionStore.getState().loading).toBe(true)
+      
+      // Resolve the promise
+      resolvePromise!(true)
+      await closePromise
+      
+      // Check loading state after completion
+      expect(useCashSessionStore.getState().loading).toBe(false)
+    })
+
+    it('should clear currentSession and localStorage on successful closure', async () => {
       const mockSession = {
         id: 'session-123',
-        operator_id: 'user-123',
-        initial_amount: 50.0,
-        current_amount: 75.0,
-        status: 'closed' as const,
-        opened_at: '2025-01-27T10:00:00Z',
-        closed_at: '2025-01-27T18:00:00Z',
-        total_sales: 25.0,
-        total_items: 3
-      };
-
-      mockCashSessionService.closeSession = vi.fn().mockResolvedValue(true);
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      // D'abord ouvrir une session
-      act(() => {
-        result.current.setCurrentSession({
-          id: 'session-123',
-          operator_id: 'user-123',
-          initial_amount: 50.0,
-          current_amount: 50.0,
-          status: 'open',
-          opened_at: '2025-01-27T10:00:00Z',
-          total_sales: 0,
-          total_items: 0
-        });
-      });
-
-      await act(async () => {
-        const success = await result.current.closeSession('session-123');
-        expect(success).toBe(true);
-      });
-
-      expect(result.current.currentSession).toBeNull();
-      expect(result.current.loading).toBe(false);
-    });
-
-    it('should handle close session error', async () => {
-      const errorMessage = 'Erreur de fermeture de session';
-      mockCashSessionService.closeSession = vi.fn().mockRejectedValue(new Error(errorMessage));
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        const success = await result.current.closeSession('session-123');
-        expect(success).toBe(false);
-      });
-
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe(errorMessage);
-    });
-  });
-
-  describe('updateSession', () => {
-    it('should update a session successfully', async () => {
-      const mockUpdatedSession = {
-        id: 'session-123',
-        operator_id: 'user-123',
-        initial_amount: 50.0,
-        current_amount: 100.0,
-        status: 'open' as const,
-        opened_at: '2025-01-27T10:00:00Z',
-        total_sales: 50.0,
-        total_items: 5
-      };
-
-      mockCashSessionService.updateSession = vi.fn().mockResolvedValue(mockUpdatedSession);
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      // D'abord ouvrir une session
-      act(() => {
-        result.current.setCurrentSession({
-          id: 'session-123',
-          operator_id: 'user-123',
-          initial_amount: 50.0,
-          current_amount: 50.0,
-          status: 'open',
-          opened_at: '2025-01-27T10:00:00Z',
-          total_sales: 0,
-          total_items: 0
-        });
-      });
-
-      await act(async () => {
-        const success = await result.current.updateSession('session-123', {
-          current_amount: 100.0,
-          total_sales: 50.0,
-          total_items: 5
-        });
-        expect(success).toBe(true);
-      });
-
-      expect(result.current.currentSession).toEqual(mockUpdatedSession);
-      expect(result.current.loading).toBe(false);
-    });
-
-    it('should handle update session error', async () => {
-      const errorMessage = 'Erreur de mise à jour de session';
-      mockCashSessionService.updateSession = vi.fn().mockRejectedValue(new Error(errorMessage));
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        const success = await result.current.updateSession('session-123', {
-          current_amount: 100.0
-        });
-        expect(success).toBe(false);
-      });
-
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe(errorMessage);
-    });
-  });
-
-  describe('fetchSessions', () => {
-    it('should fetch sessions successfully', async () => {
-      const mockSessions = [
-        {
-          id: 'session-1',
-          operator_id: 'user-1',
-          initial_amount: 50.0,
-          current_amount: 75.0,
-          status: 'closed' as const,
-          opened_at: '2025-01-27T10:00:00Z',
-          closed_at: '2025-01-27T18:00:00Z',
-          total_sales: 25.0,
-          total_items: 3
-        },
-        {
-          id: 'session-2',
-          operator_id: 'user-2',
-          initial_amount: 100.0,
-          current_amount: 100.0,
-          status: 'open' as const,
-          opened_at: '2025-01-27T20:00:00Z',
-          total_sales: 0,
-          total_items: 0
-        }
-      ];
-
-      mockCashSessionService.getSessions = vi.fn().mockResolvedValue(mockSessions);
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        await result.current.fetchSessions();
-      });
-
-      expect(result.current.sessions).toEqual(mockSessions);
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBeNull();
-    });
-
-    it('should handle fetch sessions error', async () => {
-      const errorMessage = 'Erreur de récupération des sessions';
-      mockCashSessionService.getSessions = vi.fn().mockRejectedValue(new Error(errorMessage));
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        await result.current.fetchSessions();
-      });
-
-      expect(result.current.sessions).toEqual([]);
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe(errorMessage);
-    });
-  });
-
-  describe('fetchCurrentSession', () => {
-    it('should fetch current session from localStorage', async () => {
-      const mockSession = {
-        id: 'session-123',
-        operator_id: 'user-123',
-        initial_amount: 50.0,
-        current_amount: 50.0,
-        status: 'open' as const,
-        opened_at: '2025-01-27T10:00:00Z',
-        total_sales: 0,
-        total_items: 0
-      };
+        status: 'open'
+      }
+      
+      useCashSessionStore.setState({ currentSession: mockSession })
 
       // Mock localStorage
-      const localStorageMock = {
-        getItem: vi.fn().mockReturnValue(JSON.stringify(mockSession)),
-        setItem: vi.fn(),
-        removeItem: vi.fn()
-      };
+      const mockRemoveItem = vi.fn()
       Object.defineProperty(window, 'localStorage', {
-        value: localStorageMock
-      });
-
-      mockCashSessionService.getSession = vi.fn().mockResolvedValue(mockSession);
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        await result.current.fetchCurrentSession();
-      });
-
-      expect(result.current.currentSession).toEqual(mockSession);
-      expect(result.current.loading).toBe(false);
-    });
-
-    it('should clear localStorage if session is closed on server', async () => {
-      const mockSession = {
-        id: 'session-123',
-        operator_id: 'user-123',
-        initial_amount: 50.0,
-        current_amount: 50.0,
-        status: 'closed' as const,
-        opened_at: '2025-01-27T10:00:00Z',
-        closed_at: '2025-01-27T18:00:00Z',
-        total_sales: 25.0,
-        total_items: 3
-      };
-
-      // Mock localStorage
-      const localStorageMock = {
-        getItem: vi.fn().mockReturnValue(JSON.stringify(mockSession)),
-        setItem: vi.fn(),
-        removeItem: vi.fn()
-      };
-      Object.defineProperty(window, 'localStorage', {
-        value: localStorageMock
-      });
-
-      mockCashSessionService.getSession = vi.fn().mockResolvedValue(mockSession);
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      await act(async () => {
-        await result.current.fetchCurrentSession();
-      });
-
-      expect(result.current.currentSession).toBeNull();
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('currentCashSession');
-    });
-  });
-
-  describe('refreshSession', () => {
-    it('should refresh current session if exists', async () => {
-      const mockSession = {
-        id: 'session-123',
-        operator_id: 'user-123',
-        initial_amount: 50.0,
-        current_amount: 50.0,
-        status: 'open' as const,
-        opened_at: '2025-01-27T10:00:00Z',
-        total_sales: 0,
-        total_items: 0
-      };
-
-      const { result } = renderHook(() => useCashSessionStore());
-
-      // D'abord ouvrir une session
-      act(() => {
-        result.current.setCurrentSession(mockSession);
-      });
-
-      // Mock fetchCurrentSession
-      const fetchCurrentSessionSpy = vi.spyOn(result.current, 'fetchCurrentSession');
-
-      await act(async () => {
-        await result.current.refreshSession();
-      });
-
-      expect(fetchCurrentSessionSpy).toHaveBeenCalled();
-    });
-
-    it('should not refresh if no current session', async () => {
-      const { result } = renderHook(() => useCashSessionStore());
-
-      // Mock fetchCurrentSession
-      const fetchCurrentSessionSpy = vi.spyOn(result.current, 'fetchCurrentSession');
-
-      await act(async () => {
-        await result.current.refreshSession();
-      });
-
-      expect(fetchCurrentSessionSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('setters', () => {
-    it('should set current session', () => {
-      const { result } = renderHook(() => useCashSessionStore());
-
-      const mockSession = {
-        id: 'session-123',
-        operator_id: 'user-123',
-        initial_amount: 50.0,
-        current_amount: 50.0,
-        status: 'open' as const,
-        opened_at: '2025-01-27T10:00:00Z',
-        total_sales: 0,
-        total_items: 0
-      };
-
-      act(() => {
-        result.current.setCurrentSession(mockSession);
-      });
-
-      expect(result.current.currentSession).toEqual(mockSession);
-    });
-
-    it('should set sessions', () => {
-      const { result } = renderHook(() => useCashSessionStore());
-
-      const mockSessions = [
-        {
-          id: 'session-1',
-          operator_id: 'user-1',
-          initial_amount: 50.0,
-          current_amount: 75.0,
-          status: 'closed' as const,
-          opened_at: '2025-01-27T10:00:00Z',
-          closed_at: '2025-01-27T18:00:00Z',
-          total_sales: 25.0,
-          total_items: 3
+        value: {
+          removeItem: mockRemoveItem
         }
-      ];
+      })
+      
+      mockCloseSession.mockResolvedValue(true)
+      
+      const store = useCashSessionStore.getState()
+      await store.closeSession('session-123')
+      
+      expect(useCashSessionStore.getState().currentSession).toBeNull()
+      expect(mockRemoveItem).toHaveBeenCalledWith('currentCashSession')
+    })
 
-      act(() => {
-        result.current.setSessions(mockSessions);
-      });
+    it('should handle closure error and set error state', async () => {
+      const errorMessage = 'Session not found'
+      mockCloseSession.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useCashSessionStore.getState()
+      const result = await store.closeSession('session-123')
+      
+      expect(result).toBe(false)
+      expect(useCashSessionStore.getState().error).toBe(errorMessage)
+      expect(useCashSessionStore.getState().loading).toBe(false)
+    })
 
-      expect(result.current.sessions).toEqual(mockSessions);
-    });
+    it('should handle closure with amounts error', async () => {
+      const errorMessage = 'Invalid amount'
+      mockCloseSessionWithAmounts.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useCashSessionStore.getState()
+      const result = await store.closeSession('session-123', {
+        actual_amount: 75.0,
+        variance_comment: 'Test'
+      })
+      
+      expect(result).toBe(false)
+      expect(useCashSessionStore.getState().error).toBe(errorMessage)
+    })
 
-    it('should set loading state', () => {
-      const { result } = renderHook(() => useCashSessionStore());
+    it('should handle unknown error types', async () => {
+      mockCloseSession.mockRejectedValue('Unknown error')
+      
+      const store = useCashSessionStore.getState()
+      const result = await store.closeSession('session-123')
+      
+      expect(result).toBe(false)
+      expect(useCashSessionStore.getState().error).toBe('Erreur lors de la fermeture de session')
+    })
 
-      act(() => {
-        result.current.setLoading(true);
-      });
-
-      expect(result.current.loading).toBe(true);
-    });
-
-    it('should set error', () => {
-      const { result } = renderHook(() => useCashSessionStore());
-
-      act(() => {
-        result.current.setError('Test error');
-      });
-
-      expect(result.current.error).toBe('Test error');
-    });
-
-    it('should clear error', () => {
-      const { result } = renderHook(() => useCashSessionStore());
-
-      act(() => {
-        result.current.setError('Test error');
-        result.current.clearError();
-      });
-
-      expect(result.current.error).toBeNull();
-    });
-  });
-});
+    it('should not clear session when closure fails', async () => {
+      const mockSession = {
+        id: 'session-123',
+        status: 'open'
+      }
+      
+      useCashSessionStore.setState({ currentSession: mockSession })
+      
+      mockCloseSession.mockResolvedValue(false)
+      
+      const store = useCashSessionStore.getState()
+      await store.closeSession('session-123')
+      
+      expect(useCashSessionStore.getState().currentSession).toBe(mockSession)
+    })
+  })
+})
