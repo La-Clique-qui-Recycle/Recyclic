@@ -1,5 +1,5 @@
 """
-Depot command handler for Story 4.1 - Telegram voice deposit functionality.
+Depot command handler for Story 2.1 - Telegram voice deposit functionality.
 Implements the /depot command and voice message handling for deposit creation.
 """
 
@@ -38,8 +38,10 @@ SUPPORTED_AUDIO_MIME_TYPES = {
     "audio/mp3": ".mp3",
     "audio/wav": ".wav",
     "audio/x-wav": ".wav",
+    "audio/wave": ".wav",
+    "audio/x-pn-wav": ".wav",
 }
-SUPPORTED_AUDIO_EXTENSIONS = {".ogg", ".oga", ".mp3", ".wav"}
+SUPPORTED_AUDIO_EXTENSIONS = {".ogg", ".oga", ".mp3", ".wav", ".wave"}
 MAX_AUDIO_FILE_SIZE_BYTES = settings.MAX_AUDIO_FILE_SIZE_MB * 1024 * 1024
 
 # In-memory storage for active sessions (in production, use Redis)

@@ -21,14 +21,16 @@ except ImportError:
     GOOGLE_SPEECH_AVAILABLE = False
 
 # LangChain imports
+LANGCHAIN_IMPORT_ERROR: Optional[Exception] = None
 try:
     from langchain_core.output_parsers import JsonOutputParser
     from langchain_core.prompts import PromptTemplate
     from langchain_google_genai import ChatGoogleGenerativeAI
     import google.generativeai as genai
     LANGCHAIN_AVAILABLE = True
-except ImportError:
+except Exception as exc:  # pragma: no cover - optional dependency handling
     LANGCHAIN_AVAILABLE = False
+    LANGCHAIN_IMPORT_ERROR = exc
 
 from pydantic import BaseModel, Field
 from recyclic_api.models.deposit import EEECategory, DepositStatus
@@ -96,7 +98,13 @@ class ClassificationService:
                 logger.error(f"Failed to initialize Gemini LLM: {str(e)}")
                 self.llm = None
         else:
-            logger.warning("LangChain not available or GEMINI_API_KEY not set, using fallback classification")
+            if LANGCHAIN_IMPORT_ERROR:
+                logger.warning(
+                    "LangChain initialization skipped due to optional dependency error: %s",
+                    LANGCHAIN_IMPORT_ERROR,
+                )
+            else:
+                logger.warning("LangChain not available or GEMINI_API_KEY not set, using fallback classification")
 
     def _setup_classification_chain(self):
         """Setup the LangChain classification pipeline."""

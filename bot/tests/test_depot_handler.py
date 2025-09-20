@@ -1,5 +1,5 @@
 """
-Unit tests for the depot handler - Story 4.1 functionality.
+Unit tests for the depot handler - Story 2.1 functionality.
 Tests the /depot command, voice message handling, and session management.
 """
 
@@ -9,6 +9,8 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from telegram import Update, Message, User, Chat, Voice, Audio
 from telegram.ext import ContextTypes, ConversationHandler
+
+import bot.src.handlers.depot as depot_module
 
 from bot.src.handlers.depot import (
     start_depot_session,
@@ -259,6 +261,72 @@ class TestDepotHandler:
         mock_classify.assert_called_once_with('test-deposit-123')
 
         # Check session was cleaned up
+        assert user_id not in active_sessions
+
+    @pytest.mark.asyncio
+    @patch('bot.src.handlers.depot._send_to_api')
+    @patch('bot.src.handlers.depot._trigger_classification')
+    @patch('os.makedirs')
+    async def test_handle_audio_message_wav_supported(
+        self,
+        mock_makedirs,
+        mock_classify,
+        mock_send_api,
+        mock_update,
+        mock_context,
+        monkeypatch,
+        tmp_path,
+    ):
+        """Standard audio files in WAV format should be accepted and stored using config path."""
+        user_id = mock_update.effective_user.id
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': None,
+            'timeout_task': None
+        }
+
+        mock_update.message.voice = None
+        mock_update.message.audio = MagicMock(spec=Audio)
+        mock_update.message.audio.file_id = "audio_wav_id"
+        mock_update.message.audio.mime_type = "audio/wav"
+        mock_update.message.audio.file_size = 2048
+        mock_update.message.audio.file_name = "sample.wav"
+
+        mock_file = MagicMock()
+        mock_file.download_to_drive = AsyncMock()
+        mock_context.bot.get_file.return_value = mock_file
+
+        mock_send_api.return_value = {
+            'success': True,
+            'deposit_id': 'wav-deposit-456'
+        }
+        mock_classify.return_value = {
+            'success': True,
+            'category': 'IT_EQUIPMENT',
+            'confidence': 0.9
+        }
+
+        monkeypatch.setattr(depot_module.settings, "AUDIO_STORAGE_PATH", str(tmp_path))
+
+        processing_msg = MagicMock()
+        processing_msg.edit_text = AsyncMock()
+        mock_update.message.reply_text.return_value = processing_msg
+
+        result = await handle_voice_message(mock_update, mock_context)
+
+        assert result == ConversationHandler.END
+        mock_context.bot.get_file.assert_called_once_with("audio_wav_id")
+        mock_file.download_to_drive.assert_called_once()
+
+        mock_send_api.assert_called_once()
+        mock_classify.assert_called_once_with('wav-deposit-456')
+        saved_path = mock_send_api.call_args[0][1]
+        assert saved_path.endswith(".wav")
+        assert str(tmp_path) in saved_path
+
+        mock_makedirs.assert_called_once_with(str(tmp_path), exist_ok=True)
         assert user_id not in active_sessions
 
     @pytest.mark.asyncio
