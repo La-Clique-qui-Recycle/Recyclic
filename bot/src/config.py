@@ -13,7 +13,11 @@ class Settings(BaseSettings):
     # API
     API_BASE_URL: str = "http://api:8000"
     API_V1_STR: str = "/api/v1"
-    
+
+    # Storage
+    AUDIO_STORAGE_PATH: str = "audio_files"
+    MAX_AUDIO_FILE_SIZE_MB: int = 10
+
     # Frontend
     FRONTEND_URL: str = "http://localhost:4444"
     # Feature flag: activer les boutons inline (HTTPS requis). Si false, fallback texte cliquable

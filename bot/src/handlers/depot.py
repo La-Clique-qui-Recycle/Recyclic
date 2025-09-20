@@ -7,7 +7,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import httpx
 from telegram import Update
 from telegram.ext import (
@@ -18,6 +18,7 @@ from telegram.ext import (
     filters
 )
 from ..config import settings
+from ..services.user_service import user_service
 from .validation import send_validation_message
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,19 @@ WAITING_FOR_AUDIO = 1
 
 # Session timeout (5 minutes as per story requirements)
 SESSION_TIMEOUT = 300  # 5 minutes in seconds
+
+# Audio configuration
+SUPPORTED_AUDIO_MIME_TYPES = {
+    "audio/ogg": ".ogg",
+    "audio/oga": ".ogg",
+    "audio/webm": ".ogg",
+    "audio/mpeg": ".mp3",
+    "audio/mp3": ".mp3",
+    "audio/wav": ".wav",
+    "audio/x-wav": ".wav",
+}
+SUPPORTED_AUDIO_EXTENSIONS = {".ogg", ".oga", ".mp3", ".wav"}
+MAX_AUDIO_FILE_SIZE_BYTES = settings.MAX_AUDIO_FILE_SIZE_MB * 1024 * 1024
 
 # In-memory storage for active sessions (in production, use Redis)
 active_sessions: Dict[int, Dict[str, Any]] = {}
@@ -39,7 +53,32 @@ async def start_depot_session(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = update.effective_user.id
     username = update.effective_user.username or update.effective_user.first_name
 
-    logger.info(f"User {username} ({user_id}) started depot session")
+    logger.info(f"User {username} ({user_id}) requested depot session")
+
+    # Validate user authorization via API
+    try:
+        user_record = await user_service.get_user_by_telegram_id(str(user_id))
+    except Exception as exc:
+        logger.error("Failed to verify Telegram user %s authorization: %s", user_id, exc)
+        user_record = None
+
+    if not user_record:
+        await update.message.reply_text(
+            "❌ Vous n'êtes pas autorisé à enregistrer un dépôt pour le moment.\n"
+            "Utilisez /inscription pour demander l'accès ou contactez un administrateur."
+        )
+        return ConversationHandler.END
+
+    status = (user_record.get("status") or "").lower()
+    is_active = bool(user_record.get("is_active", False))
+    allowed_statuses = {"approved", "active"}
+
+    if not is_active or (status and status not in allowed_statuses):
+        await update.message.reply_text(
+            "⏳ Votre compte est en attente d'activation par un administrateur.\n"
+            "Vous recevrez une notification dès qu'il sera validé."
+        )
+        return ConversationHandler.END
 
     # Check if user already has an active session
     if user_id in active_sessions:
@@ -71,7 +110,7 @@ async def start_depot_session(update: Update, context: ContextTypes.DEFAULT_TYPE
         "📋 **Instructions :**\n"
         "• Décrivez clairement l'objet\n"
         "• Mentionnez le type (électroménager, informatique, etc.)\n"
-        "• Formats supportés : audio vocal Telegram\n\n"
+        "• Formats supportés : OGG, MP3, WAV\n\n"
         "⏱️ Session expire dans 5 minutes\n"
         "❌ Tapez /annuler pour arrêter",
         parse_mode='Markdown'
@@ -96,6 +135,30 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
     session = active_sessions[user_id]
     logger.info(f"Processing voice message for user {session['username']} ({user_id})")
 
+    telegram_audio, file_id, mime_type, file_size, original_file_name = _extract_audio_metadata(update)
+
+    if not telegram_audio or not file_id:
+        await update.message.reply_text(
+            "❌ Impossible de lire ce message audio. Veuillez réessayer."
+        )
+        return WAITING_FOR_AUDIO
+
+    file_extension = _resolve_audio_extension(mime_type, original_file_name)
+
+    if not file_extension:
+        await update.message.reply_text(
+            "❌ Format audio non supporté. Formats acceptés : OGG, MP3, WAV."
+        )
+        return WAITING_FOR_AUDIO
+
+    if file_size and file_size > MAX_AUDIO_FILE_SIZE_BYTES:
+        max_size = settings.MAX_AUDIO_FILE_SIZE_MB
+        await update.message.reply_text(
+            "❌ Fichier trop volumineux.\n"
+            f"La taille maximale autorisée est de {max_size} Mo."
+        )
+        return WAITING_FOR_AUDIO
+
     try:
         # Send processing message
         processing_msg = await update.message.reply_text(
@@ -103,17 +166,15 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
             "⏳ Téléchargement et analyse en cours..."
         )
 
-        # Download voice file
-        voice = update.message.voice
-        file = await context.bot.get_file(voice.file_id)
+        file = await context.bot.get_file(file_id)
 
         # Create audio directory if it doesn't exist
-        audio_dir = "audio_files"
+        audio_dir = settings.AUDIO_STORAGE_PATH
         os.makedirs(audio_dir, exist_ok=True)
 
         # Generate unique filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"deposit_{user_id}_{timestamp}.ogg"
+        filename = f"deposit_{user_id}_{timestamp}{file_extension}"
         file_path = os.path.join(audio_dir, filename)
 
         # Download file
@@ -202,13 +263,43 @@ async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_T
     )
     return WAITING_FOR_AUDIO
 
+def _extract_audio_metadata(update: Update) -> tuple[Optional[Any], Optional[str], str, int, Optional[str]]:
+    """Extract audio metadata from update message."""
+    message = update.message
+
+    if message.voice:
+        voice = message.voice
+        mime_type = (voice.mime_type or "audio/ogg").lower()
+        return voice, voice.file_id, mime_type, voice.file_size or 0, None
+
+    if message.audio:
+        audio = message.audio
+        mime_type = (audio.mime_type or "").lower()
+        return audio, audio.file_id, mime_type, audio.file_size or 0, audio.file_name
+
+    return None, None, "", 0, None
+
+def _resolve_audio_extension(mime_type: str, file_name: Optional[str]) -> Optional[str]:
+    """Determine the appropriate file extension for the audio payload."""
+    if file_name:
+        _, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext in SUPPORTED_AUDIO_EXTENSIONS:
+            return ext
+
+    normalized_mime = (mime_type or "").lower()
+    if normalized_mime in SUPPORTED_AUDIO_MIME_TYPES:
+        return SUPPORTED_AUDIO_MIME_TYPES[normalized_mime]
+
+    return None
+
 async def _handle_session_timeout(user_id: int, update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle session timeout after 5 minutes."""
     await asyncio.sleep(SESSION_TIMEOUT)
 
     if user_id in active_sessions:
         logger.info(f"Session timeout for user {user_id}")
-        await _cleanup_session(user_id)
+        await _cleanup_session(user_id, cancel_timeout=False)
 
         # Try to send timeout message
         try:
@@ -222,14 +313,22 @@ async def _handle_session_timeout(user_id: int, update: Update, context: Context
         except Exception as e:
             logger.error(f"Could not send timeout message to user {user_id}: {e}")
 
-async def _cleanup_session(user_id: int):
+async def _cleanup_session(user_id: int, *, cancel_timeout: bool = True):
     """Clean up user session and cancel timeout task."""
     if user_id in active_sessions:
         session = active_sessions[user_id]
 
         # Cancel timeout task if exists
-        if session.get('timeout_task'):
-            session['timeout_task'].cancel()
+        if cancel_timeout and session.get('timeout_task'):
+            timeout_task = session['timeout_task']
+            try:
+                timeout_task.cancel()
+            except Exception as exc:
+                logger.debug(
+                    "Could not cancel timeout task for user %s: %s",
+                    user_id,
+                    exc,
+                )
 
         # Remove from active sessions
         del active_sessions[user_id]
@@ -347,7 +446,7 @@ depot_conversation_handler = ConversationHandler(
     entry_points=[CommandHandler("depot", start_depot_session)],
     states={
         WAITING_FOR_AUDIO: [
-            MessageHandler(filters.VOICE, handle_voice_message),
+            MessageHandler(filters.VOICE | filters.AUDIO, handle_voice_message),
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_invalid_message),
             CommandHandler("annuler", cancel_depot_session),
         ],

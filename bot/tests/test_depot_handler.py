@@ -5,9 +5,10 @@ Tests the /depot command, voice message handling, and session management.
 
 import pytest
 import asyncio
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from telegram import Update, Message, User, Chat, Voice
-from telegram.ext import ContextTypes
+from telegram import Update, Message, User, Chat, Voice, Audio
+from telegram.ext import ContextTypes, ConversationHandler
 
 from bot.src.handlers.depot import (
     start_depot_session,
@@ -15,7 +16,9 @@ from bot.src.handlers.depot import (
     cancel_depot_session,
     handle_invalid_message,
     active_sessions,
-    WAITING_FOR_AUDIO
+    WAITING_FOR_AUDIO,
+    _handle_session_timeout,
+    SESSION_TIMEOUT,
 )
 
 
@@ -30,6 +33,8 @@ def mock_update():
 
     update.message = MagicMock(spec=Message)
     update.message.reply_text = AsyncMock()
+    update.message.voice = None
+    update.message.audio = None
 
     return update
 
@@ -49,6 +54,8 @@ def mock_voice_message(mock_update):
     """Create a mock voice message."""
     mock_update.message.voice = MagicMock(spec=Voice)
     mock_update.message.voice.file_id = "test_file_id"
+    mock_update.message.voice.mime_type = "audio/ogg"
+    mock_update.message.voice.file_size = 1024
 
     # Mock file object
     mock_file = MagicMock()
@@ -63,6 +70,21 @@ class TestDepotHandler:
     def setup_method(self):
         """Clean up active sessions before each test."""
         active_sessions.clear()
+        patcher = patch(
+            "bot.src.handlers.depot.user_service.get_user_by_telegram_id",
+            new_callable=AsyncMock,
+        )
+        self.user_service_patcher = patcher
+        self.mock_user_service = patcher.start()
+        self.mock_user_service.return_value = {
+            "id": "user-123",
+            "is_active": True,
+            "status": "approved",
+        }
+
+    def teardown_method(self):
+        active_sessions.clear()
+        self.user_service_patcher.stop()
 
     @pytest.mark.asyncio
     async def test_start_depot_session_new_user(self, mock_update, mock_context):
@@ -71,6 +93,9 @@ class TestDepotHandler:
 
         # Check return value
         assert result == WAITING_FOR_AUDIO
+
+        # Check authorization lookup
+        self.mock_user_service.assert_awaited_once_with(str(mock_update.effective_user.id))
 
         # Check session was created
         user_id = mock_update.effective_user.id
@@ -106,6 +131,36 @@ class TestDepotHandler:
         mock_update.message.reply_text.assert_called_once()
         call_args = mock_update.message.reply_text.call_args[0][0]
         assert "session de dépôt active" in call_args
+
+    @pytest.mark.asyncio
+    async def test_start_depot_session_unauthorized_user(self, mock_update, mock_context):
+        """Test that unauthorized users cannot start a session."""
+        self.mock_user_service.return_value = None
+
+        result = await start_depot_session(mock_update, mock_context)
+
+        assert result == ConversationHandler.END
+        mock_update.message.reply_text.assert_called_once()
+        message = mock_update.message.reply_text.call_args[0][0]
+        assert "pas autorisé" in message
+        assert mock_update.effective_user.id not in active_sessions
+
+    @pytest.mark.asyncio
+    async def test_start_depot_session_pending_user(self, mock_update, mock_context):
+        """Test that pending users are asked to wait for activation."""
+        self.mock_user_service.return_value = {
+            "id": "user-123",
+            "is_active": True,
+            "status": "pending",
+        }
+
+        result = await start_depot_session(mock_update, mock_context)
+
+        assert result == ConversationHandler.END
+        mock_update.message.reply_text.assert_called_once()
+        message = mock_update.message.reply_text.call_args[0][0]
+        assert "en attente d'activation" in message
+        assert mock_update.effective_user.id not in active_sessions
 
     @pytest.mark.asyncio
     async def test_cancel_depot_session_active(self, mock_update, mock_context):
@@ -207,6 +262,54 @@ class TestDepotHandler:
         assert user_id not in active_sessions
 
     @pytest.mark.asyncio
+    async def test_handle_voice_message_file_too_large(self, mock_voice_message, mock_context):
+        """Voice message larger than allowed size should be rejected."""
+        mock_update, _ = mock_voice_message
+        user_id = mock_update.effective_user.id
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': None,
+            'timeout_task': None
+        }
+
+        from bot.src.handlers.depot import MAX_AUDIO_FILE_SIZE_BYTES
+
+        mock_update.message.voice.file_size = MAX_AUDIO_FILE_SIZE_BYTES + 1
+
+        result = await handle_voice_message(mock_update, mock_context)
+
+        assert result == WAITING_FOR_AUDIO
+        mock_update.message.reply_text.assert_called_once()
+        message = mock_update.message.reply_text.call_args[0][0]
+        assert "Fichier trop volumineux" in message
+        assert user_id in active_sessions
+
+    @pytest.mark.asyncio
+    async def test_handle_voice_message_unsupported_format(self, mock_voice_message, mock_context):
+        """Unsupported audio formats should prompt retry."""
+        mock_update, _ = mock_voice_message
+        user_id = mock_update.effective_user.id
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': None,
+            'timeout_task': None
+        }
+
+        mock_update.message.voice.mime_type = "audio/flac"
+
+        result = await handle_voice_message(mock_update, mock_context)
+
+        assert result == WAITING_FOR_AUDIO
+        mock_update.message.reply_text.assert_called_once()
+        message = mock_update.message.reply_text.call_args[0][0]
+        assert "Format audio non supporté" in message
+        assert user_id in active_sessions
+
+    @pytest.mark.asyncio
     @patch('bot.src.handlers.depot._send_to_api')
     async def test_handle_voice_message_api_failure(
         self,
@@ -257,6 +360,32 @@ class TestDepotHandler:
         mock_update.message.reply_text.assert_called_once()
         call_args = mock_update.message.reply_text.call_args[0][0]
         assert "Envoyez un message vocal" in call_args
+
+    @pytest.mark.asyncio
+    async def test_session_timeout_sends_expiration_message(self, mock_update, mock_context):
+        """Session timeout should notify user and preserve cleanup."""
+        user_id = mock_update.effective_user.id
+        timeout_task = MagicMock()
+        timeout_task.cancel = MagicMock()
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': datetime.utcnow(),
+            'timeout_task': timeout_task,
+        }
+
+        with patch('bot.src.handlers.depot.asyncio.sleep', new_callable=AsyncMock) as sleep_mock:
+            sleep_mock.return_value = None
+            await _handle_session_timeout(user_id, mock_update, mock_context)
+            sleep_mock.assert_awaited_once_with(SESSION_TIMEOUT)
+
+        assert user_id not in active_sessions
+        timeout_task.cancel.assert_not_called()
+
+        mock_context.bot.send_message.assert_awaited_once()
+        _, kwargs = mock_context.bot.send_message.await_args
+        assert "Session de dépôt expirée" in kwargs['text']
 
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient')
@@ -330,6 +459,61 @@ class TestDepotHandler:
         assert result['success'] is True
         assert result['category'] == 'IT_EQUIPMENT'
         assert result['confidence'] == 0.85
+
+    @pytest.mark.asyncio
+    @patch('bot.src.handlers.depot._send_to_api')
+    @patch('bot.src.handlers.depot._trigger_classification')
+    @patch('os.makedirs')
+    async def test_handle_audio_message_success(
+        self,
+        mock_makedirs,
+        mock_classify,
+        mock_send_api,
+        mock_update,
+        mock_context
+    ):
+        """Test handling of standard audio files (mp3)."""
+        user_id = mock_update.effective_user.id
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': None,
+            'timeout_task': None
+        }
+
+        mock_update.message.voice = None
+        mock_update.message.audio = MagicMock(spec=Audio)
+        mock_update.message.audio.file_id = "audio_file_id"
+        mock_update.message.audio.mime_type = "audio/mpeg"
+        mock_update.message.audio.file_size = 2048
+        mock_update.message.audio.file_name = "sample.mp3"
+
+        mock_file = MagicMock()
+        mock_file.download_to_drive = AsyncMock()
+        mock_context.bot.get_file.return_value = mock_file
+
+        mock_send_api.return_value = {
+            'success': True,
+            'deposit_id': 'test-audio-789'
+        }
+        mock_classify.return_value = {
+            'success': True,
+            'category': 'IT_EQUIPMENT',
+            'confidence': 0.9
+        }
+
+        processing_msg = MagicMock()
+        processing_msg.edit_text = AsyncMock()
+        mock_update.message.reply_text.return_value = processing_msg
+
+        result = await handle_voice_message(mock_update, mock_context)
+
+        assert result == ConversationHandler.END
+        mock_context.bot.get_file.assert_called_once_with("audio_file_id")
+        mock_file.download_to_drive.assert_called_once()
+        mock_send_api.assert_called_once()
+        assert user_id not in active_sessions
 
 
 if __name__ == '__main__':
