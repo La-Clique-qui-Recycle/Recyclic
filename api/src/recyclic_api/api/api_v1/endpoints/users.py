@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+
+from recyclic_api.core.bot_auth import get_bot_token_dependency
 from recyclic_api.core.database import get_db
 from recyclic_api.models.user import User
 from recyclic_api.schemas.user import UserResponse, UserCreate, UserUpdate, UserStatusUpdate
@@ -12,6 +14,19 @@ async def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
     """Get all users"""
     users = db.query(User).offset(skip).limit(limit).all()
     return users
+
+@router.get("/telegram/{telegram_id}", response_model=UserResponse)
+async def get_user_by_telegram_id(
+    telegram_id: str,
+    db: Session = Depends(get_db),
+    bot_token: str = Depends(get_bot_token_dependency),
+):
+    """Get user details by Telegram ID for the bot."""
+    user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(user_id: str, db: Session = Depends(get_db)):

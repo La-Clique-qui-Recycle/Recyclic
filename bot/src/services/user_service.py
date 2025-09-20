@@ -14,14 +14,30 @@ class UserService:
     async def get_user_by_telegram_id(self, telegram_id: str) -> Optional[Dict[str, Any]]:
         """Récupérer un utilisateur par son Telegram ID"""
         try:
+            headers = {}
+            if settings.TELEGRAM_BOT_TOKEN:
+                headers["X-Bot-Token"] = settings.TELEGRAM_BOT_TOKEN
+            else:
+                logger.warning(
+                    "TELEGRAM_BOT_TOKEN is not configured; user lookup requests may fail"
+                )
+
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.api_base_url}/users/telegram/{telegram_id}",
+                    headers=headers,
                     timeout=10.0
                 )
                 if response.status_code == 200:
                     return response.json()
                 elif response.status_code == 404:
+                    return None
+                elif response.status_code in (401, 503):
+                    logger.error(
+                        "Erreur d'authentification lors de la récupération de l'utilisateur Telegram %s: %s",
+                        telegram_id,
+                        response.json().get("detail"),
+                    )
                     return None
                 else:
                     logger.error(f"Erreur API get_user_by_telegram_id: {response.status_code}")

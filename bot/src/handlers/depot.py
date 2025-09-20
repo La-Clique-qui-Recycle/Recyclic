@@ -459,4 +459,5 @@ depot_conversation_handler = ConversationHandler(
     ],
     per_user=True,
     per_chat=True,
+    conversation_timeout=SESSION_TIMEOUT,
 )
