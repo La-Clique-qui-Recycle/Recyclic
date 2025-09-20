@@ -204,6 +204,7 @@ async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_T
 
 async def _handle_session_timeout(user_id: int, update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle session timeout after 5 minutes."""
+    # Remember the task handling the timeout so cleanup does not cancel it.
     timeout_task = asyncio.current_task()
 
     try:
@@ -231,11 +232,19 @@ async def _handle_session_timeout(user_id: int, update: Update, context: Context
         logger.error(f"Could not send timeout message to user {user_id}: {e}")
 
 async def _cleanup_session(user_id: int, *, skip_task: Optional[asyncio.Task] = None):
-    """Clean up user session and cancel timeout task."""
+    """Clean up user session and cancel timeout task.
+
+    Args:
+        user_id: The Telegram user identifier of the session to remove.
+        skip_task: Optional task reference that should not be cancelled.
+            When the timeout task performs its own cleanup we need to avoid
+            cancelling itself, otherwise the coroutine would never resume to
+            send the expiration message.
+    """
     if user_id in active_sessions:
         session = active_sessions[user_id]
 
-        # Cancel timeout task if exists and it's not the current one
+        # Cancel timeout task if it exists and it's not the caller itself.
         timeout_task = session.get('timeout_task')
         if timeout_task and timeout_task is not skip_task:
             cancel_method = getattr(timeout_task, "cancel", None)

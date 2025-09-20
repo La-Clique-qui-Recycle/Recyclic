@@ -15,6 +15,7 @@ from bot.src.handlers.depot import (
     cancel_depot_session,
     handle_invalid_message,
     _handle_session_timeout,
+    _cleanup_session,
     active_sessions,
     WAITING_FOR_AUDIO
 )
@@ -159,6 +160,26 @@ class TestDepotHandler:
         args, kwargs = mock_context.bot.send_message.call_args
         assert kwargs['chat_id'] == user_id
         assert "Session de dépôt expirée" in kwargs['text']
+        assert user_id not in active_sessions
+
+    @pytest.mark.asyncio
+    async def test_cleanup_session_does_not_cancel_calling_timeout_task(self, mock_update):
+        """Ensure cleanup skips cancelling the timeout task that invokes it."""
+        user_id = mock_update.effective_user.id
+
+        timeout_task = MagicMock()
+        timeout_task.cancel = MagicMock()
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': None,
+            'timeout_task': timeout_task,
+        }
+
+        await _cleanup_session(user_id, skip_task=timeout_task)
+
+        timeout_task.cancel.assert_not_called()
         assert user_id not in active_sessions
 
     @pytest.mark.asyncio
