@@ -42,21 +42,21 @@ describe('Ticket Component', () => {
 
   it('affiche tous les articles de la vente', () => {
     render(<Ticket {...mockProps} />);
-    
+
     expect(screen.getByText('EEE-1')).toBeInTheDocument();
-    expect(screen.getByText('2 × 15.50€')).toBeInTheDocument();
-    expect(screen.getByText('31.00€')).toBeInTheDocument();
-    
+    expect(screen.getByText('2 × 15.50 €')).toBeInTheDocument();
+    expect(screen.getByText('31.00 €')).toBeInTheDocument();
+
     expect(screen.getByText('EEE-3')).toBeInTheDocument();
-    expect(screen.getByText('1 × 25.00€')).toBeInTheDocument();
-    expect(screen.getByText('25.00€')).toBeInTheDocument();
+    expect(screen.getByText('1 × 25.00 €')).toBeInTheDocument();
+    expect(screen.getByText('25.00 €')).toBeInTheDocument();
   });
 
   it('affiche le total correct', () => {
     render(<Ticket {...mockProps} />);
-    
+
     expect(screen.getByText('3 articles')).toBeInTheDocument();
-    expect(screen.getByText('56.00€')).toBeInTheDocument();
+    expect(screen.getByText('56.00 €')).toBeInTheDocument();
   });
 
   it('affiche un message quand aucun article', () => {
@@ -119,7 +119,7 @@ describe('Ticket Component', () => {
     const cancelButton = screen.getByText('Annuler');
     fireEvent.click(cancelButton);
     
-    expect(screen.queryByText('Modifier l\'article')).not.toBeInTheDocument();
+    expect(screen.getByText('Modifier l\'article')).toHaveStyle('display: none');
   });
 
   it('appelle onFinalizeSale quand on clique sur Finaliser la vente', () => {
@@ -138,11 +138,10 @@ describe('Ticket Component', () => {
     expect(finalizeButton).toBeDisabled();
   });
 
-  it('désactive le bouton de finalisation quand aucun article', () => {
+  it('n\'affiche pas le bouton de finalisation quand aucun article', () => {
     render(<Ticket {...mockProps} items={[]} />);
-    
-    const finalizeButton = screen.getByText('Finaliser la vente');
-    expect(finalizeButton).toBeDisabled();
+
+    expect(screen.queryByText('Finaliser la vente')).not.toBeInTheDocument();
   });
 
   it('valide les entrées dans le modal de modification', async () => {

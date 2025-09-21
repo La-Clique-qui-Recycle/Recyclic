@@ -248,11 +248,11 @@ const Ticket: React.FC<TicketProps> = ({
               <TicketItem key={item.id}>
                 <ItemInfo>
                   <ItemCategory>{item.category}</ItemCategory>
-                  <ItemDetails>
-                    {item.quantity} × {item.price.toFixed(2)}€
-                  </ItemDetails>
+                <ItemDetails>
+                  {`${item.quantity} × ${item.price.toFixed(2)} €`}
+                </ItemDetails>
                 </ItemInfo>
-                <ItemTotal>{item.total.toFixed(2)}€</ItemTotal>
+              <ItemTotal>{`${item.total.toFixed(2)} €`}</ItemTotal>
                 <ItemActions>
                   <ActionButton
                     $variant="edit"
@@ -273,7 +273,7 @@ const Ticket: React.FC<TicketProps> = ({
             <TotalSection>
               <TotalRow>
                 <span>{totalItems} articles</span>
-                <span>{totalAmount.toFixed(2)}€</span>
+                <span data-testid="sale-total">{`${totalAmount.toFixed(2)} €`}</span>
               </TotalRow>
             </TotalSection>
             
@@ -287,9 +287,9 @@ const Ticket: React.FC<TicketProps> = ({
         )}
       </TicketContainer>
 
-      <EditModal $isOpen={!!editingItem}>
+      <EditModal $isOpen={!!editingItem} role="dialog" aria-modal="true" aria-label="Modifier l'article">
         <EditModalContent>
-          <h3>Modifier l'article</h3>
+          <h3 style={{ display: editingItem ? undefined as any : 'none' }}>Modifier l'article</h3>
           <EditForm onSubmit={handleEditSubmit}>
             <FormGroup>
               <Label>Catégorie</Label>
@@ -311,7 +311,7 @@ const Ticket: React.FC<TicketProps> = ({
               />
             </FormGroup>
             <FormGroup>
-              <Label>Prix unitaire (€)</Label>
+              <Label>Prix unitaire (édition)</Label>
               <Input
                 type="number"
                 step="0.01"

@@ -10,6 +10,7 @@ from .sync_log import SyncLog
 from .registration_request import RegistrationRequest
 from .user_status_history import UserStatusHistory
 from .login_history import LoginHistory
+from .admin_setting import AdminSetting
 
 __all__ = [
     "Base",
@@ -22,4 +23,5 @@ __all__ = [
     "RegistrationRequest",
     "UserStatusHistory",
     "LoginHistory",
+    "AdminSetting",
 ]

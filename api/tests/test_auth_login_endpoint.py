@@ -16,7 +16,7 @@ from recyclic_api.schemas.auth import LoginResponse, AuthUser
 class TestAuthLoginEndpoint:
     """Tests d'intégration pour l'endpoint POST /api/v1/auth/login avec username/password"""
 
-    def test_login_success_valid_credentials(self, client: TestClient, db_session: Session):
+    def test_login_success_valid_credentials(self, client: TestClient, db_engine, db_session: Session):
         """Test de connexion réussie avec des identifiants valides"""
         
         # Créer un utilisateur de test avec mot de passe haché
@@ -64,7 +64,7 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "user"
         assert data["user"]["is_active"] is True
 
-    def test_login_failure_invalid_username(self, client: TestClient, db_session: Session):
+    def test_login_failure_invalid_username(self, client: TestClient, db_engine, db_session: Session):
         """Test d'échec de connexion avec un nom d'utilisateur invalide"""
         
         response = client.post(
@@ -80,7 +80,7 @@ class TestAuthLoginEndpoint:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_failure_invalid_password(self, client: TestClient, db_session: Session):
+    def test_login_failure_invalid_password(self, client: TestClient, db_engine, db_session: Session):
         """Test d'échec de connexion avec un mot de passe incorrect"""
         
         # Créer un utilisateur de test
@@ -108,7 +108,7 @@ class TestAuthLoginEndpoint:
         assert "detail" in data
         assert "Identifiants invalides ou utilisateur inactif" in data["detail"]
 
-    def test_login_failure_inactive_user(self, client: TestClient, db_session: Session):
+    def test_login_failure_inactive_user(self, client: TestClient, db_engine, db_session: Session):
         """Test d'échec de connexion avec un utilisateur inactif"""
         
         # Créer un utilisateur inactif
@@ -172,7 +172,7 @@ class TestAuthLoginEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_login_success_admin_user(self, client: TestClient, db_session: Session):
+    def test_login_success_admin_user(self, client: TestClient, db_engine, db_session: Session):
         """Test de connexion réussie avec un utilisateur admin"""
         
         hashed_password = hash_password("adminpass123")
@@ -200,7 +200,7 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "admin"
         assert "access_token" in data
 
-    def test_login_success_super_admin_user(self, client: TestClient, db_session: Session):
+    def test_login_success_super_admin_user(self, client: TestClient, db_engine, db_session: Session):
         """Test de connexion réussie avec un super-admin"""
         
         hashed_password = hash_password("superadminpass123")
@@ -228,7 +228,7 @@ class TestAuthLoginEndpoint:
         assert data["user"]["role"] == "super-admin"
         assert "access_token" in data
 
-    def test_jwt_token_structure(self, client: TestClient, db_session: Session):
+    def test_jwt_token_structure(self, client: TestClient, db_engine, db_session: Session):
         """Test de la structure du token JWT généré"""
         
         hashed_password = hash_password("tokentest123")
@@ -262,7 +262,7 @@ class TestAuthLoginEndpoint:
         assert "." in data["access_token"]
         assert data["access_token"].count(".") == 2
 
-    def test_password_case_sensitivity(self, client: TestClient, db_session: Session):
+    def test_password_case_sensitivity(self, client: TestClient, db_engine, db_session: Session):
         """Test que l'authentification par mot de passe est sensible à la casse"""
         
         hashed_password = hash_password("CaseSensitive123")

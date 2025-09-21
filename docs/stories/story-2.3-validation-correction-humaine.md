@@ -1,9 +1,5 @@
-# Story 4.3: Validation et Correction Humaine
-
-- **Statut**: Done
-- **Type**: Feature
-- **Priorité**: Haute
-- **Epic**: 4 - Bot IA & Classification
+story_id: 2.3
+epic_id: 2
 - **Dépend de**: story-4.2
 
 ---

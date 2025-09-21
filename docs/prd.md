@@ -26,6 +26,7 @@ Le projet Recyclic résout ce défi en introduisant l'IA conversationnelle dans 
 ### Change Log
 | Date | Version | Description | Author |
 |------|---------|-------------|---------|
+| 2025-09-20 | 1.1 | Align with strategic pivot (abandon kDrive, add user history) per handover 20250918 | BMad Master |
 | 2025-09-09 | 1.0 | Initial PRD creation from finalized brief | John (PM) |
 
 ---
@@ -41,9 +42,9 @@ Le projet Recyclic résout ce défi en introduisant l'IA conversationnelle dans 
 **FR5:** L'interface caisse doit enregistrer le poids (kg) et prix (€) pour chaque transaction  
 **FR6:** Le système doit gérer les types de paiement (espèces/CB) avec totaux journaliers temps réel  
 **FR7:** Le système doit générer automatiquement les exports CSV format Ecologic par catégorie EEE  
-**FR8:** Le système doit synchroniser automatiquement avec Infomaniak kDrive via WebDAV  
-**FR9:** Le système doit sauvegarder automatiquement sur Infomaniak kDrive  
-**FR10:** Le bot doit envoyer des notifications Telegram en cas d'échec de synchronisation  
+**FR8:** Le système doit synchroniser automatiquement avec Infomaniak kDrive via WebDAV **(Post-MVP / En attente)**  
+**FR9:** Le système doit sauvegarder automatiquement sur Infomaniak kDrive **(Post-MVP / En attente)**  
+**FR10:** Le bot doit envoyer des notifications Telegram en cas d'échec de synchronisation **(Post-MVP / En attente)**  
 **FR11:** Le système doit maintenir des comptes admin qui peuvent autoriser de nouveaux utilisateurs  
 **FR12:** Toutes les actions utilisateur doivent être journalisées pour audit  
 **FR13:** L'interface caisse doit être responsive (tablette/smartphone)  
@@ -78,6 +79,9 @@ Le projet Recyclic résout ce défi en introduisant l'IA conversationnelle dans 
 **FR42:** Gestion remises en banque (Post-MVP)  
 **FR43:** Seuil d'alerte écart caisse configurable dans préférences admin  
 **FR44:** Support multi-caisses simultanées par ressourcerie  
+**FR45:** Le système doit permettre la génération et l'envoi de rapports (ex: fermeture de caisse) par email via le service intégré.  
+**FR46:** Le système doit tracer l'historique des changements de statut des utilisateurs (actif/inactif).  
+**FR47:** Le système doit fournir un historique complet des activités d'un utilisateur via l'API et l'interface d'administration.  
 
 ### Non-Functional Requirements
 
@@ -368,22 +372,24 @@ so that regulatory reporting is effortless and always accurate.
 5. Archivage local exports avec horodatage et versioning
 6. Validation test format avec échantillon Ecologic réel
 
-### Story 4.2: Synchronisation Cloud Automatique
+### Story 4.2: Rapports par Email
 As an association manager,  
-I want automatic cloud synchronization with Infomaniak kDrive,  
-so that data is safely backed up and accessible to partners.
+I want key reports (like cash session summaries) to be automatically sent via email,  
+so that stakeholders are informed without needing to log into the system.
 
 **Acceptance Criteria:**
-1. **Setup Infomaniak kDrive :**
-   - Création compte Infomaniak kDrive (action utilisateur)
-   - Génération app password WebDAV depuis interface Infomaniak
-   - Test connexion WebDAV avec credentials utilisateur
-   - Configuration structure dossiers (exports/, backups/, audio/, logs/)
-2. Upload automatique Infomaniak kDrive via WebDAV
-3. Queue de retry avec backoff exponentiel en cas d'échec
-4. Notifications Telegram admins en cas d'échec sync >24h
-5. Dashboard statut synchronisation (dernière sync, statut, erreurs)
-6. Configuration multi-comptes kDrive par ressourcerie
+1. **Email Service Integration:**
+   - Le système utilise le service d'email existant (basé sur Brevo) pour envoyer les rapports.
+   - Les destinataires des rapports sont configurables dans les paramètres d'administration.
+2. **Génération de Rapport :**
+   - Le rapport de fermeture de caisse est généré en format CSV ou PDF.
+   - Le rapport est attaché à l'email.
+3. **Envoi Automatique :**
+   - L'email est envoyé automatiquement à la clôture d'une session de caisse.
+4. **Notifications :**
+   - L'administrateur est notifié en cas d'échec de l'envoi de l'email.
+5. **Traçabilité :**
+   - Le statut de l'envoi de l'email (envoyé, échoué) est enregistré et visible dans le dashboard d'administration.
 
 ### Story 4.3: Dashboard Admin & Gestion Multi-Caisses
 As an admin,  

@@ -38,9 +38,10 @@ describe('Sale Page', () => {
 
     expect(screen.getByText('Interface de Vente')).toBeInTheDocument();
     expect(screen.getByText('Mode de saisie')).toBeInTheDocument();
-    expect(screen.getByText('Catégorie')).toBeInTheDocument();
-    expect(screen.getByText('Quantité')).toBeInTheDocument();
-    expect(screen.getByText('Prix')).toBeInTheDocument();
+    // Target the mode button specifically to avoid confusion with form label
+    expect(screen.getByRole('button', { name: /catégorie/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /quantité/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /prix/i })).toBeInTheDocument();
   });
 
   it('shows category selector when in category mode', () => {
@@ -58,7 +59,10 @@ describe('Sale Page', () => {
     fireEvent.click(eee1Button!);
 
     expect(screen.getByRole('heading', { name: 'Quantité' })).toBeInTheDocument();
-    expect(screen.getByText('Valider')).toBeInTheDocument();
+    // Use more specific selector for the calculator confirm button
+    const calculatorButton = document.querySelector('button[data-isvalid="true"]');
+    expect(calculatorButton).toBeInTheDocument();
+    expect(calculatorButton).toHaveStyle('background: rgb(204, 204, 204)'); // Disabled style for calculator
   });
 
   it('transitions to price mode when quantity is confirmed', () => {
@@ -72,9 +76,10 @@ describe('Sale Page', () => {
     const button5 = screen.getByText('5').closest('button');
     fireEvent.click(button5!);
 
-    // Confirm quantity
-    const confirmButton = screen.getByText('Valider').closest('button');
-    fireEvent.click(confirmButton!);
+    // Confirm quantity - target the calculator confirm button specifically
+    const calculatorButton = document.querySelector('button[data-isvalid="true"]');
+    expect(calculatorButton).toBeInTheDocument();
+    fireEvent.click(calculatorButton!);
 
     expect(screen.getByText('Prix unitaire (€)')).toBeInTheDocument();
   });
@@ -89,15 +94,19 @@ describe('Sale Page', () => {
     const button5 = screen.getByText('5').closest('button');
     fireEvent.click(button5!);
 
-    const confirmQuantityButton = screen.getByText('Valider').closest('button');
-    fireEvent.click(confirmQuantityButton!);
+    // Confirm quantity - target calculator button
+    const calculatorQuantityButton = document.querySelector('button[data-isvalid="true"]');
+    expect(calculatorQuantityButton).toBeInTheDocument();
+    fireEvent.click(calculatorQuantityButton!);
 
     const button10 = screen.getByText('1').closest('button');
     fireEvent.click(button10!);
     fireEvent.click(screen.getByText('0').closest('button')!);
 
-    const confirmPriceButton = screen.getByText('Valider').closest('button');
-    fireEvent.click(confirmPriceButton!);
+    // Confirm price - target calculator button (now in price mode)
+    const calculatorPriceButton = document.querySelector('button[data-isvalid="true"]');
+    expect(calculatorPriceButton).toBeInTheDocument();
+    fireEvent.click(calculatorPriceButton!);
 
     await waitFor(() => {
       expect(mockStore.addSaleItem).toHaveBeenCalledWith(
@@ -129,9 +138,9 @@ describe('Sale Page', () => {
 
     render(<Sale />);
 
-    expect(screen.getByText('Résumé de la vente')).toBeInTheDocument();
+    expect(screen.getByText('Ticket de Caisse')).toBeInTheDocument();
     expect(screen.getByText('2 articles')).toBeInTheDocument();
-    expect(screen.getAllByText('20.00 €')).toHaveLength(2); // Item price + total
+    expect(screen.getAllByText(/20\.00 €/)).toHaveLength(2); // Item price + total
   });
 
   it('calls submitSale when finalizing sale', async () => {

@@ -1,3 +1,4 @@
+/* @vitest-environment jsdom */
 /**
  * Tests complets pour la page PendingUsers
  * Story 3.3 - API et Interface pour la Validation des Inscriptions
@@ -10,10 +11,17 @@ import { MantineProvider } from '@mantine/core';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import PendingUsers from '../../../pages/Admin/PendingUsers';
 import { adminService } from '../../../services/adminService';
-import { AdminUser, UserStatus } from '../../../services/adminService';
+import { AdminUser } from '../../../services/adminService';
 import { notifications } from '@mantine/notifications';
 
 // Les mocks sont centralisés dans setup.ts
+
+// Sécuriser l'icône utilisée par la page même si setup global n'est pas chargé
+vi.mock('@tabler/icons-react', () => ({
+  IconUsers: (props: any) => <span data-testid="icon-users" {...props} />,
+  IconRefresh: (props: any) => <span data-testid="icon-refresh" {...props} />,
+  IconAlertCircle: (props: any) => <span data-testid="icon-alert" {...props} />
+}))
 
 // Mock du service admin
 vi.mock('../../../services/adminService', () => ({
@@ -22,6 +30,7 @@ vi.mock('../../../services/adminService', () => ({
     approveUser: vi.fn(),
     rejectUser: vi.fn(),
   },
+  UserStatus: { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' },
 }));
 
 // Les mocks d'icônes sont centralisés dans setup.ts
@@ -74,7 +83,7 @@ const createMockUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   last_name: 'User',
   full_name: 'Test User',
   role: 'user' as any,
-  status: UserStatus.PENDING,
+  status: 'pending' as any,
   is_active: true,
   created_at: new Date('2024-01-01T10:00:00Z'),
   updated_at: new Date('2024-01-01T10:00:00Z'),
@@ -507,17 +516,29 @@ describe('PendingUsers', () => {
 
   describe('Performance', () => {
     it('ne re-rend pas inutilement quand les données ne changent pas', async () => {
-      const { rerender } = renderWithMantine(<PendingUsers />);
-      
+      const mockUsers = [createMockUser({ id: '1', username: 'Test User' })];
+      const getPendingUsersSpy = vi
+        .spyOn(adminService, 'getPendingUsers')
+        .mockResolvedValue(mockUsers);
+
+      const { rerender } = render(<PendingUsers />);
+
+      // Attendre que le chargement initial soit terminé
       await waitFor(() => {
         expect(screen.getByText('Test User')).toBeInTheDocument();
       });
-      
-      // Re-render avec les mêmes données
+
+      // Vérifier que l'API a été appelée une fois
+      expect(getPendingUsersSpy).toHaveBeenCalledTimes(1);
+
+      // Re-render le composant sans changer les props
       rerender(<PendingUsers />);
-      
-      // Le composant devrait toujours être là
+
+      // Le composant devrait toujours afficher l'utilisateur
       expect(screen.getByText('Test User')).toBeInTheDocument();
+      
+      // L'API ne doit PAS avoir été appelée une seconde fois
+      expect(getPendingUsersSpy).toHaveBeenCalledTimes(1);
     });
 
     it('gère efficacement les listes avec beaucoup d\'utilisateurs', async () => {

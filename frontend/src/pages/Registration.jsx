@@ -140,7 +140,7 @@ function Registration() {
   const telegramId = searchParams.get('telegram_id');
   
   const [formData, setFormData] = useState({
-    telegram_id: telegramId || '',
+    telegram_id: telegramId ?? '',
     username: '',
     first_name: '',
     last_name: '',
@@ -157,6 +157,13 @@ function Registration() {
   useEffect(() => {
     loadSites();
   }, []);
+
+  useEffect(() => {
+    // Synchroniser si le param change après le premier render dans le test
+    if (telegramId) {
+      setFormData(prev => ({ ...prev, telegram_id: telegramId }))
+    }
+  }, [telegramId])
 
   const loadSites = async () => {
     try {

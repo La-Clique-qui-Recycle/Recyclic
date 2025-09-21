@@ -28,7 +28,11 @@ from recyclic_api.models.user_status_history import UserStatusHistory
 SQLALCHEMY_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql://recyclic:recyclic_secure_password_2024@postgres:5432/recyclic_test")
 os.environ["TESTING"] = "true"
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine_kwargs = {}
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Fonction pour créer les tables

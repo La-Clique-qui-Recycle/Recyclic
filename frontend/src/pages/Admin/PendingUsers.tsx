@@ -1,32 +1,68 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Container, Title, Text, Group, Button, Stack, Alert } from '@mantine/core';
 import { IconRefresh, IconAlertCircle, IconUsers } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import { useNavigate } from 'react-router-dom';
 import PendingUsersTable from '../../components/business/PendingUsersTable';
 import { adminService, AdminUser } from '../../services/adminService';
 
 const PendingUsers: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Toujours initialiser à true pour un état prévisible
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const cachedUsersRef = useRef<AdminUser[] | null>(null);
 
-  const fetchPendingUsers = async () => {
-    try {
-      setLoading(true);
+  const fetchPendingUsers = useMemo(
+    () => async () => {
+      // Ne met à jour le chargement que si le cache est vide
+      if (!cachedUsersRef.current) {
+        setLoading(true);
+      }
       setError(null);
-      const pendingUsers = await adminService.getPendingUsers();
-      setUsers(pendingUsers);
-    } catch (err) {
-      console.error('Erreur lors de la récupération des utilisateurs en attente:', err);
-      setError('Impossible de récupérer les utilisateurs en attente');
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const pendingUsers = await adminService.getPendingUsers();
+        setUsers(pendingUsers);
+        cachedUsersRef.current = pendingUsers;
+      } catch (err) {
+        console.error('Erreur lors de la récupération des utilisateurs en attente:', err);
+        setError('Impossible de récupérer les utilisateurs en attente');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    fetchPendingUsers();
-  }, []);
+    let isMounted = true;
+
+    const fetchUsers = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const pendingUsers = await adminService.getPendingUsers();
+        if (isMounted) {
+          setUsers(pendingUsers);
+        }
+      } catch (err) {
+        console.error('Erreur lors de la récupération des utilisateurs en attente:', err);
+        if (isMounted) {
+          setError('Impossible de récupérer les utilisateurs en attente');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchUsers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // <-- Tableau de dépendances vide pour une exécution unique
 
   const handleApprove = async (userId: string, message?: string): Promise<boolean> => {
     try {
@@ -38,6 +74,7 @@ const PendingUsers: React.FC = () => {
           color: 'green',
         });
         // Rafraîchir la liste
+        cachedUsersRef.current = null; // Invalider le cache avant de rafraîchir
         await fetchPendingUsers();
         return true;
       }
@@ -63,6 +100,7 @@ const PendingUsers: React.FC = () => {
           color: 'orange',
         });
         // Rafraîchir la liste
+        cachedUsersRef.current = null; // Invalider le cache avant de rafraîchir
         await fetchPendingUsers();
         return true;
       }
@@ -89,6 +127,7 @@ const PendingUsers: React.FC = () => {
   };
 
   const handleRefresh = () => {
+    cachedUsersRef.current = null;
     fetchPendingUsers();
   };
 
@@ -103,17 +142,19 @@ const PendingUsers: React.FC = () => {
             </Text>
           </div>
           <Group>
-            <Button
-              leftSection={<IconUsers size={16} />}
-              variant="outline"
-              onClick={() => window.location.href = '/admin/users'}
+            <a
+              href="/admin/users"
+              aria-label="Voir tous les utilisateurs"
             >
-              Tous les utilisateurs
-            </Button>
+              <IconUsers size={16} />
+              {' '}Tous les utilisateurs
+            </a>
             <Button
               leftSection={<IconRefresh size={16} />}
               onClick={handleRefresh}
               loading={loading}
+              disabled={loading}
+              aria-label="Actualiser"
               data-testid="refresh-button"
             >
               Actualiser
@@ -129,6 +170,9 @@ const PendingUsers: React.FC = () => {
             data-testid="error-message"
           >
             {error}
+            <div style={{ marginTop: 8 }}>
+              <Button onClick={handleRefresh}>Réessayer</Button>
+            </div>
           </Alert>
         )}
 
@@ -140,16 +184,15 @@ const PendingUsers: React.FC = () => {
           onViewUser={handleViewUser}
         />
 
-        {users.length > 0 && (
-          <Group justify="center" mt="sm">
-            <Text size="sm" c="dimmed" data-testid="count-info">
-              {users.length} utilisateur{users.length > 1 ? 's' : ''} en attente
-            </Text>
-          </Group>
-        )}
+        <Group justify="center" mt="sm">
+          <Text size="sm" c="dimmed" data-testid="count-info">
+            {`${users.length} utilisateur${users.length === 1 ? '' : 's'} en attente`}
+          </Text>
+        </Group>
       </Stack>
     </Container>
   );
 };
 
 export default PendingUsers;
+

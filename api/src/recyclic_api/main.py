@@ -1,12 +1,19 @@
-from contextlib import asynccontextmanager
+﻿from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI
+import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import logging
 import time
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
 from recyclic_api.core.config import settings
 from recyclic_api.api.api_v1.api import api_router
+from recyclic_api.services.sync_service import schedule_periodic_kdrive_sync
+from recyclic_api.utils.rate_limit import limiter
 from recyclic_api.core.database import engine
 from recyclic_api.models import Base
 
@@ -17,12 +24,17 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gestionnaire de cycle de vie de l'application"""
-    # Startup
     logger.info("Starting up Recyclic API...")
     logger.info("API ready - use migrations for database setup")
-    yield
-    # Shutdown
-    logger.info("Shutting down Recyclic API...")
+    sync_task = schedule_periodic_kdrive_sync()
+    try:
+        yield
+    finally:
+        if sync_task:
+            sync_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await sync_task
+        logger.info("Shutting down Recyclic API...")
 
 # Create FastAPI app
 app = FastAPI(
@@ -32,6 +44,10 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
@@ -101,3 +117,4 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

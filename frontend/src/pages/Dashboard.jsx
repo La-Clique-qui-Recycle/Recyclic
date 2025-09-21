@@ -85,40 +85,40 @@ function Dashboard() {
       <StatsGrid>
         <StatCard>
           <StatIcon>
-            <Package size={24} />
+            <Package size={24} data-testid="package-icon" />
           </StatIcon>
           <StatContent>
-            <StatValue>0</StatValue>
+            <StatValue data-testid="stat-depots">0</StatValue>
             <StatLabel>Dépôts aujourd'hui</StatLabel>
           </StatContent>
         </StatCard>
         
         <StatCard>
           <StatIcon>
-            <DollarSign size={24} />
+            <DollarSign size={24} data-testid="dollarsign-icon" />
           </StatIcon>
           <StatContent>
-            <StatValue>0€</StatValue>
+            <StatValue data-testid="stat-ca">0€</StatValue>
             <StatLabel>Chiffre d'affaires</StatLabel>
           </StatContent>
         </StatCard>
         
         <StatCard>
           <StatIcon>
-            <Users size={24} />
+            <Users size={24} data-testid="users-icon" />
           </StatIcon>
           <StatContent>
-            <StatValue>0</StatValue>
+            <StatValue data-testid="stat-users">0</StatValue>
             <StatLabel>Utilisateurs actifs</StatLabel>
           </StatContent>
         </StatCard>
         
         <StatCard>
           <StatIcon>
-            <BarChart3 size={24} />
+            <BarChart3 size={24} data-testid="barchart-icon" />
           </StatIcon>
           <StatContent>
-            <StatValue>0</StatValue>
+            <StatValue data-testid="stat-recycled">0</StatValue>
             <StatLabel>Appareils recyclés</StatLabel>
           </StatContent>
         </StatCard>

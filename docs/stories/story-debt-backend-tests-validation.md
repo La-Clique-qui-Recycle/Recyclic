@@ -72,7 +72,7 @@ Le rapport de validation du PO, basé sur `brownfield-architecture.md`, a identi
     -   S'assurer que cette logique de test enrichie est appliquée à toutes les fonctionnalités jusqu'à la story 5.2, comme demandé.
 
 5.  **(AC: 5)** **Mettre à jour la documentation :** ✅
-    -   Modifier le fichier `api/TESTS_README.md` pour documenter cette nouvelle norme, en expliquant que les tests doivent valider à la fois le statut, le schéma et le contenu.
+    -   Modifier le fichier `api/testing-guide.md` pour documenter cette nouvelle norme, en expliquant que les tests doivent valider à la fois le statut, le schéma et le contenu.
 
 ---
 

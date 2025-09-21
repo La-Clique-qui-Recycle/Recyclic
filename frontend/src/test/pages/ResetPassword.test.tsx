@@ -50,7 +50,7 @@ describe('ResetPassword Component', () => {
     expect(screen.getByLabelText(/nouveau mot de passe/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/confirmer le mot de passe/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /réinitialiser le mot de passe/i })).toBeInTheDocument();
-    expect(screen.getByText(/le mot de passe doit contenir au moins 8 caractères/i)).toBeInTheDocument();
+    expect(screen.getByTestId('password-guidelines')).toBeInTheDocument();
   });
 
   it('should submit form with valid passwords', async () => {
@@ -126,7 +126,7 @@ describe('ResetPassword Component', () => {
     fireEvent.change(confirmPasswordInput, { target: { value: weakPassword } });
     fireEvent.click(submitButton);
 
-    expect(screen.getByText(/le mot de passe doit contenir au moins 8 caractères/i)).toBeInTheDocument();
+    expect(screen.getByTestId('password-error').textContent).toMatch(/au moins 8 caractères/i);
     expect(mockResetPassword).not.toHaveBeenCalled();
   });
 
@@ -143,8 +143,8 @@ describe('ResetPassword Component', () => {
     fireEvent.click(submitButton);
 
     // Vérifier qu'il y a une erreur de validation affichée
-    const errorElements = screen.getAllByText(/au moins 8 caractères/i);
-    expect(errorElements.length).toBeGreaterThan(0);
+    const error = screen.getByTestId('password-error');
+    expect(error.textContent).toMatch(/au moins 8 caractères/i);
     expect(mockResetPassword).not.toHaveBeenCalled();
   });
 

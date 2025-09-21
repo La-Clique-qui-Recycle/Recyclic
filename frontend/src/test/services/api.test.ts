@@ -1,43 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import axios from 'axios'
 
-// Mock axios
-const mockAxiosInstance = {
-  get: vi.fn(),
-  post: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
-  interceptors: {
-    request: { use: vi.fn() },
-    response: { use: vi.fn() }
-  }
-}
+// Mock axios (compatible avec le hoisting de vi.mock)
+var mockAxiosInstance: any
 
-vi.mock('axios', () => ({
-  default: {
-    create: vi.fn(() => mockAxiosInstance)
+vi.mock('axios', () => {
+  mockAxiosInstance = {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() }
+    }
   }
-}))
+  return {
+    default: {
+      create: vi.fn(() => mockAxiosInstance)
+    }
+  }
+})
 
 // Import du service API après le mock
-import api, {
-  getHealth,
-  getUsers,
-  getUser,
-  createUser,
-  getSites,
-  getSite,
-  createSite,
-  getDeposits,
-  getDeposit,
-  createDeposit,
-  getSales,
-  getSale,
-  createSale,
-  getCashSessions,
-  getCashSession,
-  createCashSession
-} from '../../services/api'
+import api, { HealthApi, UsersApi, SitesApi, DepositsApi, SalesApi, CashSessionsApi } from '../../generated/api'
 
 describe('API Service', () => {
   beforeEach(() => {
@@ -55,9 +41,10 @@ describe('API Service', () => {
       const mockResponse = { status: 'ok' }
       mockAxiosInstance.get.mockResolvedValue({ data: mockResponse })
 
-      const result = await getHealth()
+      const result = await HealthApi.checkapiv1healthget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/health')
+      // Le client généré appelle /api/v1/health/
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/health/')
       expect(result).toEqual(mockResponse)
     })
   })
@@ -67,9 +54,10 @@ describe('API Service', () => {
       const mockUsers = [{ id: 1, name: 'John Doe' }]
       mockAxiosInstance.get.mockResolvedValue({ data: mockUsers })
 
-      const result = await getUsers()
+      const result = await UsersApi.usersapiv1usersget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/users')
+      // Le générateur ajoute ? quand aucun param
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/users/?')
       expect(result).toEqual(mockUsers)
     })
 
@@ -77,7 +65,7 @@ describe('API Service', () => {
       const mockUser = { id: 1, name: 'John Doe' }
       mockAxiosInstance.get.mockResolvedValue({ data: mockUser })
 
-      const result = await getUser(1)
+      const result = await UsersApi.userapiv1usersuseridget(1)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/users/1')
       expect(result).toEqual(mockUser)
@@ -88,9 +76,9 @@ describe('API Service', () => {
       const mockResponse = { id: 1, ...userData }
       mockAxiosInstance.post.mockResolvedValue({ data: mockResponse })
 
-      const result = await createUser(userData)
+      const result = await UsersApi.userapiv1userspost(userData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/users', userData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/users/', userData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -100,9 +88,9 @@ describe('API Service', () => {
       const mockSites = [{ id: 1, name: 'Site 1' }]
       mockAxiosInstance.get.mockResolvedValue({ data: mockSites })
 
-      const result = await getSites()
+      const result = await SitesApi.sitesapiv1sitesget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sites')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sites/?')
       expect(result).toEqual(mockSites)
     })
 
@@ -110,7 +98,7 @@ describe('API Service', () => {
       const mockSite = { id: 1, name: 'Site 1' }
       mockAxiosInstance.get.mockResolvedValue({ data: mockSite })
 
-      const result = await getSite(1)
+      const result = await SitesApi.siteapiv1sitessiteidget(1)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sites/1')
       expect(result).toEqual(mockSite)
@@ -121,9 +109,9 @@ describe('API Service', () => {
       const mockResponse = { id: 1, ...siteData }
       mockAxiosInstance.post.mockResolvedValue({ data: mockResponse })
 
-      const result = await createSite(siteData)
+      const result = await SitesApi.siteapiv1sitespost(siteData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/sites', siteData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/sites/', siteData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -133,9 +121,9 @@ describe('API Service', () => {
       const mockDeposits = [{ id: 1, amount: 100 }]
       mockAxiosInstance.get.mockResolvedValue({ data: mockDeposits })
 
-      const result = await getDeposits()
+      const result = await DepositsApi.depositsapiv1depositsget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/deposits')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/deposits/?')
       expect(result).toEqual(mockDeposits)
     })
 
@@ -143,7 +131,7 @@ describe('API Service', () => {
       const mockDeposit = { id: 1, amount: 100 }
       mockAxiosInstance.get.mockResolvedValue({ data: mockDeposit })
 
-      const result = await getDeposit(1)
+      const result = await DepositsApi.depositapiv1depositsdepositidget(1)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/deposits/1')
       expect(result).toEqual(mockDeposit)
@@ -154,9 +142,9 @@ describe('API Service', () => {
       const mockResponse = { id: 1, ...depositData }
       mockAxiosInstance.post.mockResolvedValue({ data: mockResponse })
 
-      const result = await createDeposit(depositData)
+      const result = await DepositsApi.depositapiv1depositspost(depositData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/deposits', depositData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/deposits/', depositData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -166,9 +154,9 @@ describe('API Service', () => {
       const mockSales = [{ id: 1, total: 50 }]
       mockAxiosInstance.get.mockResolvedValue({ data: mockSales })
 
-      const result = await getSales()
+      const result = await SalesApi.salesapiv1salesget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sales')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sales/?')
       expect(result).toEqual(mockSales)
     })
 
@@ -176,7 +164,7 @@ describe('API Service', () => {
       const mockSale = { id: 1, total: 50 }
       mockAxiosInstance.get.mockResolvedValue({ data: mockSale })
 
-      const result = await getSale(1)
+      const result = await SalesApi.saleapiv1salessaleidget(1)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sales/1')
       expect(result).toEqual(mockSale)
@@ -187,9 +175,9 @@ describe('API Service', () => {
       const mockResponse = { id: 1, ...saleData }
       mockAxiosInstance.post.mockResolvedValue({ data: mockResponse })
 
-      const result = await createSale(saleData)
+      const result = await SalesApi.saleapiv1salespost(saleData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/sales', saleData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/sales/', saleData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -199,9 +187,9 @@ describe('API Service', () => {
       const mockSessions = [{ id: 1, opened_at: '2024-01-01' }]
       mockAxiosInstance.get.mockResolvedValue({ data: mockSessions })
 
-      const result = await getCashSessions()
+      const result = await CashSessionsApi.cashsessionsapiv1cashsessionsget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/cash-sessions')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/cash-sessions/?')
       expect(result).toEqual(mockSessions)
     })
 
@@ -209,7 +197,7 @@ describe('API Service', () => {
       const mockSession = { id: 1, opened_at: '2024-01-01' }
       mockAxiosInstance.get.mockResolvedValue({ data: mockSession })
 
-      const result = await getCashSession(1)
+      const result = await CashSessionsApi.cashsessionapiv1cashsessionssessionidget(1)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/cash-sessions/1')
       expect(result).toEqual(mockSession)
@@ -220,9 +208,9 @@ describe('API Service', () => {
       const mockResponse = { id: 1, ...sessionData }
       mockAxiosInstance.post.mockResolvedValue({ data: mockResponse })
 
-      const result = await createCashSession(sessionData)
+      const result = await CashSessionsApi.cashsessionapiv1cashsessionspost(sessionData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/cash-sessions', sessionData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/cash-sessions/', sessionData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -232,7 +220,7 @@ describe('API Service', () => {
       const error = new Error('Network error')
       mockAxiosInstance.get.mockRejectedValue(error)
 
-      await expect(getUsers()).rejects.toThrow('Network error')
+      await expect(UsersApi.usersapiv1usersget()).rejects.toThrow('Network error')
     })
 
     it('should handle API error responses', async () => {
@@ -244,7 +232,7 @@ describe('API Service', () => {
       }
       mockAxiosInstance.post.mockRejectedValue(error)
 
-      await expect(createUser({})).rejects.toEqual(error)
+      await expect(UsersApi.userapiv1userspost({})).rejects.toEqual(error)
     })
   })
 })

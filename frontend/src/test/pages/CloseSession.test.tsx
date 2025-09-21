@@ -13,6 +13,29 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
+// Mock window object
+Object.defineProperty(window, 'URL', {
+  writable: true,
+  value: {
+    createObjectURL: vi.fn(() => 'mock-url'),
+    revokeObjectURL: vi.fn(),
+  },
+});
+
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
 // Mock du store cashSession
 const mockCashSessionStore = {
   currentSession: {
@@ -171,17 +194,22 @@ describe('CloseSession', () => {
   })
 
   it('should show loading state during closure', async () => {
-    mockCashSessionStore.closeSession.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
-    
+    mockCashSessionStore.closeSession.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 100)))
+
     render(<CloseSession />)
-    
+
     const actualAmountInput = screen.getByLabelText(/montant physique compté/i)
     fireEvent.change(actualAmountInput, { target: { value: '75.00' } })
-    
+
     const closeButton = screen.getByRole('button', { name: /fermer la session/i })
     fireEvent.click(closeButton)
-    
+
     expect(screen.getByText(/fermeture en cours/i)).toBeInTheDocument()
+
+    // Attendre la fin de l'opération asynchrone
+    await waitFor(() => {
+      expect(mockCashSessionStore.closeSession).toHaveBeenCalled()
+    })
   })
 
   it('should redirect when no current session', () => {

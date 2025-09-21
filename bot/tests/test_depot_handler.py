@@ -14,6 +14,8 @@ from bot.src.handlers.depot import (
     handle_voice_message,
     cancel_depot_session,
     handle_invalid_message,
+    _handle_session_timeout,
+    _cleanup_session,
     active_sessions,
     WAITING_FOR_AUDIO
 )
@@ -129,6 +131,55 @@ class TestDepotHandler:
         mock_update.message.reply_text.assert_called_once()
         call_args = mock_update.message.reply_text.call_args[0][0]
         assert "Session de dépôt annulée" in call_args
+
+    @pytest.mark.asyncio
+    async def test_handle_session_timeout_sends_message(self, mock_update, mock_context):
+        """Test that session timeout sends expiration message and cleans session."""
+        user_id = mock_update.effective_user.id
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': None,
+            'timeout_task': None
+        }
+
+        sleep_mock = AsyncMock()
+        sleep_mock.return_value = None
+
+        with patch('bot.src.handlers.depot.asyncio.sleep', sleep_mock):
+            timeout_task = asyncio.create_task(
+                _handle_session_timeout(user_id, mock_update, mock_context)
+            )
+            active_sessions[user_id]['timeout_task'] = timeout_task
+            await timeout_task
+
+        sleep_mock.assert_awaited_once()
+        mock_context.bot.send_message.assert_awaited_once()
+        args, kwargs = mock_context.bot.send_message.call_args
+        assert kwargs['chat_id'] == user_id
+        assert "Session de dépôt expirée" in kwargs['text']
+        assert user_id not in active_sessions
+
+    @pytest.mark.asyncio
+    async def test_cleanup_session_does_not_cancel_calling_timeout_task(self, mock_update):
+        """Ensure cleanup skips cancelling the timeout task that invokes it."""
+        user_id = mock_update.effective_user.id
+
+        timeout_task = MagicMock()
+        timeout_task.cancel = MagicMock()
+
+        active_sessions[user_id] = {
+            'user_id': user_id,
+            'username': 'testuser',
+            'start_time': None,
+            'timeout_task': timeout_task,
+        }
+
+        await _cleanup_session(user_id, skip_task=timeout_task)
+
+        timeout_task.cancel.assert_not_called()
+        assert user_id not in active_sessions
 
     @pytest.mark.asyncio
     async def test_cancel_depot_session_no_active(self, mock_update, mock_context):

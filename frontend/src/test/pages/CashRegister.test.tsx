@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@test/test-utils'
+import { render, screen } from '../test-utils'
 import CashRegister from '../../pages/CashRegister'
 
 describe('CashRegister Page', () => {
@@ -27,7 +27,7 @@ describe('CashRegister Page', () => {
   it('should have proper styling classes', () => {
     render(<CashRegister />)
     
-    const container = screen.getByText('Interface Caisse').closest('div')
+    const container = screen.getByTestId('cashregister-container')
     expect(container).toHaveStyle({
       background: 'white',
       padding: '2rem',
@@ -38,9 +38,8 @@ describe('CashRegister Page', () => {
   it('should display coming soon message with proper styling', () => {
     render(<CashRegister />)
     
-    const comingSoon = screen.getByText('En cours de développement')
-    expect(comingSoon).toBeInTheDocument()
-    expect(comingSoon.closest('div')).toHaveStyle({
+    const comingSoon = screen.getByTestId('coming-soon')
+    expect(comingSoon).toHaveStyle({
       textAlign: 'center',
       padding: '3rem',
       color: '#666'

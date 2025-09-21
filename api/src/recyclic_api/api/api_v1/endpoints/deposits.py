@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
 from datetime import datetime, timezone
+from uuid import UUID
 from recyclic_api.core.database import get_db
 from recyclic_api.core.bot_auth import get_bot_token_dependency
 from recyclic_api.models.deposit import Deposit, DepositStatus
@@ -25,7 +26,7 @@ async def get_deposits(skip: int = 0, limit: int = 100, db: Session = Depends(ge
     return deposits
 
 @router.get("/{deposit_id}", response_model=DepositResponse)
-async def get_deposit(deposit_id: str, db: Session = Depends(get_db)):
+async def get_deposit(deposit_id: UUID, db: Session = Depends(get_db)):
     """Get deposit by ID"""
     deposit = db.query(Deposit).filter(Deposit.id == deposit_id).first()
     if not deposit:
@@ -76,7 +77,7 @@ async def create_deposit_from_bot(
 
 @router.post("/{deposit_id}/classify", response_model=DepositResponse)
 async def classify_deposit(
-    deposit_id: str,
+    deposit_id: UUID,
     db: Session = Depends(get_db),
     bot_token: str = Depends(get_bot_token_dependency)
 ):
@@ -187,7 +188,7 @@ async def classify_deposit(
 
 @router.put("/{deposit_id}", response_model=DepositResponse)
 async def finalize_deposit(
-    deposit_id: str,
+    deposit_id: UUID,
     finalization: DepositFinalize,
     db: Session = Depends(get_db),
     bot_token: str = Depends(get_bot_token_dependency)

@@ -27,13 +27,13 @@ function Reports() {
   return (
     <ReportsContainer>
       <Title>
-        <BarChart3 size={24} />
+        <BarChart3 size={24} data-testid="barchart-icon" />
         Rapports et Statistiques
       </Title>
       <ComingSoon>
-        <BarChart3 size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+        <BarChart3 size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} data-testid="barchart-icon" />
         <h2>En cours de développement</h2>
-        <p>Les rapports et statistiques seront bientôt disponibles.</p>
+        <p>Les rapports seront bientôt disponibles.</p>
       </ComingSoon>
     </ReportsContainer>
   );

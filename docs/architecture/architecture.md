@@ -1,9 +1,9 @@
 # Architecture consolidée du projet Recyclic
 
 - **Auteur**: BMad Master (Synthèse)
-- **Version**: 3.0
-- **Date**: 2025-09-14
-- **Objectif**: Remplacer les 21+ fichiers d'architecture précédents par une source de vérité unique, claire et exploitable pour tous les agents (IA et humains).
+- **Version**: 3.1
+- **Date**: 2025-09-20
+- **Objectif**: Remplacer les 21+ fichiers d'architecture précédents par une source de vérité unique, claire et exploitable pour tous les agents (IA et humains). Cette version intègre le pivot stratégique de l'abandon de kDrive au profit des rapports par email et l'ajout de l'historique utilisateur.
 
 ---
 
@@ -75,6 +75,7 @@ graph TD
 Les modèles de données principaux sont conçus pour être simples et relationnels.
 
 - **`User`**: Gère les utilisateurs, leurs rôles (`super-admin`, `admin`, `manager`, `cashier`, `user`) et leur statut.
+- **`UserStatusHistory`**: Trace l'historique des changements de statut d'un utilisateur.
 - **`Deposit`**: Représente un dépôt d'objet, avec sa description, sa catégorie EEE et le statut de validation.
 - **`Sale`**: Représente une vente, liée à une session de caisse.
 - **`CashSession`**: Gère l'ouverture, la fermeture et le suivi d'une caisse.
@@ -200,12 +201,33 @@ sequenceDiagram
     end
 ```
 
+### Workflow d'Envoi de Rapport par Email
+
+```mermaid
+sequenceDiagram
+    participant C as Caissier
+    participant API as FastAPI
+    participant EMAIL as Brevo Service
+    participant ADMIN as Admin
+
+    C->>API: POST /cash-sessions/close
+    API->>API: 1. Générer le rapport CSV/PDF
+    API->>EMAIL: 2. Envoyer l'email avec rapport en PJ
+    EMAIL-->>API: Statut de l'envoi
+    API->>DB: 3. Enregistrer le statut de l'envoi
+    EMAIL->>ADMIN: 4. Email reçu par l'admin
+```
+
 ## 9. Stratégies Transverses (Qualité, Sécurité, Opérations)
 
 Cette section définit les stratégies globales qui s'appliquent à l'ensemble du projet.
 
 ### 9.1. Stratégie de Test
 La qualité est assurée par une approche en pyramide : un grand nombre de **tests unitaires** rapides, des **tests d'intégration** pour vérifier la communication entre les services (API+BDD, Frontend+API), et quelques **tests de bout-en-bout (E2E)** pour valider les parcours utilisateurs critiques.
+
+Pour une documentation détaillée sur la manière de lancer les tests pour chaque partie du projet, veuillez consulter les guides suivants :
+- **Backend:** [`api/testing-guide.md`](../../api/testing-guide.md)
+- **Frontend:** [`frontend/TESTS_README.md`](../../frontend/TESTS_README.md)
 
 ### 9.2. Stratégie de Sécurité
 - **Authentification**: JWT pour l'API, complété par la validation native de Telegram pour le bot.

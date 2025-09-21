@@ -7,6 +7,22 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    environmentOptions: {
+      jsdom: {
+        html: `
+          <html>
+            <head></head>
+            <body>
+              <div id="root"></div>
+              <script>
+                // Mock MantineProvider globalement pour les tests
+                window.MantineProvider = ({ children }) => children;
+              </script>
+            </body>
+          </html>
+        `,
+      },
+    },
     css: true,
     exclude: [
       '**/node_modules/**',

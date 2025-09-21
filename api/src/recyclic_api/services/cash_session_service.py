@@ -68,6 +68,10 @@ class CashSessionService:
             oid = UUID(str(filters.operator_id)) if not isinstance(filters.operator_id, UUID) else filters.operator_id
             query = query.filter(CashSession.operator_id == oid)
         
+        if filters.site_id:
+            sid = UUID(str(filters.site_id)) if not isinstance(filters.site_id, UUID) else filters.site_id
+            query = query.filter(CashSession.site_id == sid)
+
         if filters.date_from:
             query = query.filter(CashSession.opened_at >= filters.date_from)
         
@@ -148,10 +152,15 @@ class CashSessionService:
         
         return True
     
-    def get_session_stats(self, date_from: Optional[datetime] = None, 
-                         date_to: Optional[datetime] = None) -> Dict[str, Any]:
+    def get_session_stats(self, date_from: Optional[datetime] = None,
+                         date_to: Optional[datetime] = None,
+                         site_id: Optional[str] = None) -> Dict[str, Any]:
         """Récupère les statistiques des sessions."""
         query = self.db.query(CashSession)
+        
+        if site_id:
+            sid = UUID(str(site_id)) if not isinstance(site_id, UUID) else site_id
+            query = query.filter(CashSession.site_id == sid)
         
         # Appliquer les filtres de date
         if date_from:

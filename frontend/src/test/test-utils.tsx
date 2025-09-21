@@ -5,9 +5,22 @@ import { MantineProvider } from '@mantine/core'
 
 // Mock providers wrapper avec MemoryRouter et MantineProvider
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
+  const theme = {
+    primaryColor: 'blue',
+    colors: {
+      blue: ['#e7f3ff', '#b3d9ff', '#80bfff', '#4da6ff', '#1a8cff', '#0073e6', '#0066cc', '#0059b3', '#004d99', '#004080']
+    },
+    spacing: {
+      xs: 4, sm: 8, md: 16, lg: 24, xl: 32
+    },
+    fontSizes: {
+      xs: 12, sm: 14, md: 16, lg: 18, xl: 20
+    }
+  };
+
   return (
     <MemoryRouter initialEntries={['/']}>
-      <MantineProvider>
+      <MantineProvider theme={theme}>
         {children}
       </MantineProvider>
     </MemoryRouter>
@@ -90,6 +103,11 @@ export const mockApiResponses = {
     }
   }
 }
+
+// Test simple pour vérifier MantineProvider
+export const TestComponent = () => {
+  return <div data-testid="test-component">Test Component</div>;
+};
 
 // Re-export everything
 export * from '@testing-library/react'

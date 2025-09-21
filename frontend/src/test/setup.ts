@@ -14,7 +14,8 @@ vi.mock('react-router-dom', async () => {
     Routes: actual.Routes,
     Route: actual.Route,
     useSearchParams: actual.useSearchParams,
-    useNavigate: actual.useNavigate,
+    // retourne une fonction de navigation mockée
+    useNavigate: () => vi.fn(),
     useLocation: actual.useLocation,
     useParams: actual.useParams,
   };
@@ -26,7 +27,9 @@ vi.mock('lucide-react', () => ({
   Home: () => React.createElement('div', { 'data-testid': 'home-icon' }, 'Home'),
   Calculator: () => React.createElement('div', { 'data-testid': 'calculator-icon' }, 'Calculator'),
   Package: () => React.createElement('div', { 'data-testid': 'package-icon' }, 'Package'),
-  BarChart3: () => React.createElement('div', { 'data-testid': 'barchart-icon' }, 'BarChart3'),
+  BarChart3: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {})
+  }, 'BarChart3'),
   Receipt: () => React.createElement('div', { 'data-testid': 'receipt-icon' }, 'Receipt'),
   DollarSign: () => React.createElement('div', { 'data-testid': 'dollarsign-icon' }, 'DollarSign'),
   Calendar: () => React.createElement('div', { 'data-testid': 'calendar-icon' }, 'Calendar'),
@@ -119,7 +122,7 @@ vi.mock('styled-components', () => {
       };
 
   const styled: any = (tag: string) => h(tag);
-  ['div','button','input','label','span','h1','h2','h3','nav','header','form','select','textarea','p','a']
+  ['div','button','input','label','span','h1','h2','h3','nav','header','form','select','textarea','p','a','table','thead','tbody','tr','th','td']
     .forEach(t => { styled[t] = h(t); });
 
   styled.css = () => '';
@@ -183,6 +186,7 @@ vi.mock('@tabler/icons-react', () => {
     IconUser: createIconComponent('IconUser', 'icon-user'),
     IconShield: createIconComponent('IconShield', 'icon-shield'),
     IconCash: createIconComponent('IconCash', 'icon-cash'),
+    IconCurrencyEuro: createIconComponent('IconCurrencyEuro', 'icon-currency-euro'),
     IconSettings: createIconComponent('IconSettings', 'icon-settings'),
     IconSearch: createIconComponent('IconSearch', 'icon-search'),
     IconFilter: createIconComponent('IconFilter', 'icon-filter'),
@@ -200,13 +204,25 @@ vi.mock('@tabler/icons-react', () => {
   };
 })
 
-// Mock pour @mantine/notifications
-vi.mock('@mantine/notifications', () => ({
-  notifications: {
-    show: vi.fn(),
-  },
-  showNotification: vi.fn(),
-}))
+// Mock pour @mantine/notifications (v7 expose Notifications, pas NotificationsProvider)
+vi.mock('@mantine/notifications', () => {
+  const Notifications = ({ children }: any) => React.createElement('div', { 'data-testid': 'notifications' }, children)
+  const NotificationsProvider = ({ children }: any) => React.createElement('div', { 'data-testid': 'notifications-provider' }, children)
+  return {
+    Notifications,
+    NotificationsProvider,
+    notifications: {
+      show: vi.fn(),
+    },
+    showNotification: vi.fn(),
+  };
+})
+
+// Stubs pour navigation/téléchargement jsdom
+// @ts-ignore
+window.URL.createObjectURL = vi.fn(() => 'blob:test');
+// @ts-ignore
+HTMLAnchorElement.prototype.click = vi.fn();
 
 // Mock pour ResizeObserver (requis par Mantine)
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -232,26 +248,67 @@ const portalRoot = document.createElement('div')
 portalRoot.setAttribute('data-mantine-portal', 'true')
 document.body.appendChild(portalRoot)
 
-// Mock pour Mantine Portal et Modal - approche complète
-vi.mock('@mantine/core', () => {
+// Mock spécifique pour @mantine/dates
+vi.mock('@mantine/dates', async () => {
+  const actual = await vi.importActual('@mantine/dates')
+
   return {
-    MantineProvider: ({ children }: any) => {
-      return React.createElement('div', { 'data-testid': 'mantine-provider' }, children)
+    ...actual,
+    DatePickerInput: ({ label, placeholder, leftSection, value, onChange, ...props }: any) => {
+      return React.createElement('input', {
+        'data-testid': 'date-picker-input',
+        'data-label': label,
+        'data-placeholder': placeholder,
+        'value': value ? value.toISOString().split('T')[0] : '',
+        'onChange': (e: any) => {
+          if (e.target.value) {
+            onChange(new Date(e.target.value))
+          } else {
+            onChange(null)
+          }
+        },
+        'type': 'date',
+        ...props
+      })
+    }
+  }
+})
+
+// Mock pour Mantine Portal et Modal - approche complète
+vi.mock('@mantine/core', async () => {
+  const actual = await vi.importActual('@mantine/core')
+
+  // Créer un contexte mock pour Mantine
+  const mockTheme = {
+    primaryColor: 'blue',
+    colors: {
+      blue: ['#e7f3ff', '#b3d9ff', '#80bfff', '#4da6ff', '#1a8cff', '#0073e6', '#0066cc', '#0059b3', '#004d99', '#004080']
     },
+    spacing: {
+      xs: 4, sm: 8, md: 16, lg: 24, xl: 32
+    },
+    fontSizes: {
+      xs: 12, sm: 14, md: 16, lg: 18, xl: 20
+    }
+  }
+
+  return {
+    ...actual,
     Portal: ({ children }: any) => {
       // Rendre le contenu directement dans le DOM de test
       return React.createElement('div', { 'data-testid': 'mantine-portal' }, children)
     },
-    Modal: ({ children, opened, ...props }: any) => {
+    Modal: ({ children, opened, title, ...props }: any) => {
       if (!opened) return null
-      // Rendre le contenu de la modal directement dans le DOM de test
       return React.createElement('div', { 
         ...props, 
         role: 'dialog',
         'aria-modal': 'true',
         'data-testid': 'role-change-modal',
+        'aria-label': title || undefined,
+        title: title || undefined,
         style: { display: 'block' }
-      }, children)
+      }, title ? React.createElement('div', {}, title) : null, children)
     },
     Table: Object.assign(
       ({ children, ...props }: any) => React.createElement('table', { ...props, 'data-testid': 'table' }, children),
@@ -266,24 +323,64 @@ vi.mock('@mantine/core', () => {
     ),
     Select: ({ children, value, onChange, data, leftSection, label, placeholder, name, ...props }: any) => {
       const testId = props['data-testid'] || 'select'
+      const id = props.id || `select-${(name || String(label) || placeholder || Math.random()).toString().replace(/\s+/g,'-').toLowerCase()}`
       const handleChange = (e: any) => {
         const nextValue = e && e.target ? e.target.value : e
         if (onChange) onChange(nextValue)
       }
       return React.createElement('div', {},
-        label && React.createElement('label', {}, label),
+        label && React.createElement('label', { htmlFor: id }, label),
         React.createElement('select', { 
           ...props, 
+          id,
           name,
           'data-testid': testId,
           value,
+          'aria-label': label || placeholder,
           onChange: handleChange
         }, 
-          data?.map((option: any) => 
+          (data || []).map((option: any) => 
             React.createElement('option', { 
               key: option.value, 
               value: option.value,
               onClick: () => onChange && onChange(option.value)
+            }, option.label)
+          )
+        )
+      )
+    },
+    MultiSelect: ({ value = [], data = [], onChange, label, placeholder, name, ...props }: any) => {
+      const testId = props['data-testid'] || 'multi-select'
+      const handleChange = (event: any) => {
+        if (!onChange) {
+          return
+        }
+
+        if (event && event.target) {
+          const nextValues = Array.from(event.target.selectedOptions || [], (option: any) => option.value)
+          onChange(nextValues)
+        } else if (Array.isArray(event)) {
+          onChange(event)
+        } else {
+          onChange([])
+        }
+      }
+
+      return React.createElement('div', {},
+        label && React.createElement('label', {}, label),
+        React.createElement('select', {
+          ...props,
+          name,
+          multiple: true,
+          'data-testid': testId,
+          value: value || [],
+          placeholder,
+          onChange: handleChange
+        },
+          (data || []).map((option: any) =>
+            React.createElement('option', {
+              key: option.value,
+              value: option.value
             }, option.label)
           )
         )
@@ -489,23 +586,36 @@ vi.mock('@mantine/core', () => {
         }
       }
     ),
-    TextInput: ({ label, placeholder, leftSection, error, value, onChange, ...props }: any) => {
+    TextInput: ({ label, placeholder, leftSection, error, value, defaultValue, onChange, name, id: givenId, ...props }: any) => {
       return React.createElement('div', { 
         ...props, 
         'data-testid': 'text-input'
       }, 
-        label && React.createElement('label', {}, label),
-        React.createElement('input', { 
-          placeholder,
-          value,
-          onChange,
-          style: { 
-            padding: '8px 12px',
-            border: error ? '1px solid red' : '1px solid #ccc',
-            borderRadius: '4px',
-            width: '100%'
+        (() => {
+          const id = givenId || `input-${(name || String(label) || placeholder || Math.random()).toString().replace(/\s+/g,'-').toLowerCase()}`
+          const inputProps: any = {
+            id,
+            placeholder,
+            onChange,
+            'aria-label': label || placeholder,
+            style: { 
+              padding: '8px 12px',
+              border: error ? '1px solid red' : '1px solid #ccc',
+              borderRadius: '4px',
+              width: '100%'
+            },
+            ...props,
           }
-        }),
+          if (value !== undefined) {
+            inputProps.value = value
+          } else if (defaultValue !== undefined || props.defaultValue !== undefined) {
+            inputProps.defaultValue = defaultValue ?? props.defaultValue
+          }
+          return React.createElement(React.Fragment, {},
+            label && React.createElement('label', { htmlFor: id }, label),
+            React.createElement('input', inputProps)
+          )
+        })(),
         error && React.createElement('span', { style: { color: 'red' } }, error)
       )
     },

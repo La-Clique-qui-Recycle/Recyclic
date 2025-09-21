@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '../test-utils'
+import { render, screen, fireEvent, waitFor, renderWithRouter } from '../test-utils'
 import userEvent from '@testing-library/user-event'
-import Registration from '../../pages/Registration'
 import { mockSites, mockApiResponses } from '../test-utils'
 import api from '../../services/api'
 
@@ -13,23 +12,12 @@ vi.mock('../../services/api', () => ({
   }
 }))
 
-// Mock useSearchParams - utiliser le mock global
-const mockSearchParams = vi.fn()
-const mockSetSearchParams = vi.fn()
-
-// Override du mock global pour ce test spécifique
-vi.doMock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
-  return {
-    ...actual,
-    useSearchParams: () => [mockSearchParams(), mockSetSearchParams]
-  }
-})
+// Import direct, on pilotera la route via MemoryRouter (renderWithRouter)
+import Registration from '../../pages/Registration'
 
 describe('Registration Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSearchParams.mockReturnValue(new URLSearchParams())
     vi.mocked(api.get).mockResolvedValue({ data: mockSites })
     vi.mocked(api.post).mockResolvedValue({ data: { id: 1, ...mockApiResponses.user } })
   })
@@ -89,9 +77,8 @@ describe('Registration Page', () => {
   })
 
   it('should pre-fill telegram_id from URL params', () => {
-    mockSearchParams.mockReturnValue(new URLSearchParams('telegram_id=123456789'))
-    render(<Registration />)
-    
+    // Injecter l'URL avec query dans le router mémoire
+    renderWithRouter(<Registration />, '/?telegram_id=123456789')
     const telegramInput = screen.getByLabelText(/id telegram/i)
     expect(telegramInput).toHaveValue('123456789')
     expect(telegramInput).toBeDisabled()
@@ -99,24 +86,28 @@ describe('Registration Page', () => {
 
   it('should submit form with correct data', async () => {
     const user = userEvent.setup()
-    vi.mocked(api).post.mockResolvedValue(mockApiResponses.registrationSuccess)
+    vi.mocked(api.post).mockResolvedValue(mockApiResponses.registrationSuccess)
     render(<Registration />)
-    
-    // Remplir le formulaire
+
+    // 1. Attendre que les sites soient chargés
+    await waitFor(() => {
+        expect(screen.getByText('Ressourcerie Test')).toBeInTheDocument()
+    })
+
+    // 2. Remplir le formulaire avec des données valides
     await user.type(screen.getByLabelText(/id telegram/i), '123456789')
     await user.type(screen.getByLabelText(/prénom/i), 'John')
     await user.type(screen.getByLabelText(/nom de famille/i), 'Doe')
     await user.type(screen.getByLabelText(/email/i), 'john@example.com')
     await user.type(screen.getByLabelText(/téléphone/i), '+33123456789')
-    
-    // Sélectionner un site
     await user.selectOptions(screen.getByLabelText(/ressourcerie/i), '1')
-    
-    // Soumettre le formulaire
+
+    // 3. Soumettre le formulaire
     await user.click(screen.getByRole('button', { name: /envoyer la demande/i }))
-    
+
+    // 4. Attendre que l'appel API soit effectué
     await waitFor(() => {
-      expect(vi.mocked(api).post).toHaveBeenCalledWith('/users/registration-requests', {
+      expect(vi.mocked(api.post)).toHaveBeenCalledWith('/users/registration-requests', {
         telegram_id: '123456789',
         username: '',
         first_name: 'John',
@@ -132,14 +123,14 @@ describe('Registration Page', () => {
   it('should show success message after successful submission', async () => {
     vi.mocked(api).post.mockResolvedValue(mockApiResponses.registrationSuccess)
     render(<Registration />)
-    
+
     // Remplir et soumettre le formulaire
     fireEvent.change(screen.getByLabelText(/id telegram/i), { target: { value: '123456789' } })
     fireEvent.change(screen.getByLabelText(/prénom/i), { target: { value: 'John' } })
     fireEvent.change(screen.getByLabelText(/nom de famille/i), { target: { value: 'Doe' } })
-    
+
     fireEvent.click(screen.getByRole('button', { name: /envoyer la demande/i }))
-    
+
     await waitFor(() => {
       expect(screen.getByText(/votre demande d'inscription a été envoyée avec succès/i)).toBeInTheDocument()
     })
@@ -150,11 +141,17 @@ describe('Registration Page', () => {
     vi.mocked(api).post.mockResolvedValue(mockApiResponses.registrationSuccess)
     render(<Registration />)
     
-    // Remplir et soumettre le formulaire (avec tous les champs requis)
+    // Attendre que les sites soient chargés
+    await waitFor(() => {
+        expect(screen.getByText('Ressourcerie Test')).toBeInTheDocument()
+    })
+
+    // Remplir et soumettre le formulaire
     await user.type(screen.getByLabelText(/id telegram/i), '123456789')
     await user.type(screen.getByLabelText(/prénom/i), 'John')
     await user.type(screen.getByLabelText(/nom de famille/i), 'Doe')
-    
+    await user.selectOptions(screen.getByLabelText(/ressourcerie/i), '1')
+
     await user.click(screen.getByRole('button', { name: /envoyer la demande/i }))
     
     // Attendre que le message de succès apparaisse

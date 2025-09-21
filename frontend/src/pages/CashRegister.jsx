@@ -25,17 +25,17 @@ const ComingSoon = styled.div`
 
 function CashRegister() {
   return (
-    <CashRegisterContainer>
+    <div data-testid="cashregister-container" style={{ background: 'white', padding: '2rem', borderRadius: '8px' }}>
       <Title>
-        <Calculator size={24} />
+        <Calculator size={24} data-testid="calculator-icon" />
         Interface Caisse
       </Title>
-      <ComingSoon>
-        <Package size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+      <div data-testid="coming-soon" style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>
+        <Package size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} data-testid="package-icon" />
         <h2>En cours de développement</h2>
         <p>L'interface de caisse sera bientôt disponible.</p>
-      </ComingSoon>
-    </CashRegisterContainer>
+      </div>
+    </div>
   );
 }
 

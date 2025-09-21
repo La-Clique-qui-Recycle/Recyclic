@@ -7,7 +7,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Any, Dict, Optional
 import httpx
 from telegram import Update
 from telegram.ext import (
@@ -204,32 +204,52 @@ async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_T
 
 async def _handle_session_timeout(user_id: int, update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle session timeout after 5 minutes."""
-    await asyncio.sleep(SESSION_TIMEOUT)
+    # Remember the task handling the timeout so cleanup does not cancel it.
+    timeout_task = asyncio.current_task()
 
-    if user_id in active_sessions:
-        logger.info(f"Session timeout for user {user_id}")
-        await _cleanup_session(user_id)
+    try:
+        await asyncio.sleep(SESSION_TIMEOUT)
+    except asyncio.CancelledError:
+        logger.debug(f"Session timeout task cancelled for user {user_id}")
+        return
 
-        # Try to send timeout message
-        try:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="⏰ **Session de dépôt expirée**\n\n"
-                      "Votre session de dépôt a expiré après 5 minutes d'inactivité.\n"
-                      "Utilisez /depot pour redémarrer une nouvelle session.",
-                parse_mode='Markdown'
-            )
-        except Exception as e:
-            logger.error(f"Could not send timeout message to user {user_id}: {e}")
+    if user_id not in active_sessions:
+        return
 
-async def _cleanup_session(user_id: int):
-    """Clean up user session and cancel timeout task."""
+    logger.info(f"Session timeout for user {user_id}")
+    await _cleanup_session(user_id, skip_task=timeout_task)
+
+    # Try to send timeout message
+    try:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="\u23f0 **Session de dépôt expirée**\n\n"
+                 "Votre session de dépôt a expiré après 5 minutes d'inactivité.\n"
+                 "Utilisez /depot pour redémarrer une nouvelle session.",
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        logger.error(f"Could not send timeout message to user {user_id}: {e}")
+
+async def _cleanup_session(user_id: int, *, skip_task: Optional[asyncio.Task] = None):
+    """Clean up user session and cancel timeout task.
+
+    Args:
+        user_id: The Telegram user identifier of the session to remove.
+        skip_task: Optional task reference that should not be cancelled. When
+            the timeout task performs the cleanup we must not cancel it,
+            otherwise the coroutine would never resume to send the timeout
+            message to the user.
+    """
     if user_id in active_sessions:
         session = active_sessions[user_id]
 
-        # Cancel timeout task if exists
-        if session.get('timeout_task'):
-            session['timeout_task'].cancel()
+        # Cancel timeout task if exists and it's not the caller itself
+        timeout_task = session.get('timeout_task')
+        if timeout_task and timeout_task is not skip_task:
+            cancel_method = getattr(timeout_task, "cancel", None)
+            if callable(cancel_method):
+                cancel_method()
 
         # Remove from active sessions
         del active_sessions[user_id]

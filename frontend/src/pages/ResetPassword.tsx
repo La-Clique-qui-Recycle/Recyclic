@@ -131,12 +131,12 @@ export default function ResetPassword(): JSX.Element {
           required
         />
 
-        <div id="password-help" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>
+        <div id="password-help" data-testid="password-guidelines" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>
           Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
         </div>
 
         {(error || validationError) && (
-          <div id="password-error" style={{ color: '#dc2626', marginBottom: '16px', fontSize: '14px' }}>
+          <div id="password-error" data-testid="password-error" style={{ color: '#dc2626', marginBottom: '16px', fontSize: '14px' }}>
             {validationError || error}
           </div>
         )}

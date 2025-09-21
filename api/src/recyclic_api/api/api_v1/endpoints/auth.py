@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-import os
+from recyclic_api.utils.rate_limit import limiter, conditional_rate_limit
 import logging
 import time
 
@@ -15,8 +14,6 @@ from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse
 from recyclic_api.utils.auth_metrics import auth_metrics
 
-# Create rate limiter with Redis backend (using existing Redis connection)
-limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(tags=["auth"])
 
 # Configure logger for authentication events
@@ -24,24 +21,6 @@ logger = logging.getLogger(__name__)
 
 # Add rate limit exception handler (should be added to main app, not router)
 # router.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# Check if we're in test mode
-def is_test_mode():
-    import os
-    return (
-        os.getenv("PYTEST_CURRENT_TEST") is not None
-        or os.getenv("TESTING") == "true"
-        or os.getenv("ENVIRONMENT") == "test"
-    )
-
-# Conditional rate limiting decorator
-def conditional_rate_limit(limit_str):
-    def decorator(func):
-        if is_test_mode():
-            return func
-        else:
-            return limiter.limit(limit_str)(func)
-    return decorator
 
 @router.post("/login", response_model=LoginResponse)
 @conditional_rate_limit("10/minute")

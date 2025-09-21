@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -13,6 +14,10 @@ from recyclic_api.core.audit import (
 )
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.core.config import settings
+from recyclic_api.core.email_service import EmailAttachment, get_email_service
+from recyclic_api.services.export_service import generate_cash_session_report
+from recyclic_api.utils.report_tokens import generate_download_token
 from recyclic_api.schemas.cash_session import (
     CashSessionCreate,
     CashSessionUpdate,
@@ -26,6 +31,8 @@ from recyclic_api.services.cash_session_service import CashSessionService
 
 router = APIRouter()
 
+
+logger = logging.getLogger(__name__)
 
 @router.post(
     "/", 
@@ -203,6 +210,7 @@ async def get_cash_sessions(
     limit: int = Query(20, ge=1, le=100, description="Nombre maximum d'éléments à retourner"),
     status: Optional[CashSessionStatus] = Query(None, description="Filtrer par statut"),
     operator_id: Optional[str] = Query(None, description="Filtrer par ID d'opérateur"),
+    site_id: Optional[str] = Query(None, description="Filtrer par ID de site"),
     date_from: Optional[datetime] = Query(None, description="Date de début (ISO 8601)"),
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
     db: Session = Depends(get_db),
@@ -215,6 +223,7 @@ async def get_cash_sessions(
         limit=limit,
         status=status,
         operator_id=operator_id,
+        site_id=site_id,
         date_from=date_from,
         date_to=date_to
     )
@@ -455,8 +464,67 @@ async def close_cash_session(
             success=True
         )
         
-        return CashSessionResponse.model_validate(closed_session)
-        
+
+        report_path = generate_cash_session_report(db, closed_session)
+        download_token = generate_download_token(report_path.name)
+        report_download_url = f"{settings.API_V1_STR}/admin/reports/cash-sessions/{report_path.name}?token={download_token}"
+        email_sent = False
+
+        recipient = settings.CASH_SESSION_REPORT_RECIPIENT
+        if not recipient:
+            logger.warning("CASH_SESSION_REPORT_RECIPIENT is not configured; skipping report email dispatch")
+        else:
+            try:
+                email_service = get_email_service()
+                with report_path.open('rb') as report_file:
+                    attachment = EmailAttachment(
+                        filename=report_path.name,
+                        content=report_file.read(),
+                        mime_type='text/csv',
+                    )
+
+                if closed_session.operator:
+                    operator_label = (
+                        closed_session.operator.username
+                        or getattr(closed_session.operator, 'telegram_id', None)
+                        or str(closed_session.operator_id)
+                    )
+                else:
+                    operator_label = str(closed_session.operator_id)
+
+                if closed_session.actual_amount is not None:
+                    final_amount = closed_session.actual_amount
+                elif closed_session.closing_amount is not None:
+                    final_amount = closed_session.closing_amount
+                else:
+                    final_amount = closed_session.initial_amount or 0.0
+
+                html_rows = [
+                    '<p>Bonjour,</p>',
+                    f'<p>Veuillez trouver en pièce jointe le rapport CSV de la session de caisse {closed_session.id}.</p>',
+                    f'<p>Opérateur : {operator_label}</p>',
+                    f"<p>Montant final déclaré : {final_amount:.2f} €</p>",
+                    f'<p>Vous pouvez également le télécharger via {report_download_url} (valide pendant {settings.CASH_SESSION_REPORT_TOKEN_TTL_SECONDS // 60} minutes).</p>',
+                    '<p>- Recyclic</p>',
+                ]
+
+                email_sent = email_service.send_email(
+                    to_email=recipient,
+                    subject=f"Rapport de session de caisse {closed_session.id}",
+                    html_content=''.join(html_rows),
+                    db_session=db,
+                    attachments=[attachment],
+                )
+            except Exception as exc:  # noqa: BLE001 - keep closing flow resilient
+                logger.error("Failed to send cash session report email: %s", exc)
+
+        response_model = CashSessionResponse.model_validate(closed_session)
+        response_model = response_model.model_copy(update={
+            'report_download_url': report_download_url,
+            'report_email_sent': email_sent,
+        })
+        return response_model
+
     except HTTPException:
         raise
     except Exception as e:

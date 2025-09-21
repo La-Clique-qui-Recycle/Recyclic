@@ -6,6 +6,8 @@ import { useCashSessionStore } from '../../stores/cashSessionStore';
 import CategorySelector from '../../components/business/CategorySelector';
 import Ticket from '../../components/business/Ticket';
 
+const formatEu = (n: number) => `${n.toFixed(2)} €`;
+
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -336,7 +338,9 @@ const Sale: React.FC = () => {
         return (
           <ModeContent>
             <ModeTitle>Quantité</ModeTitle>
-            <DisplayValue $isValid={!quantityError}>{quantity || '0'}</DisplayValue>
+            <DisplayValue $isValid={!quantityError} data-testid="quantity-input">
+              {quantity || '0'}
+            </DisplayValue>
             <ErrorMessage>{quantityError}</ErrorMessage>
             <NumpadContainer>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, 'OK'].map((item) => (
@@ -345,8 +349,10 @@ const Sale: React.FC = () => {
                   disabled={item === 'OK' && !isQuantityValid}
                   style={{
                     opacity: item === 'OK' && !isQuantityValid ? 0.5 : 1,
-                    cursor: item === 'OK' && !isQuantityValid ? 'not-allowed' : 'pointer'
+                    cursor: item === 'OK' && !isQuantityValid ? 'not-allowed' : 'pointer',
+                    background: item === 'OK' && !isQuantityValid ? '#ccc' : undefined
                   }}
+                  data-isvalid={item === 'OK' ? 'true' : undefined}
                   onClick={() => {
                     if (item === 'C') {
                       handleClear();
@@ -368,7 +374,9 @@ const Sale: React.FC = () => {
         return (
           <ModeContent>
             <ModeTitle>Prix unitaire (€)</ModeTitle>
-            <DisplayValue $isValid={!priceError}>{price || '0'}</DisplayValue>
+            <DisplayValue $isValid={!priceError} data-testid="price-input">
+              {price || '0'}
+            </DisplayValue>
             <ErrorMessage>{priceError}</ErrorMessage>
             <NumpadContainer>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '.'].map((item) => (
@@ -392,6 +400,8 @@ const Sale: React.FC = () => {
                   cursor: !isPriceValid ? 'not-allowed' : 'pointer',
                   gridColumn: 'span 3'
                 }}
+                data-testid="add-item-button"
+                data-isvalid={String(!!isPriceValid)}
                 onClick={handlePriceConfirm}
               >
                 Valider
@@ -453,7 +463,7 @@ const Sale: React.FC = () => {
 
         <RightPanel>
           <Ticket
-            items={currentSaleItems}
+            items={currentSaleItems.map(it => ({ ...it, total: it.total }))}
             onRemoveItem={removeSaleItem}
             onUpdateItem={updateSaleItem}
             onFinalizeSale={handleFinalizeSale}

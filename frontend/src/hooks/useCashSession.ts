@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react'
 
+const CURRENT_SESSION_STORAGE_KEY = 'currentCashSession'
+const LAST_CLOSED_SESSION_STORAGE_KEY = 'lastClosedCashSession'
+
+const createSessionId = () => {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    return 'session_' + globalThis.crypto.randomUUID()
+  }
+
+  return 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10)
+}
+
 interface CashSession {
   id: string
   site_id: string
@@ -31,27 +42,30 @@ export const useCashSession = () => {
 
   const openSession = async (cashierId: string, openingAmount: number) => {
     setSessionState(prev => ({ ...prev, isLoading: true, error: null }))
-    
+
     try {
       const newSession: CashSession = {
-        id: `session_${Date.now()}`,
+        id: createSessionId(),
         site_id: '1', // Default site
         cashier_id: cashierId,
         opening_amount: openingAmount,
         status: 'opened',
         opened_at: new Date()
       }
-      
+
       // Store in localStorage for persistence
-      localStorage.setItem('currentCashSession', JSON.stringify(newSession))
-      
-      setSessionState({
+      localStorage.setItem(CURRENT_SESSION_STORAGE_KEY, JSON.stringify(newSession))
+      localStorage.removeItem(LAST_CLOSED_SESSION_STORAGE_KEY)
+
+      // Update state synchronously for immediate UI response
+      setSessionState(prev => ({
+        ...prev,
         currentSession: newSession,
         isSessionOpen: true,
         isLoading: false,
         error: null
-      })
-      
+      }))
+
       return { success: true, session: newSession }
     } catch (error) {
       setSessionState(prev => ({
@@ -67,12 +81,12 @@ export const useCashSession = () => {
     if (!sessionState.currentSession) {
       return { success: false, error: 'No active session' }
     }
-    
+
     setSessionState(prev => ({ ...prev, isLoading: true, error: null }))
-    
+
     try {
       const variance = actualAmount - sessionState.currentSession.opening_amount
-      
+
       const closedSession: CashSession = {
         ...sessionState.currentSession,
         closing_amount: actualAmount,
@@ -82,17 +96,20 @@ export const useCashSession = () => {
         status: 'closed',
         closed_at: new Date()
       }
-      
-      // Remove from localStorage
-      localStorage.removeItem('currentCashSession')
-      
-      setSessionState({
-        currentSession: null,
-        isSessionOpen: false,
+
+      // Persist closed session for future reference
+      localStorage.removeItem(CURRENT_SESSION_STORAGE_KEY)
+      localStorage.setItem(LAST_CLOSED_SESSION_STORAGE_KEY, JSON.stringify(closedSession))
+
+      // Update state synchronously for immediate UI response
+      setSessionState(prev => ({
+        ...prev,
+        currentSession: closedSession,
+        isSessionOpen: false, // Session is closed, so not open
         isLoading: false,
         error: null
-      })
-      
+      }))
+
       return { success: true, session: closedSession }
     } catch (error) {
       setSessionState(prev => ({
@@ -106,12 +123,24 @@ export const useCashSession = () => {
 
   const loadSession = () => {
     try {
-      const storedSession = localStorage.getItem('currentCashSession')
+      const storedSession = localStorage.getItem(CURRENT_SESSION_STORAGE_KEY)
       if (storedSession) {
         const session = JSON.parse(storedSession)
         setSessionState({
           currentSession: session,
           isSessionOpen: session.status === 'opened',
+          isLoading: false,
+          error: null
+        })
+        return
+      }
+
+      const lastClosedSession = localStorage.getItem(LAST_CLOSED_SESSION_STORAGE_KEY)
+      if (lastClosedSession) {
+        const session = JSON.parse(lastClosedSession)
+        setSessionState({
+          currentSession: session,
+          isSessionOpen: false,
           isLoading: false,
           error: null
         })
@@ -128,7 +157,7 @@ export const useCashSession = () => {
     if (!sessionState.currentSession) {
       return null
     }
-    
+
     return {
       id: sessionState.currentSession.id,
       openingAmount: sessionState.currentSession.opening_amount,
@@ -140,11 +169,11 @@ export const useCashSession = () => {
     }
   }
 
-  const isVarianceSignificant = (threshold: number = 5) => {
+  const isVarianceSignificant = (threshold: number = 5): boolean => {
     if (!sessionState.currentSession?.variance) {
       return false
     }
-    
+
     return Math.abs(sessionState.currentSession.variance) > threshold
   }
 

@@ -154,6 +154,7 @@ export const CashRegister: React.FC<CashRegisterProps> = ({ onComplete }) => {
             value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value))}
             min="1"
+            data-testid="quantity-input"
           />
         </InputGroup>
         
@@ -165,10 +166,11 @@ export const CashRegister: React.FC<CashRegisterProps> = ({ onComplete }) => {
             onChange={(e) => setUnitPrice(Number(e.target.value))}
             min="0"
             step="0.01"
+            data-testid="price-input"
           />
         </InputGroup>
         
-        <Button onClick={addItem} disabled={!selectedCategory || quantity <= 0 || unitPrice <= 0}>
+        <Button onClick={addItem} disabled={!selectedCategory || quantity <= 0 || unitPrice <= 0} data-testid="add-item-button">
           Ajouter l'article
         </Button>
       </Section>
@@ -185,7 +187,7 @@ export const CashRegister: React.FC<CashRegisterProps> = ({ onComplete }) => {
               <span>{item.category} x{item.quantity} @ {item.unitPrice}€</span>
               <div>
                 <span style={{ marginRight: '1rem' }}>{(item.quantity * item.unitPrice).toFixed(2)}€</span>
-                <Button $variant="secondary" onClick={() => removeItem(index)}>
+                <Button $variant="secondary" onClick={() => removeItem(index)} data-testid="remove-item-button">
                   Supprimer
                 </Button>
               </div>
@@ -199,7 +201,7 @@ export const CashRegister: React.FC<CashRegisterProps> = ({ onComplete }) => {
             </SummaryRow>
           </Summary>
           
-          <Button $variant="primary" onClick={completeSale}>
+        <Button $variant="primary" onClick={completeSale} data-testid="finalize-sale-button">
             Finaliser la vente
           </Button>
         </Section>

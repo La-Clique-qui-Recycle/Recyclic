@@ -15,7 +15,8 @@ import {
 import { IconEdit, IconCheck, IconX, IconAlertCircle } from '@tabler/icons-react';
 import { useForm } from 'react-hook-form';
 import { notifications } from '@mantine/notifications';
-import { AdminUser, UserRole, UserStatus, adminService } from '../../services/adminService';
+import { AdminUser, adminService } from '../../services/adminService';
+import { UserRole, UserStatus } from '../../generated';
 
 interface UserProfileTabProps {
   user: AdminUser;
@@ -245,6 +246,8 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
               {...register('first_name', { 
                 minLength: { value: 2, message: 'Le prénom doit contenir au moins 2 caractères' }
               })}
+              value={watch('first_name')}
+              onChange={(e) => setValue('first_name', e.target.value, { shouldValidate: true })}
               error={errors.first_name?.message}
             />
             <TextInput
@@ -253,6 +256,8 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
               {...register('last_name', { 
                 minLength: { value: 2, message: 'Le nom doit contenir au moins 2 caractères' }
               })}
+              value={watch('last_name')}
+              onChange={(e) => setValue('last_name', e.target.value, { shouldValidate: true })}
               error={errors.last_name?.message}
             />
             <Select

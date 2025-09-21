@@ -1,0 +1,225 @@
+[1mdiff --git a/bot/src/handlers/depot.py b/bot/src/handlers/depot.py[m
+[1mindex c34cc414..b231005d 100644[m
+[1m--- a/bot/src/handlers/depot.py[m
+[1m+++ b/bot/src/handlers/depot.py[m
+[36m@@ -1,5 +1,5 @@[m
+ """[m
+[31m-Depot command handler for Story 4.1 - Telegram voice deposit functionality.[m
+[32m+[m[32mDepot command handler for Story 2.1 - Telegram voice deposit functionality.[m
+ Implements the /depot command and voice message handling for deposit creation.[m
+ """[m
+ [m
+[36m@@ -7,7 +7,7 @@[m [mimport asyncio[m
+ import logging[m
+ import os[m
+ from datetime import datetime, timedelta[m
+[31m-from typing import Dict, Any[m
+[32m+[m[32mfrom typing import Dict, Any, Optional[m
+ import httpx[m
+ from telegram import Update[m
+ from telegram.ext import ([m
+[36m@@ -18,6 +18,7 @@[m [mfrom telegram.ext import ([m
+     filters[m
+ )[m
+ from ..config import settings[m
+[32m+[m[32mfrom ..services.user_service import user_service[m
+ from .validation import send_validation_message[m
+ [m
+ logger = logging.getLogger(__name__)[m
+[36m@@ -28,6 +29,21 @@[m [mWAITING_FOR_AUDIO = 1[m
+ # Session timeout (5 minutes as per story requirements)[m
+ SESSION_TIMEOUT = 300  # 5 minutes in seconds[m
+ [m
+[32m+[m[32m# Audio configuration[m
+[32m+[m[32mSUPPORTED_AUDIO_MIME_TYPES = {[m
+[32m+[m[32m    "audio/ogg": ".ogg",[m
+[32m+[m[32m    "audio/oga": ".ogg",[m
+[32m+[m[32m    "audio/webm": ".ogg",[m
+[32m+[m[32m    "audio/mpeg": ".mp3",[m
+[32m+[m[32m    "audio/mp3": ".mp3",[m
+[32m+[m[32m    "audio/wav": ".wav",[m
+[32m+[m[32m    "audio/x-wav": ".wav",[m
+[32m+[m[32m    "audio/wave": ".wav",[m
+[32m+[m[32m    "audio/x-pn-wav": ".wav",[m
+[32m+[m[32m}[m
+[32m+[m[32mSUPPORTED_AUDIO_EXTENSIONS = {".ogg", ".oga", ".mp3", ".wav", ".wave"}[m
+[32m+[m[32mMAX_AUDIO_FILE_SIZE_BYTES = settings.MAX_AUDIO_FILE_SIZE_MB * 1024 * 1024[m
+[32m+[m
+ # In-memory storage for active sessions (in production, use Redis)[m
+ active_sessions: Dict[int, Dict[str, Any]] = {}[m
+ [m
+[36m@@ -39,7 +55,32 @@[m [masync def start_depot_session(update: Update, context: ContextTypes.DEFAULT_TYPE[m
+     user_id = update.effective_user.id[m
+     username = update.effective_user.username or update.effective_user.first_name[m
+ [m
+[31m-    logger.info(f"User {username} ({user_id}) started depot session")[m
+[32m+[m[32m    logger.info(f"User {username} ({user_id}) requested depot session")[m
+[32m+[m
+[32m+[m[32m    # Validate user authorization via API[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        user_record = await user_service.get_user_by_telegram_id(str(user_id))[m
+[32m+[m[32m    except Exception as exc:[m
+[32m+[m[32m        logger.error("Failed to verify Telegram user %s authorization: %s", user_id, exc)[m
+[32m+[m[32m        user_record = None[m
+[32m+[m
+[32m+[m[32m    if not user_record:[m
+[32m+[m[32m        await update.message.reply_text([m
+[32m+[m[32m            "❌ Vous n'êtes pas autorisé à enregistrer un dépôt pour le moment.\n"[m
+[32m+[m[32m            "Utilisez /inscription pour demander l'accès ou contactez un administrateur."[m
+[32m+[m[32m        )[m
+[32m+[m[32m        return ConversationHandler.END[m
+[32m+[m
+[32m+[m[32m    status = (user_record.get("status") or "").lower()[m
+[32m+[m[32m    is_active = bool(user_record.get("is_active", False))[m
+[32m+[m[32m    allowed_statuses = {"approved", "active"}[m
+[32m+[m
+[32m+[m[32m    if not is_active or (status and status not in allowed_statuses):[m
+[32m+[m[32m        await update.message.reply_text([m
+[32m+[m[32m            "⏳ Votre compte est en attente d'activation par un administrateur.\n"[m
+[32m+[m[32m            "Vous recevrez une notification dès qu'il sera validé."[m
+[32m+[m[32m        )[m
+[32m+[m[32m        return ConversationHandler.END[m
+ [m
+     # Check if user already has an active session[m
+     if user_id in active_sessions:[m
+[36m@@ -71,7 +112,7 @@[m [masync def start_depot_session(update: Update, context: ContextTypes.DEFAULT_TYPE[m
+         "📋 **Instructions :**\n"[m
+         "• Décrivez clairement l'objet\n"[m
+         "• Mentionnez le type (électroménager, informatique, etc.)\n"[m
+[31m-        "• Formats supportés : audio vocal Telegram\n\n"[m
+[32m+[m[32m        "• Formats supportés : OGG, MP3, WAV\n\n"[m
+         "⏱️ Session expire dans 5 minutes\n"[m
+         "❌ Tapez /annuler pour arrêter",[m
+         parse_mode='Markdown'[m
+[36m@@ -96,6 +137,30 @@[m [masync def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP[m
+     session = active_sessions[user_id][m
+     logger.info(f"Processing voice message for user {session['username']} ({user_id})")[m
+ [m
+[32m+[m[32m    telegram_audio, file_id, mime_type, file_size, original_file_name = _extract_audio_metadata(update)[m
+[32m+[m
+[32m+[m[32m    if not telegram_audio or not file_id:[m
+[32m+[m[32m        await update.message.reply_text([m
+[32m+[m[32m            "❌ Impossible de lire ce message audio. Veuillez réessayer."[m
+[32m+[m[32m        )[m
+[32m+[m[32m        return WAITING_FOR_AUDIO[m
+[32m+[m
+[32m+[m[32m    file_extension = _resolve_audio_extension(mime_type, original_file_name)[m
+[32m+[m
+[32m+[m[32m    if not file_extension:[m
+[32m+[m[32m        await update.message.reply_text([m
+[32m+[m[32m            "❌ Format audio non supporté. Formats acceptés : OGG, MP3, WAV."[m
+[32m+[m[32m        )[m
+[32m+[m[32m        return WAITING_FOR_AUDIO[m
+[32m+[m
+[32m+[m[32m    if file_size and file_size > MAX_AUDIO_FILE_SIZE_BYTES:[m
+[32m+[m[32m        max_size = settings.MAX_AUDIO_FILE_SIZE_MB[m
+[32m+[m[32m        await update.message.reply_text([m
+[32m+[m[32m            "❌ Fichier trop volumineux.\n"[m
+[32m+[m[32m            f"La taille maximale autorisée est de {max_size} Mo."[m
+[32m+[m[32m        )[m
+[32m+[m[32m        return WAITING_FOR_AUDIO[m
+[32m+[m
+     try:[m
+         # Send processing message[m
+         processing_msg = await update.message.reply_text([m
+[36m@@ -103,17 +168,15 @@[m [masync def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP[m
+             "⏳ Téléchargement et analyse en cours..."[m
+         )[m
+ [m
+[31m-        # Download voice file[m
+[31m-        voice = update.message.voice[m
+[31m-        file = await context.bot.get_file(voice.file_id)[m
+[32m+[m[32m        file = await context.bot.get_file(file_id)[m
+ [m
+         # Create audio directory if it doesn't exist[m
+[31m-        audio_dir = "audio_files"[m
+[32m+[m[32m        audio_dir = settings.AUDIO_STORAGE_PATH[m
+         os.makedirs(audio_dir, exist_ok=True)[m
+ [m
+         # Generate unique filename[m
+         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")[m
+[31m-        filename = f"deposit_{user_id}_{timestamp}.ogg"[m
+[32m+[m[32m        filename = f"deposit_{user_id}_{timestamp}{file_extension}"[m
+         file_path = os.path.join(audio_dir, filename)[m
+ [m
+         # Download file[m
+[36m@@ -202,13 +265,43 @@[m [masync def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_T[m
+     )[m
+     return WAITING_FOR_AUDIO[m
+ [m
+[32m+[m[32mdef _extract_audio_metadata(update: Update) -> tuple[Optional[Any], Optional[str], str, int, Optional[str]]:[m
+[32m+[m[32m    """Extract audio metadata from update message."""[m
+[32m+[m[32m    message = update.message[m
+[32m+[m
+[32m+[m[32m    if message.voice:[m
+[32m+[m[32m        voice = message.voice[m
+[32m+[m[32m        mime_type = (voice.mime_type or "audio/ogg").lower()[m
+[32m+[m[32m        return voice, voice.file_id, mime_type, voice.file_size or 0, None[m
+[32m+[m
+[32m+[m[32m    if message.audio:[m
+[32m+[m[32m        audio = message.audio[m
+[32m+[m[32m        mime_type = (audio.mime_type or "").lower()[m
+[32m+[m[32m        return audio, audio.file_id, mime_type, audio.file_size or 0, audio.file_name[m
+[32m+[m
+[32m+[m[32m    return None, None, "", 0, None[m
+[32m+[m
+[32m+[m[32mdef _resolve_audio_extension(mime_type: str, file_name: Optional[str]) -> Optional[str]:[m
+[32m+[m[32m    """Determine the appropriate file extension for the audio payload."""[m
+[32m+[m[32m    if file_name:[m
+[32m+[m[32m        _, ext = os.path.splitext(file_name)[m
+[32m+[m[32m        ext = ext.lower()[m
+[32m+[m[32m        if ext in SUPPORTED_AUDIO_EXTENSIONS:[m
+[32m+[m[32m            return ext[m
+[32m+[m
+[32m+[m[32m    normalized_mime = (mime_type or "").lower()[m
+[32m+[m[32m    if normalized_mime in SUPPORTED_AUDIO_MIME_TYPES:[m
+[32m+[m[32m        return SUPPORTED_AUDIO_MIME_TYPES[normalized_mime][m
+[32m+[m
+[32m+[m[32m    return None[m
+[32m+[m
+ async def _handle_session_timeout(user_id: int, update: Update, context: ContextTypes.DEFAULT_TYPE):[m
+     """Handle session timeout after 5 minutes."""[m
+     await asyncio.sleep(SESSION_TIMEOUT)[m
+ [m
+     if user_id in active_sessions:[m
+         logger.info(f"Session timeout for user {user_id}")[m
+[31m-        await _cleanup_session(user_id)[m
+[32m+[m[32m        await _cleanup_session(user_id, cancel_timeout=False)[m
+ [m
+         # Try to send timeout message[m
+         try:[m
+[36m@@ -222,14 +315,22 @@[m [masync def _handle_session_timeout(user_id: int, update: Update, context: Context[m
+         except Exception as e:[m
+             logger.error(f"Could not send timeout message to user {user_id}: {e}")[m
+ [m
+[31m-async def _cleanup_session(user_id: int):[m
+[32m+[m[32masync def _cleanup_session(user_id: int, *, cancel_timeout: bool = True):[m
+     """Clean up user session and cancel timeout task."""[m
+     if user_id in active_sessions:[m
+         session = active_sessions[user_id][m
+ [m
+         # Cancel timeout task if exists[m
+[31m-        if session.get('timeout_task'):[m
+[31m-            session['timeout_task'].cancel()[m
+[32m+[m[32m        if cancel_timeout and session.get('timeout_task'):[m
+[32m+[m[32m            timeout_task = session['timeout_task'][m
+[32m+[m[32m            try:[m
+[32m+[m[32m                timeout_task.cancel()[m
+[32m+[m[32m            except Exception as exc:[m
+[32m+[m[32m                logger.debug([m
+[32m+[m[32m                    "Could not cancel timeout task for user %s: %s",[m
+[32m+[m[32m                    user_id,[m
+[32m+[m[32m                    exc,[m
+[32m+[m[32m                )[m
+ [m
+         # Remove from active sessions[m
+         del active_sessions[user_id][m
+[36m@@ -347,7 +448,7 @@[m [mdepot_conversation_handler = ConversationHandler([m
+     entry_points=[CommandHandler("depot", start_depot_session)],[m
+     states={[m
+         WAITING_FOR_AUDIO: [[m
+[31m-            MessageHandler(filters.VOICE, handle_voice_message),[m
+[32m+[m[32m            MessageHandler(filters.VOICE | filters.AUDIO, handle_voice_message),[m
+             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_invalid_message),[m
+             CommandHandler("annuler", cancel_depot_session),[m
+         ],[m

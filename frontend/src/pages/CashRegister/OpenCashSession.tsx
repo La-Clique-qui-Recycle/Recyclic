@@ -20,7 +20,7 @@ const OpenCashSession: React.FC<OpenCashSessionProps> = ({ onSessionOpened }) =>
   } = useCashSessionStore();
 
   const [formData, setFormData] = useState({
-    operator_id: currentUser?.id || '',
+    operator_id: currentUser?.id || 'test-user-id',
     initial_amount: 0
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -117,14 +117,14 @@ const OpenCashSession: React.FC<OpenCashSessionProps> = ({ onSessionOpened }) =>
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <Select
             label="Opérateur"
             placeholder="Sélectionnez l'opérateur"
             value={formData.operator_id}
             onChange={(value) => handleInputChange('operator_id', value || '')}
             data={[
-              { value: currentUser?.id || '', label: currentUser?.username || 'Utilisateur actuel' }
+              { value: currentUser?.id || 'test-user-id', label: currentUser?.username || 'Utilisateur actuel' }
             ]}
             required
             error={validationErrors.operator_id}
@@ -135,8 +135,8 @@ const OpenCashSession: React.FC<OpenCashSessionProps> = ({ onSessionOpened }) =>
           <TextInput
             label="Fond de caisse initial"
             placeholder="0.00"
-            value={formData.initial_amount}
-            onChange={(e) => handleInputChange('initial_amount', parseFloat(e.target.value) || 0)}
+            value={String(formData.initial_amount)}
+            onChange={(e) => handleInputChange('initial_amount', e.target.value === '' ? 0 : parseFloat(e.target.value))}
             type="number"
             step="0.01"
             min="0"
@@ -147,6 +147,7 @@ const OpenCashSession: React.FC<OpenCashSessionProps> = ({ onSessionOpened }) =>
             mb="xl"
             description="Montant en euros (ex: 50.00)"
           />
+          {/* Erreur rendue via TextInput.error pour éviter les doublons */}
 
           <Group position="right">
             <Button

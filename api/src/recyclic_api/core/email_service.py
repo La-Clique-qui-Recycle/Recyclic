@@ -1,11 +1,13 @@
-"""
+﻿"""
 Email service for sending transactional emails via Brevo (SendInBlue).
 """
 import logging
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 import types
+from dataclasses import dataclass
+import base64
 
 try:
     import sib_api_v3_sdk  # type: ignore
@@ -51,6 +53,13 @@ from recyclic_api.models.email_event import EmailStatusModel
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class EmailAttachment:
+    filename: str
+    content: bytes
+    mime_type: str = 'application/octet-stream'
+
+
 class EmailService:
     """Service for sending emails through Brevo API."""
 
@@ -81,7 +90,8 @@ class EmailService:
         html_content: str,
         from_email: Optional[str] = None,
         from_name: Optional[str] = None,
-        db_session=None
+        db_session=None,
+        attachments: Optional[List[EmailAttachment]] = None
     ) -> bool:
         """
         Send an email via Brevo API.
@@ -110,11 +120,28 @@ class EmailService:
             sender = {"name": from_name, "email": from_email}
             to = [{"email": to_email}]
 
+            attachments_payload = None
+            if attachments:
+                attachments_payload = []
+                for attachment in attachments:
+                    try:
+                        encoded = base64.b64encode(attachment.content).decode('utf-8')
+                    except Exception as exc:
+                        logger.error("Failed to encode attachment %s: %s", attachment.filename, exc)
+                        continue
+                    payload = {"name": attachment.filename, "content": encoded}
+                    if attachment.mime_type:
+                        payload["type"] = attachment.mime_type
+                    attachments_payload.append(payload)
+                if not attachments_payload:
+                    attachments_payload = None
+
             send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
                 to=to,
                 sender=sender,
                 subject=subject,
-                html_content=html_content
+                html_content=html_content,
+                attachment=attachments_payload
             )
 
             # Send the email
@@ -198,7 +225,7 @@ def get_email_service() -> EmailService:
     return _email_service
 
 
-def send_email(to_email: str, subject: str, html_content: str) -> bool:
+def send_email(to_email: str, subject: str, html_content: str, attachments: Optional[List[EmailAttachment]] = None) -> bool:
     """
     Convenience function to send an email.
 
@@ -210,4 +237,9 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
     Returns:
         bool: True if email was sent successfully, False otherwise
     """
-    return get_email_service().send_email(to_email, subject, html_content)
+    service = get_email_service()
+    if attachments is None:
+        return service.send_email(to_email, subject, html_content)
+    return service.send_email(to_email, subject, html_content, attachments=attachments)
+
+

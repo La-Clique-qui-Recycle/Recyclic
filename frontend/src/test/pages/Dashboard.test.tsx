@@ -32,9 +32,10 @@ describe('Dashboard Page', () => {
   it('should display zero values for all stats', () => {
     render(<Dashboard />)
     
-    expect(screen.getByText('0')).toBeInTheDocument() // Dépôts
-    expect(screen.getByText('0€')).toBeInTheDocument() // Chiffre d'affaires
-    expect(screen.getAllByText('0')).toHaveLength(4) // All stats show 0
+    expect(screen.getByTestId('stat-depots')).toHaveTextContent('0')
+    expect(screen.getByTestId('stat-ca')).toHaveTextContent('0€')
+    expect(screen.getByTestId('stat-users')).toHaveTextContent('0')
+    expect(screen.getByTestId('stat-recycled')).toHaveTextContent('0')
   })
 
   it('should have proper styling structure', () => {

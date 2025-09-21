@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAuth } from '../../hooks/useAuth'
 
 // Mock localStorage
@@ -21,7 +21,7 @@ describe('useAuth Hook', () => {
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   it('should initialize with no user when localStorage is empty', () => {
@@ -74,20 +74,20 @@ describe('useAuth Hook', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('should handle logout', () => {
+  it('should handle logout', async () => {
     const mockUser = {
       id: '1',
       username: 'testuser',
       role: 'user',
       email: 'test@example.com'
     }
-    
+
     localStorageMock.getItem.mockReturnValue(JSON.stringify(mockUser))
-    
+
     const { result } = renderHook(() => useAuth())
-    
-    act(() => {
-      result.current.logout()
+
+    await act(async () => {
+      await result.current.logout()
     })
     
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('user')
@@ -225,68 +225,60 @@ describe('useAuth Hook', () => {
   })
 
   it('should maintain state consistency during operations', async () => {
-    const mockUser = {
-      id: '1',
-      username: 'testuser',
-      role: 'user',
-      email: 'test@example.com'
-    }
-    
+    const mockUser = { id: '1', username: 'testuser', role: 'user', email: 'test@example.com' }
+
     const { result } = renderHook(() => useAuth())
-    
-    // Initial state
+
     expect(result.current.isAuthenticated).toBe(false)
     expect(result.current.user).toBeNull()
-    
-    // Login
+
     await act(async () => {
-      await result.current.login(mockUser)
+      const response = await result.current.login(mockUser)
+      expect(response?.success).toBe(true)
     })
-    
-    expect(result.current.isAuthenticated).toBe(true)
-    expect(result.current.user).toEqual(mockUser)
-    
-    // Logout
-    act(() => {
+
+    await waitFor(() => {
+      expect(result.current.isAuthenticated).toBe(true)
+      expect(result.current.user).toEqual(mockUser)
+    })
+
+    await act(async () => {
       result.current.logout()
     })
-    
-    expect(result.current.isAuthenticated).toBe(false)
-    expect(result.current.user).toBeNull()
+
+    await waitFor(() => {
+      expect(result.current.isAuthenticated).toBe(false)
+      expect(result.current.user).toBeNull()
+    })
   })
 
   it('should handle multiple login attempts', async () => {
-    const mockUser1 = {
-      id: '1',
-      username: 'user1',
-      role: 'user',
-      email: 'user1@example.com'
-    }
-    
-    const mockUser2 = {
-      id: '2',
-      username: 'user2',
-      role: 'admin',
-      email: 'user2@example.com'
-    }
-    
+    const mockUser1 = { id: '1', username: 'user1', role: 'user', email: 'user1@example.com' }
+    const mockUser2 = { id: '2', username: 'user2', role: 'admin', email: 'user2@example.com' }
+
     const { result } = renderHook(() => useAuth())
-    
+
     // First login
     await act(async () => {
-      await result.current.login(mockUser1)
+      const response1 = await result.current.login(mockUser1)
+      expect(response1?.success).toBe(true)
     })
-    
-    expect(result.current.user).toEqual(mockUser1)
-    expect(result.current.hasRole('user')).toBe(true)
-    
-    // Second login (should replace first)
+
+    await waitFor(() => {
+      expect(result.current.user).toEqual(mockUser1)
+      expect(result.current.hasRole('user')).toBe(true)
+    })
+
+    // Second login (replace first)
     await act(async () => {
-      await result.current.login(mockUser2)
+      const response2 = await result.current.login(mockUser2)
+      expect(response2?.success).toBe(true)
     })
-    
-    expect(result.current.user).toEqual(mockUser2)
-    expect(result.current.hasRole('admin')).toBe(true)
-    expect(result.current.hasRole('user')).toBe(false)
+
+    await waitFor(() => {
+      expect(result.current.user).toEqual(mockUser2)
+      expect(result.current.hasRole('admin')).toBe(true)
+      expect(result.current.hasRole('user')).toBe(false)
+    })
   })
 })

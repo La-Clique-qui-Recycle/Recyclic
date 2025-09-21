@@ -75,6 +75,9 @@ class CashSessionResponse(CashSessionBase):
     variance: Optional[float] = Field(None, description="Écart entre théorique et physique")
     variance_comment: Optional[str] = Field(None, description="Commentaire sur l'écart")
     
+    report_download_url: Optional[str] = Field(None, description="URL de telechargement du rapport genere")
+    report_email_sent: Optional[bool] = Field(None, description="Indique si l'envoi du rapport par email a reussi")
+
     @field_validator('id', mode='before')
     @classmethod
     def convert_id_uuid_to_str(cls, v):
@@ -87,6 +90,7 @@ class CashSessionResponse(CashSessionBase):
 class CashSessionSummary(BaseModel):
     """Schéma pour le résumé d'une session de caisse."""
     session_id: str = Field(..., description="ID de la session")
+    site_id: str = Field(..., description="ID du site")
     operator: str = Field(..., description="Nom de l'opérateur")
     opened_at: datetime = Field(..., description="Date d'ouverture")
     closed_at: Optional[datetime] = Field(None, description="Date de fermeture")
@@ -111,6 +115,7 @@ class CashSessionFilters(BaseModel):
     limit: int = Field(20, ge=1, le=100, description="Nombre maximum de sessions à retourner")
     status: Optional[CashSessionStatus] = Field(None, description="Filtrer par statut")
     operator_id: Optional[str] = Field(None, description="Filtrer par opérateur")
+    site_id: Optional[str] = Field(None, description="Filtrer par site")
     date_from: Optional[datetime] = Field(None, description="Date de début")
     date_to: Optional[datetime] = Field(None, description="Date de fin")
 

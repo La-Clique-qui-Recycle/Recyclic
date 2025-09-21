@@ -103,20 +103,23 @@ describe('Header Component', () => {
     mockAuthStore.isAuthenticated = true
     mockAuthStore.isCashier.mockReturnValue(true)
     mockAuthStore.isAdmin.mockReturnValue(true)
-    
+
     render(<Header />)
-    
+
     const dashboardLink = screen.getByRole('link', { name: /tableau de bord/i })
-    const cashLink = screen.getByRole('link', { name: /caisse/i })
+    // Be more specific to avoid confusion with "Rapports caisse"
+    const cashLink = screen.getByRole('link', { name: /^Calculator Caisse$/ })
     const depositsLink = screen.getByRole('link', { name: /dépôts/i })
-    const reportsLink = screen.getByRole('link', { name: /rapports/i })
+    const reportsLink = screen.getByRole('link', { name: /Rapports$/ })
     const adminLink = screen.getByRole('link', { name: /administration/i })
-    
+    const adminReportsLink = screen.getByRole('link', { name: /rapports caisse/i })
+
     expect(dashboardLink).toHaveAttribute('href', '/')
     expect(cashLink).toHaveAttribute('href', '/caisse')
     expect(depositsLink).toHaveAttribute('href', '/depots')
     expect(reportsLink).toHaveAttribute('href', '/rapports')
     expect(adminLink).toHaveAttribute('href', '/admin/users')
+    expect(adminReportsLink).toHaveAttribute('href', '/admin/reports')
   })
 
   it('should call logout when logout button is clicked', () => {

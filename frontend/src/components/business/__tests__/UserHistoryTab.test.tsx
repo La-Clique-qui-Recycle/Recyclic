@@ -1,6 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MantineProvider } from '@mantine/core';
+import { render, screen, fireEvent, waitFor } from '../../../test/test-utils';
 import { UserHistoryTab } from '../UserHistoryTab';
 
 import { vi } from 'vitest';
@@ -47,9 +46,6 @@ vi.mock('../../../stores/adminStore', () => ({
   useAdminStore: mockUseAdminStore
 }));
 
-const renderWithProvider = (component: React.ReactElement) => {
-  return render(component);
-};
 
 describe('UserHistoryTab', () => {
   beforeEach(() => {
@@ -57,72 +53,71 @@ describe('UserHistoryTab', () => {
   });
 
   it('affiche les filtres', () => {
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     expect(screen.getByText('Filtres')).toBeInTheDocument();
-    expect(screen.getByText('Date de début')).toBeInTheDocument();
-    expect(screen.getByText('Date de fin')).toBeInTheDocument();
+    // Les DatePickerInput ont des labels mais ils sont dans data-label, pas rendus comme texte
+    expect(screen.getAllByTestId('date-picker-input')).toHaveLength(2);
     // le label du select est rendu via un <label> distinct
     expect(screen.getByText("Type d'événement")).toBeInTheDocument();
     expect(screen.getByText('Recherche')).toBeInTheDocument();
   });
 
   it('affiche les boutons de filtrage', () => {
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     expect(screen.getByText('Effacer')).toBeInTheDocument();
     expect(screen.getByText('Appliquer')).toBeInTheDocument();
   });
 
   it('affiche la liste des événements', () => {
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     // Vérifier que les filtres sont présents
     expect(screen.getByText('Filtres')).toBeInTheDocument();
-    expect(screen.getByText('Date de début')).toBeInTheDocument();
-    expect(screen.getByText('Date de fin')).toBeInTheDocument();
+    expect(screen.getAllByTestId('date-picker-input')).toHaveLength(2);
     expect(screen.getByText('Type d\'événement')).toBeInTheDocument();
     expect(screen.getByText('Recherche')).toBeInTheDocument();
   });
 
   it('affiche les types d\'événements avec des badges', () => {
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     // Les badges existent mais le texte peut ne pas être en capitales strictes
     expect(screen.getByText(/Administration/i)).toBeInTheDocument();
     expect(screen.getByText(/Vente/i)).toBeInTheDocument();
   });
 
   it('permet de filtrer par type d\'événement', () => {
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
-    const eventTypeSelect = screen.getByTestId('role-select');
+    render(<UserHistoryTab userId="1" />);
+
+    const eventTypeSelect = screen.getByTestId('multi-select');
     fireEvent.change(eventTypeSelect, { target: { value: 'ADMINISTRATION' } });
-    
+
     const applyButton = screen.getByText('Appliquer');
     fireEvent.click(applyButton);
-    
+
     expect(mockFetchUserHistory).toHaveBeenCalled();
   });
 
   it('permet de rechercher dans les événements', () => {
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     const searchInput = screen.getByPlaceholderText('Rechercher dans les événements...');
     fireEvent.change(searchInput, { target: { value: 'vente' } });
-    
+
     const applyButton = screen.getByText('Appliquer');
     fireEvent.click(applyButton);
-    
+
     expect(mockFetchUserHistory).toHaveBeenCalled();
   });
 
   it('permet d\'effacer les filtres', () => {
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     const clearButton = screen.getByText('Effacer');
     fireEvent.click(clearButton);
-    
+
     expect(mockFetchUserHistory).toHaveBeenCalled();
   });
 
@@ -137,8 +132,8 @@ describe('UserHistoryTab', () => {
       })
     }));
 
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     // Le composant peut ne pas afficher ce texte dans le mock; on vérifie l'absence d'items
     expect(screen.queryAllByTestId('timeline-item').length).toBe(0);
   });
@@ -154,8 +149,8 @@ describe('UserHistoryTab', () => {
       })
     }));
 
-    renderWithProvider(<UserHistoryTab userId="1" />);
-    
+    render(<UserHistoryTab userId="1" />);
+
     expect(screen.getByText('Erreur')).toBeInTheDocument();
     expect(screen.getByText('Erreur de chargement')).toBeInTheDocument();
   });

@@ -1,0 +1,94 @@
+﻿---
+story_id: 4.2
+epic_id: 4
+title: "Synchronisation Cloud Automatique avec kDrive"
+status: Ready for Review
+---
+
+### User Story
+
+**En tant que** gestionnaire d'association,
+**Je veux** que les données (exports, sauvegardes) soient synchronisées automatiquement avec Infomaniak kDrive,
+**Afin de** garantir que les données sont sauvegardées de manière sécurisée et accessibles à nos partenaires.
+
+### Critères d'Acceptation
+
+1.  La connexion à Infomaniak kDrive via WebDAV est fonctionnelle.
+2.  Un nouveau service est créé pour gérer l'upload des fichiers.
+3.  Le service peut uploader un fichier dans un dossier spécifié sur kDrive.
+4.  Une tâche de fond (ou un cron) est mise en place pour lancer la synchronisation à intervalles réguliers (ex: toutes les heures).
+5.  En cas d'échec de l'upload, une politique de re-tentative est implémentée (ex: 3 tentatives avec un délai).
+6.  Si un fichier échoue à être synchronisé après plusieurs tentatives, une notification est envoyée aux administrateurs via Telegram.
+7.  La logique d'upload et de re-tentative est couverte par des tests.
+
+---
+
+### Dev Notes
+
+#### Stratégie de Test
+
+Les tests pour cette story doivent suivre les standards définis dans le guide `api/TESTS_README.md`. L'utilisation de `unittest.mock.patch` pour simuler le client WebDAV est cruciale.
+
+#### Contexte
+
+Cette story met en place le mécanisme de sauvegarde externe. C'est une tâche de backend qui peut être développée en parallèle d'autres fonctionnalités.
+
+#### Actions Manuelles Prérequises (Pour l'Utilisateur)
+
+Le développeur aura besoin que vous effectuiez ces actions au préalable :
+1.  Créer un compte sur Infomaniak kDrive.
+2.  Générer un mot de passe d'application pour l'accès WebDAV.
+3.  Fournir les identifiants (URL du WebDAV, utilisateur, mot de passe d'application) de manière sécurisée via des variables d'environnement.
+
+---
+
+### Tasks / Subtasks
+
+1.  **Mettre en place la configuration :**
+    -   [x] Ajouter une librairie client WebDAV à `api/requirements.txt`.
+    -   [x] Mettre à jour `api/src/recyclic_api/core/config.py` pour charger les variables d'environnement de kDrive.
+
+2.  **Créer le Service de Synchronisation :**
+    -   [x] Créer `api/src/recyclic_api/services/sync_service.py`.
+    -   [x] Y implémenter une fonction `upload_file_to_kdrive(local_path, remote_path)`.
+
+3.  **Gérer les Échecs et les Notifications :**
+    -   [x] Implémenter une boucle de re-tentative.
+    -   [x] En cas d'échec final, appeler le `telegram_service`.
+
+4.  **Créer la Tâche de Fond :**
+    -   [x] Implémenter une tâche de fond (ex: avec `FastAPI.BackgroundTasks`) qui scanne périodiquement le répertoire des exports et appelle le service de synchronisation.
+
+5.  **Écrire les Tests :**
+    -   [x] Créer `api/tests/test_sync_service.py`.
+    -   [x] Mocker la librairie WebDAV pour simuler des uploads réussis et échoués.
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+GPT-5 Codex (Codex CLI)
+
+### Debug Log References
+- `TEST_DATABASE_URL=sqlite:///./test.db python -m pytest api/tests/test_sync_service.py`
+
+### Completion Notes
+- Service `KDriveSyncService` ajouté avec gestion des retries, WebDAV défensif et synchronisation de répertoire.
+- Planificateur de synchronisation démarré via le cycle de vie FastAPI avec annulation propre en arrêt.
+- Notifications Telegram étendues pour remonter les échecs de synchronisation et nouveaux tests unitaires dédiés.
+
+### File List
+- **Créé** : `api/src/recyclic_api/services/sync_service.py`
+- **Créé** : `api/tests/test_sync_service.py`
+- **Modifié** : `api/src/recyclic_api/core/config.py`
+- **Modifié** : `api/src/recyclic_api/main.py`
+- **Modifié** : `api/src/recyclic_api/services/telegram_service.py`
+- **Modifié** : `api/requirements.txt`
+- **Modifié** : `docs/stories/story-4.2-sync-cloud.md`
+
+### Change Log
+- 2025-09-21 : Implémentation de la synchronisation kDrive (service, notifications, tests, background task)
+
+### Status
+Ready for Review

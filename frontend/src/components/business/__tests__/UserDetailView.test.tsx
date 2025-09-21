@@ -43,7 +43,11 @@ const mockUser: AdminUser = {
 };
 
 const renderWithProvider = (component: React.ReactElement) => {
-  return render(component);
+  return render(
+    <MantineProvider>
+      {component}
+    </MantineProvider>
+  );
 };
 
 describe('UserDetailView', () => {

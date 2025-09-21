@@ -1,9 +1,5 @@
-# Story 4.1: Commande /depot et Enregistrement Vocal
-
-- **Statut**: Done
-- **Type**: Feature
-- **Priorité**: Haute
-- **Epic**: 4 - Bot IA & Classification
+story_id: 2.1
+epic_id: 2
 
 ---
 

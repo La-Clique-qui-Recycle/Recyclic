@@ -1,0 +1,47 @@
+schema: 1
+story: 'debt.frontend-stabilization-final'
+story_title: 'Dette Technique - Stabilisation Finale de la Suite de Tests Frontend'
+gate: FAIL
+status_reason: 'Objectif de stabilité 100% non atteint - des tests échouent encore'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-20T10:30:00Z'
+
+top_issues:
+  - id: 'TEST-001'
+    severity: high
+    finding: 'Tests encore en échec - stabilité 100% non atteinte'
+    suggested_action: 'Corriger tous les tests en échec avant de marquer comme Done'
+  - id: 'TEST-002'
+    severity: medium
+    finding: 'PendingUsersTable.test.tsx - 2 échecs'
+    suggested_action: 'Déboguer et corriger les tests de PendingUsersTable'
+  - id: 'TEST-003'
+    severity: medium
+    finding: 'CloseSession.test.tsx - 2 échecs'
+    suggested_action: 'Corriger les tests de fermeture de session'
+  - id: 'TEST-004'
+    severity: medium
+    finding: 'Sale.test.tsx - 4 échecs'
+    suggested_action: 'Corriger les tests de vente'
+  - id: 'TEST-005'
+    severity: low
+    finding: 'Ticket.test.tsx - 1 échec'
+    suggested_action: 'Corriger le test de ticket'
+
+waiver: { active: false }
+
+evidence:
+  tests_reviewed: 9
+  tests_failing: 9
+  stability_target: 100
+  stability_actual: 85
+
+recommendations:
+  immediate:
+    - action: 'Corriger tous les tests en échec'
+      refs: ['PendingUsersTable.test.tsx', 'CloseSession.test.tsx', 'Sale.test.tsx', 'Ticket.test.tsx']
+    - action: 'Exécuter npm test -- --run et confirmer 0 échec'
+      refs: ['package.json']
+  future:
+    - action: 'Mettre en place un pipeline CI pour éviter les régressions'
+      refs: ['CI/CD configuration']

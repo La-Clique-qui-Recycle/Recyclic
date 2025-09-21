@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "jsdom": "^27.0.0"
+  }
+}

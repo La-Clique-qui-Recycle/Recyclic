@@ -15,6 +15,8 @@ const Reports = lazy(() => import('./pages/Reports.jsx'));
 const Registration = lazy(() => import('./pages/Registration.jsx'));
 const AdminUsers = lazy(() => import('./pages/Admin/Users.tsx'));
 const PendingUsers = lazy(() => import('./pages/Admin/PendingUsers.tsx'));
+const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard.tsx'));
+const AdminReports = lazy(() => import('./pages/Admin/Reports.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -64,8 +66,10 @@ function App() {
             <Route path="/depots" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
             <Route path="/rapports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/inscription" element={<ProtectedRoute><Registration /></ProtectedRoute>} />
+            <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/pending" element={<ProtectedRoute adminOnly><PendingUsers /></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute adminOnly><AdminReports /></ProtectedRoute>} />
           </Routes>
         </Suspense>
       </MainContent>

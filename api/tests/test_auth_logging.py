@@ -17,7 +17,7 @@ class TestAuthLogging:
     """Unit tests for authentication logging."""
 
     @pytest.fixture
-    def test_user(self, db_session: Session):
+    def test_user(self, db_engine, db_session: Session):
         """Create a test user for logging tests."""
         test_password = "TestPassword123!"
         hashed_password = hash_password(test_password)
@@ -65,7 +65,7 @@ class TestAuthLogging:
         assert f"Successful login for user_id: {test_user.id}" == log_call_args
 
     @patch('recyclic_api.api.api_v1.endpoints.auth.logger')
-    def test_failed_login_invalid_user_logging(self, mock_logger, client: TestClient, db_session: Session):
+    def test_failed_login_invalid_user_logging(self, mock_logger, client: TestClient, db_engine, db_session: Session):
         """Test that failed logins with invalid usernames are properly logged."""
         login_data = {
             "username": "nonexistent_user",
@@ -84,7 +84,7 @@ class TestAuthLogging:
         assert "IP: testclient" in log_call_args
 
     @patch('recyclic_api.api.api_v1.endpoints.auth.logger')
-    def test_failed_login_invalid_password_logging(self, mock_logger, client: TestClient, test_user: User, db_session: Session):
+    def test_failed_login_invalid_password_logging(self, mock_logger, client: TestClient, test_user: User, db_engine, db_session: Session):
         """Test that failed login attempts with invalid passwords are properly logged."""
         # Store username before using the user object to avoid DetachedInstanceError
         username = test_user.username
@@ -106,7 +106,7 @@ class TestAuthLogging:
         assert "IP: testclient" in log_call_args
 
     @patch('recyclic_api.api.api_v1.endpoints.auth.logger')
-    def test_failed_login_inactive_user_logging(self, mock_logger, client: TestClient, db_session: Session):
+    def test_failed_login_inactive_user_logging(self, mock_logger, client: TestClient, db_engine, db_session: Session):
         """Test that failed logins with inactive users are properly logged."""
         # Create inactive user
         test_password = "TestPassword123!"
@@ -151,7 +151,7 @@ class TestAuthLogging:
 
     @patch('recyclic_api.api.api_v1.endpoints.auth.auth_metrics')
     @patch('recyclic_api.api.api_v1.endpoints.auth.logger')
-    def test_login_logging_and_metrics_integration(self, mock_logger, mock_auth_metrics, client: TestClient, test_user: User, db_session: Session):
+    def test_login_logging_and_metrics_integration(self, mock_logger, mock_auth_metrics, client: TestClient, test_user: User, db_engine, db_session: Session):
         """Test that both logging and metrics are called for login attempts."""
         login_data = {
             "username": test_user.username,
@@ -177,7 +177,7 @@ class TestAuthLogging:
 
     @patch('recyclic_api.api.api_v1.endpoints.auth.auth_metrics')
     @patch('recyclic_api.api.api_v1.endpoints.auth.logger')
-    def test_failed_login_logging_and_metrics_integration(self, mock_logger, mock_auth_metrics, client: TestClient, db_session: Session):
+    def test_failed_login_logging_and_metrics_integration(self, mock_logger, mock_auth_metrics, client: TestClient, db_engine, db_session: Session):
         """Test that both logging and metrics are called for failed login attempts."""
         login_data = {
             "username": "nonexistent_user",
@@ -202,7 +202,7 @@ class TestAuthLogging:
         assert 'client_ip' in metrics_call[1]
 
     @patch('recyclic_api.api.api_v1.endpoints.auth.logger')
-    def test_multiple_login_attempts_logging(self, mock_logger, client: TestClient, test_user: User, db_session: Session):
+    def test_multiple_login_attempts_logging(self, mock_logger, client: TestClient, test_user: User, db_engine, db_session: Session):
         """Test logging behavior with multiple consecutive login attempts."""
         # First attempt - successful
         login_data = {
@@ -243,7 +243,7 @@ class TestAuthLogging:
             assert f"Failed login attempt for username: {test_user.username}" in log_msg
             assert "IP: testclient" in log_msg
 
-    def test_logging_without_mocking(self, client: TestClient, test_user: User, db_session: Session, caplog):
+    def test_logging_without_mocking(self, client: TestClient, test_user: User, db_engine, db_session: Session, caplog):
         """Test actual logging output without mocking (integration test)."""
         import logging
 

@@ -13,7 +13,7 @@ describe('Deposits Page', () => {
   it('should render package icon in title', () => {
     render(<Deposits />)
     
-    expect(screen.getByTestId('package-icon')).toBeInTheDocument()
+    expect(screen.getAllByTestId('package-icon')[0]).toBeInTheDocument()
   })
 
   it('should render coming soon message', () => {
@@ -27,7 +27,7 @@ describe('Deposits Page', () => {
     render(<Deposits />)
     
     // The coming soon section has a package icon with opacity 0.5
-    const comingSoonIcon = screen.getByTestId('package-icon')
+    const comingSoonIcon = screen.getAllByTestId('package-icon')[1]
     expect(comingSoonIcon).toBeInTheDocument()
   })
 
@@ -60,7 +60,7 @@ describe('Deposits Page', () => {
     
     // Check all main elements are present
     expect(screen.getByText('Gestion des Dépôts')).toBeInTheDocument()
-    expect(screen.getByTestId('package-icon')).toBeInTheDocument()
+    expect(screen.getAllByTestId('package-icon')[0]).toBeInTheDocument()
     expect(screen.getByText('En cours de développement')).toBeInTheDocument()
     expect(screen.getByText('La gestion des dépôts sera bientôt disponible.')).toBeInTheDocument()
   })

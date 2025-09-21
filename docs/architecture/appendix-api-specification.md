@@ -119,6 +119,31 @@ components:
         role:
           $ref: '#/components/schemas/UserRole'
 
+    UserActivityEvent:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        event_type:
+          type: string
+          description: "Type d'événement (ex: 'user_status_change', 'sale', 'deposit')"
+        description:
+          type: string
+          description: "Description lisible de l'événement"
+        details:
+          type: object
+          additionalProperties: true
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+```
+      role:
+          $ref: '#/components/schemas/UserRole'
+
   securitySchemes:
     BearerAuth:
       type: http

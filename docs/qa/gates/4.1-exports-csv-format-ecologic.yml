@@ -1,0 +1,40 @@
+schema: 1
+story: '4.1'
+story_title: 'Exports CSV Format Ecologic'
+gate: PASS
+status_reason: 'Story complètement implémentée avec tous les critères d\'acceptation satisfaits et tests passants.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-15T10:30:00Z'
+
+top_issues: [] # Aucun problème identifié
+
+waiver: { active: false }
+
+# Extended fields
+quality_score: 100 # Score parfait - aucune amélioration nécessaire
+expires: '2025-01-29T10:30:00Z' # 2 semaines
+
+evidence:
+  tests_reviewed: 2
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6] # Tous les critères d'acceptation couverts
+    ac_gaps: [] # Aucun gap
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Aucun problème de sécurité - validation des entrées et gestion sécurisée des fichiers'
+  performance:
+    status: PASS
+    notes: 'Requêtes SQL optimisées avec agrégation au niveau base de données'
+  reliability:
+    status: PASS
+    notes: 'Gestion d\'erreurs robuste et validation des paramètres'
+  maintainability:
+    status: PASS
+    notes: 'Code bien structuré avec tests complets et documentation claire'
+
+recommendations:
+  immediate: [] # Aucune action immédiate requise
+  future: [] # Aucune amélioration future identifiée

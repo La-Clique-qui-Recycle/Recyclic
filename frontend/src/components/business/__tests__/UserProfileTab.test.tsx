@@ -2,7 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { UserProfileTab } from '../UserProfileTab';
-import { AdminUser, UserRole, UserStatus } from '../../../services/adminService';
+import { AdminUser } from '../../../services/adminService';
+import { UserRole, UserStatus } from '../../../generated';
 
 import { vi } from 'vitest';
 
