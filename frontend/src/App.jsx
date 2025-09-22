@@ -17,6 +17,7 @@ const AdminUsers = lazy(() => import('./pages/Admin/Users.tsx'));
 const PendingUsers = lazy(() => import('./pages/Admin/PendingUsers.tsx'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard.tsx'));
 const AdminReports = lazy(() => import('./pages/Admin/Reports.tsx'));
+const HealthDashboard = lazy(() => import('./pages/Admin/HealthDashboard.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -70,6 +71,8 @@ function App() {
             <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/pending" element={<ProtectedRoute adminOnly><PendingUsers /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute adminOnly><AdminReports /></ProtectedRoute>} />
+            <Route path="/admin/health" element={<ProtectedRoute adminOnly><HealthDashboard /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
           </Routes>
         </Suspense>
       </MainContent>

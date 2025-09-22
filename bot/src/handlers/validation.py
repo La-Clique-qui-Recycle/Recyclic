@@ -11,6 +11,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler
 
 from ..config import settings
+from ..services.session_service import session_service
 
 logger = logging.getLogger(__name__)
 
@@ -114,12 +115,18 @@ async def _handle_validate(query, context: ContextTypes.DEFAULT_TYPE, deposit_id
     Handle validation confirmation - finalize deposit with AI classification.
     """
     try:
+        # Get user ID from query
+        user_id = query.from_user.id
+        
         # Call API to finalize deposit with current AI classification
         result = await _finalize_deposit(deposit_id, validated=True)
 
         if result.get("success"):
             final_category = result.get("category", "Non spécifiée")
             category_label = EEE_CATEGORY_LABELS.get(final_category, final_category)
+
+            # Complete the validation session in Redis
+            await session_service.complete_session(user_id, deposit_id, 'validated')
 
             # Update message to show validation confirmation
             await query.edit_message_text(
@@ -225,11 +232,17 @@ async def _handle_category_selection(query, context: ContextTypes.DEFAULT_TYPE,
     Handle user's category selection - finalize deposit with corrected category.
     """
     try:
+        # Get user ID from query
+        user_id = query.from_user.id
+        
         # Call API to finalize deposit with corrected category
         result = await _finalize_deposit(deposit_id, corrected_category=selected_category)
 
         if result.get("success"):
             category_label = EEE_CATEGORY_LABELS.get(selected_category, selected_category)
+
+            # Complete the validation session in Redis with correction
+            await session_service.complete_session(user_id, deposit_id, 'corrected')
 
             # Update message to show correction confirmation
             await query.edit_message_text(

@@ -13,6 +13,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from recyclic_api.core.config import settings
 from recyclic_api.api.api_v1.api import api_router
 from recyclic_api.services.sync_service import schedule_periodic_kdrive_sync
+from recyclic_api.services.scheduler_service import get_scheduler_service
 from recyclic_api.utils.rate_limit import limiter
 from recyclic_api.core.database import engine
 from recyclic_api.models import Base
@@ -25,15 +26,28 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Gestionnaire de cycle de vie de l'application"""
     logger.info("Starting up Recyclic API...")
-    logger.info("API ready - use migrations for database setup")
+
+    # Démarrer le scheduler de tâches planifiées
+    scheduler = get_scheduler_service()
+    await scheduler.start()
+
+    # Démarrer la synchronisation kDrive (si nécessaire)
     sync_task = schedule_periodic_kdrive_sync()
+
+    logger.info("API ready - use migrations for database setup")
+
     try:
         yield
     finally:
+        # Arrêter le scheduler
+        await scheduler.stop()
+
+        # Annuler la tâche de sync kDrive
         if sync_task:
             sync_task.cancel()
             with suppress(asyncio.CancelledError):
                 await sync_task
+
         logger.info("Shutting down Recyclic API...")
 
 # Create FastAPI app

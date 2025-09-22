@@ -3,19 +3,59 @@ Tests for the updated username/password authentication endpoint
 Story auth.B - Backend CLI adaptation
 """
 
+import json
 import pytest
+from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from jsonschema import validate, ValidationError
 
 from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
 
+OPENAPI_SCHEMA_PATH = Path(__file__).parent.parent / "openapi.json"
+
+@pytest.fixture
+def openapi_schema():
+    """Charge le schéma OpenAPI depuis le fichier openapi.json."""
+    with open(OPENAPI_SCHEMA_PATH, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def validate_with_resolver(instance, schema, openapi_schema):
+    """Valide une instance contre un schéma OpenAPI avec résolution des références."""
+    # Résoudre manuellement les références $ref dans le schéma
+    def resolve_refs(obj, schema_dict):
+        if isinstance(obj, dict):
+            if '$ref' in obj:
+                ref_path = obj['$ref']
+                if ref_path.startswith('#/'):
+                    # Résoudre la référence dans le schéma OpenAPI
+                    path_parts = ref_path[2:].split('/')
+                    ref_obj = schema_dict
+                    for part in path_parts:
+                        ref_obj = ref_obj[part]
+                    return resolve_refs(ref_obj, schema_dict)
+                else:
+                    return obj
+            else:
+                return {k: resolve_refs(v, schema_dict) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [resolve_refs(item, schema_dict) for item in obj]
+        else:
+            return obj
+    
+    # Résoudre les références dans le schéma
+    resolved_schema = resolve_refs(schema, openapi_schema)
+    
+    # Valider avec le schéma résolu
+    validate(instance=instance, schema=resolved_schema)
+
 
 class TestAuthLoginUsernamePassword:
     """Tests for the POST /api/v1/auth/login endpoint with username/password"""
 
-    def test_login_success_valid_credentials(self, client: TestClient, db_session: Session):
+    def test_login_success_valid_credentials(self, client: TestClient, db_session: Session, openapi_schema):
         """Test successful login with valid username and password"""
         # Create a fresh client for this test to avoid rate limiting conflicts        
         # Create test user with hashed password
@@ -42,6 +82,14 @@ class TestAuthLoginUsernamePassword:
 
         assert response.status_code == 200
         data = response.json()
+        
+        # Validation du schéma OpenAPI de la réponse
+        login_schema = openapi_schema["paths"]["/api/v1/auth/login"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
+        try:
+            validate_with_resolver(data, login_schema, openapi_schema)
+        except ValidationError as e:
+            pytest.fail(f"Validation OpenAPI échouée pour la réponse de login: {e}")
+        
         assert "access_token" in data
         assert "token_type" in data
         assert data["token_type"] == "bearer"

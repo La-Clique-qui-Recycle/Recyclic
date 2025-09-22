@@ -1,0 +1,51 @@
+schema: 1
+story: "debt-backend-tests-validation"
+story_title: "Renforcer les Tests d'Intégration Backend (Validation Contrat API)"
+gate: "PASS"
+status_reason: "Implémentation complète de la validation OpenAPI avec tous les fichiers de test et documentation mis à jour"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-22T15:30:00Z"
+
+# Always present but only active when WAIVED
+waiver: { active: false }
+
+# Issues (if any) - Use fixed severity: low | medium | high
+top_issues: []
+
+# Risk summary (from risk-profile task if run)
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+# Quality score and evidence
+quality_score: 95
+expires: "2025-02-05T00:00:00Z"
+
+evidence:
+  tests_reviewed: 8
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Validation OpenAPI complètement présente - détection des régressions assurée"
+  performance:
+    status: PASS
+    notes: "Tests fonctionnent correctement sans impact sur les performances"
+  reliability:
+    status: PASS
+    notes: "Validation de contrat API complètement présente"
+  maintainability:
+    status: PASS
+    notes: "Documentation complète et code bien structuré"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer la migration vers referencing library pour remplacer la résolution manuelle des $ref"
+      refs: ["tests/test_cash_sessions.py", "tests/test_auth_login_username_password.py", "tests/test_openapi_validation.py"]

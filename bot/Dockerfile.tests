@@ -1,0 +1,35 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install test dependencies
+RUN pip install pytest pytest-asyncio pytest-mock
+
+# Copy source code
+COPY src/ ./src/
+
+# Copy tests
+COPY tests/ ./tests/
+
+# Copy configuration files
+COPY pytest.ini ./
+
+# Set environment variables for testing
+ENV PYTHONPATH=/app
+ENV TESTING=true
+ENV ENVIRONMENT=test
+
+# Default command
+CMD ["python", "-m", "pytest", "tests/", "-v"]

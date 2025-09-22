@@ -45,7 +45,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -121,37 +121,6 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-    networks:
-      - recyclic-network
-
-  # Service dédié pour les tests du bot
-  bot-tests:
-    build:
-      context: ./bot
-      dockerfile: Dockerfile.tests
-    image: recyclic-bot-tests:${BOT_TESTS_IMAGE_TAG:-latest}
-    environment:
-      TESTING: "true"
-      ENVIRONMENT: "test"
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
-      REDIS_URL: redis://redis:6379
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      API_BASE_URL: http://api:8000
-      FRONTEND_URL: ${FRONTEND_URL}
-      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
-      ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS}
-    volumes:
-      # Volumes pour éviter les rebuilds lors du développement
-      - ./bot/src:/app/src:ro
-      - ./bot/tests:/app/tests:ro
-      - ./bot/pytest.ini:/app/pytest.ini:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      api:
         condition: service_healthy
     networks:
       - recyclic-network

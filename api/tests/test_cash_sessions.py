@@ -1,8 +1,11 @@
+import json
 import pytest
 import uuid
+from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+from jsonschema import validate, ValidationError
 
 from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
@@ -11,6 +14,43 @@ from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.security import hash_password
 from recyclic_api.schemas.cash_session import CashSessionResponse, CashSessionListResponse, CashSessionStatus as SchemaCashSessionStatus
+
+OPENAPI_SCHEMA_PATH = Path(__file__).parent.parent / "openapi.json"
+
+@pytest.fixture
+def openapi_schema():
+    """Charge le schéma OpenAPI depuis le fichier openapi.json."""
+    with open(OPENAPI_SCHEMA_PATH, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def validate_with_resolver(instance, schema, openapi_schema):
+    """Valide une instance contre un schéma OpenAPI avec résolution des références."""
+    # Résoudre manuellement les références $ref dans le schéma
+    def resolve_refs(obj, schema_dict):
+        if isinstance(obj, dict):
+            if '$ref' in obj:
+                ref_path = obj['$ref']
+                if ref_path.startswith('#/'):
+                    # Résoudre la référence dans le schéma OpenAPI
+                    path_parts = ref_path[2:].split('/')
+                    ref_obj = schema_dict
+                    for part in path_parts:
+                        ref_obj = ref_obj[part]
+                    return resolve_refs(ref_obj, schema_dict)
+                else:
+                    return obj
+            else:
+                return {k: resolve_refs(v, schema_dict) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [resolve_refs(item, schema_dict) for item in obj]
+        else:
+            return obj
+    
+    # Résoudre les références dans le schéma
+    resolved_schema = resolve_refs(schema, openapi_schema)
+    
+    # Valider avec le schéma résolu
+    validate(instance=instance, schema=resolved_schema)
 
 
 @pytest.fixture

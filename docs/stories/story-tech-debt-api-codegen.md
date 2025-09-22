@@ -1,7 +1,7 @@
 
 # Story Technique: Mettre en place la génération de code API vers Frontend
 
-- **Statut**: Ready
+status: Done
 - **Type**: Dette Technique (Refactoring)
 - **Priorité**: Élevée
 

@@ -19,6 +19,7 @@ from telegram.ext import (
 )
 from ..config import settings
 from .validation import send_validation_message
+from ..services.session_service import session_service
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +28,6 @@ WAITING_FOR_AUDIO = 1
 
 # Session timeout (5 minutes as per story requirements)
 SESSION_TIMEOUT = 300  # 5 minutes in seconds
-
-# In-memory storage for active sessions (in production, use Redis)
-active_sessions: Dict[int, Dict[str, Any]] = {}
 
 async def start_depot_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
@@ -41,28 +39,19 @@ async def start_depot_session(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     logger.info(f"User {username} ({user_id}) started depot session")
 
-    # Check if user already has an active session
-    if user_id in active_sessions:
+    # Check if user already has an active session using Redis
+    active_sessions = await session_service.get_user_active_sessions(user_id)
+    if active_sessions:
         await update.message.reply_text(
             "🔄 Vous avez déjà une session de dépôt active. "
             "Envoyez votre message vocal ou utilisez /annuler pour arrêter."
         )
         return WAITING_FOR_AUDIO
 
-    # Create new session
-    session_start = datetime.now()
-    active_sessions[user_id] = {
-        'user_id': user_id,
-        'username': username,
-        'start_time': session_start,
-        'timeout_task': None
-    }
-
     # Set up timeout task
     timeout_task = asyncio.create_task(
         _handle_session_timeout(user_id, update, context)
     )
-    active_sessions[user_id]['timeout_task'] = timeout_task
 
     # Send instructions to user
     await update.message.reply_text(
@@ -86,14 +75,16 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
     """
     user_id = update.effective_user.id
 
-    # Check if user has active session
-    if user_id not in active_sessions:
+    # Check if user has active session using Redis
+    active_sessions = await session_service.get_user_active_sessions(user_id)
+    if not active_sessions:
         await update.message.reply_text(
             "❌ Aucune session de dépôt active. Utilisez /depot pour commencer."
         )
         return ConversationHandler.END
 
-    session = active_sessions[user_id]
+    # Get the most recent session
+    session = active_sessions[0]  # Assuming we want the most recent
     logger.info(f"Processing voice message for user {session['username']} ({user_id})")
 
     try:
@@ -125,6 +116,13 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
 
         if api_result.get('success'):
             deposit_id = api_result.get('deposit_id')
+
+            # Create validation session in Redis
+            await session_service.create_session(
+                user_id=user_id,
+                username=session['username'],
+                deposit_id=deposit_id
+            )
 
             # Update processing message
             await processing_msg.edit_text(
@@ -171,8 +169,10 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
         )
 
     finally:
-        # Clean up session
-        await _cleanup_session(user_id)
+        # Clean up session from Redis
+        if api_result.get('success'):
+            deposit_id = api_result.get('deposit_id')
+            await session_service.cleanup_session(user_id, deposit_id)
 
     return ConversationHandler.END
 
@@ -180,8 +180,14 @@ async def cancel_depot_session(update: Update, context: ContextTypes.DEFAULT_TYP
     """Cancel active depot session."""
     user_id = update.effective_user.id
 
-    if user_id in active_sessions:
-        await _cleanup_session(user_id)
+    # Get active sessions from Redis
+    active_sessions = await session_service.get_user_active_sessions(user_id)
+    
+    if active_sessions:
+        # Cancel all active sessions
+        for session in active_sessions:
+            await session_service.cancel_session(user_id, session['deposit_id'])
+        
         await update.message.reply_text(
             "❌ Session de dépôt annulée.\n"
             "Utilisez /depot pour redémarrer une nouvelle session."
@@ -204,20 +210,22 @@ async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_T
 
 async def _handle_session_timeout(user_id: int, update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle session timeout after 5 minutes."""
-    # Remember the task handling the timeout so cleanup does not cancel it.
-    timeout_task = asyncio.current_task()
-
     try:
         await asyncio.sleep(SESSION_TIMEOUT)
     except asyncio.CancelledError:
         logger.debug(f"Session timeout task cancelled for user {user_id}")
         return
 
-    if user_id not in active_sessions:
+    # Check if user still has active sessions
+    active_sessions = await session_service.get_user_active_sessions(user_id)
+    if not active_sessions:
         return
 
     logger.info(f"Session timeout for user {user_id}")
-    await _cleanup_session(user_id, skip_task=timeout_task)
+    
+    # Cancel all active sessions
+    for session in active_sessions:
+        await session_service.cancel_session(user_id, session['deposit_id'])
 
     # Try to send timeout message
     try:
@@ -230,30 +238,6 @@ async def _handle_session_timeout(user_id: int, update: Update, context: Context
         )
     except Exception as e:
         logger.error(f"Could not send timeout message to user {user_id}: {e}")
-
-async def _cleanup_session(user_id: int, *, skip_task: Optional[asyncio.Task] = None):
-    """Clean up user session and cancel timeout task.
-
-    Args:
-        user_id: The Telegram user identifier of the session to remove.
-        skip_task: Optional task reference that should not be cancelled. When
-            the timeout task performs the cleanup we must not cancel it,
-            otherwise the coroutine would never resume to send the timeout
-            message to the user.
-    """
-    if user_id in active_sessions:
-        session = active_sessions[user_id]
-
-        # Cancel timeout task if exists and it's not the caller itself
-        timeout_task = session.get('timeout_task')
-        if timeout_task and timeout_task is not skip_task:
-            cancel_method = getattr(timeout_task, "cancel", None)
-            if callable(cancel_method):
-                cancel_method()
-
-        # Remove from active sessions
-        del active_sessions[user_id]
-        logger.info(f"Cleaned up session for user {user_id}")
 
 async def _send_to_api(telegram_user_id: int, audio_file_path: str) -> Dict[str, Any]:
     """

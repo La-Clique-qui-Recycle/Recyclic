@@ -17,6 +17,7 @@ devLoadAlwaysFiles:
   - docs/architecture/architecture.md
   - api/testing-guide.md
   - frontend/testing-guide.md
+  - docs/runbooks/dev-workflow-guide.md
 devDebugLog: .ai/debug-log.md
 devStoryLocation: docs/stories
 slashPrefix: BMad

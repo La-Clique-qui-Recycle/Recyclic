@@ -1,1 +1,14 @@
 # API v1 Endpoints Package
+from .admin import router as admin_router
+from .health import router as health_router
+from .users import router as users_router
+from .sites import router as sites_router
+from .deposits import router as deposits_router
+from .sales import router as sales_router
+from .cash_sessions import router as cash_sessions_router
+from .monitoring import router as monitoring_router
+from .auth import router as auth_router
+from .email import router as email_router
+from .reports import router as reports_router
+from .admin_settings import router as admin_settings_router
+from .dashboard import router as dashboard_router

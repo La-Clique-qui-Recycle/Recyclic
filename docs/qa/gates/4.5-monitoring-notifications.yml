@@ -1,0 +1,69 @@
+schema: 1
+story: '4.5'
+story_title: 'Monitoring & Notifications'
+gate: CONCERNS
+status_reason: 'Problèmes critiques de déploiement et tests manquants empêchent la mise en production.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2024-09-21T10:30:00Z'
+
+top_issues:
+  - id: 'DEPLOY-001'
+    severity: high
+    finding: 'Conflits de port Docker empêchant le redémarrage de l\'API'
+    suggested_action: 'Résoudre les conflits de port et vérifier la configuration Docker'
+  - id: 'CODE-001'
+    severity: high
+    finding: 'Imports manquants dans scheduler_service.py causant des erreurs d\'exécution'
+    suggested_action: 'Ajouter les imports manquants pour CashSession, Deposit, User, SyncLog'
+  - id: 'TEST-001'
+    severity: high
+    finding: 'Aucun test unitaire implémenté pour les services critiques'
+    suggested_action: 'Créer des tests unitaires pour AnomalyDetectionService et SchedulerService'
+  - id: 'SEC-001'
+    severity: medium
+    finding: 'Exposition d\'informations sensibles dans les détails d\'anomalies'
+    suggested_action: 'Sanitizer les données exposées et ajouter du rate limiting'
+  - id: 'PERF-001'
+    severity: medium
+    finding: 'Aucune optimisation des requêtes de base de données'
+    suggested_action: 'Implémenter un système de cache et optimiser les requêtes'
+
+waiver: { active: false }
+
+quality_score: 45
+expires: '2024-10-05T10:30:00Z'
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 5
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: 'Exposition de données sensibles et absence de rate limiting'
+  performance:
+    status: CONCERNS
+    notes: 'Requêtes non optimisées et absence de cache'
+  reliability:
+    status: CONCERNS
+    notes: 'Problèmes de déploiement et gestion d\'erreurs insuffisante'
+  maintainability:
+    status: CONCERNS
+    notes: 'Absence de tests unitaires et documentation incomplète'
+
+recommendations:
+  immediate:
+    - action: 'Corriger les conflits de port Docker'
+      refs: ['docker-compose.yml', 'Port 8000']
+    - action: 'Ajouter les imports manquants dans scheduler_service.py'
+      refs: ['api/src/recyclic_api/services/scheduler_service.py']
+    - action: 'Implémenter des tests unitaires de base'
+      refs: ['api/tests/test_monitoring.py']
+  future:
+    - action: 'Améliorer la sécurité des endpoints admin'
+      refs: ['api/src/recyclic_api/api/api_v1/endpoints/admin.py']
+    - action: 'Optimiser les performances des requêtes'
+      refs: ['api/src/recyclic_api/services/anomaly_detection_service.py']

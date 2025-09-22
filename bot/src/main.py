@@ -4,6 +4,7 @@ import uvicorn
 from telegram.ext import Application
 from .bot_handlers import setup_handlers
 from .config import settings
+from .services.redis_persistence import RedisPersistence
 
 # Configure logging
 logging.basicConfig(
@@ -14,8 +15,17 @@ logger = logging.getLogger(__name__)
 
 async def main_polling():
     """Main function to start the bot in polling mode"""
-    # Create application
-    application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    # Initialize Redis persistence
+    redis_persistence = RedisPersistence(
+        redis_url=settings.REDIS_URL,
+        key_prefix="telegram_bot:"
+    )
+    
+    # Connect to Redis
+    await redis_persistence.connect()
+    
+    # Create application with Redis persistence
+    application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).persistence(redis_persistence).build()
     
     # Setup handlers
     setup_handlers(application)
@@ -39,6 +49,8 @@ async def main_polling():
         await application.updater.stop()
         await application.stop()
         await application.shutdown()
+        # Disconnect from Redis
+        await redis_persistence.disconnect()
 
 def main_webhook():
     """Main function to start the bot in webhook mode"""
