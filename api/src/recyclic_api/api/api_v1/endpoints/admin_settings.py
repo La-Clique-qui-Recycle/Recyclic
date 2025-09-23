@@ -11,7 +11,7 @@ from recyclic_api.schemas.admin_settings import AlertThresholds, AlertThresholds
 from recyclic_api.services.admin_settings_service import AdminSettingsService
 from recyclic_api.utils.rate_limit import conditional_rate_limit
 
-router = APIRouter(prefix="/settings", tags=["admin", "settings"])
+router = APIRouter(tags=["admin", "settings"])
 
 DEFAULT_THRESHOLDS = AlertThresholds(cash_discrepancy=10.0, low_inventory=5)
 

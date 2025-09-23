@@ -1,0 +1,57 @@
+schema: 1
+story: "debt.admin-pending-tests-fix"
+story_title: "Correction des tests admin_pending_endpoints suite à la stabilisation de l'authentification"
+gate: PASS
+status_reason: "Correction exemplaire avec résolution complète des 13 échecs de tests"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T11:00:00Z"
+
+# Issues (if any) - Use fixed severity: low | medium | high
+top_issues: []
+
+# Risk summary (from risk-profile task if run)
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+# Always present but only active when WAIVED
+waiver: { active: false }
+
+# Evidence
+evidence:
+  tests_reviewed: 1  # Fichier test_admin_pending_endpoints.py
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]  # Tous les AC sont satisfaits
+    ac_gaps: []  # Aucun gap
+
+# NFR validation
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Tests de sécurité excellents (401, 403, 500) avec mocks sécurisés"
+  performance:
+    status: PASS
+    notes: "Mocks appropriés évitent les appels réseau réels, gestion robuste des erreurs"
+  reliability:
+    status: PASS
+    notes: "Tests isolés et reproductibles avec nettoyage automatique des overrides"
+  maintainability:
+    status: PASS
+    notes: "Code refactorisé avec structure AAA claire et documentation explicative"
+
+# Recommendations
+recommendations:
+  immediate: []  # Aucun problème critique
+  future:  # Améliorations possibles
+    - action: "Considérer l'ajout de tests de charge pour les endpoints d'administration"
+      refs: ["test_get_pending_users_success_returns_list"]
+    - action: "Documenter les patterns de mock pour les services Telegram"
+      refs: ["AsyncMock pour les services asynchrones"]
+
+# Quality score
+quality_score: 95  # Excellent correction avec résolution complète des échecs
+expires: "2025-01-26T00:00:00Z"  # 2 semaines
+

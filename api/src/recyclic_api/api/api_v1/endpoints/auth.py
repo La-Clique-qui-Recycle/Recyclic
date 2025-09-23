@@ -8,7 +8,7 @@ import logging
 import time
 
 from recyclic_api.core.database import get_db
-from recyclic_api.core.security import create_access_token, verify_password, hash_password, create_reset_token, verify_reset_token
+from recyclic_api.core.security import create_access_token, verify_password, hash_password, create_password_reset_token, verify_reset_token
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse
@@ -214,7 +214,7 @@ async def forgot_password(request: Request, payload: ForgotPasswordRequest, db: 
 
     if user and user.is_active:
         # Générer le token de réinitialisation
-        reset_token = create_reset_token(str(user.id))
+        reset_token = create_password_reset_token(str(user.id))
 
         # TODO: Intégrer un service d'envoi d'email ici
         # Pour le développement, on log le lien dans la console

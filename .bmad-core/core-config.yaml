@@ -15,6 +15,7 @@ architecture:
 customTechnicalDocuments: null
 devLoadAlwaysFiles:
   - docs/architecture/architecture.md
+  - docs/testing-strategy.md
   - api/testing-guide.md
   - frontend/testing-guide.md
   - docs/runbooks/dev-workflow-guide.md

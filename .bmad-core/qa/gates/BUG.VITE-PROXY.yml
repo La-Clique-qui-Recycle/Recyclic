@@ -1,0 +1,40 @@
+schema: 1
+story: "BUG.VITE-PROXY"
+story_title: "Correction du Proxy de Développement Vite"
+gate: "PASS"
+status_reason: "Proxy Vite gère correctement les requêtes POST vers l'API; configuration confirmée."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-23T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+quality_score: 95
+expires: "2025-10-07T00:00:00Z"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security: { status: PASS, notes: "CORS permissif en dev; envisager restriction si nécessaire" }
+  performance: { status: PASS, notes: "Proxy dev performant" }
+  reliability: { status: PASS, notes: "Comportement stable POST/GET" }
+  maintainability: { status: PASS, notes: "Config claire dans vite.config.js" }
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter un test e2e Playwright de login via proxy"
+      refs: ["frontend/playwright.config.ts"]
+

@@ -13,7 +13,7 @@ export default function ForgotPassword(): JSX.Element {
     try {
       await forgotPassword(email);
       setIsSubmitted(true);
-    } catch (err) {
+    } catch {
       // L'erreur est déjà gérée dans le store
     }
   };

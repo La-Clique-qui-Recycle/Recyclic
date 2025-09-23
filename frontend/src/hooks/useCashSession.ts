@@ -67,7 +67,7 @@ export const useCashSession = () => {
       }))
 
       return { success: true, session: newSession }
-    } catch (error) {
+    } catch {
       setSessionState(prev => ({
         ...prev,
         isLoading: false,
@@ -111,7 +111,7 @@ export const useCashSession = () => {
       }))
 
       return { success: true, session: closedSession }
-    } catch (error) {
+    } catch {
       setSessionState(prev => ({
         ...prev,
         isLoading: false,
@@ -145,7 +145,7 @@ export const useCashSession = () => {
           error: null
         })
       }
-    } catch (error) {
+    } catch {
       setSessionState(prev => ({
         ...prev,
         error: 'Failed to load session'

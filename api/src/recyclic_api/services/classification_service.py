@@ -13,12 +13,16 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 # Google Cloud Speech imports
-try:
-    from google.cloud import speech
-    from google.api_core import exceptions as google_exceptions
-    GOOGLE_SPEECH_AVAILABLE = True
-except ImportError:
-    GOOGLE_SPEECH_AVAILABLE = False
+# TODO: [DETTE TECHNIQUE] Le client Google Cloud Speech est obsolète et sera supprimé.
+# Le système doit être refactorisé pour utiliser une approche multimodale directe avec Gemini,
+# et un fallback sur Whisper via OpenRouter, conformément au PRD.
+# Cette implémentation actuelle ne correspond pas à l'architecture cible.
+# try:
+#     from google.cloud import speech
+#     from google.api_core import exceptions as google_exceptions
+#     GOOGLE_SPEECH_AVAILABLE = True
+# except ImportError:
+#     GOOGLE_SPEECH_AVAILABLE = False
 
 # LangChain imports
 try:
@@ -66,15 +70,16 @@ class ClassificationService:
         self.speech_client = None
 
         # Initialize Google Cloud Speech-to-Text client
-        if GOOGLE_SPEECH_AVAILABLE and self.google_credentials_path:
-            try:
-                self.speech_client = speech.SpeechClient()
-                logger.info("Google Speech-to-Text client initialized")
-            except Exception as e:
-                logger.error(f"Failed to initialize Speech-to-Text client: {str(e)}")
-                self.speech_client = None
-        else:
-            logger.warning("Google Speech-to-Text not available or credentials not set")
+        # TODO: [DETTE TECHNIQUE] Initialisation du client Google Speech obsolète.
+        # if GOOGLE_SPEECH_AVAILABLE and self.google_credentials_path:
+        #     try:
+        #         self.speech_client = speech.SpeechClient()
+        #         logger.info("Google Speech-to-Text client initialized")
+        #     except Exception as e:
+        #         logger.error(f"Failed to initialize Speech-to-Text client: {str(e)}")
+        #         self.speech_client = None
+        # else:
+        #     logger.warning("Google Speech-to-Text not available or credentials not set")
 
         # Initialize LangChain + Gemini
         if LANGCHAIN_AVAILABLE and self.gemini_api_key:
@@ -275,14 +280,15 @@ Si la confiance est >= 0.7, "alternatives" peut être null.
                 return None
 
             # Try real Google Speech-to-Text API first
-            if self.speech_client:
-                try:
-                    transcription = await self._transcribe_with_google_speech(audio_file_path)
-                    if transcription:
-                        logger.info(f"Successfully transcribed with Google Speech-to-Text: {transcription}")
-                        return transcription
-                except Exception as e:
-                    logger.warning(f"Google Speech-to-Text failed, falling back to simulation: {str(e)}")
+            # TODO: [DETTE TECHNIQUE] L'appel à Google Speech est obsolète.
+            # if self.speech_client:
+            #     try:
+            #         transcription = await self._transcribe_with_google_speech(audio_file_path)
+            #         if transcription:
+            #             logger.info(f"Successfully transcribed with Google Speech-to-Text: {transcription}")
+            #             return transcription
+            #     except Exception as e:
+            #         logger.warning(f"Google Speech-to-Text failed, falling back to simulation: {str(e)}")
 
             # Fallback to enhanced simulation for test scenarios
             logger.info("Using fallback transcription simulation")
@@ -292,58 +298,58 @@ Si la confiance est >= 0.7, "alternatives" peut être null.
             logger.error(f"Error transcribing audio: {str(e)}")
             return None
 
-    async def _transcribe_with_google_speech(self, audio_file_path: str) -> Optional[str]:
-        """
-        Transcribe audio using Google Cloud Speech-to-Text API.
-
-        Args:
-            audio_file_path: Path to the audio file
-
-        Returns:
-            Transcribed text or None if transcription failed
-        """
-        try:
-            # Read audio file
-            with open(audio_file_path, "rb") as audio_file:
-                content = audio_file.read()
-
-            # Configure recognition
-            audio = speech.RecognitionAudio(content=content)
-            config = speech.RecognitionConfig(
-                encoding=speech.RecognitionConfig.AudioEncoding.OGG_OPUS,  # Telegram audio format
-                sample_rate_hertz=16000,
-                language_code="fr-FR",  # French language
-                alternative_language_codes=["en-US"],  # English fallback
-                enable_automatic_punctuation=True,
-                model="latest_long",  # Best accuracy for longer audio
-                use_enhanced=True,  # Enhanced model
-            )
-
-            # Perform recognition
-            response = self.speech_client.recognize(config=config, audio=audio)
-
-            # Extract transcription
-            if response.results:
-                transcript = ""
-                for result in response.results:
-                    transcript += result.alternatives[0].transcript + " "
-                return transcript.strip()
-            else:
-                logger.warning("No transcription results from Google Speech-to-Text")
-                return None
-
-        except google_exceptions.InvalidArgument as e:
-            logger.error(f"Invalid audio format for Google Speech-to-Text: {str(e)}")
-            return None
-        except google_exceptions.QuotaExceeded as e:
-            logger.error(f"Google Speech-to-Text quota exceeded: {str(e)}")
-            return None
-        except FileNotFoundError:
-            logger.error(f"Audio file not found: {audio_file_path}")
-            return None
-        except Exception as e:
-            logger.error(f"Error in Google Speech-to-Text transcription: {str(e)}")
-            return None
+    # async def _transcribe_with_google_speech(self, audio_file_path: str) -> Optional[str]:
+    #     """
+    #     Transcribe audio using Google Cloud Speech-to-Text API.
+    #
+    #     Args:
+    #         audio_file_path: Path to the audio file
+    #
+    #     Returns:
+    #         Transcribed text or None if transcription failed
+    #     """
+    #     try:
+    #         # Read audio file
+    #         with open(audio_file_path, "rb") as audio_file:
+    #             content = audio_file.read()
+    #
+    #         # Configure recognition
+    #         audio = speech.RecognitionAudio(content=content)
+    #         config = speech.RecognitionConfig(
+    #             encoding=speech.RecognitionConfig.AudioEncoding.OGG_OPUS,  # Telegram audio format
+    #             sample_rate_hertz=16000,
+    #             language_code="fr-FR",  # French language
+    #             alternative_language_codes=["en-US"],  # English fallback
+    #             enable_automatic_punctuation=True,
+    #             model="latest_long",  # Best accuracy for longer audio
+    #             use_enhanced=True,  # Enhanced model
+    #         )
+    #
+    #         # Perform recognition
+    #         response = self.speech_client.recognize(config=config, audio=audio)
+    #
+    #         # Extract transcription
+    #         if response.results:
+    #             transcript = ""
+    #             for result in response.results:
+    #                 transcript += result.alternatives[0].transcript + " "
+    #             return transcript.strip()
+    #         else:
+    #             logger.warning("No transcription results from Google Speech-to-Text")
+    #             return None
+    #
+    #     except google_exceptions.InvalidArgument as e:
+    #         logger.error(f"Invalid audio format for Google Speech-to-Text: {str(e)}")
+    #         return None
+    #     except google_exceptions.QuotaExceeded as e:
+    #         logger.error(f"Google Speech-to-Text quota exceeded: {str(e)}")
+    #         return None
+    #     except FileNotFoundError:
+    #         logger.error(f"Audio file not found: {audio_file_path}")
+    #         return None
+    #     except Exception as e:
+    #         logger.error(f"Error in Google Speech-to-Text transcription: {str(e)}")
+    #         return None
 
     def _simulate_transcription(self, audio_file_path: str) -> str:
         """

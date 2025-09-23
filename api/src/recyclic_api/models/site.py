@@ -24,6 +24,7 @@ class Site(Base):
     deposits = relationship("Deposit", back_populates="site")
     cash_sessions = relationship("CashSession", back_populates="site")
     registration_requests = relationship("RegistrationRequest", back_populates="site")
+    cash_registers = relationship("CashRegister", back_populates="site")
 
     def __repr__(self):
         return f"<Site(id={self.id}, name={self.name})>"

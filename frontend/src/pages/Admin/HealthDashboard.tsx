@@ -357,9 +357,6 @@ const HealthDashboard: React.FC = () => {
     return () => clearInterval(interval)
   }, [loadHealthData])
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('fr-FR')
-  }
 
   const renderAnomalies = (anomalies: Record<string, Anomaly[]>) => {
     const allAnomalies = Object.values(anomalies).flat()

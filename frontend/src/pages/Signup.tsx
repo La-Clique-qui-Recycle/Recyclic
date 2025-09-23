@@ -37,7 +37,7 @@ export default function Signup(): JSX.Element {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-    } catch (err) {
+    } catch {
       // L'erreur est déjà gérée dans le store
     }
   };

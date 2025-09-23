@@ -1,0 +1,8 @@
+schema: 1
+story: 'b01.p1'
+gate: PASS
+status_reason: 'Public registration route successfully implemented with proper security controls and comprehensive test coverage.'
+reviewer: 'Quinn'
+updated: '2025-09-22T14:30:00Z'
+top_issues: []
+waiver: { active: false }

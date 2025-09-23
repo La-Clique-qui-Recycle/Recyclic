@@ -1,0 +1,44 @@
+schema: 1
+story: "BUG.LOGIN-405"
+story_title: "Correction de l'Erreur 405 sur l'Endpoint de Connexion"
+gate: "PASS"
+status_reason: "POST vers /api/v1/auth/login fonctionnel; cause racine corrigée (routing/URLs)."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-23T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "CFG-VITE-API-URL"
+    severity: low
+    finding: "VITE_API_URL non défini via vite.define (fallback local présent)."
+    suggested_action: "Ajouter define dans vite.config.js pour homogénéité des envs."
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor: ["Centraliser la base URL via VITE_API_URL"]
+
+quality_score: 93
+expires: "2025-10-07T00:00:00Z"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: []
+
+nfr_validation:
+  security: { status: PASS, notes: "Chemins API explicites, pas d'élément bloquant" }
+  performance: { status: PASS, notes: "Sans impact notable" }
+  reliability: { status: PASS, notes: "Comportement déterministe POST" }
+  maintainability: { status: PASS, notes: "Recommandation pour VITE_API_URL centralisée" }
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Définir VITE_API_URL dans vite.config.js (define)"
+      refs: ["frontend/vite.config.js"]
+

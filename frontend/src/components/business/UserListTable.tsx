@@ -1,16 +1,12 @@
 import React from 'react';
-import { Table, Badge, Group, Text, ActionIcon, Tooltip, Skeleton } from '@mantine/core';
-import { IconEye, IconEdit, IconTrash } from '@tabler/icons-react';
+import { Table, Badge, Text, Skeleton } from '@mantine/core';
 import { AdminUser, UserRole, UserStatus } from '../../services/adminService';
-import { RoleSelector } from './RoleSelector';
 
 interface UserListTableProps {
   users: AdminUser[];
   loading?: boolean;
   onRoleChange: (userId: string, newRole: UserRole) => Promise<boolean>;
-  onViewUser?: (user: AdminUser) => void;
-  onEditUser?: (user: AdminUser) => void;
-  onDeleteUser?: (user: AdminUser) => void;
+  onRowClick?: (user: AdminUser) => void;
 }
 
 // const getRoleColor = (role: UserRole) => {
@@ -55,13 +51,19 @@ const getStatusLabel = (status: UserStatus) => {
   }
 };
 
+const getActiveStatusLabel = (isActive: boolean) => {
+  return isActive ? 'Actif' : 'Inactif';
+};
+
+const getActiveStatusColor = (isActive: boolean) => {
+  return isActive ? 'green' : 'red';
+};
+
 export const UserListTable: React.FC<UserListTableProps> = ({
   users,
   loading = false,
   onRoleChange,
-  onViewUser,
-  onEditUser,
-  onDeleteUser
+  onRowClick
 }) => {
   if (loading) {
     return (
@@ -70,8 +72,8 @@ export const UserListTable: React.FC<UserListTableProps> = ({
           <Table.Tr>
             <Table.Th>Nom</Table.Th>
             <Table.Th>Rôle</Table.Th>
-            <Table.Th>Statut</Table.Th>
-            <Table.Th>Actions</Table.Th>
+            <Table.Th>Statut d'approbation</Table.Th>
+            <Table.Th>Statut d'activité</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -80,7 +82,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
               <Table.Td><Skeleton height={20} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={100} data-testid="skeleton" /></Table.Td>
-              <Table.Td><Skeleton height={20} width={120} data-testid="skeleton" /></Table.Td>
+              <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>
@@ -102,13 +104,27 @@ export const UserListTable: React.FC<UserListTableProps> = ({
         <Table.Tr>
           <Table.Th>Nom</Table.Th>
           <Table.Th>Rôle</Table.Th>
-          <Table.Th>Statut</Table.Th>
-          <Table.Th>Actions</Table.Th>
+          <Table.Th>Statut d'approbation</Table.Th>
+          <Table.Th>Statut d'activité</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
         {users.map((user) => (
-          <Table.Tr key={user.id} data-testid="user-row">
+          <Table.Tr
+            key={user.id}
+            data-testid="user-row"
+            onClick={() => onRowClick?.(user)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onRowClick?.(user);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label={`Sélectionner l'utilisateur ${user.full_name || user.username}`}
+            style={{ cursor: 'pointer' }}
+          >
             <Table.Td>
               <div>
                 <Text fw={500}>
@@ -120,12 +136,12 @@ export const UserListTable: React.FC<UserListTableProps> = ({
               </div>
             </Table.Td>
             <Table.Td>
-              <RoleSelector
-                currentRole={user.role}
-                userId={user.id}
-                userName={user.full_name || user.username || 'Utilisateur'}
-                onRoleChange={onRoleChange}
-              />
+              <Badge color="blue" variant="light" style={{ cursor: 'default' }}>
+                {user.role === UserRole.SUPER_ADMIN ? 'Super Admin' :
+                 user.role === UserRole.ADMIN ? 'Administrateur' :
+                 user.role === UserRole.MANAGER ? 'Manager' :
+                 user.role === UserRole.CASHIER ? 'Caissier' : 'Utilisateur'}
+              </Badge>
             </Table.Td>
             <Table.Td>
               <Badge color={getStatusColor(user.status)} variant="light">
@@ -133,44 +149,9 @@ export const UserListTable: React.FC<UserListTableProps> = ({
               </Badge>
             </Table.Td>
             <Table.Td>
-              <Group gap="xs">
-                {onViewUser && (
-                  <Tooltip label="Voir les détails">
-                    <ActionIcon
-                      variant="subtle"
-                      color="blue"
-                      onClick={() => onViewUser(user)}
-                      data-testid="view-user-button"
-                    >
-                      <IconEye size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-                {onEditUser && (
-                  <Tooltip label="Modifier">
-                    <ActionIcon
-                      variant="subtle"
-                      color="orange"
-                      onClick={() => onEditUser(user)}
-                      data-testid="edit-user-button"
-                    >
-                      <IconEdit size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-                {onDeleteUser && (
-                  <Tooltip label="Supprimer">
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      onClick={() => onDeleteUser(user)}
-                      data-testid="delete-user-button"
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </Group>
+              <Badge color={getActiveStatusColor(user.is_active)} variant="light">
+                {getActiveStatusLabel(user.is_active)}
+              </Badge>
             </Table.Td>
           </Table.Tr>
         ))}

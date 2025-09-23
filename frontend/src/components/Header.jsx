@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Recycle, Home, Calculator, Package, BarChart3, Users } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { ADMIN_ROUTES } from '../config/adminRoutes';
 
 const HeaderContainer = styled.header`
   background-color: #2e7d32;
@@ -77,8 +78,7 @@ export default function Header() {
 
   // Administration accessible aux admins uniquement
   if (isAdmin) {
-    navItems.push({ path: '/admin/users', label: 'Administration', icon: Users });
-    navItems.push({ path: '/admin/reports', label: 'Rapports caisse', icon: BarChart3 });
+    navItems.push({ path: ADMIN_ROUTES.HOME, label: 'Administration', icon: Users });
   }
   
   return (

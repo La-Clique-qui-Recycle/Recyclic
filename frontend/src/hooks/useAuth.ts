@@ -49,7 +49,7 @@ export const useAuth = () => {
           error: null
         })
       }
-    } catch (error) {
+    } catch {
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -71,7 +71,7 @@ export const useAuth = () => {
         error: null
       })
       return { success: true }
-    } catch (error) {
+    } catch {
       setAuthState(prev => ({
         ...prev,
         error: 'Failed to login',

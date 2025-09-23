@@ -1,5 +1,10 @@
 # Frontend Testing Guide (Vitest + React Testing Library)
 
+## 📜 Stratégie Architecturale
+Ce guide est spécifique au frontend. Pour les principes généraux de test (Mocks, Fixtures, E2E) qui s'appliquent à tout le projet, veuillez consulter la charte principale.
+
+-> [Consulter la Charte de Stratégie de Test](../../docs/testing-strategy.md)
+
 Objectif: fournir un cadre clair, stable et reproductible pour écrire des tests frontend sans flaky, compatible React 18, Mantine, Zustand, jsdom, et nos conventions de projet.
 
 ## 1. Environnement & Configuration

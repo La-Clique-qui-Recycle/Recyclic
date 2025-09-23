@@ -1,9 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MantineProvider } from '@mantine/core';
+import { render, screen, waitFor, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import Users from '../Users';
-import { AdminUser, UserRole, UserStatus } from '../../../services/adminService';
+import { UserRole, UserStatus } from '../../../services/adminService';
 
 import { vi } from 'vitest';
 
@@ -76,10 +76,14 @@ describe('Users Page', () => {
     vi.clearAllMocks();
   });
 
-  it('affiche le titre de la page', () => {
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('should display page title', () => {
     renderWithProviders(<Users />);
-    
-    expect(screen.getByText('Gestion des Utilisateurs')).toBeInTheDocument();
+
+    expect(screen.getByRole('heading', { name: /gestion des utilisateurs/i })).toBeInTheDocument();
     expect(screen.getByText('Gérez les utilisateurs et leurs rôles dans le système')).toBeInTheDocument();
   });
 
@@ -105,24 +109,33 @@ describe('Users Page', () => {
     expect(screen.getByText('Aucun utilisateur sélectionné')).toBeInTheDocument();
   });
 
-  it('permet de sélectionner un utilisateur', () => {
+  it('should select user when clicking on row', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<Users />);
-    
-    const viewButton = screen.getAllByTestId('view-user-button')[0];
-    fireEvent.click(viewButton);
-    
+
+    const userRow = screen.getAllByTestId('user-row')[0];
+
+    await act(async () => {
+      await user.click(userRow);
+    });
+
     expect(mockSetSelectedUser).toHaveBeenCalled();
   });
 
-  it('permet de rechercher des utilisateurs', () => {
+  it('should search users', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<Users />);
-    
-    const searchInput = screen.getByPlaceholderText('Rechercher un utilisateur...');
-    fireEvent.change(searchInput, { target: { value: 'test' } });
-    
+
+    const searchInput = screen.getByRole('textbox', { name: /rechercher/i });
+    await act(async () => {
+      await user.type(searchInput, 'test');
+    });
+
     const searchButton = screen.getByTestId('search-button');
-    fireEvent.click(searchButton);
-    
+    await act(async () => {
+      await user.click(searchButton);
+    });
+
     expect(mockSetFilters).toHaveBeenCalled();
     expect(mockFilterUsers).toHaveBeenCalled();
   });
@@ -170,7 +183,43 @@ describe('Users Page', () => {
 
   it('affiche les informations de pagination', () => {
     renderWithProviders(<Users />);
-    
+
     expect(screen.getByTestId('page-info')).toBeInTheDocument();
+  });
+
+  it('should display user activity status', () => {
+    renderWithProviders(<Users />);
+
+    // Vérifier que les statuts "Actif" sont affichés
+    expect(screen.getAllByText('Actif')).toHaveLength(2);
+  });
+
+  it('should not display Actions column anymore', () => {
+    renderWithProviders(<Users />);
+
+    // Vérifier que la colonne Actions n'existe plus
+    expect(screen.queryByText('Actions')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('view-user-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('edit-user-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('delete-user-button')).not.toBeInTheDocument();
+  });
+
+  it('should display new status columns', () => {
+    renderWithProviders(<Users />);
+
+    // Vérifier que les nouvelles colonnes sont présentes
+    expect(screen.getByText('Statut d\'approbation')).toBeInTheDocument();
+    expect(screen.getByText('Statut d\'activité')).toBeInTheDocument();
+  });
+
+  it('should display role badges as non-interactive', () => {
+    renderWithProviders(<Users />);
+
+    // Vérifier que les rôles sont affichés comme badges non-interactifs
+    expect(screen.getByText('Utilisateur')).toBeInTheDocument();
+    expect(screen.getByText('Administrateur')).toBeInTheDocument();
+
+    // Vérifier qu'il n'y a plus de boutons interactifs pour les rôles
+    expect(screen.queryByTestId('role-selector-button')).not.toBeInTheDocument();
   });
 });

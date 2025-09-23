@@ -360,14 +360,14 @@ def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Sess
     )
     db_session.add(normal_user)
     db_session.commit()
-    
+
     # Se connecter en tant qu'utilisateur normal
     login_response = client.post(
         "/api/v1/auth/login",
         json={"username": "normaluser", "password": "password"}
     )
     token = login_response.json()["access_token"]
-    
+
     # Essayer d'accéder aux endpoints admin
     response = client.put(
         "/api/v1/admin/users/123/status",
@@ -375,10 +375,115 @@ def test_admin_endpoints_require_admin_role(client: TestClient, db_session: Sess
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 403
-    
+
     response = client.put(
         "/api/v1/admin/users/123",
         json={"first_name": "New"},
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 403
+
+
+def test_get_user_response_excludes_hashed_password(client: TestClient, db_session: Session):
+    """Test que le champ hashed_password n'est pas inclus dans les réponses GET /api/v1/users/{id}"""
+    # Créer un utilisateur de test
+    test_user = User(
+        username="testuser",
+        hashed_password=hash_password("password"),
+        telegram_id="123456789",
+        first_name="Test",
+        last_name="User",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True
+    )
+    db_session.add(test_user)
+    db_session.commit()
+    db_session.refresh(test_user)
+
+    # Récupérer l'utilisateur via l'API
+    response = client.get(f"/api/v1/users/{test_user.id}")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Vérifier que hashed_password n'est pas dans la réponse
+    assert "hashed_password" not in data, f"hashed_password trouvé dans la réponse: {data}"
+    assert data["username"] == "testuser"
+    assert data["first_name"] == "Test"
+    assert data["last_name"] == "User"
+    assert data["role"] == "user"
+    assert data["status"] == "approved"
+
+
+def test_get_users_list_excludes_hashed_password(client: TestClient, db_session: Session):
+    """Test que le champ hashed_password n'est pas inclus dans les réponses GET /api/v1/users/"""
+    # Créer un utilisateur de test
+    test_user = User(
+        username="testuser",
+        hashed_password=hash_password("password"),
+        telegram_id="123456789",
+        first_name="Test",
+        last_name="User",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True
+    )
+    db_session.add(test_user)
+    db_session.commit()
+
+    # Récupérer la liste des utilisateurs via l'API
+    response = client.get("/api/v1/users/")
+
+    assert response.status_code == 200
+    users = response.json()
+
+    # Vérifier que chaque utilisateur n'a pas le champ hashed_password
+    for user in users:
+        assert "hashed_password" not in user, f"hashed_password trouvé dans la réponse pour utilisateur: {user}"
+        assert user["username"] == "testuser"
+        assert user["first_name"] == "Test"
+
+
+def test_update_user_profile_persistence(client: TestClient, db_session: Session):
+    """Test que les modifications de profil utilisateur sont persistées en base de données"""
+    # Créer un utilisateur de test
+    test_user = User(
+        username="testuser",
+        hashed_password=hash_password("password"),
+        telegram_id="123456789",
+        first_name="OldFirst",
+        last_name="OldLast",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True
+    )
+    db_session.add(test_user)
+    db_session.commit()
+    db_session.refresh(test_user)
+
+    # Modifier l'utilisateur via l'API
+    response = client.put(
+        f"/api/v1/users/{test_user.id}",
+        json={"first_name": "NewFirst", "last_name": "NewLast", "role": "admin"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["first_name"] == "NewFirst"
+    assert data["last_name"] == "NewLast"
+    assert data["role"] == "admin"
+
+    # Vérifier que les modifications sont bien persistées en base
+    db_session.refresh(test_user)
+    assert test_user.first_name == "NewFirst", f"Prénom non persisté: {test_user.first_name}"
+    assert test_user.last_name == "NewLast", f"Nom de famille non persisté: {test_user.last_name}"
+    assert test_user.role == UserRole.ADMIN, f"Rôle non persisté: {test_user.role}"
+
+    # Vérifier que les anciens champs n'ont pas changé
+    assert test_user.username == "testuser"
+    assert test_user.status == UserStatus.APPROVED
+    assert test_user.is_active == True
+
+    # Vérifier que les timestamps de mise à jour ont été modifiés
+    assert test_user.updated_at is not None

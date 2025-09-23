@@ -100,6 +100,9 @@ class UserProfileUpdate(BaseModel):
     """Schéma pour la mise à jour du profil utilisateur"""
     first_name: Optional[str] = Field(None, description="Prénom de l'utilisateur")
     last_name: Optional[str] = Field(None, description="Nom de famille de l'utilisateur")
+    username: Optional[str] = Field(None, description="Nom d'utilisateur")
+    role: Optional[UserRole] = Field(None, description="Rôle de l'utilisateur")
+    status: Optional[UserStatus] = Field(None, description="Statut de l'utilisateur")
 
 class ActivityEvent(BaseModel):
     """Schéma pour un événement d'activité utilisateur"""

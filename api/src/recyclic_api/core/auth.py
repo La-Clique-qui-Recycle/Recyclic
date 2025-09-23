@@ -4,6 +4,8 @@ Handles JWT authentication and role checks.
 """
 
 from typing import Union, List, Optional
+import os
+import uuid
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
@@ -11,8 +13,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from .database import get_db
-from .security import verify_token, create_access_token  # noqa: F401
+from .security import verify_token, create_access_token, create_password_reset_token
 from ..models.user import User, UserRole
+from .email_service import get_email_service
+from .config import settings
 
 # Security scheme (don't auto-raise 403 so we can return 401)
 security = HTTPBearer(auto_error=False)
@@ -33,6 +37,7 @@ async def get_current_user(
     )
 
     try:
+        # En absence de credentials → 401 (schéma HTTPBearer non strict)
         if credentials is None:
             raise credentials_exception
         # Verify token
@@ -67,7 +72,7 @@ async def get_current_user_strict(
     db: Session = Depends(get_db),
 ) -> User:
     """Variant that raises 403 on missing credentials (via security_strict)."""
-    # If we reached here, credentials is present; delegate to normal validation
+    # If we reached here, credentials is present (auto_error=True); delegate to normal validation
     return await get_current_user(credentials=credentials, db=db)
 
 
@@ -125,13 +130,8 @@ def require_role_strict(required_role: Union[UserRole, str, List[UserRole]]):
         # Handle list of roles
         if isinstance(required_role, list):
             if current_user.role not in required_role:
-                if not (
-                    current_user.role == UserRole.SUPER_ADMIN and UserRole.ADMIN in required_role
-                ):
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Permissions insuffisantes",
-                    )
+                if not (current_user.role == UserRole.SUPER_ADMIN and UserRole.ADMIN in required_role):
+                    raise HTTPException(status_code=403, detail="Permissions insuffisantes")
             return current_user
 
         # Convert string to enum if needed
@@ -159,18 +159,54 @@ def require_role_strict(required_role: Union[UserRole, str, List[UserRole]]):
     return role_checker
 
 
-def require_admin_role():
-    """Require admin or super-admin role."""
+def require_admin_role(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Dépendance FastAPI pour exiger un rôle admin ou super-admin.
 
-    def admin_checker(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Accès refusé - rôle administrateur requis",
-            )
-        return current_user
+    Lève une erreur 401 si l'utilisateur n'est pas authentifié.
+    Lève une erreur 403 si l'utilisateur est authentifié mais n'a pas le bon rôle.
+    """
+    # Étape 1: Vérifier l'authentification (logique de get_current_user)
+    unauthenticated_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Impossible de valider les identifiants",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
-    return admin_checker
+    if credentials is None:
+        raise unauthenticated_exception
+
+    try:
+        payload = verify_token(credentials.credentials)
+        user_id: Optional[str] = payload.get("sub")
+        if not user_id:
+            raise unauthenticated_exception
+    except JWTError:
+        raise unauthenticated_exception
+
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except (ValueError, TypeError):
+        raise unauthenticated_exception
+
+    user = db.query(User).filter(User.id == user_uuid).first()
+
+    if user is None or not user.is_active:
+        raise unauthenticated_exception
+
+    # Étape 2: Vérifier l'autorisation (rôle)
+    forbidden_exception = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Accès refusé - rôle administrateur requis",
+    )
+
+    if user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise forbidden_exception
+
+    return user
 
 
 def require_super_admin_role():
@@ -214,3 +250,26 @@ def authenticate_user(db: Session, telegram_id: str) -> Optional[User]:
     if user and user.is_active:
         return user
     return None
+
+async def send_reset_password_email(email: str, db: Session) -> None:
+    """Génère un token de réinitialisation et envoie l'e-mail."""
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        # Ne pas révéler si l'utilisateur existe ou non
+        return
+
+    reset_token = create_password_reset_token(email)
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+
+    email_service = get_email_service()
+    email_service.send_email(
+        to_email=email,
+        subject="Réinitialisation de votre mot de passe",
+        html_content=f"""
+            <p>Bonjour,</p>
+            <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
+            <a href="{reset_url}">Réinitialiser le mot de passe</a>
+            <p>Ce lien expirera dans 1 heure.</p>
+        """,
+        db_session=db
+    )

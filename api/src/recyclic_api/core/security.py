@@ -86,20 +86,18 @@ def verify_token(token: str) -> dict:
         )
 
 
-def create_reset_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
-    """Crée un token JWT pour la réinitialisation de mot de passe"""
+def create_password_reset_token(email: str, expires_delta: Optional[timedelta] = None) -> str:
+    """Crée un token JWT pour la réinitialisation de mot de passe."""
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        # Token valide pendant 30 minutes
-        expire = datetime.now(timezone.utc) + timedelta(minutes=30)
-
+        expire = datetime.now(timezone.utc) + timedelta(hours=1)
+    
     to_encode = {
-        "sub": user_id,
+        "sub": email,
         "scope": "password-reset",
         "exp": expire
     }
-
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 

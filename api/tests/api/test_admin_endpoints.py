@@ -28,6 +28,22 @@ def admin_token(admin_user: User):
     return create_access_token(data={"sub": str(admin_user.id)})
 
 
+@pytest.fixture
+def normal_user(db_session: Session):
+    """Créer un utilisateur normal pour les tests."""
+    user = User(
+        username="test_user",
+        email="user@test.com",
+        hashed_password="hashed_password",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True
+    )
+    db_session.add(user)
+    db_session.commit()
+    return user
+
+
 @pytest.mark.asyncio
 async def test_get_users_success(async_client: AsyncClient, admin_token: str):
     """Test que l'endpoint liste les utilisateurs"""
@@ -112,3 +128,48 @@ async def test_admin_endpoints_structure(async_client: AsyncClient, admin_token:
     )
     # Devrait retourner 404 car l'utilisateur n'existe pas, mais l'endpoint fonctionne
     assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_update_user_profile_success(async_client: AsyncClient, admin_token: str, normal_user: User):
+    """Test de la mise à jour réussie du profil utilisateur."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    update_data = {
+        "first_name": "Updated",
+        "last_name": "Name",
+        "username": "updated_username",
+        "role": "admin",
+        "status": "pending"
+    }
+    response = await async_client.put(
+        f"/api/v1/admin/users/{normal_user.id}",
+        json=update_data,
+        headers=headers
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["first_name"] == "Updated"
+    assert data["last_name"] == "Name"
+    assert data["username"] == "updated_username"
+    assert data["role"] == "admin"
+    assert data["status"] == "pending"
+
+@pytest.mark.asyncio
+async def test_trigger_reset_password_no_email(async_client: AsyncClient, admin_token: str, db_session: Session):
+    """Test de la réinitialisation pour un utilisateur sans e-mail."""
+    user_no_email = User(
+        username="no_email_user",
+        hashed_password="a_password",
+        role=UserRole.USER,
+        status=UserStatus.APPROVED,
+        is_active=True
+    )
+    db_session.add(user_no_email)
+    db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.post(
+        f"/api/v1/admin/users/{user_no_email.id}/reset-password",
+        headers=headers
+    )
+    assert response.status_code == 400
+    assert "pas d'adresse e-mail" in response.json()["detail"]

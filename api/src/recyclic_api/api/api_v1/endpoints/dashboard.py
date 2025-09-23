@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from recyclic_api.core.audit import log_admin_access
-from recyclic_api.core.auth import require_role_strict
+from recyclic_api.core.auth import require_admin_role
 from recyclic_api.core.config import settings
 from recyclic_api.core.database import get_db
 from recyclic_api.models.cash_session import CashSession
@@ -104,7 +104,7 @@ def get_dashboard_stats(
     date_from: Optional[datetime] = Query(None, description="Date de debut (ISO 8601)"),
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(require_admin_role),
 ) -> DashboardStatsResponse:
     service = _cash_session_service(db)
 

@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime, timedelta, timezone
 
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.cash_register import CashRegister
 from uuid import UUID
 from recyclic_api.models.user import User
 from recyclic_api.schemas.cash_session import CashSessionFilters
@@ -15,21 +16,53 @@ class CashSessionService:
     def __init__(self, db: Session):
         self.db = db
     
-    def create_session(self, operator_id: str, site_id: str, initial_amount: float) -> CashSession:
+    def create_session(self, operator_id: str, site_id: str, initial_amount: float, register_id: Optional[str] = None) -> CashSession:
         """Crée une nouvelle session de caisse."""
         # Vérifier que l'opérateur existe
         # Ensure UUID types for DB comparisons
         operator_uuid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id
         site_uuid = UUID(str(site_id)) if not isinstance(site_id, UUID) else site_id
+        register_uuid: Optional[UUID]
+        if register_id is not None:
+            register_uuid = UUID(str(register_id)) if not isinstance(register_id, UUID) else register_id
+        else:
+            register_uuid = None
 
         operator = self.db.query(User).filter(User.id == operator_uuid).first()
         if not operator:
             raise ValueError("Opérateur non trouvé")
+
+        # Déterminer le registre à utiliser si non fourni (compatibilité tests existants)
+        if register_uuid is None:
+            # Chercher un poste actif pour le site, sinon en créer un par défaut
+            default_register = (
+                self.db.query(CashRegister)
+                .filter(
+                    CashRegister.is_active.is_(True),
+                    CashRegister.site_id == site_uuid,
+                )
+                .first()
+            )
+            if default_register is None:
+                default_register = CashRegister(name="Default Register", site_id=site_uuid, is_active=True)
+                self.db.add(default_register)
+                self.db.commit()
+                self.db.refresh(default_register)
+            register_uuid = default_register.id  # type: ignore[assignment]
+
+        # Unicité: pas de session ouverte pour ce registre
+        existing_register_open = self.db.query(CashSession).filter(
+            CashSession.register_id == register_uuid,
+            CashSession.status == CashSessionStatus.OPEN
+        ).first()
+        if existing_register_open:
+            raise ValueError("Une session est déjà ouverte pour ce poste de caisse")
         
         # Créer la session
         cash_session = CashSession(
             operator_id=operator_uuid,
             site_id=site_uuid,
+            register_id=register_uuid,
             initial_amount=initial_amount,
             current_amount=initial_amount,
             status=CashSessionStatus.OPEN
@@ -71,6 +104,10 @@ class CashSessionService:
         if filters.site_id:
             sid = UUID(str(filters.site_id)) if not isinstance(filters.site_id, UUID) else filters.site_id
             query = query.filter(CashSession.site_id == sid)
+
+        if getattr(filters, 'register_id', None):
+            rid = UUID(str(filters.register_id)) if not isinstance(filters.register_id, UUID) else filters.register_id
+            query = query.filter(CashSession.register_id == rid)
 
         if filters.date_from:
             query = query.filter(CashSession.opened_at >= filters.date_from)

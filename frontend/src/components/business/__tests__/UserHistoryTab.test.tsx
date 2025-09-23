@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../../test/test-utils';
+import { render, screen, fireEvent } from '../../../test/test-utils';
 import { UserHistoryTab } from '../UserHistoryTab';
 
-import { vi } from 'vitest';
+import { vi, beforeEach, afterEach } from 'vitest';
 
 // Local Tabler icons mock to avoid missing exports
 vi.mock('@tabler/icons-react', () => ({
@@ -20,27 +20,7 @@ vi.mock('@tabler/icons-react', () => ({
 
 // Mock du store
 const mockFetchUserHistory = vi.fn();
-const mockUseAdminStore = vi.fn(() => ({
-  userHistory: [
-    {
-      id: '1',
-      type: 'ADMINISTRATION',
-      description: 'Rôle changé de \'user\' à \'admin\' par admin_user',
-      timestamp: '2025-01-27T10:15:00Z',
-      metadata: { previous_role: 'user', new_role: 'admin', changed_by: 'admin_user' }
-    },
-    {
-      id: '2',
-      type: 'VENTE',
-      description: 'Vente #V123 enregistrée (3 articles, 15.50€)',
-      timestamp: '2025-01-26T16:45:00Z',
-      metadata: { sale_id: 'V123', items_count: 3, total_amount: 15.50 }
-    }
-  ],
-  historyLoading: false,
-  historyError: null,
-  fetchUserHistory: mockFetchUserHistory
-}));
+const mockUseAdminStore = vi.fn();
 
 vi.mock('../../../stores/adminStore', () => ({
   useAdminStore: mockUseAdminStore
@@ -50,6 +30,32 @@ vi.mock('../../../stores/adminStore', () => ({
 describe('UserHistoryTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Re-configure default mock behavior
+    mockUseAdminStore.mockReturnValue({
+      userHistory: [
+        {
+          id: '1',
+          type: 'ADMINISTRATION',
+          description: 'Rôle changé de \'user\' à \'admin\' par admin_user',
+          timestamp: '2025-01-27T10:15:00Z',
+          metadata: { previous_role: 'user', new_role: 'admin', changed_by: 'admin_user' }
+        },
+        {
+          id: '2',
+          type: 'VENTE',
+          description: 'Vente #V123 enregistrée (3 articles, 15.50€)',
+          timestamp: '2025-01-26T16:45:00Z',
+          metadata: { sale_id: 'V123', items_count: 3, total_amount: 15.50 }
+        }
+      ],
+      historyLoading: false,
+      historyError: null,
+      fetchUserHistory: mockFetchUserHistory
+    });
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
   });
 
   it('affiche les filtres', () => {
@@ -122,32 +128,28 @@ describe('UserHistoryTab', () => {
   });
 
   it('affiche un message quand aucun événement n\'est trouvé', () => {
-    // Mock avec une liste vide
-    vi.mock('../../../stores/adminStore', () => ({
-      useAdminStore: () => ({
-        userHistory: [],
-        historyLoading: false,
-        historyError: null,
-        fetchUserHistory: mockFetchUserHistory
-      })
-    }));
+    // Reconfigurer le mock pour retourner une liste vide
+    mockUseAdminStore.mockReturnValue({
+      userHistory: [],
+      historyLoading: false,
+      historyError: null,
+      fetchUserHistory: mockFetchUserHistory
+    });
 
     render(<UserHistoryTab userId="1" />);
 
-    // Le composant peut ne pas afficher ce texte dans le mock; on vérifie l'absence d'items
-    expect(screen.queryAllByTestId('timeline-item').length).toBe(0);
+    // Sans filtres actifs, on doit afficher le message d'état vide conforme à la story
+    expect(screen.getByText('Aucune activité enregistrée pour cet utilisateur')).toBeInTheDocument();
   });
 
   it('affiche une erreur quand il y a un problème de chargement', () => {
-    // Mock avec une erreur
-    vi.mock('../../../stores/adminStore', () => ({
-      useAdminStore: () => ({
-        userHistory: [],
-        historyLoading: false,
-        historyError: 'Erreur de chargement',
-        fetchUserHistory: mockFetchUserHistory
-      })
-    }));
+    // Reconfigurer le mock pour retourner une erreur
+    mockUseAdminStore.mockReturnValue({
+      userHistory: [],
+      historyLoading: false,
+      historyError: 'Erreur de chargement',
+      fetchUserHistory: mockFetchUserHistory
+    });
 
     render(<UserHistoryTab userId="1" />);
 

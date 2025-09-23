@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Container, Title, Text, Group, Button, Stack, Alert } from '@mantine/core';
 import { IconRefresh, IconAlertCircle, IconUsers } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useNavigate } from 'react-router-dom';
 import PendingUsersTable from '../../components/business/PendingUsersTable';
 import { adminService, AdminUser } from '../../services/adminService';
 
@@ -10,7 +9,6 @@ const PendingUsers: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true); // Toujours initialiser à true pour un état prévisible
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
   const cachedUsersRef = useRef<AdminUser[] | null>(null);
 
   const fetchPendingUsers = useMemo(

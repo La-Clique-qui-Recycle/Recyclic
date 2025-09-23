@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 
 # Copy source code
 COPY src/ ./src/
+COPY generate_openapi.py ./
 
 # Copy tests (optimized for tests)
 COPY tests/ ./tests/
@@ -40,4 +41,4 @@ RUN useradd -m -u 1000 recyclic && chown -R recyclic:recyclic /app
 USER recyclic
 
 # Commande par défaut pour les tests
-CMD ["python", "-m", "pytest", "-v", "--tb=short"]
+CMD ["bash", "-lc", "alembic upgrade head && python -m pytest -v --tb=short"]

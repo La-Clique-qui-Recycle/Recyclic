@@ -70,7 +70,7 @@ describe('useAuthStore', () => {
       await act(async () => {
         try {
           await result.current.login('wronguser', 'wrongpassword');
-        } catch (error) {
+        } catch {
           // Expected error
         }
       });
@@ -147,7 +147,7 @@ describe('useAuthStore', () => {
       await act(async () => {
         try {
           await result.current.signup('existinguser', 'password123');
-        } catch (error) {
+        } catch {
           // Expected error
         }
       });
@@ -168,7 +168,7 @@ describe('useAuthStore', () => {
       await act(async () => {
         try {
           await result.current.signup('testuser', 'password123');
-        } catch (error) {
+        } catch {
           // Expected error
         }
       });

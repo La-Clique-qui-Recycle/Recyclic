@@ -21,7 +21,7 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
 
 export async function login(request: LoginRequest): Promise<LoginResponse> {
   const response = await fetch(`${API_BASE}/auth/login`, {

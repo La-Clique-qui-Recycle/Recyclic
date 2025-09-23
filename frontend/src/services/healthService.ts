@@ -2,7 +2,7 @@
  * Service pour les métriques de santé du système
  */
 
-import { api } from './api'
+import api from './api'
 
 export interface Anomaly {
   type: string

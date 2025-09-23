@@ -121,7 +121,8 @@ async def create_cash_session(
         cash_session = service.create_session(
             operator_id=session_data.operator_id,
             site_id=session_data.site_id,
-            initial_amount=session_data.initial_amount
+            initial_amount=session_data.initial_amount,
+            register_id=session_data.register_id,
         )
         
         # Log de l'ouverture de session

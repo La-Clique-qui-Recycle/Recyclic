@@ -1,5 +1,6 @@
 """
-Tests corrigés pour les endpoints de validation des inscriptions (Story 3.3)
+Tests refactorisés pour les endpoints de validation des inscriptions (Story 3.3)
+Refactorisé selon la Charte de Stratégie de Test (pattern Mocks & Overrides)
 """
 
 import pytest
@@ -14,443 +15,139 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.schemas.admin import UserApprovalRequest, UserRejectionRequest
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user
+from recyclic_api.core.security import create_access_token
+from tests.factories import UserFactory
 
 
 class TestPendingUsersEndpoints:
-    """Tests pour les endpoints de gestion des utilisateurs en attente"""
+    """Tests for pending users endpoints."""
 
-    @pytest.fixture
-    def client(self):
-        """Client de test FastAPI"""
-        return TestClient(app)
+    def test_get_pending_users_success_returns_list(self, admin_client: TestClient, db_session: Session):
+        """Teste que la récupération des utilisateurs en attente réussit et retourne une liste."""
+        UserFactory(status=UserStatus.PENDING)
+        UserFactory(status=UserStatus.APPROVED)
+        db_session.commit()
+
+        response = admin_client.get("/api/v1/admin/users/pending")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]['status'] == UserStatus.PENDING.value
+
+    def test_get_pending_users_empty_list_returns_empty(self, admin_client: TestClient, db_session: Session):
+        """Teste que la récupération des utilisateurs en attente retourne une liste vide s'il n'y en a pas."""
+        UserFactory(status=UserStatus.APPROVED)
+        db_session.commit()
+
+        response = admin_client.get("/api/v1/admin/users/pending")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 0
+
+    def test_get_pending_users_insufficient_role_returns_403(self, client: TestClient, db_session: Session):
+        """Teste que les utilisateurs avec un rôle insuffisant reçoivent une erreur 403."""
+        user = UserFactory(role=UserRole.USER)
+        db_session.add(user)
+        db_session.commit()
+
+        access_token = create_access_token(data={"sub": str(user.id)})
+        client.headers = {"Authorization": f"Bearer {access_token}"}
+
+        response = client.get("/api/v1/admin/users/pending")
+        assert response.status_code == 403
+
+    def test_approve_user_success_updates_status(self, admin_client: TestClient, db_session: Session):
+        """Teste que l'approbation d'un utilisateur met à jour son statut."""
+        user = UserFactory(status=UserStatus.PENDING)
+        db_session.commit()
+
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/approve")
+        assert response.status_code == 200
+        db_session.refresh(user)
+        assert user.status == UserStatus.APPROVED
+
+    def test_approve_user_not_found_returns_404(self, admin_client: TestClient):
+        """Teste que l'approbation d'un utilisateur inexistant retourne une erreur 404."""
+        response = admin_client.post(f"/api/v1/admin/users/{uuid.uuid4()}/approve")
+        assert response.status_code == 404
+
+    def test_approve_user_invalid_uuid_returns_404(self, admin_client: TestClient):
+        """Teste que l'approbation avec un UUID invalide retourne une erreur 404."""
+        response = admin_client.post("/api/v1/admin/users/invalid-uuid/approve")
+        assert response.status_code == 404
+
+    def test_approve_user_not_pending_returns_400(self, admin_client: TestClient, db_session: Session):
+        """Teste que l'approbation d'un utilisateur non en attente retourne une erreur 400."""
+        user = UserFactory(status=UserStatus.APPROVED)
+        db_session.commit()
+
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/approve")
+        assert response.status_code == 400
+
+    def test_reject_user_success_updates_status(self, admin_client: TestClient, db_session: Session):
+        """Teste que le rejet d'un utilisateur met à jour son statut."""
+        user = UserFactory(status=UserStatus.PENDING)
+        db_session.commit()
+
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/reject")
+        assert response.status_code == 200
+        db_session.refresh(user)
+        assert user.status == UserStatus.REJECTED
+
+    def test_reject_user_not_found_returns_404(self, admin_client: TestClient):
+        """Teste que le rejet d'un utilisateur inexistant retourne une erreur 404."""
+        response = admin_client.post(f"/api/v1/admin/users/{uuid.uuid4()}/reject")
+        assert response.status_code == 404
     
-    def _setup_dependency_overrides(self, mock_db, mock_admin_user):
-        """Helper pour configurer les overrides de dépendances FastAPI"""
-        from recyclic_api.main import app
-        from recyclic_api.core.database import get_db
-        from recyclic_api.core.auth import get_current_user
-        
-        def override_get_db():
-            return mock_db
-            
-        def override_get_current_user():
-            return mock_admin_user
-            
-        app.dependency_overrides[get_db] = override_get_db
-        app.dependency_overrides[get_current_user] = override_get_current_user
-        
-        return app
+    def test_reject_user_not_pending_returns_400(self, admin_client: TestClient, db_session: Session):
+        """Teste que le rejet d'un utilisateur non en attente retourne une erreur 400."""
+        user = UserFactory(status=UserStatus.APPROVED)
+        db_session.commit()
 
-    @pytest.fixture
-    def mock_db(self):
-        """Mock de la base de données"""
-        return Mock(spec=Session)
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/reject")
+        assert response.status_code == 400
 
-    @pytest.fixture
-    def mock_admin_user(self):
-        """Utilisateur admin pour les tests"""
-        admin_user = Mock(spec=User)
-        admin_user.id = uuid.uuid4()
-        admin_user.username = "admin_test"
-        admin_user.telegram_id = 123456789
-        admin_user.role = UserRole.ADMIN
-        admin_user.status = UserStatus.APPROVED
-        admin_user.first_name = "Admin"
-        admin_user.last_name = "Test"
-        return admin_user
+    @patch('recyclic_api.services.telegram_service.telegram_service.send_user_approval_notification', side_effect=Exception("Telegram error"))
+    def test_approve_user_telegram_error_continues_operation(self, mock_send_notification, admin_client: TestClient, db_session: Session):
+        """Teste que l'approbation réussit même si la notification Telegram échoue."""
+        user = UserFactory(status=UserStatus.PENDING)
+        db_session.commit()
 
-    @pytest.fixture
-    def mock_pending_users(self):
-        """Utilisateurs en attente pour les tests"""
-        users = []
-        for i in range(3):
-            user = Mock(spec=User)
-            user.id = uuid.uuid4()
-            user.telegram_id = 200000000 + i
-            user.username = f"pending_user_{i}"
-            user.first_name = f"Pending{i}"
-            user.last_name = f"User{i}"
-            user.role = UserRole.USER
-            user.status = UserStatus.PENDING
-            user.is_active = True
-            user.created_at = datetime.now()
-            user.updated_at = datetime.now()
-            users.append(user)
-        return users
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/approve")
+        assert response.status_code == 200
+        db_session.refresh(user)
+        assert user.status == UserStatus.APPROVED
 
-    @pytest.fixture
-    def mock_approved_user(self):
-        """Utilisateur approuvé pour les tests"""
-        user = Mock(spec=User)
-        user.id = uuid.uuid4()
-        user.telegram_id = 999999999
-        user.username = "approved_user"
-        user.first_name = "Approved"
-        user.last_name = "User"
-        user.role = UserRole.USER
-        user.status = UserStatus.APPROVED
-        user.is_active = True
-        user.created_at = datetime.now()
-        user.updated_at = datetime.now()
-        return user
+    @patch('recyclic_api.services.telegram_service.telegram_service.send_user_rejection_notification', side_effect=Exception("Telegram error"))
+    def test_reject_user_telegram_error_continues_operation(self, mock_send_notification, admin_client: TestClient, db_session: Session):
+        """Teste que le rejet réussit même si la notification Telegram échoue."""
+        user = UserFactory(status=UserStatus.PENDING)
+        db_session.commit()
 
-    def test_get_pending_users_success(self, client, mock_db, mock_admin_user, mock_pending_users):
-        """Test de récupération réussie des utilisateurs en attente"""
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.all.return_value = mock_pending_users
-                mock_db.query.return_value = mock_query
-                
-                # Appel de l'endpoint
-                response = client.get("/api/v1/admin/users/pending")
-                
-                # Vérifications
-                assert response.status_code == 200
-                data = response.json()
-                assert len(data) == 3
-                assert all(user["status"] == "pending" for user in data)
-                assert data[0]["username"] == "pending_user_0"
-                assert data[1]["username"] == "pending_user_1"
-                assert data[2]["username"] == "pending_user_2"
-        finally:
-            # Nettoyer les overrides ciblés
-            app.dependency_overrides.pop(get_db, None)
-            app.dependency_overrides.pop(get_current_user, None)
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/reject")
+        assert response.status_code == 200
+        db_session.refresh(user)
+        assert user.status == UserStatus.REJECTED
 
-    def test_get_pending_users_empty_list(self, client, mock_db, mock_admin_user):
-        """Test avec une liste vide d'utilisateurs en attente"""
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                # Mock de la requête de base de données - liste vide
-                mock_query = Mock()
-                mock_query.filter.return_value.all.return_value = []
-                mock_db.query.return_value = mock_query
-                
-                response = client.get("/api/v1/admin/users/pending")
-                
-                assert response.status_code == 200
-                data = response.json()
-                assert len(data) == 0
-        finally:
-            # Nettoyer les overrides ciblés
-            app.dependency_overrides.pop(get_db, None)
-            app.dependency_overrides.pop(get_current_user, None)
+    def test_approve_user_without_message_succeeds(self, admin_client: TestClient, db_session: Session):
+        """Teste que l'approbation sans message personnalisé réussit."""
+        user = UserFactory(status=UserStatus.PENDING)
+        db_session.commit()
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/approve", json=None)
+        assert response.status_code == 200
 
-    def test_get_pending_users_unauthorized(self, client, mock_db):
-        """Test d'accès non autorisé (sans authentification)"""
-        from recyclic_api.main import app
-        from recyclic_api.core.database import get_db
-        from recyclic_api.core.auth import get_current_user
-        from fastapi import HTTPException, status
-        
-        # Override get_db et get_current_user pour simuler l'absence d'auth
-        def override_get_db():
-            return mock_db
-            
-        def override_get_current_user():
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
-            )
-            
-        app.dependency_overrides[get_db] = override_get_db
-        app.dependency_overrides[get_current_user] = override_get_current_user
-        
-        try:
-            response = client.get("/api/v1/admin/users/pending")
-            assert response.status_code == 401
-        finally:
-            app.dependency_overrides.clear()
+    def test_reject_user_without_reason_succeeds(self, admin_client: TestClient, db_session: Session):
+        """Teste que le rejet sans raison personnalisée réussit."""
+        user = UserFactory(status=UserStatus.PENDING)
+        db_session.commit()
+        response = admin_client.post(f"/api/v1/admin/users/{user.id}/reject", json=None)
+        assert response.status_code == 200
 
-    def test_get_pending_users_insufficient_role(self, client, mock_db):
-        """Test avec un utilisateur non-admin"""
-        from recyclic_api.main import app
-        from recyclic_api.core.database import get_db
-        from recyclic_api.core.auth import get_current_user
-        
-        # Créer un utilisateur non-admin
-        non_admin_user = Mock(spec=User)
-        non_admin_user.id = uuid.uuid4()
-        non_admin_user.role = UserRole.USER
-        non_admin_user.status = UserStatus.APPROVED
-        
-        def override_get_db():
-            return mock_db
-            
-        def override_get_current_user():
-            return non_admin_user
-            
-        app.dependency_overrides[get_db] = override_get_db
-        app.dependency_overrides[get_current_user] = override_get_current_user
-        
-        try:
-            response = client.get("/api/v1/admin/users/pending")
-            assert response.status_code == 403
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_approve_user_success(self, client, mock_db, mock_admin_user, mock_pending_users):
-        """Test d'approbation réussie d'un utilisateur"""
-        target_user = mock_pending_users[0]
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'), \
-                 patch('recyclic_api.core.audit.log_role_change'), \
-                 patch('recyclic_api.services.telegram_service.telegram_service') as mock_telegram:
-                
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = target_user
-                mock_db.query.return_value = mock_query
-                
-                # Mock des services Telegram
-                mock_telegram.send_user_approval_notification = AsyncMock()
-                mock_telegram.notify_admins_user_processed = AsyncMock()
-                
-                # Appel de l'endpoint
-                approval_data = {"message": "Bienvenue dans l'équipe !"}
-                response = client.post(
-                    f"/api/v1/admin/users/{target_user.id}/approve",
-                    json=approval_data
-                )
-                
-                # Vérifications
-                assert response.status_code == 200
-                data = response.json()
-                assert data["success"] is True
-                assert "approuvé avec succès" in data["message"]
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_approve_user_not_found(self, client, mock_db, mock_admin_user):
-        """Test d'approbation d'un utilisateur inexistant"""
-        fake_user_id = str(uuid.uuid4())
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                # Mock de la requête de base de données - utilisateur non trouvé
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = None
-                mock_db.query.return_value = mock_query
-                
-                response = client.post(f"/api/v1/admin/users/{fake_user_id}/approve")
-                
-                assert response.status_code == 404
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_approve_user_invalid_uuid(self, client, mock_db, mock_admin_user):
-        """Test d'approbation avec un UUID invalide"""
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                response = client.post("/api/v1/admin/users/invalid-uuid/approve")
-                assert response.status_code == 404
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_approve_user_not_pending(self, client, mock_db, mock_admin_user, mock_approved_user):
-        """Test d'approbation d'un utilisateur qui n'est pas en attente"""
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = mock_approved_user
-                mock_db.query.return_value = mock_query
-                
-                response = client.post(f"/api/v1/admin/users/{mock_approved_user.id}/approve")
-                assert response.status_code == 400
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_reject_user_success(self, client, mock_db, mock_admin_user, mock_pending_users):
-        """Test de rejet réussi d'un utilisateur"""
-        target_user = mock_pending_users[0]
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'), \
-                 patch('recyclic_api.core.audit.log_role_change'), \
-                 patch('recyclic_api.services.telegram_service.telegram_service') as mock_telegram:
-                
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = target_user
-                mock_db.query.return_value = mock_query
-                
-                # Mock des services Telegram
-                mock_telegram.send_user_rejection_notification = AsyncMock()
-                mock_telegram.notify_admins_user_processed = AsyncMock()
-                
-                # Appel de l'endpoint
-                rejection_data = {"reason": "Profil incomplet"}
-                response = client.post(
-                    f"/api/v1/admin/users/{target_user.id}/reject",
-                    json=rejection_data
-                )
-                
-                # Vérifications
-                assert response.status_code == 200
-                data = response.json()
-                assert data["success"] is True
-                assert "rejeté avec succès" in data["message"]
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_reject_user_not_found(self, client, mock_db, mock_admin_user):
-        """Test de rejet d'un utilisateur inexistant"""
-        fake_user_id = str(uuid.uuid4())
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                # Mock de la requête de base de données - utilisateur non trouvé
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = None
-                mock_db.query.return_value = mock_query
-                
-                response = client.post(f"/api/v1/admin/users/{fake_user_id}/reject")
-                assert response.status_code == 404
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_reject_user_not_pending(self, client, mock_db, mock_admin_user, mock_approved_user):
-        """Test de rejet d'un utilisateur qui n'est pas en attente"""
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = mock_approved_user
-                mock_db.query.return_value = mock_query
-                
-                response = client.post(f"/api/v1/admin/users/{mock_approved_user.id}/reject")
-                assert response.status_code == 400
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_approve_user_telegram_error(self, client, mock_db, mock_admin_user, mock_pending_users):
-        """Test d'approbation avec erreur de notification Telegram"""
-        target_user = mock_pending_users[0]
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'), \
-                 patch('recyclic_api.core.audit.log_role_change'), \
-                 patch('recyclic_api.services.telegram_service.telegram_service') as mock_telegram:
-                
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = target_user
-                mock_db.query.return_value = mock_query
-                
-                # Mock des services Telegram avec erreur
-                mock_telegram.send_user_approval_notification = AsyncMock(side_effect=Exception("Telegram error"))
-                mock_telegram.notify_admins_user_processed = AsyncMock()
-                
-                # L'approbation doit quand même réussir malgré l'erreur Telegram
-                response = client.post(f"/api/v1/admin/users/{target_user.id}/approve")
-                assert response.status_code == 200
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_reject_user_telegram_error(self, client, mock_db, mock_admin_user, mock_pending_users):
-        """Test de rejet avec erreur de notification Telegram"""
-        target_user = mock_pending_users[0]
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'), \
-                 patch('recyclic_api.core.audit.log_role_change'), \
-                 patch('recyclic_api.services.telegram_service.telegram_service') as mock_telegram:
-                
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = target_user
-                mock_db.query.return_value = mock_query
-                
-                # Mock des services Telegram avec erreur
-                mock_telegram.send_user_rejection_notification = AsyncMock(side_effect=Exception("Telegram error"))
-                mock_telegram.notify_admins_user_processed = AsyncMock()
-                
-                # Le rejet doit quand même réussir malgré l'erreur Telegram
-                response = client.post(f"/api/v1/admin/users/{target_user.id}/reject")
-                assert response.status_code == 200
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_approve_user_without_message(self, client, mock_db, mock_admin_user, mock_pending_users):
-        """Test d'approbation sans message personnalisé"""
-        target_user = mock_pending_users[0]
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'), \
-                 patch('recyclic_api.core.audit.log_role_change'), \
-                 patch('recyclic_api.services.telegram_service.telegram_service') as mock_telegram:
-                
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = target_user
-                mock_db.query.return_value = mock_query
-                
-                # Mock des services Telegram
-                mock_telegram.send_user_approval_notification = AsyncMock()
-                mock_telegram.notify_admins_user_processed = AsyncMock()
-                
-                # Appel de l'endpoint sans données
-                response = client.post(f"/api/v1/admin/users/{target_user.id}/approve")
-                assert response.status_code == 200
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_reject_user_without_reason(self, client, mock_db, mock_admin_user, mock_pending_users):
-        """Test de rejet sans raison spécifiée"""
-        target_user = mock_pending_users[0]
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'), \
-                 patch('recyclic_api.core.audit.log_role_change'), \
-                 patch('recyclic_api.services.telegram_service.telegram_service') as mock_telegram:
-                
-                # Mock de la requête de base de données
-                mock_query = Mock()
-                mock_query.filter.return_value.first.return_value = target_user
-                mock_db.query.return_value = mock_query
-                
-                # Mock des services Telegram
-                mock_telegram.send_user_rejection_notification = AsyncMock()
-                mock_telegram.notify_admins_user_processed = AsyncMock()
-                
-                # Appel de l'endpoint sans données
-                response = client.post(f"/api/v1/admin/users/{target_user.id}/reject")
-                assert response.status_code == 200
-        finally:
-            app.dependency_overrides.clear()
-
-    def test_database_error_handling(self, client, mock_db, mock_admin_user):
-        """Test de gestion d'erreur de base de données"""
-        app = self._setup_dependency_overrides(mock_db, mock_admin_user)
-        
-        try:
-            with patch('recyclic_api.core.audit.log_admin_access'):
-                # Mock d'une erreur de base de données
-                mock_db.query.side_effect = Exception("Database connection error")
-                
-                response = client.get("/api/v1/admin/users/pending")
-                assert response.status_code == 500
-        finally:
-            app.dependency_overrides.clear()
+    @patch('recyclic_api.api.api_v1.endpoints.admin.get_db')
+    def test_database_error_handling_returns_500(self, mock_get_db, admin_client: TestClient):
+        """Teste que les erreurs de base de données retournent une erreur 500."""
+        mock_get_db.side_effect = Exception("Database connection error")
+        response = admin_client.get("/api/v1/admin/users/pending")
+        assert response.status_code == 500

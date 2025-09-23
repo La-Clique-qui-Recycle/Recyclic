@@ -6,6 +6,7 @@ from .endpoints import (
     deposits_router as deposits,
     sales_router as sales,
     cash_sessions_router as cash_sessions,
+    cash_registers as cash_registers,
     admin_router as admin,
     monitoring_router as monitoring,
     auth_router as auth,
@@ -24,6 +25,7 @@ api_router.include_router(sites, prefix="/sites", tags=["sites"])
 api_router.include_router(deposits, prefix="/deposits", tags=["deposits"])
 api_router.include_router(sales, prefix="/sales", tags=["sales"])
 api_router.include_router(cash_sessions, prefix="/cash-sessions", tags=["cash-sessions"])
+api_router.include_router(cash_registers, prefix="/cash-registers", tags=["cash-registers"])
 api_router.include_router(admin, prefix="/admin", tags=["admin"])
 api_router.include_router(monitoring, prefix="/monitoring", tags=["monitoring"])
 api_router.include_router(auth, prefix="/auth", tags=["auth"])

@@ -2,7 +2,6 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Recyclic API",
-    "description": "API pour la plateforme Recyclic - Gestion de recyclage intelligente",
     "version": "1.0.0"
   },
   "paths": {
@@ -281,7 +280,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserStatusUpdate"
+                "$ref": "#/components/schemas/recyclic_api__schemas__user__UserStatusUpdate"
               }
             }
           }
@@ -564,6 +563,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "title": "Deposit Id"
             }
           }
@@ -605,6 +605,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "title": "Deposit Id"
             }
           },
@@ -734,6 +735,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "title": "Deposit Id"
             }
           },
@@ -792,7 +794,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
                   "title": "Response Get Validation Metrics Api V1 Deposits Metrics Validation Performance Get"
                 }
@@ -864,8 +865,12 @@
           "sales"
         ],
         "summary": "Create Sale",
-        "description": "Create new sale with items",
         "operationId": "create_sale_api_v1_sales__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1096,6 +1101,24 @@
               "title": "Operator Id"
             },
             "description": "Filtrer par ID d'opérateur"
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrer par ID de site",
+              "title": "Site Id"
+            },
+            "description": "Filtrer par ID de site"
           },
           {
             "name": "date_from",
@@ -1351,6 +1374,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashSessionClose"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Session fermée avec succès",
@@ -1716,7 +1749,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserApprovalRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UserApprovalRequest"
+                  }
+                ],
+                "title": "Approval Request"
               }
             }
           }
@@ -1774,7 +1812,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserRejectionRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UserRejectionRequest"
+                  }
+                ],
+                "title": "Rejection Request"
               }
             }
           }
@@ -1801,6 +1844,381 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/status": {
+      "put": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Modifier le statut actif d'un utilisateur (Admin)",
+        "description": "Met à jour le statut is_active d'un utilisateur et enregistre l'historique",
+        "operationId": "update_user_status_api_v1_admin_users__user_id__status_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/recyclic_api__schemas__admin__UserStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}": {
+      "put": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Mettre à jour le profil d'un utilisateur (Admin)",
+        "description": "Met à jour les informations de base du profil utilisateur",
+        "operationId": "update_user_profile_api_v1_admin_users__user_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/history": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Historique d'activité d'un utilisateur (Admin)",
+        "description": "Récupère la chronologie complète et filtrable de l'activité d'un utilisateur",
+        "operationId": "get_user_history_api_v1_admin_users__user_id__history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date de début du filtre (format ISO)",
+              "title": "Date From"
+            },
+            "description": "Date de début du filtre (format ISO)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date de fin du filtre (format ISO)",
+              "title": "Date To"
+            },
+            "description": "Date de fin du filtre (format ISO)"
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Type d'événement à filtrer (ADMINISTRATION, SESSION CAISSE, VENTE, DEPOT)",
+              "title": "Event Type"
+            },
+            "description": "Type d'événement à filtrer (ADMINISTRATION, SESSION CAISSE, VENTE, DEPOT)"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Nombre d'éléments à ignorer",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Nombre d'éléments à ignorer"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Nombre d'éléments par page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Nombre d'éléments par page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/health-test": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Test simple de l'endpoint admin",
+        "description": "Test simple pour vérifier que l'endpoint admin fonctionne",
+        "operationId": "test_admin_endpoint_api_v1_admin_health_test_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/health": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Métriques de santé du système",
+        "description": "Expose les métriques de santé, anomalies détectées et recommandations",
+        "operationId": "get_system_health_api_v1_admin_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/health/anomalies": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Anomalies détectées",
+        "description": "Récupère uniquement les anomalies détectées sans réexécuter la détection",
+        "operationId": "get_anomalies_api_v1_admin_health_anomalies_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/health/test-notifications": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Test des notifications",
+        "description": "Envoie une notification de test pour vérifier le système de notifications",
+        "operationId": "test_notifications_api_v1_admin_health_test_notifications_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/health/scheduler": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin"
+        ],
+        "summary": "Statut du scheduler",
+        "description": "Récupère le statut du scheduler de tâches planifiées",
+        "operationId": "get_scheduler_status_api_v1_admin_health_scheduler_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/monitoring/test-email": {
@@ -1960,7 +2378,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "additionalProperties": true,
                   "title": "Response Get Classification Performance Api V1 Monitoring Classification Performance Get"
                 }
               }
@@ -2545,6 +2962,288 @@
         }
       }
     },
+    "/api/v1/admin/reports/cash-sessions": {
+      "get": {
+        "tags": [
+          "admin",
+          "reports"
+        ],
+        "summary": "Lister les rapports de sessions de caisse",
+        "description": "Return the available cash session reports for administrators.",
+        "operationId": "list_cash_session_reports_api_v1_admin_reports_cash_sessions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/reports/cash-sessions/{filename}": {
+      "get": {
+        "tags": [
+          "admin",
+          "reports"
+        ],
+        "summary": "Telecharger un rapport de session de caisse",
+        "description": "Serve the requested cash session report as a CSV file.",
+        "operationId": "download_cash_session_report_api_v1_admin_reports_cash_sessions__filename__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Filename"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Jeton d'Acces signe",
+              "title": "Token"
+            },
+            "description": "Jeton d'Acces signe"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/settings/alert-thresholds": {
+      "get": {
+        "tags": [
+          "admin",
+          "settings",
+          "admin",
+          "settings"
+        ],
+        "summary": "Get Alert Thresholds",
+        "operationId": "get_alert_thresholds_api_v1_admin_settings_settings_alert_thresholds_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertThresholdsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "settings",
+          "admin",
+          "settings"
+        ],
+        "summary": "Put Alert Thresholds",
+        "operationId": "put_alert_thresholds_api_v1_admin_settings_settings_alert_thresholds_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertThresholdsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertThresholdsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/dashboard/dashboard/stats": {
+      "get": {
+        "tags": [
+          "admin",
+          "dashboard",
+          "admin",
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Stats",
+        "operationId": "get_dashboard_stats_api_v1_admin_dashboard_dashboard_stats_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrer les statistiques par site",
+              "title": "Site Id"
+            },
+            "description": "Filtrer les statistiques par site"
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date de debut (ISO 8601)",
+              "title": "Date From"
+            },
+            "description": "Date de debut (ISO 8601)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date de fin (ISO 8601)",
+              "title": "Date To"
+            },
+            "description": "Date de fin (ISO 8601)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -2582,12 +3281,64 @@
   },
   "components": {
     "schemas": {
+      "ActivityEvent": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string",
+                "format": "uuid"
+              }
+            ],
+            "title": "Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type",
+            "description": "Type d'événement (ADMINISTRATION, LOGIN, SESSION CAISSE, VENTE, DEPOT)"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Description de l'événement"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date",
+            "description": "Date de l'événement"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Métadonnées supplémentaires de l'événement"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "description",
+          "date"
+        ],
+        "title": "ActivityEvent",
+        "description": "Schéma pour un événement d'activité utilisateur"
+      },
       "AdminResponse": {
         "properties": {
           "data": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2630,10 +3381,13 @@
           "telegram_id": {
             "anyOf": [
               {
+                "type": "string"
+              },
+              {
                 "type": "integer"
               },
               {
-                "type": "string"
+                "type": "null"
               }
             ],
             "title": "Telegram Id"
@@ -2732,7 +3486,6 @@
         "type": "object",
         "required": [
           "id",
-          "telegram_id",
           "role",
           "status",
           "is_active",
@@ -2741,6 +3494,102 @@
         ],
         "title": "AdminUser",
         "description": "Schéma pour les utilisateurs dans l'interface d'administration"
+      },
+      "AlertThresholds-Input": {
+        "properties": {
+          "cash_discrepancy": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Cash Discrepancy",
+            "description": "Cash discrepancy avant alerte"
+          },
+          "low_inventory": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Low Inventory",
+            "description": "Nombre d'articles minimum avant alerte d'inventaire"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cash_discrepancy",
+          "low_inventory"
+        ],
+        "title": "AlertThresholds",
+        "description": "Dashboard alert thresholds persisted server-side."
+      },
+      "AlertThresholds-Output": {
+        "properties": {
+          "cashDiscrepancy": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Cashdiscrepancy",
+            "description": "Cash discrepancy avant alerte"
+          },
+          "lowInventory": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Lowinventory",
+            "description": "Nombre d'articles minimum avant alerte d'inventaire"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cashDiscrepancy",
+          "lowInventory"
+        ],
+        "title": "AlertThresholds",
+        "description": "Dashboard alert thresholds persisted server-side."
+      },
+      "AlertThresholdsResponse": {
+        "properties": {
+          "thresholds": {
+            "$ref": "#/components/schemas/AlertThresholds-Output"
+          },
+          "siteId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siteid",
+            "description": "Site concerne par cette configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thresholds"
+        ],
+        "title": "AlertThresholdsResponse",
+        "description": "Response payload for threshold retrieval."
+      },
+      "AlertThresholdsUpdate": {
+        "properties": {
+          "thresholds": {
+            "$ref": "#/components/schemas/AlertThresholds-Input"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id",
+            "description": "Site cible pour la configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thresholds"
+        ],
+        "title": "AlertThresholdsUpdate",
+        "description": "Request payload for updating alert thresholds."
       },
       "AuthUser": {
         "properties": {
@@ -2845,6 +3694,34 @@
         "title": "AuthUser",
         "description": "Représentation de l'utilisateur retournée après authentification."
       },
+      "CashSessionClose": {
+        "properties": {
+          "actual_amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Actual Amount",
+            "description": "Montant physique compté en caisse"
+          },
+          "variance_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variance Comment",
+            "description": "Commentaire obligatoire en cas d'écart"
+          }
+        },
+        "type": "object",
+        "required": [
+          "actual_amount"
+        ],
+        "title": "CashSessionClose",
+        "description": "Schéma pour la fermeture d'une session de caisse avec contrôle des montants."
+      },
       "CashSessionCreate": {
         "properties": {
           "operator_id": {
@@ -2938,7 +3815,11 @@
             "description": "Montant actuel en caisse"
           },
           "status": {
-            "$ref": "#/components/schemas/CashSessionStatus",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CashSessionStatus"
+              }
+            ],
             "description": "Statut de la session"
           },
           "opened_at": {
@@ -2983,6 +3864,78 @@
             ],
             "title": "Total Items",
             "description": "Nombre total d'articles vendus"
+          },
+          "closing_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closing Amount",
+            "description": "Montant théorique calculé à la fermeture"
+          },
+          "actual_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Amount",
+            "description": "Montant physique compté à la fermeture"
+          },
+          "variance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variance",
+            "description": "Écart entre théorique et physique"
+          },
+          "variance_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variance Comment",
+            "description": "Commentaire sur l'écart"
+          },
+          "report_download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Download Url",
+            "description": "URL de telechargement du rapport genere"
+          },
+          "report_email_sent": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Email Sent",
+            "description": "Indique si l'envoi du rapport par email a reussi"
           }
         },
         "type": "object",
@@ -3057,6 +4010,73 @@
         ],
         "title": "CashSessionStatus"
       },
+      "CashSessionSummary": {
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "title": "Sessionid"
+          },
+          "siteId": {
+            "type": "string",
+            "title": "Siteid"
+          },
+          "operator": {
+            "type": "string",
+            "title": "Operator"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Openedat"
+          },
+          "closedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closedat"
+          },
+          "initialAmount": {
+            "type": "number",
+            "title": "Initialamount"
+          },
+          "currentAmount": {
+            "type": "number",
+            "title": "Currentamount"
+          },
+          "totalSales": {
+            "type": "number",
+            "title": "Totalsales"
+          },
+          "totalItems": {
+            "type": "integer",
+            "title": "Totalitems"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sessionId",
+          "siteId",
+          "operator",
+          "openedAt",
+          "initialAmount",
+          "currentAmount",
+          "totalSales",
+          "totalItems",
+          "status"
+        ],
+        "title": "CashSessionSummary",
+        "description": "Summary information for recent cash sessions."
+      },
       "CashSessionUpdate": {
         "properties": {
           "status": {
@@ -3113,6 +4133,91 @@
         "type": "object",
         "title": "CashSessionUpdate",
         "description": "Schéma pour la mise à jour d'une session de caisse."
+      },
+      "DashboardMetrics": {
+        "properties": {
+          "totalSessions": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Totalsessions"
+          },
+          "openSessions": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Opensessions"
+          },
+          "closedSessions": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Closedsessions"
+          },
+          "totalSales": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Totalsales"
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Totalitems"
+          },
+          "averageSessionDuration": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Averagesessionduration",
+            "description": "Average duration in hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totalSessions",
+          "openSessions",
+          "closedSessions",
+          "totalSales",
+          "totalItems"
+        ],
+        "title": "DashboardMetrics",
+        "description": "Aggregated metrics displayed on the admin dashboard."
+      },
+      "DashboardStatsResponse": {
+        "properties": {
+          "metrics": {
+            "$ref": "#/components/schemas/DashboardMetrics"
+          },
+          "encryptedMetrics": {
+            "type": "string",
+            "title": "Encryptedmetrics",
+            "description": "Encrypted representation of the metrics payload"
+          },
+          "recentReports": {
+            "items": {
+              "$ref": "#/components/schemas/RecentReport"
+            },
+            "type": "array",
+            "title": "Recentreports"
+          },
+          "recentSessions": {
+            "items": {
+              "$ref": "#/components/schemas/CashSessionSummary"
+            },
+            "type": "array",
+            "title": "Recentsessions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metrics",
+          "encryptedMetrics"
+        ],
+        "title": "DashboardStatsResponse",
+        "description": "Response payload for the admin dashboard statistics endpoint."
       },
       "DepositCreate": {
         "properties": {
@@ -3253,12 +4358,10 @@
           "alternative_categories": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
                 "items": {
-                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -3283,18 +4386,28 @@
             "title": "Telegram User Id"
           },
           "audio_file_path": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Audio File Path"
           },
           "status": {
-            "$ref": "#/components/schemas/DepositStatus",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DepositStatus"
+              }
+            ],
             "default": "pending_audio"
           }
         },
         "type": "object",
         "required": [
-          "telegram_user_id",
-          "audio_file_path"
+          "telegram_user_id"
         ],
         "title": "DepositCreateFromBot",
         "description": "Schema for creating deposits from Telegram bot"
@@ -3465,12 +4578,10 @@
           "alternative_categories": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
                 "items": {
-                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -3717,6 +4828,94 @@
         "title": "PendingUserResponse",
         "description": "Schéma pour la réponse des utilisateurs en attente"
       },
+      "RecentReport": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "downloadUrl": {
+            "type": "string",
+            "title": "Downloadurl"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generatedat"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "title": "Sizebytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "downloadUrl",
+          "generatedAt",
+          "sizeBytes"
+        ],
+        "title": "RecentReport",
+        "description": "Metadata about recently generated cash session reports."
+      },
+      "ReportEntry": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Nom du fichier de rapport"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes",
+            "description": "Taille du fichier en octets"
+          },
+          "modified_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Modified At",
+            "description": "Horodatage de la derniere modification"
+          },
+          "download_url": {
+            "type": "string",
+            "title": "Download Url",
+            "description": "URL relative pour telecharger le rapport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "size_bytes",
+          "modified_at",
+          "download_url"
+        ],
+        "title": "ReportEntry",
+        "description": "Metadata describing an available report file."
+      },
+      "ReportListResponse": {
+        "properties": {
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/ReportEntry"
+            },
+            "type": "array",
+            "title": "Reports",
+            "description": "Liste des rapports disponibles"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Nombre total de rapports"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reports",
+          "total"
+        ],
+        "title": "ReportListResponse",
+        "description": "Response payload listing report files."
+      },
       "ResetPasswordRequest": {
         "properties": {
           "token": {
@@ -3726,7 +4925,6 @@
           },
           "new_password": {
             "type": "string",
-            "minLength": 8,
             "title": "New Password",
             "description": "Nouveau mot de passe"
           }
@@ -3758,6 +4956,7 @@
         "properties": {
           "cash_session_id": {
             "type": "string",
+            "format": "uuid",
             "title": "Cash Session Id"
           },
           "items": {
@@ -3972,7 +5171,6 @@
           "configuration": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4013,7 +5211,6 @@
           "configuration": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4124,11 +5321,19 @@
             "title": "Last Name"
           },
           "role": {
-            "$ref": "#/components/schemas/UserRole",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ],
             "default": "user"
           },
           "status": {
-            "$ref": "#/components/schemas/UserStatus",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserStatus"
+              }
+            ],
             "default": "pending"
           },
           "is_active": {
@@ -4154,6 +5359,100 @@
         ],
         "title": "UserCreate"
       },
+      "UserHistoryResponse": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string",
+                "format": "uuid"
+              }
+            ],
+            "title": "User Id"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count",
+            "description": "Nombre total d'événements"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page",
+            "description": "Page actuelle"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "description": "Nombre d'éléments par page"
+          },
+          "has_next": {
+            "type": "boolean",
+            "title": "Has Next",
+            "description": "Y a-t-il une page suivante"
+          },
+          "has_prev": {
+            "type": "boolean",
+            "title": "Has Prev",
+            "description": "Y a-t-il une page précédente"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "events",
+          "total_count",
+          "page",
+          "limit",
+          "has_next",
+          "has_prev"
+        ],
+        "title": "UserHistoryResponse",
+        "description": "Schéma pour la réponse de l'historique utilisateur"
+      },
+      "UserProfileUpdate": {
+        "properties": {
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name",
+            "description": "Prénom de l'utilisateur"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name",
+            "description": "Nom de famille de l'utilisateur"
+          }
+        },
+        "type": "object",
+        "title": "UserProfileUpdate",
+        "description": "Schéma pour la mise à jour du profil utilisateur"
+      },
       "UserRejectionRequest": {
         "properties": {
           "reason": {
@@ -4176,7 +5475,14 @@
       "UserResponse": {
         "properties": {
           "telegram_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Telegram Id"
           },
           "username": {
@@ -4213,11 +5519,19 @@
             "title": "Last Name"
           },
           "role": {
-            "$ref": "#/components/schemas/UserRole",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ],
             "default": "user"
           },
           "status": {
-            "$ref": "#/components/schemas/UserStatus",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserStatus"
+              }
+            ],
             "default": "pending"
           },
           "is_active": {
@@ -4253,7 +5567,6 @@
         },
         "type": "object",
         "required": [
-          "telegram_id",
           "id",
           "created_at",
           "updated_at"
@@ -4274,7 +5587,11 @@
       "UserRoleUpdate": {
         "properties": {
           "role": {
-            "$ref": "#/components/schemas/UserRole",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ],
             "description": "Nouveau rôle à assigner à l'utilisateur"
           }
         },
@@ -4290,21 +5607,10 @@
         "enum": [
           "pending",
           "approved",
-          "rejected"
+          "rejected",
+          "active"
         ],
         "title": "UserStatus"
-      },
-      "UserStatusUpdate": {
-        "properties": {
-          "status": {
-            "$ref": "#/components/schemas/UserStatus"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "title": "UserStatusUpdate"
       },
       "UserUpdate": {
         "properties": {
@@ -4419,6 +5725,45 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "recyclic_api__schemas__admin__UserStatusUpdate": {
+        "properties": {
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Nouveau statut actif de l'utilisateur"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Raison du changement de statut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_active"
+        ],
+        "title": "UserStatusUpdate",
+        "description": "Schéma pour la modification du statut is_active d'un utilisateur"
+      },
+      "recyclic_api__schemas__user__UserStatusUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "UserStatusUpdate"
       }
     },
     "securitySchemes": {

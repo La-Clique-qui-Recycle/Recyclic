@@ -11,6 +11,7 @@ from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.config import settings
 from recyclic_api.core.security import hash_password
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.site import Site
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.utils.report_tokens import generate_download_token
@@ -57,10 +58,22 @@ def _create_operator(db_session: Session, site: Site, username: str = "report_op
 
 
 def _create_session_record(db_session: Session, operator: User, site: Site) -> CashSession:
+    # Créer un poste de caisse pour la session
+    register = CashRegister(
+        id=uuid4(),
+        name="Test Register",
+        location="Test Location",
+        site_id=site.id,
+        is_active=True
+    )
+    db_session.add(register)
+    db_session.flush()  # Flush pour obtenir l'ID
+    
     session = CashSession(
         id=uuid4(),
         operator_id=operator.id,
         site_id=site.id,
+        register_id=register.id,
         initial_amount=50.0,
         current_amount=50.0,
         status=CashSessionStatus.CLOSED,

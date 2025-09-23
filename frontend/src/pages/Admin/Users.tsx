@@ -4,7 +4,7 @@ import { IconSearch, IconRefresh, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useAdminStore } from '../../stores/adminStore';
 import { UserListTable } from '../../components/business/UserListTable';
-import { UserDetailView } from '../../components/business/UserDetailView';
+import UserDetailView from '../../components/business/UserDetailView';
 import { UserRole, UserStatus, AdminUser } from '../../services/adminService';
 
 const AdminUsers: React.FC = () => {
@@ -64,17 +64,8 @@ const AdminUsers: React.FC = () => {
     fetchUsers();
   };
 
-  const handleViewUser = (user: AdminUser) => {
+  const handleRowClick = (user: AdminUser) => {
     setSelectedUser(user);
-  };
-
-  const handleEditUser = (user: AdminUser) => {
-    setSelectedUser(user);
-  };
-
-  const handleDeleteUser = (user: AdminUser) => {
-    // TODO: Implémenter la suppression de l'utilisateur
-    console.log('Supprimer utilisateur:', user);
   };
 
   const handleUserUpdate = (updatedUser: AdminUser) => {
@@ -187,9 +178,7 @@ const AdminUsers: React.FC = () => {
                   users={users}
                   loading={loading}
                   onRoleChange={handleRoleChange}
-                  onViewUser={handleViewUser}
-                  onEditUser={handleEditUser}
-                  onDeleteUser={handleDeleteUser}
+                  onRowClick={handleRowClick}
                 />
                 
                 {users.length > 0 && (

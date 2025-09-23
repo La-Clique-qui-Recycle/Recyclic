@@ -3,7 +3,6 @@ import {
   Stack,
   Group,
   TextInput,
-  Select,
   Button,
   Text,
   Timeline,
@@ -53,6 +52,13 @@ export const UserHistoryTab: React.FC<UserHistoryTabProps> = ({ userId }) => {
       search: ''
     }
   });
+
+  const hasActiveFilters = !!(
+    watch('startDate') ||
+    watch('endDate') ||
+    (watch('eventType') && watch('eventType')!.length > 0) ||
+    (watch('search') && watch('search')!.trim() !== '')
+  );
 
   useEffect(() => {
     fetchUserHistory(userId);
@@ -203,16 +209,19 @@ export const UserHistoryTab: React.FC<UserHistoryTabProps> = ({ userId }) => {
       ) : paginatedEvents.length === 0 ? (
         <Alert
           icon={<IconAlertCircle size={16} />}
-          title="Aucun événement trouvé"
+          title={hasActiveFilters ? 'Aucun événement trouvé' : 'Aucune activité enregistrée pour cet utilisateur'}
           color="blue"
         >
-          Aucun événement ne correspond aux critères de recherche.
+          {hasActiveFilters
+            ? 'Aucun événement ne correspond aux critères de recherche.'
+            : 'Aucune activité enregistrée pour cet utilisateur'}
         </Alert>
       ) : (
         <Timeline active={-1} bulletSize={24} lineWidth={2}>
           {paginatedEvents.map((event) => (
             <Timeline.Item
               key={event.id}
+              data-testid="timeline-item"
               bullet={getEventIcon(event.type)}
               title={
                 <Group gap="xs">

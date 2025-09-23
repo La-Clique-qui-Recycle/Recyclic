@@ -45,6 +45,7 @@ Cette spécification définit l'expérience utilisateur, l'architecture d'inform
 | Date | Version | Description | Author |
 |------|---------|-------------|---------|
 | 2025-09-09 | 1.0 | Spécification initiale interface caisse | Sally (UX Expert) |
+| 2025-09-22 | 1.1 | Ajout spécifications interface administration utilisateurs | James (Dev Agent) |
 
 ## Information Architecture (IA)
 
@@ -336,6 +337,125 @@ PWA avec cache agressif, images optimisées, CSS/JS minifiés. Mode offline robu
 - [x] Brand guidelines incorporated
 - [x] Performance goals established
 
+## Interface d'Administration des Utilisateurs
+
+### Vue d'ensemble
+
+L'interface d'administration des utilisateurs permet aux super-administrateurs de gérer efficacement les utilisateurs du système avec une interface intuitive Master-Detail.
+
+### Flow Utilisateur : Gestion des Utilisateurs
+
+**User Goal:** Consulter, gérer et modifier le statut des utilisateurs rapidement
+
+**Entry Points:** Menu d'administration → Gestion des Utilisateurs
+
+**Success Criteria:** Actions administratives accomplies en moins de 3 clics
+
+#### Flow Diagram
+
+```mermaid
+graph TD
+    A[Page Administration] --> B[Liste des Utilisateurs]
+    B --> C[Clic sur Ligne Utilisateur]
+    C --> D[Panneau Détails Utilisateur]
+    D --> E{Action Souhaitée}
+    E -->|Modifier Profil| F[Modal Édition]
+    E -->|Désactiver/Activer| G[Action Directe]
+    F --> H[Sauvegarde & Retour]
+    G --> I[Confirmation & Mise à jour]
+    I --> D
+    H --> D
+```
+
+### Écran : Liste des Utilisateurs (Master-Detail)
+
+**Purpose:** Interface centralisée pour la gestion des utilisateurs avec sélection simple
+
+**Structure Layout:**
+- **Colonne Gauche (50%):** Liste des utilisateurs avec filtres
+- **Colonne Droite (50%):** Détails de l'utilisateur sélectionné
+
+**Key Elements:**
+
+#### Section Master (Liste)
+- **Tableau utilisateurs** avec colonnes :
+  - Nom (nom complet + username)
+  - Rôle (badge non-interactif)
+  - Statut d'approbation (badge coloré)
+  - Statut d'activité (Actif/Inactif)
+- **Filtres de recherche** : Barre de recherche, filtres par rôle et statut
+- **Actions globales** : Bouton actualiser, navigation vers demandes d'inscription
+
+#### Section Detail (Panneau Utilisateur)
+- **Header utilisateur** : Avatar, nom, rôle et statuts (badges)
+- **Onglets** :
+  - **Profil** : Informations personnelles et système
+  - **Historique** : Chronologie des activités
+- **Actions principales** :
+  - Bouton "Modifier le profil" (modal)
+  - Bouton "Désactiver"/"Activer" (action directe)
+
+### Interactions UX
+
+#### Sélection d'Utilisateur
+- **Pattern:** Clic sur n'importe quelle partie de la ligne utilisateur
+- **Feedback:** Ligne surlignée, panneau détails mis à jour immédiatement
+- **Avantage:** Plus d'actions en un clic (supprime les boutons œil/modifier/supprimer)
+
+#### Gestion du Statut d'Activité
+- **Pattern:** Bouton contextuel selon l'état actuel
+  - Utilisateur actif → Bouton rouge "Désactiver"
+  - Utilisateur inactif → Bouton vert "Activer"
+- **Feedback:** Notification de succès + mise à jour immédiate des badges
+- **Sécurité:** Les utilisateurs inactifs ne peuvent plus se connecter
+
+#### Rôles Non-Interactifs
+- **Pattern:** Affichage en badge statique (couleur selon rôle)
+- **Rationale:** Évite les modifications accidentelles, change workflow intentionnel via modal
+
+### Composants UX Spécifiques
+
+#### Badge de Statut d'Activité
+**Purpose:** Indication claire et immédiate du statut utilisateur
+**Variants:**
+- Actif (vert, texte "Actif")
+- Inactif (rouge, texte "Inactif")
+**Usage:** Colonne dédiée dans tableau, header du panneau détails
+
+#### Ligne Utilisateur Cliquable
+**Purpose:** Interaction naturelle pour la sélection
+**States:** Default, Hover (légère surbrillance), Selected (surbrillance maintenue)
+**Interaction:** cursor: pointer sur toute la ligne
+
+#### Boutons d'Action Contextuels
+**Purpose:** Actions directes selon l'état de l'utilisateur
+**Variants:**
+- "Désactiver" (outline rouge) pour utilisateurs actifs
+- "Activer" (outline vert) pour utilisateurs inactifs
+**States:** Default, Hover, Loading (pendant l'action)
+
+### Accessibilité
+
+**Keyboard Navigation:**
+- Tab pour naviguer entre éléments
+- Entrée pour sélectionner une ligne utilisateur
+- Espace pour activer les boutons d'action
+
+**Screen Reader Support:**
+- Labels aria pour les badges de statut
+- Description des actions contextuelles
+- Annonce des changements de statut
+
+**Color Contrast:**
+- Badges respectent les ratios 4.5:1 minimum
+- États de survol visibles sans couleur uniquement
+
+### Responsive Behavior
+
+**Tablette (768px+):** Layout Master-Detail côte à côte
+**Mobile (<768px):** Stack vertical, panneau détails en modal ou page séparée
+
 ---
 
 *🎨 Créé par Sally, UX Expert - Recyclic Frontend Specification v1.0*
+*📝 Mis à jour par James, Dev Agent - v1.1 (Interface Administration Utilisateurs)*

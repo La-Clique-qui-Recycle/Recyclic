@@ -1,0 +1,15 @@
+# Dockerfile.migrations - Image dédiée pour les migrations Alembic
+FROM recyclic-api:latest
+
+# Switch to root to modify files
+USER root
+
+# Override Alembic configuration with Docker-compatible URL
+# This ensures migrations always connect to the postgres service in Docker network
+RUN sed -i 's|sqlalchemy.url = .*|sqlalchemy.url = postgresql://recyclic:postgres@postgres:5432/recyclic|' alembic.ini
+
+# Switch back to non-root user
+USER recyclic
+
+# Set the command to run Alembic migrations
+CMD ["alembic", "upgrade", "head"]

@@ -4,6 +4,10 @@
  * Généré le: 2025-09-17T23:34:24.042Z
  */
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-expressions */
+
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
   UserResponse,
@@ -33,7 +37,10 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor pour ajouter l'auth si nécessaire
 apiClient.interceptors.request.use(
   (config) => {
-    // TODO: Ajouter le token d'authentification si nécessaire
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -429,7 +436,7 @@ export class AuthApi {
    * Login
    */
   static async apiv1authloginpost(data?: any): Promise<LoginResponse> {
-    const response: AxiosResponse<LoginResponse> = await apiClient.post(`/auth/login`, data);
+    const response: AxiosResponse<LoginResponse> = await apiClient.post(`/api/v1/auth/login`, data);
     return response.data;
   }
 

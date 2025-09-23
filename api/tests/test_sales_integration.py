@@ -13,6 +13,7 @@ from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.site import Site
 from recyclic_api.models.cash_session import CashSession
+from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.core.security import create_access_token
 
 
@@ -49,12 +50,24 @@ class TestSalesIntegration:
         }
 
     @pytest.fixture
-    def test_cash_session(self, client, test_cashier, test_site):
+    def test_cash_register(self, client, test_site):
+        """Données de test pour un poste de caisse"""
+        return {
+            "id": uuid.uuid4(),
+            "name": "Test Register",
+            "location": "Test Location",
+            "site_id": str(test_site["id"]),
+            "is_active": True
+        }
+
+    @pytest.fixture
+    def test_cash_session(self, client, test_cashier, test_site, test_cash_register):
         """Données de test pour une session de caisse"""
         return {
             "id": uuid.uuid4(),
             "operator_id": str(test_cashier["id"]),
             "site_id": str(test_site["id"]),
+            "register_id": str(test_cash_register["id"]),
             "initial_amount": 100.0,
             "current_amount": 100.0,
             "status": "open",
@@ -66,15 +79,17 @@ class TestSalesIntegration:
         """Token JWT pour le caissier"""
         return create_access_token(data={"sub": str(test_cashier["id"])})
 
-    def test_create_sale_success(self, client: TestClient, test_cashier, test_site, test_cash_session, cashier_token, db_session):
+    def test_create_sale_success(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):
         """Test de création d'une vente avec succès"""
         # Créer les données de test en base
         user = User(**test_cashier)
         site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
         cash_session = CashSession(**test_cash_session)
-        
+
         db_session.add(user)
         db_session.add(site)
+        db_session.add(cash_register)
         db_session.add(cash_session)
         db_session.commit()
 

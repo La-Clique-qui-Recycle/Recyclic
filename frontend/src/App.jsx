@@ -13,11 +13,15 @@ const CloseSession = lazy(() => import('./pages/CashRegister/CloseSession.tsx'))
 const Deposits = lazy(() => import('./pages/Deposits.jsx'));
 const Reports = lazy(() => import('./pages/Reports.jsx'));
 const Registration = lazy(() => import('./pages/Registration.jsx'));
+const AdminLayout = lazy(() => import('./components/AdminLayout.jsx'));
+const DashboardHomePage = lazy(() => import('./pages/Admin/DashboardHomePage.jsx'));
 const AdminUsers = lazy(() => import('./pages/Admin/Users.tsx'));
 const PendingUsers = lazy(() => import('./pages/Admin/PendingUsers.tsx'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard.tsx'));
 const AdminReports = lazy(() => import('./pages/Admin/Reports.tsx'));
 const HealthDashboard = lazy(() => import('./pages/Admin/HealthDashboard.tsx'));
+const AdminCashRegisters = lazy(() => import('./pages/Admin/CashRegisters.tsx'));
+const AdminSites = lazy(() => import('./pages/Admin/Sites.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -66,13 +70,18 @@ function App() {
             <Route path="/cash-register/session/close" element={<ProtectedRoute requiredRole="cashier"><CloseSession /></ProtectedRoute>} />
             <Route path="/depots" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
             <Route path="/rapports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/inscription" element={<ProtectedRoute><Registration /></ProtectedRoute>} />
-            <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
-            <Route path="/admin/pending" element={<ProtectedRoute adminOnly><PendingUsers /></ProtectedRoute>} />
-            <Route path="/admin/reports" element={<ProtectedRoute adminOnly><AdminReports /></ProtectedRoute>} />
-            <Route path="/admin/health" element={<ProtectedRoute adminOnly><HealthDashboard /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/inscription" element={<Registration />} />
+            <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+              <Route index element={<DashboardHomePage />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="pending" element={<PendingUsers />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="cash-registers" element={<AdminCashRegisters />} />
+              <Route path="sites" element={<AdminSites />} />
+              <Route path="health" element={<HealthDashboard />} />
+              <Route path="settings" element={<AdminDashboard />} />
+            </Route>
           </Routes>
         </Suspense>
       </MainContent>

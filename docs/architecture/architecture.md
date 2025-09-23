@@ -74,7 +74,7 @@ graph TD
 
 Les modèles de données principaux sont conçus pour être simples et relationnels.
 
-- **`User`**: Gère les utilisateurs, leurs rôles (`super-admin`, `admin`, `manager`, `cashier`, `user`) et leur statut.
+- **`User`**: Gère les utilisateurs, leurs rôles et leur statut (voir section "Stratégie des Rôles" pour détails).
 - **`UserStatusHistory`**: Trace l'historique des changements de statut d'un utilisateur.
 - **`Deposit`**: Représente un dépôt d'objet, avec sa description, sa catégorie EEE et le statut de validation.
 - **`Sale`**: Représente une vente, liée à une session de caisse.
@@ -100,7 +100,51 @@ export interface User {
 
 > **Annexe A : Schéma SQL Complet**
 > Le code SQL complet pour la création des tables, des types et des index est disponible dans le document :
-> [**Annexe A : Schéma de la Base de Données](./appendix-database-schema.md)**
+> [**Annexe A : Schéma de la Base de Données](./appendix-database-schema.md)
+
+## 5.1. Stratégie des Rôles Utilisateurs
+
+### Vue d'Ensemble
+
+Le système de gestion des utilisateurs de Recyclic repose sur un modèle de rôles hiérarchique simple mais efficace, conçu pour répondre aux besoins spécifiques des ressourceries.
+
+### Rôles Définis
+
+| Rôle | Code | Description | Permissions | Contexte Métier |
+|------|------|-------------|-------------|-----------------|
+| **Super Admin** | `super-admin` | Administrateur système complet | - Gestion complète des utilisateurs<br>- Configuration système<br>- Accès à tous les modules | Équipe technique interne |
+| **Administrateur** | `admin` | Gestion opérationnelle | - Gestion des utilisateurs<br>- Validation des comptes<br>- Supervision des opérations | Direction de la ressourcerie |
+| **Bénévole** | `user` | Utilisateur standard | - Enregistrement des dépôts<br>- Consultation de ses propres données | Bénévoles sur le terrain |
+
+### Rôles Dépréciés (Non Utilisés)
+
+**⚠️ Important :** Les rôles suivants ont été définis dans les types mais ne sont pas utilisés dans le contexte métier de Recyclic :
+
+- `manager` : Non utilisé (pas de gestion hiérarchique complexe)
+- `cashier` : Non utilisé (caisse gérée via interface PWA séparée)
+
+Ces rôles sont conservés dans les types générés pour compatibilité technique mais ne doivent pas apparaître dans les interfaces utilisateur.
+
+### Règles d'Attribution
+
+1. **Super Admin** : Réservé à l'équipe de développement et aux administrateurs système
+2. **Administrateur** : Attribué aux responsables de la ressourcerie pour la gestion quotidienne
+3. **Bénévole** : Rôle par défaut pour tous les utilisateurs finaux
+
+### Étiquettes d'Affichage
+
+Pour assurer une expérience utilisateur cohérente, les étiquettes suivantes doivent être utilisées :
+
+- `super-admin` → "Super Admin"
+- `admin` → "Administrateur"
+- `user` → "Bénévole"
+
+### Contrôles d'Accès
+
+Les permissions sont appliquées au niveau :
+- **Backend** : Contrôle d'accès basé sur les rôles dans les endpoints FastAPI
+- **Frontend** : Composants conditionnels selon le rôle utilisateur
+- **Bot Telegram** : Validation native Telegram + vérification rôle API**
 
 ## 6. Architecture API
 
@@ -231,7 +275,19 @@ Pour une documentation détaillée sur la manière de lancer les tests pour chaq
 
 ### 9.2. Stratégie de Sécurité
 - **Authentification**: JWT pour l'API, complété par la validation native de Telegram pour le bot.
-- **Autorisation**: Un système de rôles (RBAC) est appliqué sur les endpoints de l'API pour restreindre l'accès aux fonctionnalités sensibles.
+- **Autorisation**: Un système de rôles (RBAC) est appliqué sur les endpoints de l'API pour restreindre l'accès aux fonctionnalités sensives.
+
+#### Routes Publiques
+Certaines routes frontend sont accessibles sans authentification :
+- `/login` - Page de connexion
+- `/signup` - Page de création de compte
+- `/forgot-password` - Page de récupération de mot de passe
+- `/reset-password` - Page de réinitialisation de mot de passe
+- `/inscription` - **Page d'inscription publique** (accessible avec ou sans paramètres telegram_id)
+
+#### Routes Protégées
+Toutes les autres routes nécessitent une authentification via le composant `ProtectedRoute`.
+
 - **Validation des Entrées**: Toutes les données entrant dans l'API sont validées via les schémas Pydantic pour prévenir les injections.
 - **RGPD**: Les données sont hébergées en Europe et les principes de protection des données sont appliqués.
 

@@ -68,7 +68,7 @@ export default function ResetPassword(): JSX.Element {
       setTimeout(() => {
         navigate('/login');
       }, 3000);
-    } catch (err) {
+    } catch {
       // L'erreur est déjà gérée dans le store
     }
   };

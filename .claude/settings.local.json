@@ -56,7 +56,12 @@
       "Bash(docker-compose build:*)",
       "Bash(docker-compose restart:*)",
       "Bash(docker-compose:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx vitest:*)",
+      "Read(//d/Users/Strophe/Documents/°IA/La Clique Qui Recycle/**)",
+      "Bash(winpty docker exec -it recyclic-frontend-1 bash)",
+      "Bash(npx tsc:*)",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []

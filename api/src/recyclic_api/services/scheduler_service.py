@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 
 from recyclic_api.core.database import get_db
+from recyclic_api.core.database import SessionLocal
 from recyclic_api.services.anomaly_detection_service import get_anomaly_detection_service
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.deposit import Deposit
@@ -97,9 +98,9 @@ class SchedulerService:
         """Tâche de détection d'anomalies."""
         logger.info("Exécution de la détection d'anomalies")
 
-        # Utiliser un context manager pour la session DB
-        async with get_db() as db:
-            try:
+        # Utiliser un context manager sync pour la session DB
+        try:
+            with SessionLocal() as db:
                 service = get_anomaly_detection_service(db)
                 anomalies = await service.run_anomaly_detection()
 
@@ -107,10 +108,9 @@ class SchedulerService:
                 await service.send_anomaly_notifications(anomalies)
 
                 return anomalies
-
-            except Exception as e:
-                logger.error(f"Erreur lors de la détection d'anomalies: {e}")
-                raise
+        except Exception as e:
+            logger.error(f"Erreur lors de la détection d'anomalies: {e}")
+            raise
 
     async def run_health_check_task(self):
         """Tâche de vérification de la santé du système."""
@@ -166,7 +166,7 @@ class SchedulerService:
 
     async def _generate_weekly_report_data(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
         """Génère les données du rapport hebdomadaire."""
-        async with get_db() as db:
+        with SessionLocal() as db:
             # Statistiques des sessions de caisse
             cash_sessions = db.query(CashSession).filter(
                 and_(

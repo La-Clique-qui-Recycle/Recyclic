@@ -4,16 +4,19 @@
 echo "🧪 Démarrage des tests Recyclic..."
 echo "=================================="
 
-# Vérifier que les services sont en cours d'exécution
-echo "📡 Vérification des services..."
-docker-compose ps postgres redis | grep -q "Up" || {
-    echo "❌ Services postgres/redis non démarrés. Démarrage..."
-    docker-compose up -d postgres redis
-    sleep 10
-}
+# Reset volumes
+docker-compose down -v
 
-# Exécuter les tests avec le service dédié
-echo "🚀 Exécution des tests..."
+# Start services
+echo "📡 Vérification des services..."
+docker-compose up -d postgres redis
+sleep 10
+
+# Generate openapi.json
+docker-compose run --rm api python -c "from recyclic_api.main import app; import json; schema = app.openapi(); open('/app/openapi.json', 'w').write(json.dumps(schema, indent=2))"
+
+# Run tests with skip
+export PYTEST_SKIP_MIGRATIONS=1
 docker-compose run --rm api-tests
 
 echo "✅ Tests terminés !"

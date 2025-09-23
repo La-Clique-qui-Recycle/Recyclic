@@ -37,7 +37,11 @@ vi.mock('lucide-react', () => ({
   ArrowLeft: () => React.createElement('div', { 'data-testid': 'arrow-left-icon' }, 'ArrowLeft'),
   AlertTriangle: () => React.createElement('div', { 'data-testid': 'alert-triangle-icon' }, 'AlertTriangle'),
   CheckCircle: () => React.createElement('div', { 'data-testid': 'check-circle-icon' }, 'CheckCircle'),
-  LogOut: () => React.createElement('div', { 'data-testid': 'log-out-icon' }, 'LogOut')
+  LogOut: () => React.createElement('div', { 'data-testid': 'log-out-icon' }, 'LogOut'),
+  Monitor: () => React.createElement('div', { 'data-testid': 'monitor-icon' }, 'Monitor'),
+  MapPin: () => React.createElement('div', { 'data-testid': 'map-pin-icon' }, 'MapPin'),
+  ChevronRight: () => React.createElement('div', { 'data-testid': 'chevron-right-icon' }, 'ChevronRight'),
+  Settings: () => React.createElement('div', { 'data-testid': 'settings-icon' }, 'Settings')
 }))
 
 // Mock pour styled-components - approche avec styles simulés
@@ -122,7 +126,7 @@ vi.mock('styled-components', () => {
       };
 
   const styled: any = (tag: string) => h(tag);
-  ['div','button','input','label','span','h1','h2','h3','nav','header','form','select','textarea','p','a','table','thead','tbody','tr','th','td']
+  ['div','button','input','label','span','h1','h2','h3','nav','header','form','select','textarea','p','a','table','thead','tbody','tr','th','td','main','ul','li']
     .forEach(t => { styled[t] = h(t); });
 
   styled.css = () => '';

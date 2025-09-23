@@ -139,7 +139,7 @@ export const useAuthStore = create<AuthState>()(
         forgotPassword: async (email: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
             const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, { email });
 
             set({
@@ -159,7 +159,7 @@ export const useAuthStore = create<AuthState>()(
         resetPassword: async (token: string, newPassword: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
             const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
               token,
               new_password: newPassword

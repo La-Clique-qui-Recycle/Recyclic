@@ -10,7 +10,6 @@ import {
   RecentReportSummary,
 } from '../../services/dashboardService'
 import reportsService from '../../services/reportsService'
-import { CashSessionResponse } from '../../generated/types'
 
 const DashboardContainer = styled.div`
   padding: 24px;

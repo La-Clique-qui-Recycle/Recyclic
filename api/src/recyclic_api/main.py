@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import logging
 import time
+import os
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -25,22 +26,40 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gestionnaire de cycle de vie de l'application"""
+    import os
     logger.info("Starting up Recyclic API...")
+    is_test_env = (os.getenv("TESTING") == "true") or (settings.ENVIRONMENT == "test")
 
-    # Démarrer le scheduler de tâches planifiées
-    scheduler = get_scheduler_service()
-    await scheduler.start()
-
-    # Démarrer la synchronisation kDrive (si nécessaire)
-    sync_task = schedule_periodic_kdrive_sync()
+    # Démarrer le scheduler de tâches planifiées (désactivé en test)
+    scheduler = None
+    sync_task = None
+    if not is_test_env:
+        scheduler = get_scheduler_service()
+        await scheduler.start()
+        # Démarrer la synchronisation kDrive (si nécessaire)
+        sync_task = schedule_periodic_kdrive_sync()
 
     logger.info("API ready - use migrations for database setup")
+    
+    # Générer openapi.json pour les tests
+    if is_test_env:
+        import json
+        try:
+            openapi_schema = app.openapi()
+            # Créer le répertoire si nécessaire
+            os.makedirs("/app", exist_ok=True)
+            with open("/app/openapi.json", "w") as f:
+                json.dump(openapi_schema, f, indent=2)
+            logger.info("✅ openapi.json généré avec succès")
+        except Exception as e:
+            logger.warning(f"Could not generate openapi.json: {e}")
 
     try:
         yield
     finally:
-        # Arrêter le scheduler
-        await scheduler.stop()
+        # Arrêter le scheduler si actif
+        if scheduler is not None:
+            await scheduler.stop()
 
         # Annuler la tâche de sync kDrive
         if sync_task:

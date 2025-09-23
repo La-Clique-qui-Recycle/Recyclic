@@ -37,6 +37,12 @@ services:
       REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY}
       ENVIRONMENT: development
+      # Variables pour Alembic migrations
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: recyclic
     ports:
       - "8000:8000"
     depends_on:
@@ -78,6 +84,31 @@ services:
     networks:
       - recyclic-network
 
+  # Service dédié pour les migrations Alembic avec configuration Docker optimisée
+  api-migrations:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.migrations
+    image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: development
+      # Variables pour Alembic migrations
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: recyclic
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - recyclic-network
+
   frontend:
     build:
       context: ./frontend
@@ -114,7 +145,7 @@ services:
       # Volumes pour éviter les rebuilds lors du développement
       - ./api/src:/app/src:ro
       - ./api/tests:/app/tests:ro
-      - ./api/migrations:/app/migrations:ro
+      - ./api/migrations:/app/migrations
       - ./api/alembic.ini:/app/alembic.ini:ro
       - ./api/pytest.ini:/app/pytest.ini:ro
     depends_on:
@@ -122,6 +153,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: bash -lc "python generate_openapi.py && alembic upgrade head && python -m pytest -v --tb=short"
     networks:
       - recyclic-network
 

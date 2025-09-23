@@ -5,21 +5,11 @@ Ces tests valident que les réponses de l'API respectent exactement
 la spécification OpenAPI définie dans openapi.json.
 """
 
-import json
 import pytest
-from pathlib import Path
 from fastapi.testclient import TestClient
 from jsonschema import validate, ValidationError
 
 from recyclic_api.main import app
-
-OPENAPI_SCHEMA_PATH = Path(__file__).parent.parent / "openapi.json"
-
-@pytest.fixture
-def openapi_schema():
-    """Charge le schéma OpenAPI depuis le fichier openapi.json."""
-    with open(OPENAPI_SCHEMA_PATH, 'r', encoding='utf-8') as f:
-        return json.load(f)
 
 def validate_with_resolver(instance, schema, openapi_schema):
     """Valide une instance contre un schéma OpenAPI avec résolution des références."""

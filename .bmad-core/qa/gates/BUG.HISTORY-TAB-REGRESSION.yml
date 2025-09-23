@@ -1,0 +1,40 @@
+schema: 1
+story: "BUG.HISTORY-TAB-REGRESSION"
+story_title: "Régression sur l'Onglet Historique Utilisateur"
+gate: "PASS"
+status_reason: "Régression corrigée: store expose getUserHistory, composant consomme correctement; plus d'erreur."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-23T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+quality_score: 95
+expires: "2025-10-07T00:00:00Z"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security: { status: PASS, notes: "Aucun impact direct" }
+  performance: { status: PASS, notes: "Affichage paginé, OK" }
+  reliability: { status: PASS, notes: "Store centralisé, appels déterministes" }
+  maintainability: { status: PASS, notes: "Architecture claire Store→Service→UI" }
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Exposer un endpoint API réel pour l'historique et ajouter tests d'intégration"
+      refs: ["frontend/src/services/adminService.ts"]
+

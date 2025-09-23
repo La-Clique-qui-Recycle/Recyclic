@@ -42,7 +42,9 @@ export type { UserStatusUpdate, UserUpdate };
 
 // Helper pour convertir UserResponse en AdminUser
 function convertToAdminUser(user: UserResponse): AdminUser {
+  const { hashed_password, ...rest } = user;
   return {
+    ...rest,
     id: user.id,
     telegram_id: typeof user.telegram_id === 'string' ? parseInt(user.telegram_id) : user.telegram_id,
     username: user.username,
@@ -129,21 +131,26 @@ export const adminService = {
   },
 
   /**
-   * Met à jour le statut d'un utilisateur
+   * Met à jour le statut d'un utilisateur (admin)
    */
   async updateUserStatus(userId: string, statusUpdate: UserStatusUpdate): Promise<AdminResponse> {
     try {
-      // Utiliser l'API générée
-      const updatedUser = await UsersApi.userstatusapiv1usersuseridstatusput(userId, statusUpdate);
+      // Appeler directement l'endpoint admin car il n'est pas encore généré
+      const response = await fetch(`/api/v1/admin/users/${userId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(statusUpdate)
+      });
 
-      // Convertir en AdminUser
-      const adminUser = convertToAdminUser(updatedUser);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      return {
-        data: adminUser,
-        message: 'Statut mis à jour avec succès',
-        success: true
-      };
+      const result = await response.json();
+      return result;
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
       throw error;
@@ -266,6 +273,102 @@ export const adminService = {
       return result;
     } catch (error) {
       console.error('Erreur lors du rejet de l\'utilisateur:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Déclenche la réinitialisation du mot de passe pour un utilisateur
+   */
+  async triggerResetPassword(userId: string): Promise<AdminResponse> {
+    try {
+      const response = await fetch(`/api/v1/admin/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur lors du déclenchement de la réinitialisation du mot de passe:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Récupère l'historique d'un utilisateur avec filtres optionnels
+   */
+  async getUserHistory(userId: string, filters: any = {}): Promise<any[]> {
+    try {
+      // Construire les paramètres de requête
+      const params: any = {};
+      if (filters.startDate) {
+        params.start_date = filters.startDate.toISOString().split('T')[0];
+      }
+      if (filters.endDate) {
+        params.end_date = filters.endDate.toISOString().split('T')[0];
+      }
+      if (filters.eventType && filters.eventType.length > 0) {
+        params.event_types = filters.eventType.join(',');
+      }
+      if (filters.search) {
+        params.search = filters.search;
+      }
+
+      // Appel à l'API générée (si elle existe)
+      // Pour le moment, on simule des données d'historique
+      // TODO: Implémenter l'endpoint API réel pour l'historique utilisateur
+      console.log(`Récupération de l'historique pour l'utilisateur ${userId} avec filtres:`, params);
+
+      // Simulation d'historique utilisateur (à remplacer par un appel API réel)
+      const mockHistory = [
+        {
+          id: `history-${userId}-1`,
+          type: 'CONNEXION' as const,
+          description: 'Connexion réussie à l\'application',
+          timestamp: new Date().toISOString(),
+          metadata: {
+            ip: '192.168.1.1',
+            userAgent: 'Mozilla/5.0...'
+          }
+        },
+        {
+          id: `history-${userId}-2`,
+          type: 'ADMINISTRATION' as const,
+          description: 'Modification du rôle utilisateur',
+          timestamp: new Date(Date.now() - 3600000).toISOString(), // 1h ago
+          metadata: {
+            oldRole: 'USER',
+            newRole: 'CASHIER',
+            adminId: 'admin-123'
+          }
+        }
+      ];
+
+      // Filtrer les résultats côté client si nécessaire
+      let filteredHistory = mockHistory;
+
+      if (filters.eventType && filters.eventType.length > 0) {
+        filteredHistory = filteredHistory.filter(event =>
+          filters.eventType.includes(event.type)
+        );
+      }
+
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredHistory = filteredHistory.filter(event =>
+          event.description.toLowerCase().includes(searchLower)
+        );
+      }
+
+      return filteredHistory;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'historique utilisateur:', error);
       throw error;
     }
   }

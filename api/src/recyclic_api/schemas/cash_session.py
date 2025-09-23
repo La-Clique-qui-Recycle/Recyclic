@@ -15,6 +15,7 @@ class CashSessionBase(BaseModel):
     
     operator_id: str = Field(..., description="ID de l'opérateur (caissier)")
     site_id: str = Field(..., description="ID du site")
+    register_id: Optional[str] = Field(None, description="ID du poste de caisse (registre)")
     initial_amount: float = Field(..., ge=0, description="Montant initial du fond de caisse")
     
     @field_validator('initial_amount')
@@ -26,10 +27,12 @@ class CashSessionBase(BaseModel):
             raise ValueError('Le montant initial ne peut pas dépasser 10 000€')
         return v
     
-    @field_validator('operator_id', 'site_id', mode='before')
+    @field_validator('operator_id', 'site_id', 'register_id', mode='before')
     @classmethod
     def convert_uuid_to_str(cls, v):
         """Convertit les UUIDs en strings pour la sérialisation"""
+        if v is None:
+            return v
         if hasattr(v, '__str__'):
             return str(v)
         return v
@@ -91,6 +94,7 @@ class CashSessionSummary(BaseModel):
     """Schéma pour le résumé d'une session de caisse."""
     session_id: str = Field(..., description="ID de la session")
     site_id: str = Field(..., description="ID du site")
+    register_id: Optional[str] = Field(None, description="ID du poste de caisse")
     operator: str = Field(..., description="Nom de l'opérateur")
     opened_at: datetime = Field(..., description="Date d'ouverture")
     closed_at: Optional[datetime] = Field(None, description="Date de fermeture")
@@ -116,6 +120,7 @@ class CashSessionFilters(BaseModel):
     status: Optional[CashSessionStatus] = Field(None, description="Filtrer par statut")
     operator_id: Optional[str] = Field(None, description="Filtrer par opérateur")
     site_id: Optional[str] = Field(None, description="Filtrer par site")
+    register_id: Optional[str] = Field(None, description="Filtrer par registre")
     date_from: Optional[datetime] = Field(None, description="Date de début")
     date_to: Optional[datetime] = Field(None, description="Date de fin")
 

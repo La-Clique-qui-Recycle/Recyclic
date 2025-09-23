@@ -1,0 +1,40 @@
+schema: 1
+story: "B03.P5"
+story_title: "Isolation et Configuration des Tests Non-Fonctionnels (Performance)"
+gate: "PASS"
+status_reason: "ACs satisfaits: marquage performance, rate limiting désactivé en test, CI split, documentation mise à jour."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-23T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+quality_score: 95
+expires: "2025-10-07T00:00:00Z"
+
+evidence:
+  tests_reviewed: 5
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4]
+    ac_gaps: []
+
+nfr_validation:
+  security: { status: PASS, notes: "Rate limiting contourné proprement en test" }
+  performance: { status: PASS, notes: "Marquage et exécution séparée en place" }
+  reliability: { status: PASS, notes: "Exécutions reproductibles" }
+  maintainability: { status: PASS, notes: "CI et doc mises à jour" }
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Publier les métriques de perfs comme artifacts CI"
+      refs: [".github/workflows/deploy.yaml"]
+

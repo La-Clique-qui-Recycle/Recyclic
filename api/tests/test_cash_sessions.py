@@ -1,7 +1,5 @@
-import json
 import pytest
 import uuid
-from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -14,14 +12,6 @@ from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.security import hash_password
 from recyclic_api.schemas.cash_session import CashSessionResponse, CashSessionListResponse, CashSessionStatus as SchemaCashSessionStatus
-
-OPENAPI_SCHEMA_PATH = Path(__file__).parent.parent / "openapi.json"
-
-@pytest.fixture
-def openapi_schema():
-    """Charge le schéma OpenAPI depuis le fichier openapi.json."""
-    with open(OPENAPI_SCHEMA_PATH, 'r', encoding='utf-8') as f:
-        return json.load(f)
 
 def validate_with_resolver(instance, schema, openapi_schema):
     """Valide une instance contre un schéma OpenAPI avec résolution des références."""

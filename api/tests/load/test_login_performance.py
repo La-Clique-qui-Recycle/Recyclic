@@ -18,6 +18,7 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
 
 
+@pytest.mark.performance
 class TestLoginPerformance:
     """Performance tests for the login endpoint."""
 

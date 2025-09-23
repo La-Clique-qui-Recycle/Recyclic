@@ -250,18 +250,16 @@ class TestAdminE2E:
         )
         assert response.status_code == 403
     
-    def test_unauthenticated_user_cannot_access_admin_endpoints(self, client: TestClient, test_db):
-        """Test : Un utilisateur non authentifié ne peut pas accéder aux endpoints admin"""
-        # Test de l'endpoint de liste des utilisateurs
-        response = client.get("/api/v1/admin/users")
-        assert response.status_code == 403  # HTTPBearer returns 403 when no auth header
-
-        # Test de l'endpoint de modification de rôle
-        response = client.put(
-            "/api/v1/admin/users/some-id/role",
-            json={"role": "admin"}
-        )
-        assert response.status_code == 403  # HTTPBearer returns 403 when no auth header
+    def test_unauthenticated_user_cannot_access_admin_endpoints(self, client: TestClient):
+        """Les utilisateurs non authentifiés reçoivent une erreur 401."""
+        endpoints = [
+            "/api/v1/admin/users",
+            "/api/v1/admin/users/pending",
+            # Ajoutez d'autres endpoints admin ici
+        ]
+        for endpoint in endpoints:
+            response = client.get(endpoint)
+            assert response.status_code == 401, f"Failed on endpoint {endpoint}"
     
     def test_admin_pagination_works(self, client: TestClient, admin_headers, test_db):
         """Test : La pagination fonctionne correctement"""
@@ -323,10 +321,10 @@ class TestAdminSecurity:
         response = client.get("/api/v1/admin/users", headers=headers)
         assert response.status_code == 401
     
-    def test_missing_token_handling(self, client: TestClient, test_db):
-        """Test : Gestion des requêtes sans token"""
+    def test_missing_token_handling(self, client: TestClient):
+        """Vérifie que les endpoints admin renvoient 401 si le token est manquant."""
         response = client.get("/api/v1/admin/users")
-        assert response.status_code == 403  # HTTPBearer returns 403 when no auth header
+        assert response.status_code == 401
 
 # Tests de performance
 class TestAdminPerformance:

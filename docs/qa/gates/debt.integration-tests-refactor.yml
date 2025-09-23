@@ -1,0 +1,57 @@
+schema: 1
+story: "debt.integration-tests-refactor"
+story_title: "Refactoriser les tests d'intégration pour s'aligner sur la Charte de Test"
+gate: PASS
+status_reason: "Refactoring exemplaire respectant parfaitement la Charte de Stratégie de Test"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T10:30:00Z"
+
+# Issues (if any) - Use fixed severity: low | medium | high
+top_issues: []
+
+# Risk summary (from risk-profile task if run)
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+# Always present but only active when WAIVED
+waiver: { active: false }
+
+# Evidence
+evidence:
+  tests_reviewed: 1  # Fichier test_integration_pending_workflow.py
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]  # Tous les AC sont satisfaits
+    ac_gaps: []  # Aucun gap
+
+# NFR validation
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Tests utilisent des mocks appropriés, aucune exposition de données sensibles"
+  performance:
+    status: PASS
+    notes: "Test de performance inclus (1000 utilisateurs < 1s), mocks améliorent la vitesse"
+  reliability:
+    status: PASS
+    notes: "Tests isolés et reproductibles avec nettoyage automatique des overrides"
+  maintainability:
+    status: PASS
+    notes: "Code refactorisé avec structure AAA claire et documentation explicative"
+
+# Recommendations
+recommendations:
+  immediate: []  # Aucun problème critique
+  future:  # Améliorations possibles
+    - action: "Considérer l'ajout de tests de charge pour des datasets encore plus importants"
+      refs: ["test_performance_with_large_dataset_completes_quickly"]
+    - action: "Documenter les patterns de mock pour référence future"
+      refs: ["Pattern Mocks & Overrides appliqué"]
+
+# Quality score
+quality_score: 95  # Excellent refactoring selon la charte
+expires: "2025-01-26T00:00:00Z"  # 2 semaines
+

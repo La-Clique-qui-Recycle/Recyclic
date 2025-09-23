@@ -7,6 +7,7 @@ import logging
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from uuid import UUID
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user, require_admin_role, require_admin_role_strict
@@ -29,6 +30,7 @@ from recyclic_api.schemas.admin import (
     UserHistoryResponse
 )
 from recyclic_api.services.user_history_service import UserHistoryService
+from recyclic_api.core.auth import send_reset_password_email
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -51,7 +53,7 @@ def get_users(
     limit: int = Query(20, ge=1, le=100, description="Nombre d'éléments par page"),
     role: Optional[UserRole] = Query(None, description="Filtrer par rôle"),
     user_status: Optional[UserStatus] = Query(None, description="Filtrer par statut"),
-    current_user: User = Depends(require_admin_role_strict()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Récupère la liste des utilisateurs avec filtres"""
@@ -112,7 +114,7 @@ def get_users(
 def update_user_role(
     user_id: str,
     role_update: UserRoleUpdate,
-    current_user: User = Depends(require_admin_role_strict()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Met à jour le rôle d'un utilisateur"""
@@ -204,7 +206,7 @@ def update_user_role(
     description="Récupère la liste des utilisateurs avec le statut 'pending'"
 )
 def get_pending_users(
-    current_user: User = Depends(require_admin_role()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Récupère la liste des utilisateurs en attente d'approbation"""
@@ -254,7 +256,7 @@ def get_pending_users(
 async def approve_user(
     user_id: str,
     approval_request: UserApprovalRequest = None,
-    current_user: User = Depends(require_admin_role()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Approuve un utilisateur en attente"""
@@ -356,7 +358,7 @@ async def approve_user(
 async def reject_user(
     user_id: str,
     rejection_request: UserRejectionRequest = None,
-    current_user: User = Depends(require_admin_role()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Rejette un utilisateur en attente"""
@@ -459,7 +461,7 @@ async def reject_user(
 def update_user_status(
     user_id: str,
     status_update: UserStatusUpdate,
-    current_user: User = Depends(require_admin_role()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Met à jour le statut is_active d'un utilisateur et enregistre l'historique"""
@@ -564,7 +566,7 @@ def update_user_status(
 def update_user_profile(
     user_id: str,
     profile_update: UserProfileUpdate,
-    current_user: User = Depends(require_admin_role()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Met à jour les informations du profil utilisateur"""
@@ -603,12 +605,21 @@ def update_user_profile(
         
         # Mettre à jour les champs fournis
         updated_fields = []
-        if profile_update.first_name is not None:
-            user.first_name = profile_update.first_name
-            updated_fields.append("first_name")
-        if profile_update.last_name is not None:
-            user.last_name = profile_update.last_name
-            updated_fields.append("last_name")
+        update_data = profile_update.model_dump(exclude_unset=True)
+
+        # Vérifier l'unicité du nom d'utilisateur si modifié
+        if 'username' in update_data and update_data['username'] != user.username:
+            existing_user = db.query(User).filter(User.username == update_data['username']).first()
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Ce nom d'utilisateur est déjà pris"
+                )
+
+        for field, value in update_data.items():
+            if hasattr(user, field):
+                setattr(user, field, value)
+                updated_fields.append(field)
         
         if not updated_fields:
             raise HTTPException(
@@ -637,6 +648,9 @@ def update_user_profile(
                 "user_id": str(user.id),
                 "first_name": user.first_name,
                 "last_name": user.last_name,
+                "username": user.username,
+                "role": user.role,
+                "status": user.status,
                 "updated_fields": updated_fields
             },
             message=f"Profil de l'utilisateur {full_name or user.username} mis à jour avec succès",
@@ -649,6 +663,48 @@ def update_user_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la mise à jour du profil: {str(e)}"
+        )
+
+@router.post(
+    "/users/{user_id}/reset-password",
+    response_model=AdminResponse,
+    summary="Déclencher la réinitialisation du mot de passe (Admin)",
+    description="Envoie un e-mail de réinitialisation de mot de passe à l'utilisateur spécifié."
+)
+async def trigger_reset_password(
+    user_id: str,
+    current_user: User = Depends(require_admin_role),
+    db: Session = Depends(get_db)
+):
+    """Déclenche l'envoi d'un e-mail de réinitialisation de mot de passe."""
+    try:
+        user_uuid = UUID(user_id)
+        user = db.query(User).filter(User.id == user_uuid).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Utilisateur non trouvé"
+            )
+
+        if not user.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="L'utilisateur n'a pas d'adresse e-mail configurée."
+            )
+
+        await send_reset_password_email(user.email, db)
+
+        return AdminResponse(
+            message=f"E-mail de réinitialisation de mot de passe envoyé à {user.email}",
+            success=True
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de l'envoi de l'e-mail de réinitialisation: {str(e)}"
         )
 
 @router.get(
@@ -664,7 +720,7 @@ def get_user_history(
     event_type: Optional[str] = Query(None, description="Type d'événement à filtrer (ADMINISTRATION, SESSION CAISSE, VENTE, DEPOT)"),
     skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
     limit: int = Query(20, ge=1, le=100, description="Nombre d'éléments par page"),
-    current_user: User = Depends(require_admin_role()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Récupère l'historique complet d'activité d'un utilisateur"""
@@ -776,7 +832,7 @@ async def get_database_health(db: Session = Depends(get_db)):
 @limiter.limit("20/minute")
 async def get_system_health(
     request: Request,
-    current_user: User = Depends(require_admin_role_strict()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Récupère les métriques de santé du système"""
@@ -823,7 +879,7 @@ async def get_system_health(
 @limiter.limit("15/minute")
 async def get_anomalies(
     request: Request,
-    current_user: User = Depends(require_admin_role_strict()),
+    current_user: User = Depends(require_admin_role),
     db: Session = Depends(get_db)
 ):
     """Récupère les anomalies détectées"""

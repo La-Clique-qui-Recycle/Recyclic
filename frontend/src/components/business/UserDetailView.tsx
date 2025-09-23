@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  Paper, 
-  Tabs, 
-  Stack, 
-  Text, 
-  Group, 
-  Avatar, 
-  Badge, 
-  Button,
+import {
+  Paper,
+  Tabs,
+  Stack,
+  Text,
+  Group,
+  Avatar,
+  Badge,
   Skeleton,
   Alert
 } from '@mantine/core';

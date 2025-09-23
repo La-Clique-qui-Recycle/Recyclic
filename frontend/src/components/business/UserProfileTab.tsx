@@ -8,12 +8,10 @@ import {
   TextInput,
   Select,
   Switch,
-  Divider,
-  Alert,
-  Skeleton
+  Divider
 } from '@mantine/core';
-import { IconEdit, IconCheck, IconX, IconAlertCircle } from '@tabler/icons-react';
-import { useForm } from 'react-hook-form';
+import { IconEdit, IconCheck, IconX } from '@tabler/icons-react';
+import { useForm, Controller } from 'react-hook-form';
 import { notifications } from '@mantine/notifications';
 import { AdminUser, adminService } from '../../services/adminService';
 import { UserRole, UserStatus } from '../../generated';
@@ -26,10 +24,20 @@ interface UserProfileTabProps {
 interface UserFormData {
   first_name?: string;
   last_name?: string;
+  username?: string;
   role: UserRole;
   status: UserStatus;
   is_active: boolean;
 }
+
+const sanitizeUserForForm = (user: AdminUser): UserFormData => ({
+  first_name: user.first_name || '',
+  last_name: user.last_name || '',
+  username: user.username || '',
+  role: user.role,
+  status: user.status,
+  is_active: user.is_active,
+});
 
 export const UserProfileTab: React.FC<UserProfileTabProps> = ({
   user,
@@ -38,57 +46,109 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<UserFormData>({
-    defaultValues: {
-      first_name: user.first_name || '',
-      last_name: user.last_name || '',
-      role: user.role,
-      status: user.status,
-      is_active: user.is_active
-    }
+  const { register, handleSubmit, formState: { errors }, setValue, watch, control } = useForm<UserFormData>({
+    defaultValues: sanitizeUserForForm(user)
   });
 
   const handleEdit = () => {
-    setValue('first_name', user.first_name || '');
-    setValue('last_name', user.last_name || '');
-    setValue('role', user.role);
-    setValue('status', user.status);
-    setValue('is_active', user.is_active);
+    const sanitized = sanitizeUserForForm(user);
+    Object.keys(sanitized).forEach(key => {
+      setValue(key as keyof UserFormData, sanitized[key as keyof UserFormData]);
+    });
     setEditModalOpen(true);
+  };
+
+  const handleDeactivate = async () => {
+    setLoading(true);
+    try {
+      await adminService.updateUserStatus(user.id, {
+        is_active: false,
+        reason: "Désactivé par l'administrateur"
+      });
+
+      const updatedUser: AdminUser = {
+        ...user,
+        is_active: false,
+        updated_at: new Date().toISOString()
+      };
+
+      onUserUpdate?.(updatedUser);
+
+      notifications.show({
+        title: 'Succès',
+        message: 'Utilisateur désactivé avec succès',
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la désactivation:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible de désactiver l\'utilisateur',
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    setLoading(true);
+    try {
+      await adminService.updateUserStatus(user.id, {
+        is_active: true,
+        reason: "Réactivé par l'administrateur"
+      });
+
+      const updatedUser: AdminUser = {
+        ...user,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      };
+
+      onUserUpdate?.(updatedUser);
+
+      notifications.show({
+        title: 'Succès',
+        message: 'Utilisateur activé avec succès',
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'activation:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible d\'activer l\'utilisateur',
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async (values: UserFormData) => {
     setLoading(true);
     try {
-      // Mettre à jour le profil utilisateur
       const updateData = {
-        first_name: values.first_name || undefined,
-        last_name: values.last_name || undefined,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        username: values.username,
+        role: values.role,
+        status: values.status,
       };
 
       await adminService.updateUser(user.id, updateData);
 
-      // Mettre à jour le rôle si nécessaire
-      if (values.role !== user.role) {
-        await adminService.updateUserRole(user.id, { role: values.role });
+      // Mettre à jour l'état actif si nécessaire
+      if (values.is_active !== user.is_active) {
+        await adminService.updateUserStatus(user.id, { is_active: values.is_active });
       }
 
-      // Mettre à jour le statut si nécessaire
-      if (values.status !== user.status) {
-        await adminService.updateUserStatus(user.id, { status: values.status });
-      }
-
-      // Créer l'utilisateur mis à jour
       const updatedUser: AdminUser = {
         ...user,
-        first_name: values.first_name,
-        last_name: values.last_name,
+        ...updateData,
+        is_active: values.is_active,
         full_name: values.first_name && values.last_name 
           ? `${values.first_name} ${values.last_name}` 
           : user.full_name,
-        role: values.role,
-        status: values.status,
-        is_active: values.is_active,
         updated_at: new Date().toISOString()
       };
 
@@ -113,19 +173,38 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
     }
   };
 
+  const handleResetPassword = async () => {
+    setLoading(true);
+    try {
+      await adminService.triggerResetPassword(user.id);
+      notifications.show({
+        title: 'Succès',
+        message: `Un e-mail de réinitialisation a été envoyé à l'utilisateur.`,
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la réinitialisation du mot de passe:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible d\'envoyer l\'e-mail de réinitialisation.',
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
       case UserRole.SUPER_ADMIN:
         return 'Super Admin';
       case UserRole.ADMIN:
         return 'Administrateur';
-      case UserRole.MANAGER:
-        return 'Manager';
-      case UserRole.CASHIER:
-        return 'Caissier';
       case UserRole.USER:
+        return 'Bénévole';
       default:
-        return 'Utilisateur';
+        return 'Bénévole';
     }
   };
 
@@ -221,7 +300,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
       <Divider />
 
       {/* Actions */}
-      <Group justify="center">
+      <Group justify="center" gap="md">
         <Button
           leftSection={<IconEdit size={16} />}
           onClick={handleEdit}
@@ -229,6 +308,23 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
         >
           Modifier le profil
         </Button>
+        {user.is_active ? (
+          <Button
+            color="red"
+            variant="outline"
+            onClick={() => handleDeactivate()}
+          >
+            Désactiver
+          </Button>
+        ) : (
+          <Button
+            color="green"
+            variant="outline"
+            onClick={() => handleActivate()}
+          >
+            Activer
+          </Button>
+        )}
       </Group>
 
       {/* Modal d'édition */}
@@ -243,48 +339,84 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
             <TextInput
               label="Prénom"
               placeholder="Entrez le prénom"
-              {...register('first_name', { 
+              {...register('first_name', {
                 minLength: { value: 2, message: 'Le prénom doit contenir au moins 2 caractères' }
               })}
-              value={watch('first_name')}
+              value={watch('first_name') || ''}
               onChange={(e) => setValue('first_name', e.target.value, { shouldValidate: true })}
               error={errors.first_name?.message}
             />
             <TextInput
               label="Nom"
               placeholder="Entrez le nom"
-              {...register('last_name', { 
+              {...register('last_name', {
                 minLength: { value: 2, message: 'Le nom doit contenir au moins 2 caractères' }
               })}
-              value={watch('last_name')}
+              value={watch('last_name') || ''}
               onChange={(e) => setValue('last_name', e.target.value, { shouldValidate: true })}
               error={errors.last_name?.message}
             />
-            <Select
-              label="Rôle"
-              data={[
-                { value: UserRole.USER, label: 'Utilisateur' },
-                { value: UserRole.CASHIER, label: 'Caissier' },
-                { value: UserRole.MANAGER, label: 'Manager' },
-                { value: UserRole.ADMIN, label: 'Administrateur' },
-                { value: UserRole.SUPER_ADMIN, label: 'Super Admin' },
-              ]}
-              {...register('role')}
+            <TextInput
+              label="Nom d'utilisateur"
+              placeholder="Entrez le nom d'utilisateur"
+              {...register('username')}
+              value={watch('username') || ''}
+              onChange={(e) => setValue('username', e.target.value, { shouldValidate: true })}
+              error={errors.username?.message}
             />
-            <Select
-              label="Statut"
-              data={[
-                { value: UserStatus.PENDING, label: 'En attente' },
-                { value: UserStatus.APPROVED, label: 'Approuvé' },
-                { value: UserStatus.REJECTED, label: 'Rejeté' },
-              ]}
-              {...register('status')}
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  label="Rôle"
+                  data={[
+                    { value: UserRole.USER, label: 'Bénévole' },
+                    { value: UserRole.ADMIN, label: 'Administrateur' },
+                    { value: UserRole.SUPER_ADMIN, label: 'Super Admin' },
+                  ]}
+                  value={field.value}
+                  onChange={(val) => field.onChange(val as UserRole)}
+                />
+              )}
             />
-            <Switch
-              label="Utilisateur actif"
-              description="L'utilisateur peut se connecter et utiliser le système"
-              {...register('is_active')}
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  label="Statut"
+                  data={[
+                    { value: UserStatus.PENDING, label: 'En attente' },
+                    { value: UserStatus.APPROVED, label: 'Approuvé' },
+                    { value: UserStatus.REJECTED, label: 'Rejeté' },
+                  ]}
+                  value={field.value}
+                  onChange={(val) => field.onChange(val as UserStatus)}
+                />
+              )}
             />
+            <Controller
+              name="is_active"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  label="Utilisateur actif"
+                  description="L'utilisateur peut se connecter et utiliser le système"
+                  checked={!!field.value}
+                  onChange={(event) => field.onChange(event.currentTarget.checked)}
+                />
+              )}
+            />
+
+            <Button
+              variant="outline"
+              color="orange"
+              onClick={handleResetPassword}
+              loading={loading}
+            >
+              Réinitialiser le mot de passe
+            </Button>
 
             <Group justify="flex-end" mt="md">
               <Button

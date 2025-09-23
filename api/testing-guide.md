@@ -4,6 +4,11 @@
 **Date:** 2025-09-18
 **Objectif:** Fournir une source de vérité unique pour lancer et écrire les tests du backend FastAPI.
 
+## 📜 Stratégie Architecturale
+Avant de contribuer, il est impératif de lire la **Charte de Stratégie de Test** principale du projet qui définit quel type de test écrire et quand.
+
+-> [Consulter la Charte de Stratégie de Test](../../docs/testing-strategy.md)
+
 ---
 
 ## 1. Comment Lancer les Tests (Méthode Recommandée)
@@ -26,12 +31,58 @@ docker-compose run --rm api-tests
 -   Elle lance `pytest` à l'intérieur du conteneur.
 -   `--rm` : Le conteneur est automatiquement supprimé après l'exécution des tests, laissant votre système propre.
 
+## 1.1. Comment Lancer les Migrations Alembic (Méthode Recommandée)
+
+Le projet utilise un service Docker Compose dédié pour les migrations Alembic afin d'éviter les problèmes de configuration complexe.
+
+### Lancer les Migrations
+
+Ouvrez un terminal à la racine du projet et exécutez la commande suivante :
+
+```bash
+docker-compose run --rm api-migrations alembic upgrade head
+```
+
+**Que fait cette commande ?**
+-   Elle construit automatiquement l'image `recyclic-api-migrations` si nécessaire.
+-   Elle démarre un conteneur **éphémère** basé sur cette image dédiée.
+-   Elle utilise une configuration Alembic optimisée pour Docker.
+-   Elle applique toutes les migrations en attente à la base de données.
+-   `--rm` : Le conteneur est automatiquement supprimé après l'exécution.
+
+### Notes Importantes sur les Migrations
+
+-   **Service dédié :** Utilisez toujours `api-migrations` au lieu de `api` pour les migrations.
+-   **Configuration fixe :** L'image `api-migrations` contient une configuration Alembic pré-configurée pour se connecter au service `postgres` Docker.
+-   **Variables d'environnement :** Toutes les variables PostgreSQL nécessaires sont automatiquement injectées.
+-   **Dépendances :** Le service attend que PostgreSQL soit démarré et sain avant d'exécuter les migrations.
+
 ### Lancer un Fichier de Test Spécifique
 
 Pour débugger, vous pouvez lancer un seul fichier :
 
 ```bash
 docker-compose run --rm api-tests python -m pytest tests/nom_du_fichier.py
+```
+
+## 1.1. Gestion de la Base de Données de Test
+
+Pour les tests backend, une base de données de test dédiée (`recyclic_test`) est utilisée. Elle doit être créée manuellement avant de lancer les tests.
+
+**Commandes pour créer/recréer la base de données de test :**
+
+```bash
+# 1. Supprimer la base de données existante (si elle existe)
+docker-compose exec postgres psql -U recyclic -c "DROP DATABASE IF EXISTS recyclic_test;"
+
+# 2. Créer une nouvelle base de données de test
+docker-compose exec postgres psql -U recyclic -c "CREATE DATABASE recyclic_test;"
+```
+
+**Note sur les migrations :** Actuellement, il peut y avoir des problèmes avec les migrations Alembic lors du lancement des tests. Pour les contourner, utilisez l'option `-k "not migration"` avec `pytest` :
+
+```bash
+docker-compose run --rm api-tests python -m pytest tests/ -k "not migration" -v
 ```
 
 ---
@@ -45,6 +96,15 @@ Le fichier `api/tests/conftest.py` est le cœur de notre configuration de test. 
 -   **`db_session` :** C'est la fixture la plus importante. **Tout test qui interagit avec la base de données DOIT l'inclure dans ses arguments.** Elle fournit une session de base de données propre et isolée pour chaque test et annule automatiquement toutes les modifications à la fin.
 
 -   **`client` :** Fournit une instance du `TestClient` de FastAPI pour faire des requêtes à l'API.
+
+-   **`admin_client` :** C'est la méthode **préférée** pour tester les endpoints nécessitant des privilèges administrateur. Cette fixture retourne un `TestClient` pré-authentifié avec un token d'administrateur valide.
+
+    **Exemple d'utilisation :**
+    ```python
+    def test_admin_endpoint(admin_client):
+        response = admin_client.get("/api/v1/admin/some-protected-route")
+        assert response.status_code == 200
+    ```
 
 ### Standards d'Écriture
 

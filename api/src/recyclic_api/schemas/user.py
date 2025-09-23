@@ -38,7 +38,7 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, exclude={'hashed_password'})
 
     @field_validator('id', 'site_id', mode='before')
     @classmethod

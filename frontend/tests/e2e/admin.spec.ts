@@ -22,6 +22,20 @@ const TEST_USER = {
   role: 'user'
 };
 
+// Utilisateur de test pour la modale d'édition
+const TEST_EDIT_USER = {
+  id: 'edit-user-123',
+  telegram_id: '123456789',
+  username: 'edit_user',
+  first_name: 'Edit',
+  last_name: 'User',
+  role: 'user',
+  status: 'approved',
+  is_active: true,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z'
+};
+
 test.describe('Interface d\'Administration E2E', () => {
   
   test.beforeEach(async ({ page }) => {
@@ -301,7 +315,7 @@ test.describe('Interface d\'Administration E2E', () => {
     await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
       const url = new URL(route.request().url());
       const search = url.searchParams.get('search');
-      
+
       let users = [
         {
           id: 'user-1',
@@ -328,15 +342,15 @@ test.describe('Interface d\'Administration E2E', () => {
           updated_at: '2024-01-02T00:00:00Z'
         }
       ];
-      
+
       if (search) {
-        users = users.filter(user => 
-          user.username.includes(search) || 
-          user.first_name.includes(search) || 
+        users = users.filter(user =>
+          user.username.includes(search) ||
+          user.first_name.includes(search) ||
           user.last_name.includes(search)
         );
       }
-      
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -345,20 +359,186 @@ test.describe('Interface d\'Administration E2E', () => {
     });
 
     await page.goto(`${FRONTEND_URL}/admin/users`);
-    
+
     // Attendre que les données se chargent
     await page.waitForSelector('[data-testid="user-list-table"]');
-    
+
     // Effectuer une recherche
     await page.locator('[data-testid="search-input"]').fill('john');
     await page.locator('[data-testid="search-button"]').click();
-    
+
     // Attendre que la recherche soit effectuée
     await page.waitForTimeout(1000);
-    
+
     // Vérifier que seul John Doe est affiché
     await expect(page.locator('[data-testid="user-row"]')).toHaveCount(1);
     await expect(page.locator('text=John Doe')).toBeVisible();
+  });
+
+  test('Modale d\'édition de profil sécurisée - workflow complet', async ({ page }) => {
+    // Mock des réponses API
+    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([TEST_EDIT_USER])
+      });
+    });
+
+    // Mock pour la mise à jour d'utilisateur
+    await page.route(`${API_BASE_URL}/api/v1/users/${TEST_EDIT_USER.id}`, async route => {
+      if (route.request().method() === 'PUT') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ...TEST_EDIT_USER,
+            first_name: 'Updated',
+            last_name: 'Name',
+            updated_at: new Date().toISOString()
+          })
+        });
+      }
+    });
+
+    // Mock pour la mise à jour de rôle
+    await page.route(`${API_BASE_URL}/api/v1/admin/users/${TEST_EDIT_USER.id}/role`, async route => {
+      if (route.request().method() === 'PUT') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            message: 'Rôle mis à jour avec succès'
+          })
+        });
+      }
+    });
+
+    await page.goto(`${FRONTEND_URL}/admin/users`);
+
+    // Attendre que les données se chargent
+    await page.waitForSelector('[data-testid="user-list-table"]');
+
+    // 🔒 Test de sécurité : Vérifier que le champ prénom n'affiche jamais de mot de passe
+    await expect(page.locator('text=Edit')).toBeVisible(); // Le prénom correct
+    await expect(page.locator('text=Edit')).not.toContainText('password'); // Pas de mot de passe
+
+    // Cliquer sur le bouton "Modifier le profil" (supposé être dans la liste des utilisateurs)
+    await page.locator('text=Modifier le profil').click();
+
+    // Attendre que la modale s'ouvre
+    await expect(page.locator('[data-testid="edit-profile-modal"]')).toBeVisible();
+
+    // ✅ Test de pré-remplissage : Vérifier que les champs sont pré-remplis correctement
+    await expect(page.locator('[data-testid="first-name-input"]')).toHaveValue('Edit');
+    await expect(page.locator('[data-testid="last-name-input"]')).toHaveValue('User');
+    await expect(page.locator('[data-testid="role-select"]')).toContainText('Bénévole'); // Étiquette correcte
+    await expect(page.locator('[data-testid="status-select"]')).toContainText('Approuvé');
+
+    // ✅ Test des rôles valides : Vérifier que seuls les rôles valides sont disponibles
+    await page.locator('[data-testid="role-select"]').click();
+    await expect(page.locator('[data-testid="role-option-super-admin"]')).toBeVisible();
+    await expect(page.locator('[data-testid="role-option-admin"]')).toBeVisible();
+    await expect(page.locator('[data-testid="role-option-user"]')).toBeVisible();
+
+    // ❌ Vérifier que les rôles dépréciés ne sont pas présents
+    await expect(page.locator('[data-testid="role-option-manager"]')).not.toBeVisible();
+    await expect(page.locator('[data-testid="role-option-cashier"]')).not.toBeVisible();
+
+    // Fermer le dropdown
+    await page.locator('body').click();
+
+    // Modifier les valeurs
+    await page.locator('[data-testid="first-name-input"]').fill('Updated');
+    await page.locator('[data-testid="last-name-input"]').fill('Name');
+    await page.locator('[data-testid="role-select"]').selectOption('admin');
+    await page.locator('[data-testid="status-select"]').selectOption('pending');
+
+    // Sauvegarder les modifications
+    await page.locator('[data-testid="save-profile-button"]').click();
+
+    // Vérifier la notification de succès
+    await expect(page.locator('[data-testid="success-notification"]')).toBeVisible();
+    await expect(page.locator('text=Profil utilisateur mis à jour avec succès')).toBeVisible();
+
+    // Vérifier que la modale se ferme
+    await expect(page.locator('[data-testid="edit-profile-modal"]')).not.toBeVisible();
+  });
+
+  test('Modale d\'édition de profil - validation des champs', async ({ page }) => {
+    // Mock des réponses API
+    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([TEST_EDIT_USER])
+      });
+    });
+
+    await page.goto(`${FRONTEND_URL}/admin/users`);
+    await page.waitForSelector('[data-testid="user-list-table"]');
+
+    // Ouvrir la modale
+    await page.locator('text=Modifier le profil').click();
+    await expect(page.locator('[data-testid="edit-profile-modal"]')).toBeVisible();
+
+    // ✅ Test de validation : Prénom trop court
+    await page.locator('[data-testid="first-name-input"]').fill('A');
+    await page.locator('[data-testid="save-profile-button"]').click();
+
+    // Vérifier que l'erreur de validation s'affiche
+    await expect(page.locator('[data-testid="first-name-error"]')).toContainText('Le prénom doit contenir au moins 2 caractères');
+
+    // Corriger le prénom
+    await page.locator('[data-testid="first-name-input"]').fill('Updated');
+
+    // ✅ Test de validation : Nom trop court
+    await page.locator('[data-testid="last-name-input"]').fill('B');
+    await page.locator('[data-testid="save-profile-button"]').click();
+
+    // Vérifier que l'erreur de validation s'affiche
+    await expect(page.locator('[data-testid="last-name-error"]')).toContainText('Le nom doit contenir au moins 2 caractères');
+
+    // Corriger le nom
+    await page.locator('[data-testid="last-name-input"]').fill('Name');
+
+    // La sauvegarde devrait maintenant fonctionner (même si elle échoue côté API)
+    await page.locator('[data-testid="save-profile-button"]').click();
+  });
+
+  test('Modale d\'édition de profil - annulation fonctionne', async ({ page }) => {
+    // Mock des réponses API
+    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([TEST_EDIT_USER])
+      });
+    });
+
+    await page.goto(`${FRONTEND_URL}/admin/users`);
+    await page.waitForSelector('[data-testid="user-list-table"]');
+
+    // Ouvrir la modale
+    await page.locator('text=Modifier le profil').click();
+    await expect(page.locator('[data-testid="edit-profile-modal"]')).toBeVisible();
+
+    // Modifier des valeurs
+    await page.locator('[data-testid="first-name-input"]').fill('Should Not Save');
+
+    // Annuler les modifications
+    await page.locator('[data-testid="cancel-profile-button"]').click();
+
+    // Vérifier que la modale se ferme
+    await expect(page.locator('[data-testid="edit-profile-modal"]')).not.toBeVisible();
+
+    // Rouvrir la modale pour vérifier que les modifications n'ont pas été sauvegardées
+    await page.locator('text=Modifier le profil').click();
+    await expect(page.locator('[data-testid="edit-profile-modal"]')).toBeVisible();
+
+    // Vérifier que les valeurs originales sont restaurées
+    await expect(page.locator('[data-testid="first-name-input"]')).toHaveValue('Edit');
   });
 });
 

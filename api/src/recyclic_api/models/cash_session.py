@@ -32,6 +32,10 @@ class CashSession(Base):
     # Site où se déroule la session
     site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=False)
     site = relationship("Site", back_populates="cash_sessions")
+
+    # Poste de caisse (registre) utilisé pour la session
+    register_id = Column(UUID(as_uuid=True), ForeignKey("cash_registers.id"), nullable=True)
+    register = relationship("CashRegister", lazy="joined")
     
     # Montants financiers
     initial_amount = Column(Float, nullable=False, default=0.0)
@@ -72,6 +76,12 @@ class CashSession(Base):
         if isinstance(st_id, str):
             try:
                 kwargs["site_id"] = uuid.UUID(st_id)
+            except Exception:
+                pass
+        rg_id = kwargs.get("register_id")
+        if isinstance(rg_id, str):
+            try:
+                kwargs["register_id"] = uuid.UUID(rg_id)
             except Exception:
                 pass
         _id = kwargs.get("id")
