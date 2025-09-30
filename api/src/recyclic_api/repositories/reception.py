@@ -5,7 +5,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from recyclic_api.models import PosteReception, TicketDepot, User
+from recyclic_api.models import PosteReception, TicketDepot, User, LigneDepot, DomCategory
 
 
 class PosteReceptionRepository:
@@ -61,5 +61,41 @@ class UserRepository:
 
     def get(self, user_id: UUID) -> Optional[User]:
         return self.db.query(User).filter(User.id == user_id).first()
+
+
+class LigneDepotRepository:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def get(self, ligne_id: UUID) -> Optional[LigneDepot]:
+        return self.db.query(LigneDepot).filter(LigneDepot.id == ligne_id).first()
+
+    def add(self, ligne: LigneDepot) -> LigneDepot:
+        self.db.add(ligne)
+        self.db.commit()
+        self.db.refresh(ligne)
+        return ligne
+
+    def update(self, ligne: LigneDepot) -> LigneDepot:
+        self.db.commit()
+        self.db.refresh(ligne)
+        return ligne
+
+    def delete(self, ligne: LigneDepot) -> None:
+        self.db.delete(ligne)
+        self.db.commit()
+
+
+class DomCategoryRepository:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def exists(self, dom_category_id: UUID) -> bool:
+        return (
+            self.db.query(DomCategory)
+            .filter(DomCategory.id == dom_category_id, DomCategory.active.is_(True))
+            .first()
+            is not None
+        )
 
 

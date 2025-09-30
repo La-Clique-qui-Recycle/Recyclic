@@ -12,6 +12,9 @@ from recyclic_api.schemas.reception import (
     CreateTicketRequest,
     CreateTicketResponse,
     CloseResponse,
+    CreateLigneRequest,
+    UpdateLigneRequest,
+    LigneResponse,
 )
 from recyclic_api.services.reception_service import ReceptionService
 
@@ -61,4 +64,61 @@ def close_ticket(
     ticket = service.close_ticket(ticket_id=UUID(ticket_id))
     return {"status": ticket.status}
 
+
+
+# Lignes de dépôt
+@router.post("/lignes", response_model=LigneResponse)
+def add_ligne(
+    payload: CreateLigneRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+):
+    service = ReceptionService(db)
+    ligne = service.create_ligne(
+        ticket_id=UUID(payload.ticket_id),
+        dom_category_id=UUID(payload.dom_category_id),
+        poids_kg=float(payload.poids_kg),
+        notes=payload.notes,
+    )
+    return {
+        "id": str(ligne.id),
+        "ticket_id": str(ligne.ticket_id),
+        "dom_category_id": str(ligne.dom_category_id),
+        "poids_kg": ligne.poids_kg,
+        "notes": ligne.notes,
+    }
+
+
+@router.put("/lignes/{ligne_id}", response_model=LigneResponse)
+def update_ligne(
+    ligne_id: str,
+    payload: UpdateLigneRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+):
+    service = ReceptionService(db)
+    ligne = service.update_ligne(
+        ligne_id=UUID(ligne_id),
+        dom_category_id=UUID(payload.dom_category_id) if payload.dom_category_id else None,
+        poids_kg=float(payload.poids_kg) if payload.poids_kg is not None else None,
+        notes=payload.notes,
+    )
+    return {
+        "id": str(ligne.id),
+        "ticket_id": str(ligne.ticket_id),
+        "dom_category_id": str(ligne.dom_category_id),
+        "poids_kg": ligne.poids_kg,
+        "notes": ligne.notes,
+    }
+
+
+@router.delete("/lignes/{ligne_id}")
+def delete_ligne(
+    ligne_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+):
+    service = ReceptionService(db)
+    service.delete_ligne(ligne_id=UUID(ligne_id))
+    return {"status": "deleted"}
 

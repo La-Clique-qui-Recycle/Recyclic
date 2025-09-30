@@ -1,0 +1,31 @@
+---
+alwaysApply: false
+description: Snippets WSL-safe pour Unicode, chemins spéciaux et outils courants
+---
+# Snippets WSL-safe (Agent)
+
+## Unicode sortie
+- Python octets:
+  - `wsl -e python3 -c "import sys;sys.stdout.buffer.write(bytes([0xE2,0x82,0xAC,0x0A]))"`  (affiche €)
+- Bash Unicode:
+  - `wsl -e bash -lc "printf $'\\u20AC\\n'"`
+
+## Chemins spéciaux (°)
+```bash
+wsl -e bash -lc "PATH_DIR=/mnt/d/Users/Strophe/Documents/$'\\u00B0'IA/La\\ Clique\\ Qui\\ Recycle/Recyclic; cd \"$PATH_DIR\" && pwd"
+```
+
+## Docker
+- Depuis le repo (éviter héritage chemin Windows):
+  - `wsl --cd ~ -e bash -lc "cd /mnt/d/Users/Strophe/Documents/$'\\u00B0'IA/La\\ Clique\\ Qui\\ Recycle/Recyclic && docker-compose ps | cat"`
+
+## Node/NPM
+```bash
+wsl --cd ~ -e bash -lc "cd /mnt/d/Users/Strophe/Documents/$'\\u00B0'IA/La\\ Clique\\ Qui\\ Recycle/Recyclic/frontend && npm -v && node -v"
+```
+
+## Python/pytest (API)
+```bash
+wsl --cd ~ -e bash -lc "cd /mnt/d/Users/Strophe/Documents/$'\\u00B0'IA/La\\ Clique\\ Qui\\ Recycle/Recyclic/api && python3 -V && pytest -k smoke -q | cat"
+```
+

@@ -1,5 +1,7 @@
 # Story: BE - API de Gestion des Postes et Tickets
 
+**Statut: Terminé**
+
 **User Story**
 En tant que bénévole à la réception,
 Je veux pouvoir ouvrir un "poste de réception" et y créer des "tickets de dépôt",
@@ -49,3 +51,49 @@ Afin de pouvoir commencer à enregistrer les objets apportés par les usagers.
 
 *   **Risque Principal :** Faible. Il s'agit de la création de nouvelles routes qui n'interfèrent pas avec le code existant.
 *   **Rollback :** Les nouvelles routes peuvent être désactivées ou supprimées du routeur principal.
+
+---
+
+Dev Agent Record (implémentation)
+
+- Tâches réalisées:
+  - Création du routeur `reception` et des endpoints: ouvrir/fermer poste, créer/clôturer ticket (protégés par auth).
+  - Ajout des schémas Pydantic de requêtes/réponses.
+  - Service métier avec Repository pattern (Poste, Ticket, User).
+  - Tests d'intégration: succès (happy path), 404 ID inconnu, 409 fermeture poste avec ticket ouvert.
+
+- Fichiers modifiés/ajoutés (principaux):
+  - `api/src/recyclic_api/api/api_v1/endpoints/reception.py`
+  - `api/src/recyclic_api/api/api_v1/endpoints/__init__.py`
+  - `api/src/recyclic_api/api/api_v1/api.py`
+  - `api/src/recyclic_api/schemas/reception.py`
+  - `api/src/recyclic_api/services/reception_service.py`
+  - `api/src/recyclic_api/repositories/reception.py`
+  - `api/src/recyclic_api/models/__init__.py`
+  - `api/tests/test_reception_endpoints.py`
+  - `api/create_test_db.py`
+
+- Statut: Prêt pour Review QA (tests d'intégration réception au vert en local).
+
+---
+
+QA Results (by QA)
+
+- Gate Decision: PASS
+- Epic: epic-mvp-reception-v1
+- Story: story-be-api-postes-tickets
+- Slug: be-api-postes-tickets
+- Date: 2025-09-30
+- Summary: Endpoints reception créés (ouvrir/fermer poste, créer/clôturer ticket), protégés par auth; règles 409 et 404 gérées; tests d'intégration annoncés verts en local.
+- Findings:
+  - Critères d'acceptation couverts: 4 endpoints + protection auth + erreurs 404/409.
+  - Architecture alignée: routeur dédié `reception`, schémas Pydantic, service métier, repository.
+  - Traçabilité: endpoints et règles métier reflètent la story; dépend sur schéma DB validé (gate existant PASS).
+  - Tests: mentionnés comme verts localement; vérifier intégration CI et cas négatifs supplémentaires (auth manquante, poste inexistant à la création ticket).
+  - Sécurité: endpoints protégés; vérifier propagation d'identité utilisateur et contrôle d'accès par rôle si applicable.
+- Actions:
+  - Ajouter tests pour 401/403 explicites sur chaque endpoint.
+  - Ajouter test pour création ticket avec `poste_id` invalide (404) et poste fermé (409/422 selon règle).
+  - Vérifier idempotence et erreurs concurrentes lors de fermeture poste (tickets ouverts créés simultanément).
+  - Documenter codes de retour dans `openapi.json` (401,403,404,409) et exemples.
+  - S'assurer de l'enregistrement `closed_at` et statuts via contraintes ou validations DB.

@@ -1,5 +1,7 @@
 # Story: DB - Création du Schéma de Réception
 
+**Statut: Terminé**
+
 **User Story**
 En tant qu'architecte système,
 Je veux un schéma de base de données robuste, normalisé et évolutif pour le nouveau processus de réception,

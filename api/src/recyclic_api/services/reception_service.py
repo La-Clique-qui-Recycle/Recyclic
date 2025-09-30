@@ -11,11 +11,14 @@ from recyclic_api.models import (
     PosteReceptionStatus,
     TicketDepot,
     TicketDepotStatus,
+    LigneDepot,
 )
 from recyclic_api.repositories.reception import (
     PosteReceptionRepository,
     TicketDepotRepository,
     UserRepository,
+    LigneDepotRepository,
+    DomCategoryRepository,
 )
 
 
@@ -27,6 +30,8 @@ class ReceptionService:
         self.poste_repo = PosteReceptionRepository(db)
         self.ticket_repo = TicketDepotRepository(db)
         self.user_repo = UserRepository(db)
+        self.ligne_repo = LigneDepotRepository(db)
+        self.dom_category_repo = DomCategoryRepository(db)
 
     # Postes
     def open_poste(self, opened_by_user_id: UUID) -> PosteReception:
@@ -85,4 +90,71 @@ class ReceptionService:
         ticket.closed_at = func.now()
         return self.ticket_repo.update(ticket)
 
+
+    # Lignes de dépôt
+    def create_ligne(self, *, ticket_id: UUID, dom_category_id: UUID, poids_kg: float, notes: Optional[str]) -> LigneDepot:
+        """Créer une ligne de dépôt avec règles métier: poids>0 et ticket ouvert."""
+        ticket: Optional[TicketDepot] = self.ticket_repo.get(ticket_id)
+        if not ticket:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket introuvable")
+        if ticket.status != TicketDepotStatus.OPENED.value:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ticket fermé")
+
+        if not self.dom_category_repo.exists(dom_category_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Catégorie introuvable")
+
+        # Validation poids côté service (déjà validé par Pydantic au niveau schéma d'entrée)
+        if poids_kg <= 0:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="poids_kg doit être > 0")
+
+        ligne = LigneDepot(
+            ticket_id=ticket.id,
+            dom_category_id=dom_category_id,
+            poids_kg=poids_kg,
+            notes=notes,
+        )
+        return self.ligne_repo.add(ligne)
+
+    def update_ligne(
+        self,
+        *,
+        ligne_id: UUID,
+        dom_category_id: Optional[UUID] = None,
+        poids_kg: Optional[float] = None,
+        notes: Optional[str] = None,
+    ) -> LigneDepot:
+        ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
+        if not ligne:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ligne introuvable")
+
+        # On ne peut modifier que si le ticket est ouvert
+        ticket: Optional[TicketDepot] = self.ticket_repo.get(ligne.ticket_id)
+        assert ticket is not None
+        if ticket.status != TicketDepotStatus.OPENED.value:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ticket fermé")
+
+        if dom_category_id is not None:
+            if not self.dom_category_repo.exists(dom_category_id):
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Catégorie introuvable")
+            ligne.dom_category_id = dom_category_id
+
+        if poids_kg is not None:
+            if poids_kg <= 0:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="poids_kg doit être > 0")
+            ligne.poids_kg = poids_kg
+
+        if notes is not None:
+            ligne.notes = notes
+
+        return self.ligne_repo.update(ligne)
+
+    def delete_ligne(self, *, ligne_id: UUID) -> None:
+        ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
+        if not ligne:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ligne introuvable")
+        ticket: Optional[TicketDepot] = self.ticket_repo.get(ligne.ticket_id)
+        assert ticket is not None
+        if ticket.status != TicketDepotStatus.OPENED.value:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ticket fermé")
+        self.ligne_repo.delete(ligne)
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, condecimal
+from typing import Optional
+from decimal import Decimal
 
 
 class OpenPosteResponse(BaseModel):
@@ -27,4 +29,36 @@ class CloseResponse(BaseModel):
 
     status: str = Field(..., description="Statut mis à jour (closed)")
 
+
+
+# Lignes de dépôt
+class CreateLigneRequest(BaseModel):
+    """Corps de requête pour créer une ligne de dépôt."""
+
+    ticket_id: str = Field(..., description="Identifiant du ticket de dépôt")
+    dom_category_id: str = Field(..., description="Identifiant de la catégorie domaine")
+    poids_kg: condecimal(gt=0, max_digits=8, decimal_places=3) = Field(
+        ..., description="Poids en kilogrammes (> 0)"
+    )
+    notes: Optional[str] = Field(None, description="Notes libres")
+
+
+class UpdateLigneRequest(BaseModel):
+    """Corps de requête pour modifier une ligne de dépôt."""
+
+    dom_category_id: Optional[str] = Field(None, description="Nouvelle catégorie domaine")
+    poids_kg: Optional[condecimal(gt=0, max_digits=8, decimal_places=3)] = Field(
+        None, description="Nouveau poids en kilogrammes (> 0)"
+    )
+    notes: Optional[str] = Field(None, description="Notes libres")
+
+
+class LigneResponse(BaseModel):
+    """Représentation d'une ligne de dépôt."""
+
+    id: str = Field(..., description="Identifiant de la ligne")
+    ticket_id: str = Field(..., description="Identifiant du ticket")
+    dom_category_id: str = Field(..., description="Identifiant de la catégorie domaine")
+    poids_kg: Decimal = Field(..., description="Poids en kilogrammes")
+    notes: Optional[str] = Field(None, description="Notes libres")
 

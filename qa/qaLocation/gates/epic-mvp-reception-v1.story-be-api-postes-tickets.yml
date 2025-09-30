@@ -1,0 +1,23 @@
+story: story-be-api-postes-tickets
+epic: epic-mvp-reception-v1
+slug: be-api-postes-tickets
+decision: PASS
+summary: "Endpoints reception OK; auth requise; 404/409 gérées; tests annoncés verts"
+findings:
+  - "Routeur reception dédié; schémas Pydantic; service + repository pattern"
+  - "POST /reception/postes/open crée poste et associe opened_by_user_id"
+  - "POST /reception/postes/{id}/close vérifie absence tickets ouverts; closed_at set"
+  - "POST /reception/tickets crée ticket lié au poste et user"
+  - "POST /reception/tickets/{id}/close met à jour statut + horodatage"
+  - "Endpoints protégés; erreurs 404/409 prévues"
+actions:
+  - "Ajouter tests 401/403 sur chaque endpoint"
+  - "Tester ticket avec poste inexistant (404) et poste fermé (409/422)"
+  - "Tester concurrence à la fermeture du poste (tickets ouverts simultanés)"
+  - "Documenter codes retour dans OpenAPI (401,403,404,409)"
+  - "Valider contraintes DB sur statuts et closed_at"
+status: review
+owner: qa
+timestamp: "2025-09-30"
+
+
