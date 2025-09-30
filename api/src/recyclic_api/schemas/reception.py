@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, condecimal
 from typing import Optional
-import enum
 from decimal import Decimal
+
+from recyclic_api.models.ligne_depot import Destination
 
 
 class OpenPosteResponse(BaseModel):
@@ -33,10 +34,6 @@ class CloseResponse(BaseModel):
 
 
 # Lignes de dépôt
-class Destination(str, enum.Enum):
-    MAGASIN = "MAGASIN"
-    RECYCLAGE = "RECYCLAGE"
-    DECHETERIE = "DECHETERIE"
 
 
 class CreateLigneRequest(BaseModel):

@@ -236,3 +236,38 @@ def test_update_notes_and_dom_category_id_happy_path(admin_client):
     assert data["destination"] == "DECHETERIE"  # Inchangé
 
 
+def test_invalid_destination_enum_values(admin_client):
+    """Test validation des valeurs ENUM destination invalides."""
+    # Setup poste + ticket
+    r = admin_client.post("/api/v1/reception/postes/open")
+    assert r.status_code == 200
+    poste_id = r.json()["id"]
+    r = admin_client.post("/api/v1/reception/tickets", json={"poste_id": poste_id})
+    assert r.status_code == 200
+    ticket_id = r.json()["id"]
+
+    # Récupérer une catégorie
+    from sqlalchemy import create_engine, text
+    db_url = os.getenv(
+        "TEST_DATABASE_URL",
+        os.getenv("DATABASE_URL", "postgresql://recyclic:postgres@localhost:5432/recyclic"),
+    )
+    engine = create_engine(db_url)
+    with engine.begin() as conn:
+        dom_category_id = conn.execute(text("SELECT id FROM dom_category ORDER BY label LIMIT 1")).scalar()
+    assert dom_category_id
+
+    # Test valeur ENUM invalide → 422
+    r = admin_client.post(
+        "/api/v1/reception/lignes",
+        json={
+            "ticket_id": ticket_id,
+            "dom_category_id": str(dom_category_id),
+            "poids_kg": "1.000",
+            "destination": "INVALID_DESTINATION",
+        },
+    )
+    assert r.status_code == 422
+    assert "destination" in str(r.json())
+
+

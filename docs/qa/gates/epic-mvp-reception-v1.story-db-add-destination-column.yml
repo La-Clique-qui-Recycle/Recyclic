@@ -1,0 +1,45 @@
+schema: 1
+story: 'epic-mvp-reception-v1.story-db-add-destination-column'
+story_title: 'DB - Ajout de la Colonne Destination'
+gate: PASS
+status_reason: 'Implémentation complète et conforme aux critères d\'acceptation avec refactoring de qualité'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-27T10:30:00Z'
+
+top_issues: [] # Aucun problème critique identifié
+
+waiver: { active: false }
+
+# Extended fields
+quality_score: 95 # 100 - (0*FAILs) - (0*CONCERNS) + bonus refactoring
+expires: '2025-02-10T10:30:00Z' # 2 semaines
+
+evidence:
+  tests_reviewed: 6
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5] # Tous les critères d'acceptation couverts
+    ac_gaps: [] # Aucun gap
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Aucun impact sécurité - ajout de colonne ENUM non-null'
+  performance:
+    status: PASS
+    notes: 'Migration optimisée avec server_default pour données existantes'
+  reliability:
+    status: PASS
+    notes: 'Migration réversible, gestion des données existantes'
+  maintainability:
+    status: PASS
+    notes: 'Code refactorisé pour éliminer duplication Enum'
+
+recommendations:
+  immediate: # Aucun problème critique
+    []
+  future: # Améliorations suggérées
+    - action: 'Considérer extraction des tests SQL bruts vers fixtures ORM'
+      refs: ['api/tests/test_reception_crud_relations.py']
+    - action: 'Implémenter les tests TODO dans test_reception_crud_relations.py'
+      refs: ['api/tests/test_reception_crud_relations.py']
