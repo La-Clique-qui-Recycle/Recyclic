@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -22,7 +22,8 @@ class TicketDepot(Base):
     benevole_user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     closed_at = Column(DateTime(timezone=True), nullable=True)
-    status = Column(Enum(TicketDepotStatus), nullable=False, default=TicketDepotStatus.OPENED)
+    # Option A: VARCHAR + CHECK côté DB (via migration) + validation applicative
+    status = Column(String(16), nullable=False, default=TicketDepotStatus.OPENED.value)
 
     # Relationships
     poste = relationship("PosteReception", back_populates="tickets")

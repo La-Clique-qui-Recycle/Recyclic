@@ -68,3 +68,39 @@ Afin de construire des fonctionnalités fiables sur une fondation technique sain
 - Réversibilité: schéma conçu pour supporter downgrade; tests manuels à compléter en QA si nécessaire.
 - Impact existant: aucune table existante modifiée; tables nouvelles uniquement.
 - Suivi: PR ouverte vers `feature/mvp-reception-v1`.
+
+## QA Results
+
+**Décision de gate**: CONCERNS
+
+**Constats clés**
+- Les migrations déclarent des statuts en `VARCHAR + CHECK` (cf. Dev Agent Record), mais le modèle `PosteReception` utilise un `Enum(PosteReceptionStatus)` SQLAlchemy, ce qui peut introduire un type ENUM Postgres implicite et diverger du schéma migré.
+- Les critères d'acceptation prévoient 5 modèles/tables (`dom_category`, `dom_category_closure`, `poste_reception`, `ticket_depot`, `ligne_depot`). Preuve directe fournie pour `PosteReception`; vérification des autres modèles/migrations à compléter.
+- Downgrade annoncé « OK à concevoir » mais tests automatisés non présents dans le dossier QA à ce stade.
+
+**Recommandations (bloquants à lever)**
+1. Aligner le type `status` côté modèles avec la migration: remplacer l'`Enum` SQLAlchemy par un `String` + validation applicative (ou `CHECK` via migration), ou déclarer explicitement l'ENUM Postgres dans la migration pour cohérence bilatérale. Choisir une seule stratégie et l'appliquer partout (`poste_reception`, `ticket_depot`).
+2. Ajouter des tests d'alembic: upgrade/downgrade round-trip sur les 5 tables (création, contraintes FK, PK composite `dom_category_closure`).
+3. Vérifier la présence et les `relationship` attendus sur tous les modèles (tickets ↔ lignes, catégories ↔ closure) avec tests unitaires CRUD minimaux.
+
+**Proposition de tests (Given/When/Then)**
+- Given une base vide, When `alembic upgrade head`, Then les 5 tables existent avec contraintes et index attendus.
+- Given les 14 L1 seedées, When insertion de `closure` depth=0, Then `COUNT(dom_category)=14` et `COUNT(closure depth=0)=14`.
+- Given un `poste_reception` ouvert, When création d’un `ticket_depot` et d’une `ligne_depot` liée à une `dom_category`, Then les FK et cascades fonctionnent; When downgrade à base, Then les tables sont supprimées sans résidu.
+
+**Décision**: CONCERNS – fusion possible après correction du type `status` et ajout de tests upgrade/downgrade.
+
+### Plan QA pour DEV (checklist exécutable)
+
+- [ ] Aligner le type `status` sur une stratégie unique:
+  - Option A (préconisée): colonne `status` en `VARCHAR` + contrainte `CHECK` (migration), modèles SQLAlchemy en `String` + validation applicative; appliquer à `poste_reception` et `ticket_depot`.
+  - Option B: vrai `ENUM` Postgres déclaré dans la migration, et `Enum` SQLAlchemy homogène partout. Plus rigide.
+- [ ] Tests Alembic (upgrade/downgrade round-trip):
+  - Création des 5 tables, PK composite `dom_category_closure`, FKs, index.
+  - Downgrade supprime proprement les tables.
+- [ ] Tests seed L1:
+  - `COUNT(dom_category)=14` et 14 enregistrements `closure` depth=0.
+- [ ] Tests CRUD/relations:
+  - `poste_reception` → `ticket_depot` → `ligne_depot` avec `dom_category` existant.
+  - Vérifier cascades/suppressions et intégrité référentielle.
+- [ ] Mettre à jour la story (Dev Agent Record) avec résultats de tests et choix A/B.

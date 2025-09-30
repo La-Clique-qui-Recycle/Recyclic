@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -21,7 +21,8 @@ class PosteReception(Base):
     opened_by_user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     opened_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     closed_at = Column(DateTime(timezone=True), nullable=True)
-    status = Column(Enum(PosteReceptionStatus), nullable=False, default=PosteReceptionStatus.OPENED)
+    # Option A: VARCHAR + CHECK côté DB (via migration) + validation applicative côté service
+    status = Column(String(16), nullable=False, default=PosteReceptionStatus.OPENED.value)
 
     # Relationships
     opened_by = relationship("User")
