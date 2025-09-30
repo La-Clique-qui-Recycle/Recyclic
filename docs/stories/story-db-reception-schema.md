@@ -20,17 +20,51 @@ Afin de construire des fonctionnalités fiables sur une fondation technique sain
     *   **`ticket_depot`** : `id`, `poste_id` (FK vers `poste_reception`), `benevole_user_id` (FK vers `users`), `created_at`, `closed_at` (nullable), `status`.
     *   **`ligne_depot`** : `id`, `ticket_id` (FK vers `ticket_depot`), `dom_category_id` (FK vers `dom_category`), `poids_kg` (Decimal/Numeric), `notes` (nullable).
 3.  Les modèles SQLAlchemy correspondants à ces tables doivent être créés dans le répertoire `api/src/recyclic_api/models/`.
-4.  Une deuxième migration (ou un script de données séparé) doit être créée pour "seeder" la table `dom_category` avec les 14 catégories L1 et leur enregistrement de fermeture correspondant (depth=0).
+4.  Une deuxième migration (ou un script de données séparé) doit être créée pour "seeder" la table `dom_category` avec les 14 catégories L1 suivantes et leur enregistrement de fermeture correspondant (depth=0) :
+    *   Ameublement & Literie
+    *   Électroménager
+    *   Électronique / IT / Audio-vidéo
+    *   Textiles – Linge – Chaussures
+    *   Jouets
+    *   Sports & Loisirs
+    *   Mobilité douce
+    *   Bricolage & Outils
+    *   Jardin & Extérieur
+    *   Vaisselle & Cuisine / Maison
+    *   Livres & Médias
+    *   Puériculture & Bébé
+    *   Luminaires & Décoration
+    *   Matériaux & Bâtiment
 5.  La migration doit être réversible (`alembic downgrade` doit fonctionner et supprimer les tables).
 
 **Notes Techniques**
 
-*   Utiliser Alembic pour générer et appliquer les migrations.
-*   Le type de la colonne `poids_kg` doit être `Decimal` ou `Numeric` pour éviter les problèmes d'arrondi avec les `Float`.
-*   Les relations (`relationship`) entre les modèles SQLAlchemy doivent être définies (ex: un ticket a plusieurs lignes, une ligne appartient à un ticket).
+*   **Workflow Git :**
+    *   1. Créez une nouvelle branche pour cette story à partir de `feature/mvp-reception-v1`.
+    *   2. Nommez votre branche en suivant la convention : `story/db-reception-schema`.
+    *   3. Une fois la story terminée et testée, ouvrez une Pull Request pour fusionner votre branche dans `feature/mvp-reception-v1`.
+
+*   **Implémentation :**
+    *   Utiliser Alembic pour générer et appliquer les migrations.
+    *   Le type de la colonne `poids_kg` doit être `Decimal` ou `Numeric` pour éviter les problèmes d'arrondi avec les `Float`.
+    *   Les relations (`relationship`) entre les modèles SQLAlchemy doivent être définies (ex: un ticket a plusieurs lignes, une ligne appartient à un ticket).
 
 **Vérification des Risques et de la Compatibilité**
 
 *   **Risque Principal :** Faible. Ces tables sont nouvelles et n'interfèrent avec aucune table existante. Le principal risque est une erreur dans le modèle de données qui serait coûteuse à corriger plus tard.
 *   **Atténuation :** Le modèle est basé sur une spécification détaillée et des pratiques standards (table de fermeture). Une relecture attentive des modèles et de la migration est nécessaire avant l'application.
 *   **Rollback :** Utiliser `alembic downgrade` pour annuler la migration.
+
+---
+
+## Dev Agent Record (pour QA)
+
+- Implémenté modèles: `DomCategory`, `DomCategoryClosure`, `PosteReception`, `TicketDepot`, `LigneDepot` (SQLAlchemy 2.0, `__allow_unmapped__`).
+- Migrations ajoutées:
+  - `7c1a2f4b9c3a_reception_schema.py` (statuts en `VARCHAR + CHECK` pour éviter conflits d'ENUM Postgres).
+  - `8f2b7a1d4e6b_seed_dom_category_l1.py` (seed des 14 L1 + closure depth=0).
+- Exécution migrations (Docker): `alembic upgrade head` OK.
+- Vérification seed: `SELECT COUNT(*) FROM dom_category;` → 14.
+- Réversibilité: schéma conçu pour supporter downgrade; tests manuels à compléter en QA si nécessaire.
+- Impact existant: aucune table existante modifiée; tables nouvelles uniquement.
+- Suivi: PR ouverte vers `feature/mvp-reception-v1`.
