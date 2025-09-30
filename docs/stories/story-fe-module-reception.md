@@ -20,7 +20,10 @@ Afin d'enregistrer les dépôts rapidement, sans étapes intermédiaires.
 5.  Un clic sur "Nouveau Ticket" appelle l'API `POST /api/v1/reception/tickets` et affiche la vue de saisie du ticket (sur la même page ou via une modale).
 6.  La vue de saisie du ticket contient :
     *   Les informations du ticket (ID, etc.).
-    *   Un bouton "Ajouter une ligne" qui ouvre une grille de sélection des 14 catégories L1 et un champ de saisie pour le poids.
+    *   Sélectionner une catégorie via une grille de 14 boutons (les catégories L1).
+    *   Saisir un poids via un pavé numérique.
+    *   Choisir une destination (MAGASIN, RECYCLAGE, DECHETERIE).
+    *   Valider l'ajout.
     *   Une liste des lignes déjà ajoutées au ticket.
     *   Un bouton "Clôturer le ticket".
 7.  Un bouton "Fermer le poste" doit être présent et visible sur l'interface principale du module de réception. Il appelle l'API `POST /api/v1/reception/postes/{poste_id}/close`.

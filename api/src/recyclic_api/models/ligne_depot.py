@@ -14,6 +14,7 @@ class LigneDepot(Base):
     ticket_id = Column(PGUUID(as_uuid=True), ForeignKey("ticket_depot.id"), nullable=False)
     dom_category_id = Column(PGUUID(as_uuid=True), ForeignKey("dom_category.id"), nullable=False)
     poids_kg = Column(Numeric(8, 3), nullable=False)
+    destination = Column(String(255), nullable=True)
     notes = Column(String, nullable=True)
 
     # Relationships
