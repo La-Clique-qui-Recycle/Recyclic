@@ -1,0 +1,24 @@
+schema: 1
+story: 'story-be-api-lignes-depot'
+story_title: 'BE - API de Gestion des Lignes de Dépôt'
+epic: 'epic-mvp-reception-v1'
+slug: 'be-api-lignes-depot'
+gate: PASS
+status_reason: "CRUD lignes de dépôt livré avec règles 422/409, authz, et tests complétés (4 passed)"
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-09-30T00:00:00Z'
+top_issues: []
+waiver: { active: false }
+
+# Findings (informational)
+findings:
+  - "Validation poids via Pydantic (condecimal) et service (défense en profondeur)"
+  - "Règle ticket fermé → 409 sur create/update/delete"
+  - "Endpoints protégés par require_role_strict (USER|ADMIN|SUPER_ADMIN)"
+  - "Tests couvrent CRUD de base et règles principales; delete renvoie status=deleted"
+  - "404 pour catégorie inconnue couvert par tests (POST/PUT)"
+
+# Actions / Notes (informational)
+actions:
+  - "Optionnel: Vérifier génération/commit OpenAPI après merge"
+

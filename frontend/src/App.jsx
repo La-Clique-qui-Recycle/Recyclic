@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from './components/Header.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { ReceptionProvider } from './contexts/ReceptionContext';
 
 // Lazy loading des pages pour le code-splitting
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -27,6 +28,8 @@ const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'));
 const TelegramAuth = lazy(() => import('./pages/TelegramAuth.jsx'));
+const Reception = lazy(() => import('./pages/Reception.tsx'));
+const TicketForm = lazy(() => import('./pages/Reception/TicketForm.tsx'));
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -55,11 +58,12 @@ const LoadingSpinner = () => (
 
 function App() {
   return (
-    <AppContainer>
-      <Header />
-      <MainContent>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
+    <ReceptionProvider>
+      <AppContainer>
+        <Header />
+        <MainContent>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -70,6 +74,8 @@ function App() {
             <Route path="/cash-register/session/open" element={<ProtectedRoute requiredRole="cashier"><OpenCashSession /></ProtectedRoute>} />
             <Route path="/cash-register/sale" element={<ProtectedRoute requiredRole="cashier"><Sale /></ProtectedRoute>} />
             <Route path="/cash-register/session/close" element={<ProtectedRoute requiredRole="cashier"><CloseSession /></ProtectedRoute>} />
+            <Route path="/reception" element={<ProtectedRoute><Reception /></ProtectedRoute>} />
+            <Route path="/reception/ticket" element={<ProtectedRoute><TicketForm /></ProtectedRoute>} />
             <Route path="/depots" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
             <Route path="/rapports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/inscription" element={<Registration />} />
@@ -84,10 +90,11 @@ function App() {
               <Route path="health" element={<HealthDashboard />} />
               <Route path="settings" element={<AdminDashboard />} />
             </Route>
-          </Routes>
-        </Suspense>
-      </MainContent>
-    </AppContainer>
+            </Routes>
+          </Suspense>
+        </MainContent>
+      </AppContainer>
+    </ReceptionProvider>
   );
 }
 

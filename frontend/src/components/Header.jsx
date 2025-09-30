@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Recycle, Home, Calculator, Package, BarChart3, Users } from 'lucide-react';
+import { Recycle, Home, Calculator, BarChart3, Users, Receipt } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { ADMIN_ROUTES } from '../config/adminRoutes';
 
@@ -67,7 +67,7 @@ export default function Header() {
 
   const navItems = [
     { path: '/', label: 'Tableau de bord', icon: Home },
-    { path: '/depots', label: 'Dépôts', icon: Package },
+    { path: '/reception', label: 'Réception', icon: Receipt },
     { path: '/rapports', label: 'Rapports', icon: BarChart3 },
   ];
 

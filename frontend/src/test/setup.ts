@@ -41,7 +41,10 @@ vi.mock('lucide-react', () => ({
   Monitor: () => React.createElement('div', { 'data-testid': 'monitor-icon' }, 'Monitor'),
   MapPin: () => React.createElement('div', { 'data-testid': 'map-pin-icon' }, 'MapPin'),
   ChevronRight: () => React.createElement('div', { 'data-testid': 'chevron-right-icon' }, 'ChevronRight'),
-  Settings: () => React.createElement('div', { 'data-testid': 'settings-icon' }, 'Settings')
+  Settings: () => React.createElement('div', { 'data-testid': 'settings-icon' }, 'Settings'),
+  // Ajouts nécessaires pour les composants qui utilisent Plus et X
+  Plus: () => React.createElement('div', { 'data-testid': 'plus-icon' }, 'Plus'),
+  X: () => React.createElement('div', { 'data-testid': 'x-icon' }, 'X'),
 }))
 
 // Mock pour styled-components - approche avec styles simulés

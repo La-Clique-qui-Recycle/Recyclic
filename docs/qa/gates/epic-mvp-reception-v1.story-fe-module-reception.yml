@@ -1,0 +1,24 @@
+schema: 1
+story: 'story-fe-module-reception'
+story_title: 'FE - Module de Réception Unifié'
+epic: 'epic-mvp-reception-v1'
+slug: 'fe-module-reception'
+gate: PASS
+status_reason: "Module FE conforme aux AC: navigation, ouverture auto du poste, création ticket, saisie lignes, fermeture poste; tests unitaires présents."
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-09-30T00:00:00Z'
+top_issues: []
+waiver: { active: false }
+
+# Findings (informational)
+findings:
+  - "Lien 'Réception' dans le header, routage vers /reception"
+  - "Ouverture automatique du poste à l'entrée du module"
+  - "Saisie via pavé numérique + grille 14 catégories"
+  - "Services API dédiés, séparation via `ReceptionContext`"
+  - "Tests unitaires pour composants clés (NumericKeypad, Reception)"
+
+# Actions / Notes (informational)
+actions:
+  - "Optionnel: Ajouter tests d'intégration e2e Playwright sur flux complet"
+
