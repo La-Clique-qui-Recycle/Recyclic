@@ -16,19 +16,19 @@ from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.user_status_history import UserStatusHistory
 from recyclic_api.services.telegram_service import telegram_service
 from recyclic_api.schemas.admin import (
-    AdminUserList, 
-    AdminUser, 
-    UserRoleUpdate, 
+    AdminUserList,
+    AdminUser,
+    UserRoleUpdate,
     AdminResponse,
     AdminErrorResponse,
     PaginationInfo,
     PendingUserResponse,
     UserApprovalRequest,
     UserRejectionRequest,
-    UserStatusUpdate,
     UserProfileUpdate,
     UserHistoryResponse
 )
+from recyclic_api.schemas.user import UserStatusUpdate
 from recyclic_api.services.user_history_service import UserHistoryService
 from recyclic_api.core.auth import send_reset_password_email
 
@@ -65,17 +65,17 @@ def get_users(
             endpoint="/admin/users",
             success=True
         )
-        
+
         query = db.query(User)
-        
+
         # Application des filtres
         if role:
             query = query.filter(User.role == role)
         if user_status:
             query = query.filter(User.status == user_status)
-        
+
         users = query.offset(skip).limit(limit).all()
-        
+
         # Conversion en AdminUser
         admin_users = []
         for user in users:
@@ -96,9 +96,9 @@ def get_users(
                 updated_at=user.updated_at
             )
             admin_users.append(admin_user)
-        
+
         return admin_users
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -126,7 +126,7 @@ def update_user_role(
             endpoint="/admin/users/{user_id}/role",
             success=True
         )
-        
+
         # Recherche de l'utilisateur - conversion UUID
         try:
             user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
@@ -150,7 +150,7 @@ def update_user_role(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         # Vérifier que l'admin ne se dégrade pas lui-même
         if str(user.id) == str(current_user.id):
             # Empêcher la rétrogradation (admin -> role inférieur)
@@ -167,7 +167,7 @@ def update_user_role(
         user.role = role_update.role
         db.commit()
         db.refresh(user)
-        
+
         # Log de la modification de rôle
         log_role_change(
             admin_user_id=str(current_user.id),
@@ -178,19 +178,19 @@ def update_user_role(
             new_role=user.role.value,
             success=True
         )
-        
+
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-        
+
         return AdminResponse(
             data={
-                "user_id": str(user.id), 
+                "user_id": str(user.id),
                 "role": user.role.value,
                 "previous_role": old_role.value
             },
             message=f"Rôle de l'utilisateur {full_name or user.username} mis à jour de {old_role.value} vers {user.role.value}",
             success=True
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -218,10 +218,10 @@ def get_pending_users(
             endpoint="/admin/users/pending",
             success=True
         )
-        
+
         # Récupérer les utilisateurs en attente
         pending_users = db.query(User).filter(User.status == UserStatus.PENDING).all()
-        
+
         # Conversion en PendingUserResponse
         pending_responses = []
         for user in pending_users:
@@ -238,9 +238,9 @@ def get_pending_users(
                 created_at=user.created_at
             )
             pending_responses.append(pending_response)
-        
+
         return pending_responses
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -268,7 +268,7 @@ async def approve_user(
             endpoint="/admin/users/{user_id}/approve",
             success=True
         )
-        
+
         # Recherche de l'utilisateur
         try:
             user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
@@ -278,24 +278,24 @@ async def approve_user(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         if user.status != UserStatus.PENDING:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="L'utilisateur n'est pas en attente d'approbation"
             )
-        
+
         # Approuver l'utilisateur
         user.status = UserStatus.APPROVED
         db.commit()
         db.refresh(user)
-        
+
         # Log de l'approbation
         log_role_change(
             admin_user_id=str(current_user.id),
@@ -306,7 +306,7 @@ async def approve_user(
             new_role="approved",
             success=True
         )
-        
+
         # Envoyer notification Telegram à l'utilisateur
         try:
             user_name = user.first_name or user.username or f"User {user.telegram_id}"
@@ -318,7 +318,7 @@ async def approve_user(
             )
         except Exception as e:
             logger.error(f"Erreur lors de l'envoi de notification d'approbation: {e}")
-        
+
         # Notifier les autres admins
         try:
             await telegram_service.notify_admins_user_processed(
@@ -328,9 +328,9 @@ async def approve_user(
             )
         except Exception as e:
             logger.error(f"Erreur lors de la notification admin: {e}")
-        
+
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-        
+
         return AdminResponse(
             data={
                 "user_id": str(user.id),
@@ -340,7 +340,7 @@ async def approve_user(
             message=f"Utilisateur {full_name or user.username} approuvé avec succès",
             success=True
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -370,7 +370,7 @@ async def reject_user(
             endpoint="/admin/users/{user_id}/reject",
             success=True
         )
-        
+
         # Recherche de l'utilisateur
         try:
             user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
@@ -380,24 +380,24 @@ async def reject_user(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         if user.status != UserStatus.PENDING:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="L'utilisateur n'est pas en attente d'approbation"
             )
-        
+
         # Rejeter l'utilisateur
         user.status = UserStatus.REJECTED
         db.commit()
         db.refresh(user)
-        
+
         # Log du rejet
         log_role_change(
             admin_user_id=str(current_user.id),
@@ -408,7 +408,7 @@ async def reject_user(
             new_role="rejected",
             success=True
         )
-        
+
         # Envoyer notification Telegram à l'utilisateur
         try:
             user_name = user.first_name or user.username or f"User {user.telegram_id}"
@@ -420,7 +420,7 @@ async def reject_user(
             )
         except Exception as e:
             logger.error(f"Erreur lors de l'envoi de notification de rejet: {e}")
-        
+
         # Notifier les autres admins
         try:
             await telegram_service.notify_admins_user_processed(
@@ -430,10 +430,10 @@ async def reject_user(
             )
         except Exception as e:
             logger.error(f"Erreur lors de la notification admin: {e}")
-        
+
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
         reason = rejection_request.reason if rejection_request and rejection_request.reason else "Aucune raison spécifiée"
-        
+
         return AdminResponse(
             data={
                 "user_id": str(user.id),
@@ -443,7 +443,7 @@ async def reject_user(
             message=f"Utilisateur {full_name or user.username} rejeté avec succès",
             success=True
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -473,7 +473,7 @@ def update_user_status(
             endpoint="/admin/users/{user_id}/status",
             success=True
         )
-        
+
         # Recherche de l'utilisateur
         try:
             user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
@@ -483,7 +483,7 @@ def update_user_status(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         if not user:
             # Log de l'échec
             log_admin_access(
@@ -497,22 +497,22 @@ def update_user_status(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         # Vérifier que l'admin ne se désactive pas lui-même
         if str(user.id) == str(current_user.id) and not status_update.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Un administrateur ne peut pas se désactiver lui-même"
             )
-        
+
         # Enregistrer l'ancien statut
         old_status = user.is_active
-        
+
         # Mettre à jour le statut de l'utilisateur
         user.is_active = status_update.is_active
         db.commit()
         db.refresh(user)
-        
+
         # Créer une entrée dans l'historique
         status_history = UserStatusHistory(
             user_id=user.id,
@@ -523,7 +523,7 @@ def update_user_status(
         )
         db.add(status_history)
         db.commit()
-        
+
         # Log de la modification de statut
         log_role_change(
             admin_user_id=str(current_user.id),
@@ -534,10 +534,10 @@ def update_user_status(
             new_role=f"is_active={status_update.is_active}",
             success=True
         )
-        
+
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
         status_text = "activé" if status_update.is_active else "désactivé"
-        
+
         return AdminResponse(
             data={
                 "user_id": str(user.id),
@@ -548,7 +548,7 @@ def update_user_status(
             message=f"Utilisateur {full_name or user.username} {status_text} avec succès",
             success=True
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -578,7 +578,7 @@ def update_user_profile(
             endpoint="/admin/users/{user_id}",
             success=True
         )
-        
+
         # Recherche de l'utilisateur
         try:
             user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
@@ -588,7 +588,7 @@ def update_user_profile(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         if not user:
             # Log de l'échec
             log_admin_access(
@@ -602,7 +602,7 @@ def update_user_profile(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
-        
+
         # Mettre à jour les champs fournis
         updated_fields = []
         update_data = profile_update.model_dump(exclude_unset=True)
@@ -620,16 +620,16 @@ def update_user_profile(
             if hasattr(user, field):
                 setattr(user, field, value)
                 updated_fields.append(field)
-        
+
         if not updated_fields:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Aucun champ à mettre à jour fourni"
             )
-        
+
         db.commit()
         db.refresh(user)
-        
+
         # Log de la modification de profil
         log_role_change(
             admin_user_id=str(current_user.id),
@@ -640,9 +640,9 @@ def update_user_profile(
             new_role=f"updated_fields={','.join(updated_fields)}",
             success=True
         )
-        
+
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
-        
+
         return AdminResponse(
             data={
                 "user_id": str(user.id),
@@ -656,7 +656,7 @@ def update_user_profile(
             message=f"Profil de l'utilisateur {full_name or user.username} mis à jour avec succès",
             success=True
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -732,10 +732,10 @@ def get_user_history(
             endpoint=f"/admin/users/{user_id}/history",
             success=True
         )
-        
+
         # Créer le service d'historique
         history_service = UserHistoryService(db)
-        
+
         # Récupérer l'historique
         history_response = history_service.get_user_activity_history(
             user_id=user_id,
@@ -745,9 +745,9 @@ def get_user_history(
             skip=skip,
             limit=limit
         )
-        
+
         return history_response
-        
+
     except ValueError as e:
         # Log de l'échec
         log_admin_access(
@@ -964,3 +964,6 @@ async def get_scheduler_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération du statut: {str(e)}"
         )
+
+
+ 

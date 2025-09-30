@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const OPENAPI_FILE = path.join(__dirname, '../../api/openapi.json');
+const OPENAPI_FILE = path.join(__dirname, '../../openapi.json');
 const OUTPUT_DIR = path.join(__dirname, '../src/generated');
 
 function generateApi() {
@@ -129,17 +129,20 @@ function generateEnum(name, schema) {
 }
 
 function generateInterface(name, schema) {
+  // Échapper les caractères non valides pour les identifiants TypeScript
+  const validName = name.replace(/[^a-zA-Z0-9_]/g, '_');
+
   const properties = schema.properties || {};
   const required = schema.required || [];
-  
+
   const fields = Object.entries(properties).map(([fieldName, fieldSchema]) => {
     const isRequired = required.includes(fieldName);
     const optional = isRequired ? '' : '?';
     const type = getTypeScriptType(fieldSchema);
     return `  ${fieldName}${optional}: ${type};`;
   }).join('\n');
-  
-  return `export interface ${name} {\n${fields}\n}`;
+
+  return `export interface ${validName} {\n${fields}\n}`;
 }
 
 function getTypeScriptType(schema) {
@@ -164,9 +167,11 @@ function getTypeScriptType(schema) {
   } else if (schema.$ref) {
     // Reference to another schema
     const refName = schema.$ref.split('/').pop();
-    return refName;
+    // Échapper les caractères non valides pour les identifiants TypeScript
+    const validRefName = refName.replace(/[^a-zA-Z0-9_]/g, '_');
+    return validRefName;
   }
-  
+
   return 'any';
 }
 
@@ -232,7 +237,7 @@ function generateApiClient(openApiSpec) {
     `// CONFIGURATION`,
     `// ============================================================================`,
     ``,
-    `const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4433/api/v1';`,
+    `const API_BASE_URL = process.env.REACT_APP_API_URL || '';`,
     ``,
     `const apiClient: AxiosInstance = axios.create({`,
     `  baseURL: API_BASE_URL,`,
@@ -245,7 +250,11 @@ function generateApiClient(openApiSpec) {
     `// Request interceptor pour ajouter l'auth si nécessaire`,
     `apiClient.interceptors.request.use(`,
     `  (config) => {`,
-    `    // TODO: Ajouter le token d'authentification si nécessaire`,
+    `    // Récupérer le token d'authentification depuis localStorage`,
+    `    const token = localStorage.getItem('token');`,
+    `    if (token) {`,
+    `      config.headers.Authorization = \`Bearer \${token}\`;`,
+    `    }`,
     `    return config;`,
     `  },`,
     `  (error) => {`,

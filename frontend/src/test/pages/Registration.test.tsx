@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, renderWithRouter } from '../test-utils'
 import userEvent from '@testing-library/user-event'
-import { mockSites, mockApiResponses } from '../test-utils'
+import { mockApiResponses } from '../test-utils'
 import api from '../../services/api'
 
 // Mock du service API
@@ -18,7 +18,6 @@ import Registration from '../../pages/Registration'
 describe('Registration Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(api.get).mockResolvedValue({ data: mockSites })
     vi.mocked(api.post).mockResolvedValue({ data: { id: 1, ...mockApiResponses.user } })
   })
 
@@ -27,12 +26,11 @@ describe('Registration Page', () => {
     
     expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
     expect(screen.getByLabelText(/id telegram/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/identifiant/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/prénom/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/nom de famille/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/téléphone/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/ressourcerie/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/notes additionnelles/i)).toBeInTheDocument()
   })
 
   it('should show required field indicators', () => {
@@ -43,22 +41,6 @@ describe('Registration Page', () => {
     expect(screen.getByText(/nom de famille \*/i)).toBeInTheDocument()
   })
 
-  it('should load sites on component mount', async () => {
-    render(<Registration />)
-    
-    await waitFor(() => {
-      expect(vi.mocked(api).get).toHaveBeenCalledWith('/sites')
-    })
-  })
-
-  it('should populate site dropdown with loaded sites', async () => {
-    render(<Registration />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Ressourcerie Test')).toBeInTheDocument()
-      expect(screen.getByText('Ressourcerie Test 2')).toBeInTheDocument()
-    })
-  })
 
   it('should handle form input changes', async () => {
     render(<Registration />)
@@ -89,23 +71,17 @@ describe('Registration Page', () => {
     vi.mocked(api.post).mockResolvedValue(mockApiResponses.registrationSuccess)
     render(<Registration />)
 
-    // 1. Attendre que les sites soient chargés
-    await waitFor(() => {
-        expect(screen.getByText('Ressourcerie Test')).toBeInTheDocument()
-    })
-
-    // 2. Remplir le formulaire avec des données valides
+    // 1. Remplir le formulaire avec des données valides
     await user.type(screen.getByLabelText(/id telegram/i), '123456789')
     await user.type(screen.getByLabelText(/prénom/i), 'John')
     await user.type(screen.getByLabelText(/nom de famille/i), 'Doe')
     await user.type(screen.getByLabelText(/email/i), 'john@example.com')
     await user.type(screen.getByLabelText(/téléphone/i), '+33123456789')
-    await user.selectOptions(screen.getByLabelText(/ressourcerie/i), '1')
 
-    // 3. Soumettre le formulaire
+    // 2. Soumettre le formulaire
     await user.click(screen.getByRole('button', { name: /envoyer la demande/i }))
 
-    // 4. Attendre que l'appel API soit effectué
+    // 3. Attendre que l'appel API soit effectué
     await waitFor(() => {
       expect(vi.mocked(api.post)).toHaveBeenCalledWith('/users/registration-requests', {
         telegram_id: '123456789',
@@ -113,9 +89,7 @@ describe('Registration Page', () => {
         first_name: 'John',
         last_name: 'Doe',
         email: 'john@example.com',
-        phone: '+33123456789',
-        site_id: '1',
-        notes: ''
+        phone: '+33123456789'
       })
     })
   })
@@ -140,17 +114,11 @@ describe('Registration Page', () => {
     const user = userEvent.setup()
     vi.mocked(api).post.mockResolvedValue(mockApiResponses.registrationSuccess)
     render(<Registration />)
-    
-    // Attendre que les sites soient chargés
-    await waitFor(() => {
-        expect(screen.getByText('Ressourcerie Test')).toBeInTheDocument()
-    })
 
     // Remplir et soumettre le formulaire
     await user.type(screen.getByLabelText(/id telegram/i), '123456789')
     await user.type(screen.getByLabelText(/prénom/i), 'John')
     await user.type(screen.getByLabelText(/nom de famille/i), 'Doe')
-    await user.selectOptions(screen.getByLabelText(/ressourcerie/i), '1')
 
     await user.click(screen.getByRole('button', { name: /envoyer la demande/i }))
     
@@ -197,14 +165,6 @@ describe('Registration Page', () => {
     expect(screen.getByRole('button', { name: /envoi en cours/i })).toBeDisabled()
   })
 
-  it('should handle sites loading error gracefully', async () => {
-    vi.mocked(api).get.mockRejectedValue(new Error('Failed to load sites'))
-    render(<Registration />)
-    
-    // Le composant devrait toujours s'afficher même si les sites ne se chargent pas
-    expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
-    expect(screen.getByLabelText(/ressourcerie/i)).toBeInTheDocument()
-  })
 
   it('should validate required fields', async () => {
     render(<Registration />)

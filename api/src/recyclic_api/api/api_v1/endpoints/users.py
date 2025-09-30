@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List
 from recyclic_api.core.database import get_db
+from recyclic_api.core.uuid_validation import validate_and_convert_uuid
 from recyclic_api.models.user import User, UserRole
-from recyclic_api.schemas.user import UserResponse, UserCreate, UserUpdate, UserStatusUpdate
+from recyclic_api.schemas.user import UserResponse, UserCreate, UserUpdate, UserStatusUpdate, LinkTelegramRequest
 from recyclic_api.core.auth import require_role_strict
-from uuid import UUID
+from recyclic_api.services.telegram_link_service import TelegramLinkService
+from recyclic_api.utils.rate_limit import conditional_rate_limit
 
 router = APIRouter()
 
@@ -28,9 +30,11 @@ async def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
     return users
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: UUID, db: Session = Depends(get_db)):
+async def get_user(user_id: str, db: Session = Depends(get_db)):
     """Get user by ID"""
-    user = db.query(User).filter(User.id == user_id).first()
+    user_uuid = validate_and_convert_uuid(user_id)
+
+    user = db.query(User).filter(User.id == user_uuid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -38,7 +42,21 @@ async def get_user(user_id: UUID, db: Session = Depends(get_db)):
 @router.post("/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """Create new user"""
-    db_user = User(**user.dict())
+    from recyclic_api.core.security import hash_password
+
+    # Check if username already exists
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+
+    # Hash the password before creating user
+    user_data = user.model_dump()
+    user_data['hashed_password'] = hash_password(user.password)
+
+    # Remove password from user data as it's not needed for User model
+    del user_data['password']
+
+    db_user = User(**user_data)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -47,7 +65,9 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get_db)):
     """Update user by ID"""
-    user = db.query(User).filter(User.id == user_id).first()
+    user_uuid = validate_and_convert_uuid(user_id)
+
+    user = db.query(User).filter(User.id == user_uuid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -60,27 +80,39 @@ async def update_user(user_id: str, user_update: UserUpdate, db: Session = Depen
     db.refresh(user)
     return user
 
-@router.put("/{user_id}/status", response_model=UserResponse)
-async def update_user_status(user_id: str, status_update: UserStatusUpdate, db: Session = Depends(get_db)):
-    """Update user status by ID"""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    user.status = status_update.status
-    db.commit()
-    db.refresh(user)
-    return user
-
 @router.delete("/{user_id}")
 async def delete_user(user_id: str, db: Session = Depends(get_db)):
     """Delete user by ID"""
-    user = db.query(User).filter(User.id == user_id).first()
+    user_uuid = validate_and_convert_uuid(user_id)
+
+    user = db.query(User).filter(User.id == user_uuid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     db.delete(user)
     db.commit()
     return {"message": "User deleted successfully"}
+
+@conditional_rate_limit("5/minute")
+@router.post("/link-telegram", response_model=dict)
+async def link_telegram_account(link_request: LinkTelegramRequest, request: Request, db: Session = Depends(get_db)):
+    """Lier un compte Telegram à un compte utilisateur existant.
+
+    Cette route permet à un utilisateur existant de lier son compte Telegram
+    en fournissant ses identifiants web et son ID Telegram.
+
+    Limite de taux : 5 requêtes par minute pour éviter les attaques par force brute.
+    """
+    service = TelegramLinkService(db)
+    success, message = service.link_telegram_account(
+        username=link_request.username,
+        password=link_request.password,
+        telegram_id=link_request.telegram_id
+    )
+
+    if success:
+        return {"message": message}
+    else:
+        raise HTTPException(status_code=400, detail=message)
 
 

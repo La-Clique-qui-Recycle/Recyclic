@@ -190,4 +190,10 @@ export const deleteCashRegister = async (id) => {
   await api.delete(`/api/v1/cash-registers/${id}`);
 };
 
+// Link Telegram Account
+export const linkTelegramAccount = async (linkData) => {
+  const response = await api.post('/api/v1/users/link-telegram', linkData);
+  return response.data;
+};
+
 export default api;

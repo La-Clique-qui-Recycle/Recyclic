@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Title, Text, Group, Select, TextInput, Button, Stack, Alert, Pagination, Grid, Paper } from '@mantine/core';
-import { IconSearch, IconRefresh, IconAlertCircle } from '@tabler/icons-react';
+import { IconSearch, IconRefresh, IconAlertCircle, IconUserPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useAdminStore } from '../../stores/adminStore';
 import { UserListTable } from '../../components/business/UserListTable';
 import UserDetailView from '../../components/business/UserDetailView';
+import { UserProfileTab } from '../../components/business/UserProfileTab';
 import { UserRole, UserStatus, AdminUser } from '../../services/adminService';
 
 const AdminUsers: React.FC = () => {
@@ -23,6 +24,7 @@ const AdminUsers: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -68,13 +70,40 @@ const AdminUsers: React.FC = () => {
     setSelectedUser(user);
   };
 
-  const handleUserUpdate = (updatedUser: AdminUser) => {
-    // Mettre à jour l'utilisateur dans la liste locale
-    const updatedUsers = users.map(user => 
-      user.id === updatedUser.id ? updatedUser : user
-    );
-    // Note: En production, on devrait utiliser une action du store pour cela
-    setSelectedUser(updatedUser);
+  const handleUserUpdate = async (updatedUser: AdminUser) => {
+    try {
+      // Simplement rafraîchir la liste complète après mise à jour
+      // C'est la solution la plus simple et la plus robuste
+      await fetchUsers();
+
+      // Remettre à jour l'utilisateur sélectionné avec les nouvelles données
+      setSelectedUser(updatedUser);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
+      // En cas d'erreur, rafraîchir quand même la liste
+      await fetchUsers();
+    }
+  };
+
+  const handleCreateUser = async (newUser: AdminUser) => {
+    try {
+      // Fermer le modal et rafraîchir la liste
+      setCreateModalOpen(false);
+      await fetchUsers();
+
+      notifications.show({
+        title: 'Succès',
+        message: 'Utilisateur créé avec succès',
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'utilisateur:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible de créer l\'utilisateur',
+        color: 'red',
+      });
+    }
   };
 
   return (
@@ -93,6 +122,13 @@ const AdminUsers: React.FC = () => {
               onClick={() => window.location.href = '/admin/pending'}
             >
               Demandes d'inscription
+            </Button>
+            <Button
+              leftSection={<IconUserPlus size={16} />}
+              onClick={() => setCreateModalOpen(true)}
+              data-testid="create-user-button"
+            >
+              Créer un utilisateur
             </Button>
             <Button
               leftSection={<IconRefresh size={16} />}
@@ -213,6 +249,15 @@ const AdminUsers: React.FC = () => {
             />
           </Grid.Col>
         </Grid>
+
+        {/* Modal de création d'utilisateur */}
+        <UserProfileTab
+          user={null}
+          onUserUpdate={handleCreateUser}
+          isCreateMode={true}
+          opened={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+        />
       </Stack>
     </Container>
   );

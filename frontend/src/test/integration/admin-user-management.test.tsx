@@ -272,3 +272,98 @@ describe('Admin User Management E2E', () => {
     expect(searchInput).toHaveValue('Active');
   });
 });
+
+describe('Profile Update Synchronization', () => {
+  const mockUsers = [
+    {
+      id: 'user-1',
+      username: 'user1',
+      first_name: 'John',
+      last_name: 'Doe',
+      full_name: 'John Doe',
+      role: 'USER' as const,
+      status: 'APPROVED' as const,
+      is_active: true,
+      telegram_id: 123456,
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z'
+    }
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Mock adminService
+    (adminService.updateUser as any).mockResolvedValue({
+      success: true,
+      data: { ...mockUsers[0], first_name: 'Johnny', last_name: 'Updated' },
+      message: 'Utilisateur mis à jour avec succès'
+    });
+
+    // Mock store state
+    storeMock.users = mockUsers;
+    storeMock.selectedUser = mockUsers[0];
+    storeMock.fetchUsers = vi.fn().mockResolvedValue(undefined);
+    storeMock.setSelectedUser = vi.fn();
+
+    (useAdminStore as any).mockReturnValue(storeMock);
+  });
+
+  it('should refresh users list after profile update', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BrowserRouter>
+        <Users />
+      </BrowserRouter>
+    );
+
+    // Attendre que le composant se charge
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+
+    // Simuler le processus de mise à jour du profil
+    // (En réalité, cela passerait par UserProfileTab -> UserDetailView -> handleUserUpdate)
+    const updatedUser = { ...mockUsers[0], first_name: 'Johnny', last_name: 'Updated' };
+
+    // Simuler l'appel de handleUserUpdate (ce qui se passe quand on valide la modification)
+    await act(async () => {
+      // Cela simule ce qui se passe quand UserProfileTab appelle onUserUpdate
+      const handleUserUpdate = vi.fn();
+      handleUserUpdate(updatedUser);
+
+      // Vérifier que l'API est appelée
+      expect(adminService.updateUser).toHaveBeenCalledWith('user-1', {
+        first_name: 'Johnny',
+        last_name: 'Updated'
+      });
+    });
+
+    // Vérifier que fetchUsers est appelé pour recharger la liste
+    await waitFor(() => {
+      expect(storeMock.fetchUsers).toHaveBeenCalled();
+      expect(storeMock.setSelectedUser).toHaveBeenCalledWith(updatedUser);
+    });
+  });
+
+  it('should handle profile update failure gracefully', async () => {
+    // Mock d'échec
+    (adminService.updateUser as any).mockRejectedValue(new Error('Erreur API'));
+    storeMock.fetchUsers = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <BrowserRouter>
+        <Users />
+      </BrowserRouter>
+    );
+
+    // Simuler une mise à jour qui échoue
+    await waitFor(() => {
+      expect(adminService.updateUser).toHaveBeenCalled();
+    });
+
+    // Vérifier que fetchUsers est quand même appelé en cas d'échec
+    expect(storeMock.fetchUsers).toHaveBeenCalled();
+  });
+});

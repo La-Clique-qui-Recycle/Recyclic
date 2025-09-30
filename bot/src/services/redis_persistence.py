@@ -10,10 +10,11 @@ from typing import Any, Dict, Optional, Set
 import redis.asyncio as redis
 from datetime import datetime, timedelta
 import asyncio
+from telegram.ext import BasePersistence, PersistenceInput
 
 logger = logging.getLogger(__name__)
 
-class RedisPersistence:
+class RedisPersistence(BasePersistence):
     """
     Custom Redis persistence backend for python-telegram-bot ConversationHandler.
     
@@ -21,22 +22,35 @@ class RedisPersistence:
     and allows conversations to resume from where they left off.
     """
     
-    def __init__(self, redis_url: str, key_prefix: str = "telegram_bot:"):
+    def __init__(self, redis_url: str, key_prefix: str = "telegram_bot:", store_data: Optional[PersistenceInput] = None):
         """
         Initialize Redis persistence.
-        
+
         Args:
             redis_url: Redis connection URL
             key_prefix: Prefix for all Redis keys
+            store_data: Specifies what data to store
         """
+        # Set up store_data with defaults
+        if store_data is None:
+            store_data = PersistenceInput(
+                bot_data=True,
+                chat_data=True,
+                user_data=True,
+                callback_data=False  # Disable callback data to avoid ExtBot requirement
+            )
+
+        # Initialize parent class
+        super().__init__(store_data=store_data, update_interval=60)
+
         self.redis_url = redis_url
         self.key_prefix = key_prefix
         self.redis_client: Optional[redis.Redis] = None
-        
+
         # Retry configuration
         self.max_retries = 3
         self.retry_delay = 1.0  # seconds
-        
+
         # Key patterns for different data types
         self.conversation_key = f"{key_prefix}conversation:"
         self.user_data_key = f"{key_prefix}user_data:"
@@ -212,19 +226,47 @@ class RedisPersistence:
         if result is None:
             logger.error(f"Failed to delete conversation data for user {user_id} after all retries")
     
-    async def get_user_data(self, user_id: int) -> Dict[str, Any]:
-        """Get user data from Redis."""
+    async def get_user_data(self) -> Dict[int, Dict[str, Any]]:
+        """Get all user data from Redis."""
         if not self.redis_client:
             return {}
-            
+
+        try:
+            pattern = f"{self.user_data_key}*"
+            keys = await self.redis_client.keys(pattern)
+
+            user_data = {}
+            for key in keys:
+                # Extract user_id from key
+                key_str = key.decode('utf-8') if isinstance(key, bytes) else key
+                user_id_str = key_str.replace(self.user_data_key, '')
+                try:
+                    user_id = int(user_id_str)
+                    data = await self.redis_client.get(key)
+                    if data:
+                        user_data[user_id] = pickle.loads(data)
+                except (ValueError, TypeError):
+                    continue
+
+            return user_data
+
+        except Exception as e:
+            logger.error(f"Error getting user data: {e}")
+            return {}
+
+    async def get_single_user_data(self, user_id: int) -> Dict[str, Any]:
+        """Get user data for a specific user from Redis."""
+        if not self.redis_client:
+            return {}
+
         try:
             redis_key = f"{self.user_data_key}{user_id}"
             data = await self.redis_client.get(redis_key)
-            
+
             if data:
                 return pickle.loads(data)
             return {}
-            
+
         except Exception as e:
             logger.error(f"Error getting user data for {user_id}: {e}")
             return {}
@@ -244,19 +286,47 @@ class RedisPersistence:
         except Exception as e:
             logger.error(f"Error updating user data for {user_id}: {e}")
     
-    async def get_chat_data(self, chat_id: int) -> Dict[str, Any]:
-        """Get chat data from Redis."""
+    async def get_chat_data(self) -> Dict[int, Dict[str, Any]]:
+        """Get all chat data from Redis."""
         if not self.redis_client:
             return {}
-            
+
+        try:
+            pattern = f"{self.chat_data_key}*"
+            keys = await self.redis_client.keys(pattern)
+
+            chat_data = {}
+            for key in keys:
+                # Extract chat_id from key
+                key_str = key.decode('utf-8') if isinstance(key, bytes) else key
+                chat_id_str = key_str.replace(self.chat_data_key, '')
+                try:
+                    chat_id = int(chat_id_str)
+                    data = await self.redis_client.get(key)
+                    if data:
+                        chat_data[chat_id] = pickle.loads(data)
+                except (ValueError, TypeError):
+                    continue
+
+            return chat_data
+
+        except Exception as e:
+            logger.error(f"Error getting chat data: {e}")
+            return {}
+
+    async def get_single_chat_data(self, chat_id: int) -> Dict[str, Any]:
+        """Get chat data for a specific chat from Redis."""
+        if not self.redis_client:
+            return {}
+
         try:
             redis_key = f"{self.chat_data_key}{chat_id}"
             data = await self.redis_client.get(redis_key)
-            
+
             if data:
                 return pickle.loads(data)
             return {}
-            
+
         except Exception as e:
             logger.error(f"Error getting chat data for {chat_id}: {e}")
             return {}
@@ -405,18 +475,18 @@ class RedisPersistence:
     async def cleanup_expired_sessions(self) -> int:
         """
         Clean up expired sessions from Redis.
-        
+
         Returns:
             Number of sessions cleaned up
         """
         if not self.redis_client:
             return 0
-            
+
         try:
             # Get all conversation keys
             pattern = f"{self.conversation_key}*"
             keys = await self.redis_client.keys(pattern)
-            
+
             cleaned = 0
             for key in keys:
                 ttl = await self.redis_client.ttl(key)
@@ -424,9 +494,86 @@ class RedisPersistence:
                     await self.redis_client.expire(key, 3600)
                 elif ttl == -2:  # Key doesn't exist
                     cleaned += 1
-            
+
             return cleaned
-            
+
         except Exception as e:
             logger.error(f"Error cleaning up expired sessions: {e}")
             return 0
+
+    # Abstract methods required by BasePersistence
+    async def drop_chat_data(self, chat_id: int) -> None:
+        """Remove chat data from Redis."""
+        if not self.redis_client:
+            return
+
+        try:
+            redis_key = f"{self.chat_data_key}{chat_id}"
+            await self.redis_client.delete(redis_key)
+        except Exception as e:
+            logger.error(f"Error dropping chat data for {chat_id}: {e}")
+
+    async def drop_user_data(self, user_id: int) -> None:
+        """Remove user data from Redis."""
+        if not self.redis_client:
+            return
+
+        try:
+            redis_key = f"{self.user_data_key}{user_id}"
+            await self.redis_client.delete(redis_key)
+        except Exception as e:
+            logger.error(f"Error dropping user data for {user_id}: {e}")
+
+    async def flush(self) -> None:
+        """Flush all persistence data."""
+        if not self.redis_client:
+            return
+
+        try:
+            # Delete all keys with our prefix
+            pattern = f"{self.key_prefix}*"
+            keys = await self.redis_client.keys(pattern)
+            if keys:
+                await self.redis_client.delete(*keys)
+        except Exception as e:
+            logger.error(f"Error flushing persistence data: {e}")
+
+    async def get_conversations(self, name: str) -> Dict[tuple, Any]:
+        """Get all conversations for a handler."""
+        if not self.redis_client:
+            return {}
+
+        try:
+            pattern = f"{self.conversation_key}{name}:*"
+            keys = await self.redis_client.keys(pattern)
+
+            conversations = {}
+            for key in keys:
+                # Extract user_id and chat_id from key
+                key_str = key.decode('utf-8') if isinstance(key, bytes) else key
+                parts = key_str.split(':')
+                if len(parts) >= 4:
+                    user_id = int(parts[2])
+                    chat_id = int(parts[3])
+
+                    # Get the conversation data
+                    data = await self.redis_client.get(key)
+                    if data:
+                        conversations[(user_id, chat_id)] = pickle.loads(data)
+
+            return conversations
+        except Exception as e:
+            logger.error(f"Error getting conversations for {name}: {e}")
+            return {}
+
+    async def refresh_bot_data(self, bot_data: Dict[str, Any]) -> None:
+        """Refresh bot data."""
+        await self.update_bot_data(bot_data)
+
+    async def refresh_chat_data(self, chat_id: int, chat_data: Dict[str, Any]) -> None:
+        """Refresh chat data."""
+        await self.update_chat_data(chat_id, chat_data)
+
+    async def refresh_user_data(self, user_id: int, user_data: Dict[str, Any]) -> None:
+        """Refresh user data."""
+        await self.update_user_data(user_id, user_data)

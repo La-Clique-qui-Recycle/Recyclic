@@ -26,6 +26,7 @@ const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'));
+const TelegramAuth = lazy(() => import('./pages/TelegramAuth.jsx'));
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -63,6 +64,7 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/telegram-auth" element={<TelegramAuth />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/caisse" element={<ProtectedRoute requiredRole="cashier"><CashRegister /></ProtectedRoute>} />
             <Route path="/cash-register/session/open" element={<ProtectedRoute requiredRole="cashier"><OpenCashSession /></ProtectedRoute>} />

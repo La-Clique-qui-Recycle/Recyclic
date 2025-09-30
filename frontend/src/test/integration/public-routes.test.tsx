@@ -8,6 +8,7 @@ import { mockSites } from '../test-utils'
 import Dashboard from '../../pages/Dashboard.jsx'
 import CashRegister from '../../pages/CashRegister.jsx'
 import Registration from '../../pages/Registration.jsx'
+import TelegramAuth from '../../pages/TelegramAuth.jsx'
 import Login from '../../pages/Login.tsx'
 import Signup from '../../pages/Signup.tsx'
 import ForgotPassword from '../../pages/ForgotPassword.tsx'
@@ -39,6 +40,7 @@ const TestRoutes = (
     <Route path="/signup" element={<Signup />} />
     <Route path="/forgot-password" element={<ForgotPassword />} />
     <Route path="/reset-password" element={<ResetPassword />} />
+    <Route path="/telegram-auth" element={<TelegramAuth />} />
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/caisse" element={<ProtectedRoute requiredRole="cashier"><CashRegister /></ProtectedRoute>} />
     <Route path="/inscription" element={<Registration />} />
@@ -98,6 +100,39 @@ describe('Public Routes Integration Tests', () => {
       // Verify we're not on the login page
       expect(screen.queryByText(/connexion/i)).not.toBeInTheDocument()
       expect(screen.queryByText(/mot de passe/i)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Telegram Auth Route', () => {
+    it('should render telegram auth page when accessing /telegram-auth', async () => {
+      renderAppWithRoute('/telegram-auth')
+
+      await waitFor(() => {
+        expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
+        expect(screen.getByText('Avez-vous déjà un compte Recyclic ?')).toBeInTheDocument()
+        expect(screen.getByText("S'inscrire")).toBeInTheDocument()
+        expect(screen.getByText('Se connecter')).toBeInTheDocument()
+      })
+    })
+
+    it('should render telegram auth page with URL parameters preserved', async () => {
+      renderAppWithRoute('/telegram-auth?telegram_id=123456789&source=bot')
+
+      await waitFor(() => {
+        expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
+        expect(screen.getByText('Avez-vous déjà un compte Recyclic ?')).toBeInTheDocument()
+      })
+    })
+
+    it('should not redirect to login when accessing /telegram-auth', async () => {
+      renderAppWithRoute('/telegram-auth')
+
+      await waitFor(() => {
+        expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
+      })
+
+      // Verify we're not on the login page
+      expect(screen.queryByText(/connexion/i)).not.toBeInTheDocument()
     })
   })
 

@@ -17,31 +17,41 @@ import { AdminUser, adminService } from '../../services/adminService';
 import { UserRole, UserStatus } from '../../generated';
 
 interface UserProfileTabProps {
-  user: AdminUser;
+  user: AdminUser | null;
   onUserUpdate?: (updatedUser: AdminUser) => void;
+  isCreateMode?: boolean;
+  opened?: boolean;
+  onClose?: () => void;
 }
 
 interface UserFormData {
+  telegram_id: string;
   first_name?: string;
   last_name?: string;
   username?: string;
+  password: string;
   role: UserRole;
   status: UserStatus;
   is_active: boolean;
 }
 
-const sanitizeUserForForm = (user: AdminUser): UserFormData => ({
-  first_name: user.first_name || '',
-  last_name: user.last_name || '',
-  username: user.username || '',
-  role: user.role,
-  status: user.status,
-  is_active: user.is_active,
+const sanitizeUserForForm = (user: AdminUser | null): UserFormData => ({
+  telegram_id: user?.telegram_id || '',
+  first_name: user?.first_name || '',
+  last_name: user?.last_name || '',
+  username: user?.username || '',
+  password: '', // Pas de mot de passe par défaut pour la modification
+  role: user?.role || UserRole.USER,
+  status: user?.status || UserStatus.PENDING,
+  is_active: user?.is_active ?? true,
 });
 
 export const UserProfileTab: React.FC<UserProfileTabProps> = ({
   user,
-  onUserUpdate
+  onUserUpdate,
+  isCreateMode = false,
+  opened = true,
+  onClose
 }) => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -127,45 +137,77 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
   const handleSave = async (values: UserFormData) => {
     setLoading(true);
     try {
-      const updateData = {
-        first_name: values.first_name,
-        last_name: values.last_name,
-        username: values.username,
-        role: values.role,
-        status: values.status,
-      };
+      if (isCreateMode) {
+        // Mode création
+        const createData = {
+          telegram_id: values.telegram_id || null, // Peut être null maintenant
+          first_name: values.first_name,
+          last_name: values.last_name,
+          username: values.username,
+          password: values.password,
+          role: values.role,
+          status: values.status,
+          is_active: values.is_active,
+        };
 
-      await adminService.updateUser(user.id, updateData);
+        const newUser = await adminService.createUser(createData);
 
-      // Mettre à jour l'état actif si nécessaire
-      if (values.is_active !== user.is_active) {
-        await adminService.updateUserStatus(user.id, { is_active: values.is_active });
+        onUserUpdate?.(newUser);
+
+        notifications.show({
+          title: 'Succès',
+          message: 'Utilisateur créé avec succès',
+          color: 'green',
+        });
+
+        if (onClose) {
+          onClose();
+        }
+      } else {
+        // Mode modification
+        const updateData = {
+          first_name: values.first_name,
+          last_name: values.last_name,
+          username: values.username,
+          role: values.role,
+          status: values.status,
+        };
+
+        await adminService.updateUser(user.id, updateData);
+
+        // Mettre à jour l'état actif si nécessaire
+        if (values.is_active !== user.is_active) {
+          await adminService.updateUserStatus(user.id, { 
+            status: values.is_active ? 'approved' : 'rejected', 
+            is_active: values.is_active 
+          });
+        }
+
+        const updatedUser: AdminUser = {
+          ...user,
+          ...updateData,
+          is_active: values.is_active,
+          full_name: values.first_name && values.last_name
+            ? `${values.first_name} ${values.last_name}`
+            : user.full_name,
+          updated_at: new Date().toISOString()
+        };
+
+        onUserUpdate?.(updatedUser);
+
+        notifications.show({
+          title: 'Succès',
+          message: 'Profil utilisateur mis à jour avec succès',
+          color: 'green',
+        });
+
+        setEditModalOpen(false);
       }
-
-      const updatedUser: AdminUser = {
-        ...user,
-        ...updateData,
-        is_active: values.is_active,
-        full_name: values.first_name && values.last_name 
-          ? `${values.first_name} ${values.last_name}` 
-          : user.full_name,
-        updated_at: new Date().toISOString()
-      };
-
-      onUserUpdate?.(updatedUser);
-
-      notifications.show({
-        title: 'Succès',
-        message: 'Profil utilisateur mis à jour avec succès',
-        color: 'green',
-      });
-
-      setEditModalOpen(false);
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
+      console.error('Erreur lors de la sauvegarde:', error);
       notifications.show({
         title: 'Erreur',
-        message: 'Impossible de mettre à jour le profil utilisateur',
+        message: `Impossible de ${isCreateMode ? 'créer' : 'mettre à jour'} l'utilisateur`,
         color: 'red',
       });
     } finally {
@@ -221,121 +263,127 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
     }
   };
 
+  // Si c'est en mode création et que le modal n'est pas ouvert, ne rien afficher
+  if (isCreateMode && !opened) {
+    return null;
+  }
+
   return (
     <Stack gap="md">
-      {/* Informations de base */}
-      <div>
-        <Text size="sm" fw={500} c="dimmed" mb="xs">
-          Informations personnelles
-        </Text>
-        <Stack gap="xs">
-          <Group justify="space-between">
-            <Text size="sm">Prénom:</Text>
-            <Text size="sm" fw={500}>
-              {user.first_name || 'Non renseigné'}
+      {/* Mode affichage (pas en création) */}
+      {!isCreateMode && user && (
+        <>
+          {/* Informations de base */}
+          <div>
+            <Text size="sm" fw={500} c="dimmed" mb="xs">
+              Informations personnelles
             </Text>
-          </Group>
-          <Group justify="space-between">
-            <Text size="sm">Nom:</Text>
-            <Text size="sm" fw={500}>
-              {user.last_name || 'Non renseigné'}
-            </Text>
-          </Group>
-          <Group justify="space-between">
-            <Text size="sm">Nom d'utilisateur:</Text>
-            <Text size="sm" fw={500}>
-              @{user.username || user.telegram_id}
-            </Text>
-          </Group>
-          <Group justify="space-between">
-            <Text size="sm">ID Telegram:</Text>
-            <Text size="sm" fw={500}>
-              {user.telegram_id}
-            </Text>
-          </Group>
-        </Stack>
-      </div>
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm">Prénom:</Text>
+                <Text size="sm" fw={500}>
+                  {user.first_name || 'Non renseigné'}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Nom:</Text>
+                <Text size="sm" fw={500}>
+                  {user.last_name || 'Non renseigné'}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Nom d'utilisateur:</Text>
+                <Text size="sm" fw={500}>
+                  @{user.username || user.telegram_id}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">ID Telegram:</Text>
+                <Text size="sm" fw={500}>
+                  {user.telegram_id}
+                </Text>
+              </Group>
+            </Stack>
+          </div>
 
-      <Divider />
+          <Divider />
 
-      {/* Informations système */}
-      <div>
-        <Text size="sm" fw={500} c="dimmed" mb="xs">
-          Informations système
-        </Text>
-        <Stack gap="xs">
-          <Group justify="space-between">
-            <Text size="sm">Rôle:</Text>
-            <Text size="sm" fw={500}>
-              {getRoleLabel(user.role)}
+          {/* Informations système */}
+          <div>
+            <Text size="sm" fw={500} c="dimmed" mb="xs">
+              Informations système
             </Text>
-          </Group>
-          <Group justify="space-between">
-            <Text size="sm">Statut:</Text>
-            <Text size="sm" fw={500}>
-              {getStatusLabel(user.status)}
-            </Text>
-          </Group>
-          <Group justify="space-between">
-            <Text size="sm">Actif:</Text>
-            <Text size="sm" fw={500}>
-              {user.is_active ? 'Oui' : 'Non'}
-            </Text>
-          </Group>
-          <Group justify="space-between">
-            <Text size="sm">Créé le:</Text>
-            <Text size="sm" fw={500}>
-              {new Date(user.created_at).toLocaleDateString('fr-FR')}
-            </Text>
-          </Group>
-          <Group justify="space-between">
-            <Text size="sm">Modifié le:</Text>
-            <Text size="sm" fw={500}>
-              {new Date(user.updated_at).toLocaleDateString('fr-FR')}
-            </Text>
-          </Group>
-        </Stack>
-      </div>
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm">Rôle:</Text>
+                <Text size="sm" fw={500}>
+                  {getRoleLabel(user.role)}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Statut:</Text>
+                <Text size="sm" fw={500}>
+                  {getStatusLabel(user.status)}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Actif:</Text>
+                <Text size="sm" fw={500}>
+                  {user.is_active ? 'Oui' : 'Non'}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Créé le:</Text>
+                <Text size="sm" fw={500}>
+                  {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Modifié le:</Text>
+                <Text size="sm" fw={500}>
+                  {new Date(user.updated_at).toLocaleDateString('fr-FR')}
+                </Text>
+              </Group>
+            </Stack>
+          </div>
 
-      <Divider />
+          <Divider />
 
-      {/* Actions */}
-      <Group justify="center" gap="md">
-        <Button
-          leftSection={<IconEdit size={16} />}
-          onClick={handleEdit}
-          variant="outline"
-        >
-          Modifier le profil
-        </Button>
-        {user.is_active ? (
-          <Button
-            color="red"
-            variant="outline"
-            onClick={() => handleDeactivate()}
-          >
-            Désactiver
-          </Button>
-        ) : (
-          <Button
-            color="green"
-            variant="outline"
-            onClick={() => handleActivate()}
-          >
-            Activer
-          </Button>
-        )}
-      </Group>
+          {/* Actions */}
+          <Group justify="center" gap="md">
+            <Button
+              leftSection={<IconEdit size={16} />}
+              onClick={handleEdit}
+              variant="outline"
+            >
+              Modifier le profil
+            </Button>
+          </Group>
+        </>
+      )}
 
-      {/* Modal d'édition */}
+      {/* Modal d'édition/création */}
       <Modal
-        opened={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        title="Modifier le profil utilisateur"
+        opened={isCreateMode ? opened : editModalOpen}
+        onClose={isCreateMode ? onClose || (() => {}) : () => setEditModalOpen(false)}
+        title={isCreateMode ? "Créer un nouvel utilisateur" : "Modifier le profil utilisateur"}
         size="md"
       >
         <form onSubmit={handleSubmit(handleSave)}>
           <Stack gap="md">
+            {isCreateMode && (
+              <TextInput
+                label="ID Telegram"
+                placeholder="Entrez l'ID Telegram (optionnel)"
+                {...register('telegram_id', {
+                  minLength: { value: 1, message: 'L\'ID Telegram ne peut pas être vide si renseigné' }
+                })}
+                value={watch('telegram_id') || ''}
+                onChange={(e) => setValue('telegram_id', e.target.value, { shouldValidate: true })}
+                error={errors.telegram_id?.message}
+              />
+            )}
+
             <TextInput
               label="Prénom"
               placeholder="Entrez le prénom"
@@ -359,11 +407,35 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
             <TextInput
               label="Nom d'utilisateur"
               placeholder="Entrez le nom d'utilisateur"
-              {...register('username')}
+              {...register('username', isCreateMode ? {
+                required: 'Le nom d\'utilisateur est requis',
+                minLength: { value: 3, message: 'Le nom d\'utilisateur doit contenir au moins 3 caractères' },
+                pattern: { value: /^[a-zA-Z0-9_-]+$/, message: 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores' }
+              } : {})}
               value={watch('username') || ''}
               onChange={(e) => setValue('username', e.target.value, { shouldValidate: true })}
               error={errors.username?.message}
             />
+
+            {isCreateMode && (
+              <TextInput
+                label="Mot de passe"
+                type="password"
+                placeholder="Entrez le mot de passe"
+                {...register('password', {
+                  required: 'Le mot de passe est requis',
+                  minLength: { value: 8, message: 'Le mot de passe doit contenir au moins 8 caractères' },
+                  pattern: {
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/,
+                    message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule, un chiffre et un caractère spécial'
+                  }
+                })}
+                value={watch('password') || ''}
+                onChange={(e) => setValue('password', e.target.value, { shouldValidate: true })}
+                error={errors.password?.message}
+              />
+            )}
+
             <Controller
               name="role"
               control={control}
@@ -409,19 +481,21 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
               )}
             />
 
-            <Button
-              variant="outline"
-              color="orange"
-              onClick={handleResetPassword}
-              loading={loading}
-            >
-              Réinitialiser le mot de passe
-            </Button>
+            {!isCreateMode && (
+              <Button
+                variant="outline"
+                color="orange"
+                onClick={handleResetPassword}
+                loading={loading}
+              >
+                Réinitialiser le mot de passe
+              </Button>
+            )}
 
             <Group justify="flex-end" mt="md">
               <Button
                 variant="outline"
-                onClick={() => setEditModalOpen(false)}
+                onClick={isCreateMode ? (onClose || (() => {})) : () => setEditModalOpen(false)}
                 leftSection={<IconX size={16} />}
               >
                 Annuler
@@ -431,7 +505,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 loading={loading}
                 leftSection={<IconCheck size={16} />}
               >
-                Sauvegarder
+                {isCreateMode ? 'Créer' : 'Sauvegarder'}
               </Button>
             </Group>
           </Stack>

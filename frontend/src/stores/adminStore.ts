@@ -103,14 +103,14 @@ export const useAdminStore = create<AdminState>()(
 
       updateUserRole: async (userId: string, role: UserRole): Promise<boolean> => {
         set({ loading: true, error: null });
-        
+
         try {
           const response = await adminService.updateUserRole(userId, { role });
-          
+
           if (response.success) {
             // Mettre à jour l'utilisateur dans la liste locale
             const { users } = get();
-            const updatedUsers = users.map(user => 
+            const updatedUsers = users.map(user =>
               user.id === userId ? { ...user, role } : user
             );
             set({ users: updatedUsers, loading: false });

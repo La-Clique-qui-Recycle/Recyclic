@@ -18,7 +18,7 @@ export interface UserRoleUpdate {
 }
 
 export interface UserCreate {
-  telegram_id: string;
+  telegram_id?: string | null;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -135,22 +135,9 @@ export const adminService = {
    */
   async updateUserStatus(userId: string, statusUpdate: UserStatusUpdate): Promise<AdminResponse> {
     try {
-      // Appeler directement l'endpoint admin car il n'est pas encore généré
-      const response = await fetch(`/api/v1/admin/users/${userId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify(statusUpdate)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
+      // Utiliser l'endpoint Admin dédié (client généré)
+      const response = await AdminApi.userstatusapiv1adminusersuseridstatusput(userId, statusUpdate);
+      return response;
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
       throw error;
@@ -160,19 +147,15 @@ export const adminService = {
   /**
    * Crée un nouvel utilisateur
    */
-  async createUser(userData: UserCreate): Promise<AdminResponse> {
+  async createUser(userData: UserCreate): Promise<AdminUser> {
     try {
-      // Utiliser l'API générée
+      // Utiliser l'API générée pour créer un utilisateur
       const newUser = await UsersApi.userapiv1userspost(userData);
 
       // Convertir UserResponse en AdminUser
       const adminUser = convertToAdminUser(newUser);
 
-      return {
-        data: adminUser,
-        message: 'Utilisateur créé avec succès',
-        success: true
-      };
+      return adminUser;
     } catch (error) {
       console.error('Erreur lors de la création de l\'utilisateur:', error);
       throw error;

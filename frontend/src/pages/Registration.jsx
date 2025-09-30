@@ -47,31 +47,6 @@ const Input = styled.input`
   }
 `;
 
-const Select = styled.select`
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-  
-  &:focus {
-    outline: none;
-    border-color: #2c5530;
-  }
-`;
-
-const TextArea = styled.textarea`
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-  min-height: 100px;
-  resize: vertical;
-  
-  &:focus {
-    outline: none;
-    border-color: #2c5530;
-  }
-`;
 
 const Button = styled.button`
   background: #2c5530;
@@ -145,18 +120,11 @@ function Registration() {
     first_name: '',
     last_name: '',
     email: '',
-    phone: '',
-    site_id: '',
-    notes: ''
+    phone: ''
   });
   
-  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-
-  useEffect(() => {
-    loadSites();
-  }, []);
 
   useEffect(() => {
     // Synchroniser si le param change après le premier render dans le test
@@ -165,14 +133,6 @@ function Registration() {
     }
   }, [telegramId])
 
-  const loadSites = async () => {
-    try {
-      const response = await api.get('/sites');
-      setSites(response.data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des sites:', error);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -222,9 +182,7 @@ function Registration() {
         first_name: '',
         last_name: '',
         email: '',
-        phone: '',
-        site_id: '',
-        notes: ''
+        phone: ''
       });
       
     } catch (error) {
@@ -271,7 +229,7 @@ function Registration() {
         </FormGroup>
 
         <FormGroup>
-          <Label htmlFor="username">Nom d'utilisateur Telegram</Label>
+          <Label htmlFor="username">Identifiant</Label>
           <Input
             type="text"
             id="username"
@@ -332,33 +290,7 @@ function Registration() {
           />
         </FormGroup>
 
-        <FormGroup>
-          <Label htmlFor="site_id">Ressourcerie</Label>
-          <Select
-            id="site_id"
-            name="site_id"
-            value={formData.site_id}
-            onChange={handleChange}
-          >
-            <option value="">Sélectionnez une ressourcerie</option>
-            {sites.map(site => (
-              <option key={site.id} value={site.id}>
-                {site.name}
-              </option>
-            ))}
-          </Select>
-        </FormGroup>
 
-        <FormGroup>
-          <Label htmlFor="notes">Notes additionnelles</Label>
-          <TextArea
-            id="notes"
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            placeholder="Informations complémentaires, motivations, etc."
-          />
-        </FormGroup>
 
         <Button type="submit" disabled={loading}>
           {loading && <LoadingSpinner />}

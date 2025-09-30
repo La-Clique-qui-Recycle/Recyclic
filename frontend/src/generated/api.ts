@@ -1,12 +1,8 @@
 /**
  * Client API généré automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-17T23:34:24.042Z
+ * Généré le: 2025-09-23T22:02:10.983Z
  */
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
@@ -24,7 +20,7 @@ import {
 // CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = '';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -37,6 +33,7 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor pour ajouter l'auth si nécessaire
 apiClient.interceptors.request.use(
   (config) => {
+    // Récupérer le token d'authentification depuis localStorage
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -73,6 +70,14 @@ export class HealthApi {
   }
 }
 export class UsersApi {
+    /**
+   * Get Active Operators
+   */
+  static async activeoperatorsapiv1usersactiveoperatorsget(): Promise<UserResponse[]> {
+    const response: AxiosResponse<UserResponse[]> = await apiClient.get(`/api/v1/users/active-operators`);
+    return response.data;
+  }
+
     /**
    * Get Users
    */
@@ -112,18 +117,10 @@ export class UsersApi {
     const response: AxiosResponse<any> = await apiClient.delete(`/api/v1/users/${user_id}`);
     return response.data;
   }
-
-    /**
-   * Update User Status
-   */
-  static async userstatusapiv1usersuseridstatusput(user_id, data?: any): Promise<UserResponse> {
-    const response: AxiosResponse<UserResponse> = await apiClient.put(`/api/v1/users/${user_id}/status`, data);
-    return response.data;
-  }
 }
 export class SitesApi {
     /**
-   * Get Sites
+   * Lister les sites
    */
   static async sitesapiv1sitesget(params?: any): Promise<SiteResponse[]> {
     const response: AxiosResponse<SiteResponse[]> = await apiClient.get(`/api/v1/sites/?${new URLSearchParams(params).toString()}`);
@@ -131,7 +128,7 @@ export class SitesApi {
   }
 
     /**
-   * Create Site
+   * Créer un site
    */
   static async siteapiv1sitespost(data?: any): Promise<SiteResponse> {
     const response: AxiosResponse<SiteResponse> = await apiClient.post(`/api/v1/sites/`, data);
@@ -139,10 +136,26 @@ export class SitesApi {
   }
 
     /**
-   * Get Site
+   * Récupérer un site par ID
    */
   static async siteapiv1sitessiteidget(site_id): Promise<SiteResponse> {
     const response: AxiosResponse<SiteResponse> = await apiClient.get(`/api/v1/sites/${site_id}`);
+    return response.data;
+  }
+
+    /**
+   * Mettre à jour un site
+   */
+  static async siteapiv1sitessiteidpatch(site_id, data?: any): Promise<SiteResponse> {
+    const response: AxiosResponse<SiteResponse> = await apiClient.patch(`/api/v1/sites/${site_id}`, data);
+    return response.data;
+  }
+
+    /**
+   * Supprimer un site
+   */
+  static async siteapiv1sitessiteiddelete(site_id): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.delete(`/api/v1/sites/${site_id}`);
     return response.data;
   }
 }
@@ -272,8 +285,8 @@ export class CashSessionsApi {
     /**
    * Fermer une session de caisse
    */
-  static async cashsessionapiv1cashsessionssessionidclosepost(session_id): Promise<CashSessionResponse> {
-    const response: AxiosResponse<CashSessionResponse> = await apiClient.post(`/api/v1/cash-sessions/${session_id}/close`);
+  static async cashsessionapiv1cashsessionssessionidclosepost(session_id, data?: any): Promise<CashSessionResponse> {
+    const response: AxiosResponse<CashSessionResponse> = await apiClient.post(`/api/v1/cash-sessions/${session_id}/close`, data);
     return response.data;
   }
 
@@ -282,6 +295,47 @@ export class CashSessionsApi {
    */
   static async cashsessionstatsapiv1cashsessionsstatssummaryget(params?: any): Promise<CashSessionStats> {
     const response: AxiosResponse<CashSessionStats> = await apiClient.get(`/api/v1/cash-sessions/stats/summary?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+}
+export class CashRegistersApi {
+    /**
+   * Lister les postes de caisse
+   */
+  static async cashregistersapiv1cashregistersget(params?: any): Promise<CashRegisterResponse[]> {
+    const response: AxiosResponse<CashRegisterResponse[]> = await apiClient.get(`/api/v1/cash-registers/?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Créer un poste de caisse
+   */
+  static async cashregisterapiv1cashregisterspost(data?: any): Promise<CashRegisterResponse> {
+    const response: AxiosResponse<CashRegisterResponse> = await apiClient.post(`/api/v1/cash-registers/`, data);
+    return response.data;
+  }
+
+    /**
+   * Récupérer un poste de caisse par ID
+   */
+  static async cashregisterapiv1cashregistersregisteridget(register_id): Promise<CashRegisterResponse> {
+    const response: AxiosResponse<CashRegisterResponse> = await apiClient.get(`/api/v1/cash-registers/${register_id}`);
+    return response.data;
+  }
+
+    /**
+   * Mettre à jour un poste de caisse
+   */
+  static async cashregisterapiv1cashregistersregisteridpatch(register_id, data?: any): Promise<CashRegisterResponse> {
+    const response: AxiosResponse<CashRegisterResponse> = await apiClient.patch(`/api/v1/cash-registers/${register_id}`, data);
+    return response.data;
+  }
+
+    /**
+   * Supprimer un poste de caisse
+   */
+  static async cashregisterapiv1cashregistersregisteriddelete(register_id): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.delete(`/api/v1/cash-registers/${register_id}`);
     return response.data;
   }
 }
@@ -323,6 +377,134 @@ export class AdminApi {
    */
   static async userapiv1adminusersuseridrejectpost(user_id, data?: any): Promise<AdminResponse> {
     const response: AxiosResponse<AdminResponse> = await apiClient.post(`/api/v1/admin/users/${user_id}/reject`, data);
+    return response.data;
+  }
+
+    /**
+   * Mise à jour du statut d'utilisateur (Admin)
+   */
+  static async userstatusapiv1adminusersuseridstatusput(user_id, data?: any): Promise<AdminResponse> {
+    const response: AxiosResponse<AdminResponse> = await apiClient.put(`/api/v1/admin/users/${user_id}/status`, data);
+    return response.data;
+  }
+
+    /**
+   * Mettre à jour le profil d'un utilisateur (Admin)
+   */
+  static async userprofileapiv1adminusersuseridput(user_id, data?: any): Promise<AdminResponse> {
+    const response: AxiosResponse<AdminResponse> = await apiClient.put(`/api/v1/admin/users/${user_id}`, data);
+    return response.data;
+  }
+
+    /**
+   * Déclencher la réinitialisation du mot de passe (Admin)
+   */
+  static async resetpasswordapiv1adminusersuseridresetpasswordpost(user_id): Promise<AdminResponse> {
+    const response: AxiosResponse<AdminResponse> = await apiClient.post(`/api/v1/admin/users/${user_id}/reset-password`);
+    return response.data;
+  }
+
+    /**
+   * Historique d'activité d'un utilisateur (Admin)
+   */
+  static async userhistoryapiv1adminusersuseridhistoryget(user_id, params?: any): Promise<UserHistoryResponse> {
+    const response: AxiosResponse<UserHistoryResponse> = await apiClient.get(`/api/v1/admin/users/${user_id}/history?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Test simple de l'endpoint admin
+   */
+  static async adminendpointapiv1adminhealthtestget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/admin/health-test`);
+    return response.data;
+  }
+
+    /**
+   * Health check public
+   */
+  static async publichealthapiv1adminhealthpublicget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/admin/health/public`);
+    return response.data;
+  }
+
+    /**
+   * Health check base de données
+   */
+  static async databasehealthapiv1adminhealthdatabaseget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/admin/health/database`);
+    return response.data;
+  }
+
+    /**
+   * Métriques de santé du système
+   */
+  static async systemhealthapiv1adminhealthget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/admin/health`);
+    return response.data;
+  }
+
+    /**
+   * Anomalies détectées
+   */
+  static async anomaliesapiv1adminhealthanomaliesget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/admin/health/anomalies`);
+    return response.data;
+  }
+
+    /**
+   * Test des notifications
+   */
+  static async notificationsapiv1adminhealthtestnotificationspost(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.post(`/api/v1/admin/health/test-notifications`);
+    return response.data;
+  }
+
+    /**
+   * Statut du scheduler
+   */
+  static async schedulerstatusapiv1adminhealthschedulerget(): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/admin/health/scheduler`);
+    return response.data;
+  }
+
+    /**
+   * Lister les rapports de sessions de caisse
+   */
+  static async cashsessionreportsapiv1adminreportscashsessionsget(): Promise<ReportListResponse> {
+    const response: AxiosResponse<ReportListResponse> = await apiClient.get(`/api/v1/admin/reports/cash-sessions`);
+    return response.data;
+  }
+
+    /**
+   * Telecharger un rapport de session de caisse
+   */
+  static async cashsessionreportapiv1adminreportscashsessionsfilenameget(filename, params?: any): Promise<any> {
+    const response: AxiosResponse<any> = await apiClient.get(`/api/v1/admin/reports/cash-sessions/${filename}?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Get Alert Thresholds
+   */
+  static async alertthresholdsapiv1adminsettingsalertthresholdsget(params?: any): Promise<AlertThresholdsResponse> {
+    const response: AxiosResponse<AlertThresholdsResponse> = await apiClient.get(`/api/v1/admin/settings/alert-thresholds?${new URLSearchParams(params).toString()}`);
+    return response.data;
+  }
+
+    /**
+   * Put Alert Thresholds
+   */
+  static async alertthresholdsapiv1adminsettingsalertthresholdsput(data?: any): Promise<AlertThresholdsResponse> {
+    const response: AxiosResponse<AlertThresholdsResponse> = await apiClient.put(`/api/v1/admin/settings/alert-thresholds`, data);
+    return response.data;
+  }
+
+    /**
+   * Get Dashboard Stats
+   */
+  static async dashboardstatsapiv1admindashboarddashboardstatsget(params?: any): Promise<DashboardStatsResponse> {
+    const response: AxiosResponse<DashboardStatsResponse> = await apiClient.get(`/api/v1/admin/dashboard/dashboard/stats?${new URLSearchParams(params).toString()}`);
     return response.data;
   }
 }

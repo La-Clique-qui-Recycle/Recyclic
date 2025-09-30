@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-17T23:34:24.035Z
+ * Généré le: 2025-09-23T22:02:10.977Z
  */
 
 // ============================================================================
@@ -43,13 +43,21 @@ export enum UserRole {
 export enum UserStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
-  REJECTED = 'rejected'
+  REJECTED = 'rejected',
+  ACTIVE = 'active'
 }
 
 // ============================================================================
 // INTERFACES
 // ============================================================================
 
+export interface ActivityEvent {
+  id: string | string;
+  event_type: string;
+  description: string;
+  date: string;
+  metadata?: object | any;
+}
 export interface AdminResponse {
   data?: object | any;
   message: string;
@@ -57,7 +65,7 @@ export interface AdminResponse {
 }
 export interface AdminUser {
   id: string | string;
-  telegram_id: number | string;
+  telegram_id?: string | number | any;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
@@ -69,6 +77,22 @@ export interface AdminUser {
   site_id?: string | string | any;
   created_at: string;
   updated_at: string;
+}
+export interface AlertThresholds_Input {
+  cash_discrepancy: number;
+  low_inventory: number;
+}
+export interface AlertThresholds_Output {
+  cashDiscrepancy: number;
+  lowInventory: number;
+}
+export interface AlertThresholdsResponse {
+  thresholds: AlertThresholds_Output;
+  siteId?: string | any;
+}
+export interface AlertThresholdsUpdate {
+  thresholds: AlertThresholds_Input;
+  site_id?: string | any;
 }
 export interface AuthUser {
   id: string;
@@ -82,9 +106,33 @@ export interface AuthUser {
   created_at?: string | any;
   updated_at?: string | any;
 }
+export interface CashRegisterCreate {
+  name: string;
+  location?: string | any;
+  site_id?: string | any;
+  is_active?: boolean;
+}
+export interface CashRegisterResponse {
+  name: string;
+  location?: string | any;
+  site_id?: string | any;
+  is_active?: boolean;
+  id: string;
+}
+export interface CashRegisterUpdate {
+  name?: string | any;
+  location?: string | any;
+  site_id?: string | any;
+  is_active?: boolean | any;
+}
+export interface CashSessionClose {
+  actual_amount: number;
+  variance_comment?: string | any;
+}
 export interface CashSessionCreate {
   operator_id: string;
   site_id: string;
+  register_id?: string | any;
   initial_amount: number;
 }
 export interface CashSessionListResponse {
@@ -96,14 +144,21 @@ export interface CashSessionListResponse {
 export interface CashSessionResponse {
   operator_id: string;
   site_id: string;
+  register_id?: string | any;
   initial_amount: number;
   id: string;
   current_amount: number;
-  status: CashSessionStatus;
+  status: any;
   opened_at: string;
   closed_at?: string | any;
   total_sales?: number | any;
   total_items?: number | any;
+  closing_amount?: number | any;
+  actual_amount?: number | any;
+  variance?: number | any;
+  variance_comment?: string | any;
+  report_download_url?: string | any;
+  report_email_sent?: boolean | any;
 }
 export interface CashSessionStats {
   total_sessions: number;
@@ -113,11 +168,37 @@ export interface CashSessionStats {
   total_items: number;
   average_session_duration?: number | any;
 }
+export interface CashSessionSummary {
+  sessionId: string;
+  siteId: string;
+  operator: string;
+  openedAt: string;
+  closedAt?: string | any;
+  initialAmount: number;
+  currentAmount: number;
+  totalSales: number;
+  totalItems: number;
+  status: string;
+}
 export interface CashSessionUpdate {
   status?: CashSessionStatus | any;
   current_amount?: number | any;
   total_sales?: number | any;
   total_items?: number | any;
+}
+export interface DashboardMetrics {
+  totalSessions: number;
+  openSessions: number;
+  closedSessions: number;
+  totalSales: number;
+  totalItems: number;
+  averageSessionDuration?: number | any;
+}
+export interface DashboardStatsResponse {
+  metrics: DashboardMetrics;
+  encryptedMetrics: string;
+  recentReports?: RecentReport[];
+  recentSessions?: CashSessionSummary[];
 }
 export interface DepositCreate {
   user_id: string;
@@ -137,8 +218,8 @@ export interface DepositCreate {
 }
 export interface DepositCreateFromBot {
   telegram_user_id: string;
-  audio_file_path: string;
-  status?: DepositStatus;
+  audio_file_path?: string | any;
+  status?: any;
 }
 export interface DepositFinalize {
   final_category?: EEECategory | any;
@@ -193,6 +274,22 @@ export interface PendingUserResponse {
   status: UserStatus;
   created_at: string;
 }
+export interface RecentReport {
+  filename: string;
+  downloadUrl: string;
+  generatedAt: string;
+  sizeBytes: number;
+}
+export interface ReportEntry {
+  filename: string;
+  size_bytes: number;
+  modified_at: string;
+  download_url: string;
+}
+export interface ReportListResponse {
+  reports: ReportEntry[];
+  total: number;
+}
 export interface ResetPasswordRequest {
   token: string;
   new_password: string;
@@ -240,17 +337,32 @@ export interface SignupResponse {
 export interface SiteCreate {
   name: string;
   address?: string | any;
+  city?: string | any;
+  postal_code?: string | any;
+  country?: string | any;
   configuration?: object | any;
   is_active?: boolean;
 }
 export interface SiteResponse {
   name: string;
   address?: string | any;
+  city?: string | any;
+  postal_code?: string | any;
+  country?: string | any;
   configuration?: object | any;
   is_active?: boolean;
   id: string;
   created_at: string;
   updated_at: string;
+}
+export interface SiteUpdate {
+  name?: string | any;
+  address?: string | any;
+  city?: string | any;
+  postal_code?: string | any;
+  country?: string | any;
+  configuration?: object | any;
+  is_active?: boolean | any;
 }
 export interface TestEmailRequest {
   to_email: string;
@@ -259,25 +371,42 @@ export interface UserApprovalRequest {
   message?: string | any;
 }
 export interface UserCreate {
-  telegram_id: string;
+  telegram_id?: string | any;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
-  role?: UserRole;
-  status?: UserStatus;
+  role?: any;
+  status?: any;
   is_active?: boolean;
   site_id?: string | any;
+  password: string;
+}
+export interface UserHistoryResponse {
+  user_id: string | string;
+  events: ActivityEvent[];
+  total_count: number;
+  page: number;
+  limit: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+export interface UserProfileUpdate {
+  first_name?: string | any;
+  last_name?: string | any;
+  username?: string | any;
+  role?: UserRole | any;
+  status?: UserStatus | any;
 }
 export interface UserRejectionRequest {
   reason?: string | any;
 }
 export interface UserResponse {
-  telegram_id: string;
+  telegram_id?: string | any;
   username?: string | any;
   first_name?: string | any;
   last_name?: string | any;
-  role?: UserRole;
-  status?: UserStatus;
+  role?: any;
+  status?: any;
   is_active?: boolean;
   site_id?: string | any;
   id: string;
@@ -285,10 +414,12 @@ export interface UserResponse {
   updated_at: string;
 }
 export interface UserRoleUpdate {
-  role: UserRole;
+  role: any;
 }
 export interface UserStatusUpdate {
   status: UserStatus;
+  is_active: boolean;
+  reason?: string | any;
 }
 export interface UserUpdate {
   username?: string | any;
