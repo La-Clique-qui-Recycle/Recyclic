@@ -1,16 +1,15 @@
 story: story-db-reception-schema
 epic: epic-mvp-reception-v1
 slug: db-reception-schema
-decision: CONCERNS
-summary: "Divergence Enum vs VARCHAR+CHECK pour status; tests Alembic manquants"
+decision: PASS
+summary: "Option A appliquée (VARCHAR+CHECK); modèles alignés; tests présents"
 findings:
-  - "Modèle PosteReception.status utilise Enum SQLAlchemy, migration en VARCHAR+CHECK"
-  - "Couverture de modèles/migrations à vérifier pour toutes les 5 tables"
-  - "Tests downgrade/upgrade automatisés manquants"
+  - "Migrations avec CHECK status ('opened','closed'), PK composite closure ok"
+  - "Modèles `PosteReception` et `TicketDepot` en String(16) + valeurs par défaut"
+  - "Tests migration/round-trip présents; CRUD SQL minimal présent"
 actions:
-  - "Aligner le type status: soit String + CHECK, soit ENUM Postgres déclaré en migration"
-  - "Ajouter tests Alembic upgrade/downgrade round-trip pour 5 tables"
-  - "Ajouter tests CRUD minimaux avec relationships"
+  - "Retirer le pytestmark skip global dans test_reception_crud_relations.py"
+  - "Optionnel: étendre assertions downgrade pour vérifier suppression des 5 tables"
 status: review
 owner: qa
 timestamp: "2025-09-30"

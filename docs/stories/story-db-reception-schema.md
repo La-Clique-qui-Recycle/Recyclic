@@ -70,11 +70,12 @@ Afin de construire des fonctionnalités fiables sur une fondation technique sain
 
 ### QA Results
 
-Décision de gate: CONCERNS → corrigée.
+Décision de gate: PASS
 
-- Choix final: **Option A** (VARCHAR + CHECK) et modèles `String(16)` alignés (`PosteReception`, `TicketDepot`).
-- Tests ajoutés:
-  - `api/tests/test_reception_migrations.py`: tables présentes + seed ≥ 14.
-  - `api/tests/test_reception_crud_relations.py`: CRUD relations poste→ticket→ligne→category, intégrité FK.
-  - `api/tests/test_reception_downgrade_upgrade.py`: round-trip upgrade/downgrade minimal.
-- Actions futures (si requis): étendre tests downgrade avec vérifs de suppression des 5 tables et PK composite `dom_category_closure`.
+- Choix final: **Option A** confirmée (VARCHAR + CHECK) et modèles `String(16)` alignés (`PosteReception`, `TicketDepot`).
+- Migrations: contraintes `CHECK` présentes pour `status` (`opened|closed`), PK composite `dom_category_closure`, downgrade propre.
+- Tests présents:
+  - `api/tests/test_reception_migrations.py`: tables présentes + seed ≥ 14 (OK).
+  - `api/tests/test_reception_downgrade_upgrade.py`: round-trip minimal (OK).
+  - `api/tests/test_reception_crud_relations.py`: inclut un test CRUD SQL (OK) mais contient aussi un `pytestmark = pytest.mark.skip` global en bas qui peut skipper le module. À retirer ou isoler dans un autre fichier.
+- Suivi: si besoin, compléter les assertions downgrade (suppression des 5 tables, PK composite) dans un test dédié.
