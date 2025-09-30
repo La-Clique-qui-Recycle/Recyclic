@@ -92,7 +92,7 @@ class ReceptionService:
 
 
     # Lignes de dépôt
-    def create_ligne(self, *, ticket_id: UUID, dom_category_id: UUID, poids_kg: float, notes: Optional[str]) -> LigneDepot:
+    def create_ligne(self, *, ticket_id: UUID, dom_category_id: UUID, poids_kg: float, destination: Optional[str], notes: Optional[str]) -> LigneDepot:
         """Créer une ligne de dépôt avec règles métier: poids>0 et ticket ouvert."""
         ticket: Optional[TicketDepot] = self.ticket_repo.get(ticket_id)
         if not ticket:
@@ -111,6 +111,7 @@ class ReceptionService:
             ticket_id=ticket.id,
             dom_category_id=dom_category_id,
             poids_kg=poids_kg,
+            destination=destination,
             notes=notes,
         )
         return self.ligne_repo.add(ligne)
@@ -121,6 +122,7 @@ class ReceptionService:
         ligne_id: UUID,
         dom_category_id: Optional[UUID] = None,
         poids_kg: Optional[float] = None,
+        destination: Optional[str] = None,
         notes: Optional[str] = None,
     ) -> LigneDepot:
         ligne: Optional[LigneDepot] = self.ligne_repo.get(ligne_id)
@@ -142,6 +144,9 @@ class ReceptionService:
             if poids_kg <= 0:
                 raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="poids_kg doit être > 0")
             ligne.poids_kg = poids_kg
+
+        if destination is not None:
+            ligne.destination = destination
 
         if notes is not None:
             ligne.notes = notes

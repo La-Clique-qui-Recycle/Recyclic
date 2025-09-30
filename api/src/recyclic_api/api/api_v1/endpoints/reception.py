@@ -78,6 +78,7 @@ def add_ligne(
         ticket_id=UUID(payload.ticket_id),
         dom_category_id=UUID(payload.dom_category_id),
         poids_kg=float(payload.poids_kg),
+        destination=payload.destination,
         notes=payload.notes,
     )
     return {
@@ -85,6 +86,7 @@ def add_ligne(
         "ticket_id": str(ligne.ticket_id),
         "dom_category_id": str(ligne.dom_category_id),
         "poids_kg": ligne.poids_kg,
+        "destination": ligne.destination,
         "notes": ligne.notes,
     }
 
@@ -101,6 +103,7 @@ def update_ligne(
         ligne_id=UUID(ligne_id),
         dom_category_id=UUID(payload.dom_category_id) if payload.dom_category_id else None,
         poids_kg=float(payload.poids_kg) if payload.poids_kg is not None else None,
+        destination=payload.destination,
         notes=payload.notes,
     )
     return {
@@ -108,6 +111,7 @@ def update_ligne(
         "ticket_id": str(ligne.ticket_id),
         "dom_category_id": str(ligne.dom_category_id),
         "poids_kg": ligne.poids_kg,
+        "destination": ligne.destination,
         "notes": ligne.notes,
     }
 

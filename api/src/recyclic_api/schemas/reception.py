@@ -40,6 +40,7 @@ class CreateLigneRequest(BaseModel):
     poids_kg: condecimal(gt=0, max_digits=8, decimal_places=3) = Field(
         ..., description="Poids en kilogrammes (> 0)"
     )
+    destination: Optional[str] = Field(None, description="Destination de l'objet")
     notes: Optional[str] = Field(None, description="Notes libres")
 
 
@@ -50,6 +51,7 @@ class UpdateLigneRequest(BaseModel):
     poids_kg: Optional[condecimal(gt=0, max_digits=8, decimal_places=3)] = Field(
         None, description="Nouveau poids en kilogrammes (> 0)"
     )
+    destination: Optional[str] = Field(None, description="Nouvelle destination de l'objet")
     notes: Optional[str] = Field(None, description="Notes libres")
 
 
@@ -60,5 +62,6 @@ class LigneResponse(BaseModel):
     ticket_id: str = Field(..., description="Identifiant du ticket")
     dom_category_id: str = Field(..., description="Identifiant de la catégorie domaine")
     poids_kg: Decimal = Field(..., description="Poids en kilogrammes")
+    destination: Optional[str] = Field(None, description="Destination de l'objet")
     notes: Optional[str] = Field(None, description="Notes libres")
 

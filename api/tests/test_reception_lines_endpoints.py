@@ -36,6 +36,7 @@ def test_lines_crud_and_rules(admin_client):
             "ticket_id": ticket_id,
             "dom_category_id": str(dom_category_id),
             "poids_kg": "1.250",
+            "destination": "Recyclage",
         },
     )
     assert r.status_code == 200
@@ -50,17 +51,20 @@ def test_lines_crud_and_rules(admin_client):
             "ticket_id": ticket_id,
             "dom_category_id": str(dom_category_id),
             "poids_kg": "0",
+            "destination": "Test",
         },
     )
     assert r.status_code == 422
 
-    # 6) Update ligne: changer poids
+    # 6) Update ligne: changer poids et destination
     r = admin_client.put(
         f"/api/v1/reception/lignes/{ligne_id}",
-        json={"poids_kg": "2.000"},
+        json={"poids_kg": "2.000", "destination": "Vente"},
     )
     assert r.status_code == 200
-    assert r.json()["poids_kg"] == "2.000"
+    data = r.json()
+    assert data["poids_kg"] == "2.000"
+    assert data["destination"] == "Vente"
 
     # 7) Fermer le ticket
     r = admin_client.post(f"/api/v1/reception/tickets/{ticket_id}/close")
@@ -73,6 +77,7 @@ def test_lines_crud_and_rules(admin_client):
             "ticket_id": ticket_id,
             "dom_category_id": str(dom_category_id),
             "poids_kg": "1.000",
+            "destination": "Test",
         },
     )
     assert r.status_code == 409
@@ -112,6 +117,7 @@ def test_delete_line_when_ticket_open(admin_client):
             "ticket_id": ticket_id,
             "dom_category_id": str(dom_category_id),
             "poids_kg": "3.333",
+            "destination": "Don",
         },
     )
     assert r.status_code == 200
