@@ -30,7 +30,15 @@ try:
     from recyclic_api.models.sync_log import SyncLog
     from recyclic_api.models.registration_request import RegistrationRequest
     from recyclic_api.models.user_status_history import UserStatusHistory
-    from recyclic_api.models.admin_settings import AdminSettings
+    # Import correct AdminSetting model (singular module/file)
+    from recyclic_api.models.admin_setting import AdminSetting
+
+    # Reception domain models to ensure tables are created in tests
+    from recyclic_api.models.dom_category import DomCategory
+    from recyclic_api.models.dom_category_closure import DomCategoryClosure
+    from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
+    from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
+    from recyclic_api.models.ligne_depot import LigneDepot
 
     # Créer toutes les tables
     from recyclic_api.core.database import Base

@@ -2,6 +2,7 @@
 from .admin import router as admin_router
 from .health import router as health_router
 from .users import router as users_router
+from .reception import router as reception_router
 from .sites import router as sites_router
 from .deposits import router as deposits_router
 from .sales import router as sales_router
