@@ -13,7 +13,8 @@ from .endpoints import (
     email_router as email,
     reports_router as reports,
     admin_settings_router as admin_settings,
-    dashboard_router as dashboard
+    dashboard_router as dashboard,
+    reception_router as reception,
 )
 
 api_router = APIRouter()
@@ -33,5 +34,6 @@ api_router.include_router(email, prefix="/email", tags=["email"])
 api_router.include_router(reports, prefix="/admin/reports", tags=["admin", "reports"])
 api_router.include_router(admin_settings, prefix="/admin/settings", tags=["admin", "settings"])
 api_router.include_router(dashboard, prefix="/admin/dashboard", tags=["admin", "dashboard"])
+api_router.include_router(reception, prefix="/reception", tags=["reception"])
 
 

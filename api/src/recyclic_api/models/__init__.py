@@ -1,6 +1,6 @@
 from ..core.database import Base
 
-from .user import User
+from .user import User, UserRole, UserStatus
 from .site import Site
 from .deposit import Deposit
 from .sale import Sale
@@ -21,6 +21,8 @@ from .ligne_depot import LigneDepot
 __all__ = [
     "Base",
     "User",
+    "UserRole",
+    "UserStatus",
     "Site",
     "Deposit",
     "Sale",
