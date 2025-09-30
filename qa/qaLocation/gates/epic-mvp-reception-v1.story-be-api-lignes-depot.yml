@@ -1,0 +1,20 @@
+story: story-be-api-lignes-depot
+epic: epic-mvp-reception-v1
+slug: be-api-lignes-depot
+decision: PASS
+summary: "CRUD lignes de dépôt livré avec règles 422/409, authz, et tests complétés (4 passed)"
+findings:
+  - "Validation poids via Pydantic (condecimal) et service (défense en profondeur)"
+  - "Règle ticket fermé → 409 sur create/update/delete"
+  - "Endpoints protégés par require_role_strict (USER|ADMIN|SUPER_ADMIN)"
+  - "Tests couvrent CRUD de base et règles principales; delete renvoie status=deleted"
+  - "404 pour catégorie inconnue implémenté côté service, test manquant"
+actions:
+  - "FAIT: Ajouter test 404 pour dom_category_id invalide (POST/PUT)"
+  - "FAIT: Ajouter test update notes et dom_category_id (chemin heureux)"
+  - "Optionnel: Vérifier génération/commit OpenAPI après merge"
+status: review
+owner: qa
+timestamp: "2025-09-30"
+
+

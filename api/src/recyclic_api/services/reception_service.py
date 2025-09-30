@@ -12,6 +12,7 @@ from recyclic_api.models import (
     TicketDepot,
     TicketDepotStatus,
     LigneDepot,
+    Destination as DBLigneDestination,
 )
 from recyclic_api.repositories.reception import (
     PosteReceptionRepository,
@@ -107,11 +108,16 @@ class ReceptionService:
         if poids_kg <= 0:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="poids_kg doit être > 0")
 
+        # Convertir destination en enum DB si string fournie
+        dest_value = None
+        if destination is not None:
+            dest_value = DBLigneDestination(destination)
+
         ligne = LigneDepot(
             ticket_id=ticket.id,
             dom_category_id=dom_category_id,
             poids_kg=poids_kg,
-            destination=destination,
+            destination=dest_value,
             notes=notes,
         )
         return self.ligne_repo.add(ligne)
@@ -146,7 +152,7 @@ class ReceptionService:
             ligne.poids_kg = poids_kg
 
         if destination is not None:
-            ligne.destination = destination
+            ligne.destination = DBLigneDestination(destination)
 
         if notes is not None:
             ligne.notes = notes

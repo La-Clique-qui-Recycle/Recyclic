@@ -17,6 +17,7 @@ from .dom_category_closure import DomCategoryClosure
 from .poste_reception import PosteReception, PosteReceptionStatus
 from .ticket_depot import TicketDepot, TicketDepotStatus
 from .ligne_depot import LigneDepot
+from .ligne_depot import Destination
 
 __all__ = [
     "Base",

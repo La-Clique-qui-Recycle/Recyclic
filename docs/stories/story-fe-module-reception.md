@@ -7,6 +7,7 @@ Afin d'enregistrer les dépôts rapidement, sans étapes intermédiaires.
 
 **Story Context**
 
+*   **Spécifications UX/UI :** Le design et le comportement de l'interface sont définis dans le document : `docs/frontend-spec/module-reception-depots.md`.
 *   **Dépendances :** `story-be-api-postes-tickets.md` et `story-be-api-lignes-depot.md`. Toutes les API backend doivent être prêtes.
 *   **Raison d'être :** Crée l'interface utilisateur complète pour le MVP de la réception, en suivant le parcours utilisateur optimisé défini avec l'agent UX.
 *   **Technologie :** React.

@@ -1,9 +1,17 @@
 from sqlalchemy import Column, Numeric, String, ForeignKey
+from sqlalchemy import Enum as SAEnum
+import enum
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 import uuid
 
 from recyclic_api.core.database import Base
+
+
+class Destination(str, enum.Enum):
+    MAGASIN = "MAGASIN"
+    RECYCLAGE = "RECYCLAGE"
+    DECHETERIE = "DECHETERIE"
 
 
 class LigneDepot(Base):
@@ -14,7 +22,7 @@ class LigneDepot(Base):
     ticket_id = Column(PGUUID(as_uuid=True), ForeignKey("ticket_depot.id"), nullable=False)
     dom_category_id = Column(PGUUID(as_uuid=True), ForeignKey("dom_category.id"), nullable=False)
     poids_kg = Column(Numeric(8, 3), nullable=False)
-    destination = Column(String(255), nullable=True)
+    destination = Column(SAEnum(Destination, name="destinationenum"), nullable=False)
     notes = Column(String, nullable=True)
 
     # Relationships

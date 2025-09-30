@@ -27,8 +27,8 @@ def test_crud_relations_reception_minimal():
             conn.execute(
                 sa.text(
                     """
-                    INSERT INTO users (id, username, hashed_password, is_active)
-                    VALUES (:id, 'qa-user', 'x', true)
+                    INSERT INTO users (id, username, hashed_password, role, status, is_active)
+                    VALUES (:id, 'qa-user', 'x', 'user', 'active', true)
                     """
                 ),
                 {"id": user_id},
@@ -63,8 +63,8 @@ def test_crud_relations_reception_minimal():
         conn.execute(
             sa.text(
                 """
-                INSERT INTO ligne_depot (id, ticket_id, dom_category_id, poids_kg)
-                VALUES (:id, :ticket, :cat, 1.234)
+                INSERT INTO ligne_depot (id, ticket_id, dom_category_id, poids_kg, destination)
+                VALUES (:id, :ticket, :cat, 1.234, 'MAGASIN')
                 """
             ),
             {"id": ligne_id, "ticket": ticket_id, "cat": dom_category_id},
@@ -88,7 +88,6 @@ def test_crud_relations_reception_minimal():
 import pytest
 
 
-pytestmark = pytest.mark.skip(reason="Skeleton CRUD/relations tests for reception schema - enable after DEV alignment")
 
 
 def test_create_poste_ticket_ligne_with_category_relations():

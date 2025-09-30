@@ -1,5 +1,7 @@
 # Story: BE - API de Gestion des Lignes de Dépôt
 
+**Statut: Terminé**
+
 **User Story**
 En tant que bénévole,
 Je veux pouvoir ajouter, modifier et supprimer des lignes (objets) dans un ticket de dépôt,
@@ -50,6 +52,8 @@ Afin de refléter précisément les objets reçus.
 - [x] Implémenter la logique métier dans le service (poids > 0, ticket ouvert)
 - [x] Exposer les endpoints protégés `POST/PUT/DELETE /api/v1/reception/lignes`
 - [x] Écrire des tests d'intégration couvrant les règles et endpoints
+- [x] Ajouter test 404 pour dom_category_id invalide (POST/PUT)
+- [x] Ajouter test update notes et dom_category_id (chemin heureux)
 
 
 ## Dev Agent Record
@@ -59,7 +63,9 @@ Afin de refléter précisément les objets reçus.
 
 ### Debug Log References
 - `docker-compose run --rm api-tests` traces Alembic et pytest (OK)
-- Fichier ciblé: `tests/test_reception_lines_endpoints.py` (.. [100%])
+- Fichier ciblé: `tests/test_reception_lines_endpoints.py` (4 passed in 1.73s)
+- Corrections QA appliquées: tests 404 dom_category_id invalide + update notes/dom_category_id
+- Validation: `docker-compose run --rm api-tests bash -lc 'alembic upgrade head && python -m pytest -q tests/test_reception_lines_endpoints.py -v'` → 4 passed
 
 ### Completion Notes List
 - Schémas ajoutés dans `api/src/recyclic_api/schemas/reception.py`
@@ -67,6 +73,7 @@ Afin de refléter précisément les objets reçus.
 - Service étendu (`create_ligne`, `update_ligne`, `delete_ligne`) dans `api/src/recyclic_api/services/reception_service.py`
 - Endpoints ajoutés dans `api/src/recyclic_api/api/api_v1/endpoints/reception.py`
 - Tests d'intégration ajoutés `api/tests/test_reception_lines_endpoints.py`
+- Corrections QA: ajout tests 404 dom_category_id invalide (POST/PUT) et update notes/dom_category_id
 
 ### File List
 - M: `api/src/recyclic_api/schemas/reception.py`
@@ -79,6 +86,25 @@ Afin de refléter précisément les objets reçus.
 ### Change Log
 - Ajout CRUD lignes de dépôt (schémas, service, endpoints) + règles 422/409
 - Ajout tests d'intégration dédiés et exécution via `api-tests` (Docker)
+- Corrections QA (2025-09-30): ajout tests 404 dom_category_id invalide + update notes/dom_category_id
 
 ### Status
-- Ready for Review
+- Ready for Review (corrections QA appliquées)
+
+
+## QA Results
+
+- Decision: PASS
+- Summary: Endpoints POST/PUT/DELETE conformes aux AC, règles 422/409 appliquées au niveau service, endpoints protégés par rôles; tests d'intégration complétés (4 passed).
+- Findings:
+  - Validation `poids_kg` côté schéma (condecimal) et revalidation côté service (défense en profondeur)
+  - Règle ticket fermé → 409 appliquée pour create/update/delete
+  - Authz via `require_role_strict` sur tous les endpoints du routeur réception
+  - Schémas Pydantic request/response complets; `Decimal` conservé en réponse
+  - Tests couvrent CRUD + règles + 404 dom_category_id + update notes/dom_category_id
+- NFR Check:
+  - Security: OK (authz requise), erreurs HTTP standardisées
+  - Performance: O(1) sur opérations CRUD, aucun hotspot identifié
+  - Observability: Pas de logging structuré sur erreurs métier (améliorable côté middleware global)
+- Actions (post-merge, optionnelles):
+  - Vérifier/publier l'OpenAPI régénéré
