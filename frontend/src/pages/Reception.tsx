@@ -133,10 +133,13 @@ const Reception: React.FC = () => {
 
   // Ouvrir automatiquement le poste au premier accès
   useEffect(() => {
-    if (!poste && !isLoading) {
-      openPoste().catch(console.error);
+    if (!poste && !isLoading && !error) {
+      openPoste().catch((err) => {
+        console.error('Erreur lors de l\'ouverture du poste:', err);
+        // L'erreur est déjà gérée dans le contexte, pas besoin de faire quoi que ce soit ici
+      });
     }
-  }, [poste, isLoading, openPoste]);
+  }, [poste, isLoading, error, openPoste]);
 
   const handleNewTicket = async () => {
     try {
@@ -162,6 +165,33 @@ const Reception: React.FC = () => {
       <ReceptionContainer>
         <MainContent>
           <LoadingMessage>Ouverture du poste de réception...</LoadingMessage>
+        </MainContent>
+      </ReceptionContainer>
+    );
+  }
+
+  if (error && !poste) {
+    return (
+      <ReceptionContainer>
+        <MainContent>
+          <ErrorMessage>
+            {error}
+            <br />
+            <button 
+              onClick={() => window.location.reload()} 
+              style={{ 
+                marginTop: '10px', 
+                padding: '8px 16px', 
+                backgroundColor: '#1976d2', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px', 
+                cursor: 'pointer' 
+              }}
+            >
+              Réessayer
+            </button>
+          </ErrorMessage>
         </MainContent>
       </ReceptionContainer>
     );
@@ -198,3 +228,5 @@ const Reception: React.FC = () => {
 };
 
 export default Reception;
+
+

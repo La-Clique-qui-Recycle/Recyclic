@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { receptionService } from '../services/receptionService';
 
 interface Poste {
@@ -51,7 +51,7 @@ export const ReceptionProvider: React.FC<ReceptionProviderProps> = ({ children }
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const openPoste = async () => {
+  const openPoste = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -63,9 +63,9 @@ export const ReceptionProvider: React.FC<ReceptionProviderProps> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const closePoste = async () => {
+  const closePoste = useCallback(async () => {
     if (!poste) return;
     
     try {
@@ -80,23 +80,23 @@ export const ReceptionProvider: React.FC<ReceptionProviderProps> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [poste]);
 
-  const createTicket = async () => {
+  const createTicket = useCallback(async () => {
     if (!poste) throw new Error('Aucun poste ouvert');
     
     try {
       setIsLoading(true);
       setError(null);
       const newTicket = await receptionService.createTicket(poste.id);
-      setCurrentTicket(newTicket);
+      setCurrentTicket({ ...newTicket, lines: Array.isArray((newTicket as any).lines) ? (newTicket as any).lines : [] });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la création du ticket');
       throw err;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [poste]);
 
   const closeTicket = async (ticketId: string) => {
     try {
@@ -117,13 +117,13 @@ export const ReceptionProvider: React.FC<ReceptionProviderProps> = ({ children }
       setIsLoading(true);
       setError(null);
       const newLine = await receptionService.addLineToTicket(ticketId, line);
-      
-      if (currentTicket && currentTicket.id === ticketId) {
-        setCurrentTicket(prev => prev ? {
-          ...prev,
-          lines: [...prev.lines, newLine]
-        } : null);
-      }
+      // Mettre à jour localement les lignes
+      setCurrentTicket((prev) => {
+        if (!prev) return prev;
+        const prevLines = Array.isArray((prev as any).lines) ? (prev as any).lines : [];
+        return { ...prev, lines: [...prevLines, newLine] } as any;
+      });
+      return newLine;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'ajout de la ligne');
       throw err;

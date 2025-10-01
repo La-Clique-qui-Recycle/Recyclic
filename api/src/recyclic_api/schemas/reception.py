@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, condecimal
 from typing import Optional
 from decimal import Decimal
+from datetime import datetime
 
 from recyclic_api.models.ligne_depot import Destination
 
@@ -68,4 +69,6 @@ class LigneResponse(BaseModel):
     poids_kg: Decimal = Field(..., description="Poids en kilogrammes")
     destination: Destination = Field(..., description="Destination de l'objet")
     notes: Optional[str] = Field(None, description="Notes libres")
+    created_at: Optional[datetime] = Field(None, description="Date de création")
+    updated_at: Optional[datetime] = Field(None, description="Date de mise à jour")
 

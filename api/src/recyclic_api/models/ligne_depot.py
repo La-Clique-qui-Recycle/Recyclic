@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Numeric, String, ForeignKey
+from sqlalchemy import Column, Numeric, String, ForeignKey, DateTime
 from sqlalchemy import Enum as SAEnum
 import enum
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 import uuid
 
 from recyclic_api.core.database import Base
@@ -24,6 +25,8 @@ class LigneDepot(Base):
     poids_kg = Column(Numeric(8, 3), nullable=False)
     destination = Column(SAEnum(Destination, name="destinationenum"), nullable=False)
     notes = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     ticket = relationship("TicketDepot", back_populates="lignes")

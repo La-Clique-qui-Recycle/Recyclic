@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { ArrowLeft, Save, Trash2, Edit, Check } from 'lucide-react';
 import { useReception } from '../../contexts/ReceptionContext';
+import { receptionService } from '../../services/receptionService';
 import NumericKeypad from '../../components/ui/NumericKeypad';
 
 const Container = styled.div`
@@ -275,8 +276,8 @@ const EmptyState = styled.div`
   padding: 40px 20px;
 `;
 
-// Catégories L1 selon les spécifications
-const CATEGORIES = [
+// Catégories L1 selon les spécifications (fallback si API indisponible)
+const FALLBACK_CATEGORIES = [
   'EEE-1', 'EEE-2', 'EEE-3', 'EEE-4',
   'EEE-5', 'EEE-6', 'EEE-7', 'EEE-8',
   'EEE-9', 'EEE-10', 'EEE-11', 'EEE-12',
@@ -293,11 +294,32 @@ const TicketForm: React.FC = () => {
   const navigate = useNavigate();
   const { currentTicket, isLoading, addLineToTicket, updateTicketLine, deleteTicketLine, closeTicket } = useReception();
   
+  const [categories, setCategories] = useState<Array<{id: string, label: string, slug: string}>>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
   const [destination, setDestination] = useState<'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE'>('MAGASIN');
   const [notes, setNotes] = useState<string>('');
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const weightInputRef = useRef<HTMLInputElement>(null);
+
+  // Charger les catégories depuis l'API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const cats = await receptionService.getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error('Erreur lors du chargement des catégories:', error);
+        // Utiliser les catégories de fallback
+        setCategories(FALLBACK_CATEGORIES.map((cat, index) => ({
+          id: `fallback-${index}`,
+          label: cat,
+          slug: cat.toLowerCase()
+        })));
+      }
+    };
+    loadCategories();
+  }, []);
 
   if (!currentTicket) {
     return (
@@ -315,7 +337,7 @@ const TicketForm: React.FC = () => {
 
     try {
       await addLineToTicket(currentTicket.id, {
-        category: selectedCategory,
+        dom_category_id: selectedCategory,
         weight: parseFloat(weight),
         destination,
         notes: notes || undefined
@@ -339,7 +361,7 @@ const TicketForm: React.FC = () => {
 
     try {
       await updateTicketLine(currentTicket.id, lineId, {
-        category: selectedCategory,
+        dom_category_id: selectedCategory,
         weight: parseFloat(weight),
         destination,
         notes: notes || undefined
@@ -367,10 +389,21 @@ const TicketForm: React.FC = () => {
 
   const handleEditLine = (line: TicketLine) => {
     setEditingLineId(line.id);
-    setSelectedCategory(line.category);
-    setWeight(line.weight.toString());
+    setSelectedCategory((line as any).dom_category_id || (line as any).category || '');
+    setWeight((line.poids_kg || line.weight || 0).toString());
     setDestination(line.destination);
-    setNotes(line.notes || '');
+    setNotes((line as any).notes || '');
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    // Focus automatique sur le champ poids après un court délai
+    setTimeout(() => {
+      if (weightInputRef.current) {
+        weightInputRef.current.focus();
+        weightInputRef.current.select();
+      }
+    }, 100);
   };
 
   const handleCloseTicket = async () => {
@@ -402,17 +435,28 @@ const TicketForm: React.FC = () => {
 
       <MainContent>
         <LinesList>
-          <LinesTitle>Lignes du ticket ({currentTicket.lines.length})</LinesTitle>
-          {currentTicket.lines.length === 0 ? (
+          <LinesTitle>Lignes du ticket ({(currentTicket as any).lines ? (currentTicket as any).lines.length : 0})</LinesTitle>
+          {!((currentTicket as any).lines && (currentTicket as any).lines.length > 0) ? (
             <EmptyState>Aucune ligne ajoutée</EmptyState>
           ) : (
-            currentTicket.lines.map((line) => (
+            (currentTicket as any).lines.map((line: any) => (
               <LineItem key={line.id}>
                 <LineInfo>
-                  <LineCategory>{line.category}</LineCategory>
+                  <LineCategory>
+                    {categories.find(cat => cat.id === (line as any).dom_category_id)?.label || 
+                     (line as any).dom_category_id || 
+                     (line as any).category || 'N/A'}
+                  </LineCategory>
                   <LineDetails>
-                    {line.weight}kg - {DESTINATIONS.find(d => d.value === line.destination)?.label}
+                    {line.poids_kg || line.weight}kg - {DESTINATIONS.find(d => d.value === line.destination)?.label}
                     {line.notes && ` - ${line.notes}`}
+                    <br />
+                    <small style={{ color: '#666', fontSize: '0.8em' }}>
+                      {line.created_at ? new Date(line.created_at).toLocaleString('fr-FR') : 
+                       line.updated_at ? new Date(line.updated_at).toLocaleString('fr-FR') : 
+                       line.timestamp ? new Date(line.timestamp).toLocaleString('fr-FR') :
+                       'Ajouté maintenant'}
+                    </small>
                   </LineDetails>
                 </LineInfo>
                 <LineActions>
@@ -444,13 +488,13 @@ const TicketForm: React.FC = () => {
           <FormGroup>
             <Label>Catégorie *</Label>
             <CategoryGrid>
-              {CATEGORIES.map((category) => (
+              {categories.map((category) => (
                 <CategoryButton
-                  key={category}
-                  $selected={selectedCategory === category}
-                  onClick={() => setSelectedCategory(category)}
+                  key={category.id}
+                  $selected={selectedCategory === category.id}
+                  onClick={() => handleCategorySelect(category.id)}
                 >
-                  {category}
+                  {category.label}
                 </CategoryButton>
               ))}
             </CategoryGrid>
@@ -460,6 +504,7 @@ const TicketForm: React.FC = () => {
             <Label>Poids (kg) *</Label>
             <WeightInputContainer>
               <WeightInput
+                ref={weightInputRef}
                 type="text"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}

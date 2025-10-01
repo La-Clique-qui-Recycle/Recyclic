@@ -16,6 +16,7 @@ from recyclic_api.schemas.reception import (
     UpdateLigneRequest,
     LigneResponse,
 )
+from recyclic_api.models.dom_category import DomCategory
 from recyclic_api.services.reception_service import ReceptionService
 
 
@@ -88,7 +89,29 @@ def add_ligne(
         "poids_kg": ligne.poids_kg,
         "destination": ligne.destination,
         "notes": ligne.notes,
+        "created_at": ligne.created_at.isoformat() if ligne.created_at else None,
+        "updated_at": ligne.updated_at.isoformat() if ligne.updated_at else None,
     }
+
+
+@router.get("/categories")
+def get_categories(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+):
+    """Récupérer les catégories L1 disponibles."""
+    categories = db.query(DomCategory).filter(
+        DomCategory.level == 1,
+        DomCategory.active == True
+    ).all()
+    return [
+        {
+            "id": str(cat.id),
+            "label": cat.label,
+            "slug": cat.slug
+        }
+        for cat in categories
+    ]
 
 
 @router.put("/lignes/{ligne_id}", response_model=LigneResponse)
@@ -113,6 +136,8 @@ def update_ligne(
         "poids_kg": ligne.poids_kg,
         "destination": ligne.destination,
         "notes": ligne.notes,
+        "created_at": ligne.created_at.isoformat() if ligne.created_at else None,
+        "updated_at": ligne.updated_at.isoformat() if ligne.updated_at else None,
     }
 
 
