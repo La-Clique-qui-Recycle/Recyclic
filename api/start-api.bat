@@ -1,5 +1,5 @@
 @echo off
-cd /d "D:\Users\Strophe\Documents\°IA\La Clique Qui Recycle\Recyclic\api\src"
+cd /d "%~dp0src"
 
 set SECRET_KEY=your-super-secret-key-here-change-in-production
 set DATABASE_URL=postgresql://recyclic:recyclic_secure_password_2024@localhost:5432/recyclic

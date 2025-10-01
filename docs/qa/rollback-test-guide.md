@@ -16,7 +16,7 @@
 ### 1.2 Préparation de l'Environnement
 ```bash
 # 1. Se placer dans le répertoire du projet
-cd /mnt/d/Users/Strophe/Documents/°IA/La\ Clique\ Qui\ Recycle/Recyclic/
+cd "$(dirname "$0")/../.."
 
 # 2. Vérifier que le script rollback existe
 ls -la scripts/rollback.sh
@@ -161,7 +161,7 @@ bash scripts/rollback.sh version-inexistante
 
 # 2. Tester depuis un mauvais répertoire
 cd /tmp
-bash /path/to/recyclic/scripts/rollback.sh
+bash ../scripts/rollback.sh
 
 # 3. Tester l'annulation du rollback
 bash scripts/rollback.sh test-version-1

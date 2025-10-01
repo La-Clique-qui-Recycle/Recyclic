@@ -8,7 +8,7 @@ def test_cli():
         # Test CLI command
         result = subprocess.run([
             "wsl", "bash", "-c", 
-            "cd /mnt/d/Users/Strophe/Documents/°IA/La\\ Clique\\ Qui\\ Recycle/Recyclic/api && "
+            "cd api && "
             "source ~/miniconda3/etc/profile.d/conda.sh && "
             "conda activate base && "
             "python create_schema.py"
