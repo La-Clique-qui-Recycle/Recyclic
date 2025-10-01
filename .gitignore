@@ -103,3 +103,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Gemini CLI generated
+frontend/coverage/
+login_data.json
+*command-message*.txt
+.claude/
+.cursor/
+test_reception_api.js
