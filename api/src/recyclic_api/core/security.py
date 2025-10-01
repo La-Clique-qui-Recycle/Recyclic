@@ -2,6 +2,17 @@
 Security utilities for password hashing, validation, and JWT management
 """
 
+# Fix for bcrypt compatibility issue with passlib
+# This patches the bcrypt module to add the missing __about__ attribute
+try:
+    import bcrypt
+    if not hasattr(bcrypt, '__about__'):
+        class MockAbout:
+            __version__ = "4.0.1"
+        bcrypt.__about__ = MockAbout()
+except ImportError:
+    pass
+
 import re
 from datetime import datetime, timedelta, timezone
 from typing import List, Tuple, Optional
