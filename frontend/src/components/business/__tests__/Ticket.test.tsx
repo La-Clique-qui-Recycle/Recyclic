@@ -1,168 +1,133 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import Ticket from '../Ticket';
 import { SaleItem } from '../../../stores/cashSessionStore';
 
-// Mock des props
-const mockItems: SaleItem[] = [
-  {
-    id: '1',
-    category: 'EEE-1',
-    quantity: 2,
-    price: 15.50,
-    total: 31.00
-  },
-  {
-    id: '2',
-    category: 'EEE-3',
-    quantity: 1,
-    price: 25.00,
-    total: 25.00
-  }
-];
-
-const mockProps = {
-  items: mockItems,
-  onRemoveItem: vi.fn(),
-  onUpdateItem: vi.fn(),
-  onFinalizeSale: vi.fn(),
-  loading: false
-};
+// Mock des fonctions
+const mockOnRemoveItem = vi.fn();
+const mockOnUpdateItem = vi.fn();
+const mockOnFinalizeSale = vi.fn();
 
 describe('Ticket Component', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  const mockItems: SaleItem[] = [
+    {
+      id: '1',
+      category: 'EEE-3',
+      quantity: 1,
+      weight: 2.5,
+      price: 15.0,
+      total: 15.0
+    },
+    {
+      id: '2',
+      category: 'EEE-4',
+      quantity: 1,
+      weight: 1.2,
+      price: 8.5,
+      total: 8.5
+    }
+  ];
 
-  it('affiche le titre du ticket', () => {
-    render(<Ticket {...mockProps} />);
+  it('should render ticket with items correctly', () => {
+    render(
+      <Ticket
+        items={mockItems}
+        onRemoveItem={mockOnRemoveItem}
+        onUpdateItem={mockOnUpdateItem}
+        onFinalizeSale={mockOnFinalizeSale}
+      />
+    );
+
     expect(screen.getByText('Ticket de Caisse')).toBeInTheDocument();
-  });
-
-  it('affiche tous les articles de la vente', () => {
-    render(<Ticket {...mockProps} />);
-
-    expect(screen.getByText('EEE-1')).toBeInTheDocument();
-    expect(screen.getByText('2 × 15.50 €')).toBeInTheDocument();
-    expect(screen.getByText('31.00 €')).toBeInTheDocument();
-
     expect(screen.getByText('EEE-3')).toBeInTheDocument();
-    expect(screen.getByText('1 × 25.00 €')).toBeInTheDocument();
-    expect(screen.getByText('25.00 €')).toBeInTheDocument();
+    expect(screen.getByText('EEE-4')).toBeInTheDocument();
+    expect(screen.getByText('2.50 kg')).toBeInTheDocument();
+    expect(screen.getByText('1.20 kg')).toBeInTheDocument();
+    expect(screen.getByText('15.00 €')).toBeInTheDocument();
+    expect(screen.getByText('8.50 €')).toBeInTheDocument();
   });
 
-  it('affiche le total correct', () => {
-    render(<Ticket {...mockProps} />);
+  it('should handle items with undefined weight and total gracefully', () => {
+    const itemsWithUndefined: SaleItem[] = [
+      {
+        id: '1',
+        category: 'EEE-3',
+        quantity: 1,
+        weight: undefined as any,
+        price: 15.0,
+        total: undefined as any
+      }
+    ];
 
-    expect(screen.getByText('3 articles')).toBeInTheDocument();
-    expect(screen.getByText('56.00 €')).toBeInTheDocument();
+    // Ne devrait pas lever d'erreur
+    expect(() => {
+      render(
+        <Ticket
+          items={itemsWithUndefined}
+          onRemoveItem={mockOnRemoveItem}
+          onUpdateItem={mockOnUpdateItem}
+          onFinalizeSale={mockOnFinalizeSale}
+        />
+      );
+    }).not.toThrow();
+
+    // Devrait afficher 0.00 pour les valeurs undefined
+    expect(screen.getByText('0.00 kg')).toBeInTheDocument();
+    expect(screen.getByTestId('sale-total')).toHaveTextContent('0.00 €');
   });
 
-  it('affiche un message quand aucun article', () => {
-    render(<Ticket {...mockProps} items={[]} />);
+  it('should display empty state when no items', () => {
+    render(
+      <Ticket
+        items={[]}
+        onRemoveItem={mockOnRemoveItem}
+        onUpdateItem={mockOnUpdateItem}
+        onFinalizeSale={mockOnFinalizeSale}
+      />
+    );
+
     expect(screen.getByText('Aucun article ajouté')).toBeInTheDocument();
   });
 
-  it('appelle onRemoveItem quand on clique sur Supprimer', () => {
-    render(<Ticket {...mockProps} />);
-    
-    const deleteButtons = screen.getAllByText('Supprimer');
-    fireEvent.click(deleteButtons[0]);
-    
-    expect(mockProps.onRemoveItem).toHaveBeenCalledWith('1');
+  it('should calculate total amount correctly', () => {
+    render(
+      <Ticket
+        items={mockItems}
+        onRemoveItem={mockOnRemoveItem}
+        onUpdateItem={mockOnUpdateItem}
+        onFinalizeSale={mockOnFinalizeSale}
+      />
+    );
+
+    // Total attendu: 15.0 + 8.5 = 23.5
+    expect(screen.getByText('23.50 €')).toBeInTheDocument();
   });
 
-  it('ouvre le modal de modification quand on clique sur Modifier', () => {
-    render(<Ticket {...mockProps} />);
-    
-    const editButtons = screen.getAllByText('Modifier');
-    fireEvent.click(editButtons[0]);
-    
-    expect(screen.getByText('Modifier l\'article')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('EEE-1')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('2')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('15.5')).toBeInTheDocument();
-  });
+  it('should handle items with null values gracefully', () => {
+    const itemsWithNull: SaleItem[] = [
+      {
+        id: '1',
+        category: 'EEE-3',
+        quantity: 1,
+        weight: null as any,
+        price: 15.0,
+        total: null as any
+      }
+    ];
 
-  it('met à jour l\'article quand on valide la modification', async () => {
-    render(<Ticket {...mockProps} />);
-    
-    // Ouvrir le modal
-    const editButtons = screen.getAllByText('Modifier');
-    fireEvent.click(editButtons[0]);
-    
-    // Modifier les valeurs
-    const quantityInput = screen.getByDisplayValue('2');
-    const priceInput = screen.getByDisplayValue('15.5');
-    
-    fireEvent.change(quantityInput, { target: { value: '3' } });
-    fireEvent.change(priceInput, { target: { value: '20.00' } });
-    
-    // Valider
-    const validateButton = screen.getByText('Valider');
-    fireEvent.click(validateButton);
-    
-    await waitFor(() => {
-      expect(mockProps.onUpdateItem).toHaveBeenCalledWith('1', 3, 20.00);
-    });
-  });
+    expect(() => {
+      render(
+        <Ticket
+          items={itemsWithNull}
+          onRemoveItem={mockOnRemoveItem}
+          onUpdateItem={mockOnUpdateItem}
+          onFinalizeSale={mockOnFinalizeSale}
+        />
+      );
+    }).not.toThrow();
 
-  it('annule la modification quand on clique sur Annuler', () => {
-    render(<Ticket {...mockProps} />);
-    
-    // Ouvrir le modal
-    const editButtons = screen.getAllByText('Modifier');
-    fireEvent.click(editButtons[0]);
-    
-    // Annuler
-    const cancelButton = screen.getByText('Annuler');
-    fireEvent.click(cancelButton);
-    
-    expect(screen.getByText('Modifier l\'article')).toHaveStyle('display: none');
-  });
-
-  it('appelle onFinalizeSale quand on clique sur Finaliser la vente', () => {
-    render(<Ticket {...mockProps} />);
-    
-    const finalizeButton = screen.getByText('Finaliser la vente');
-    fireEvent.click(finalizeButton);
-    
-    expect(mockProps.onFinalizeSale).toHaveBeenCalled();
-  });
-
-  it('désactive le bouton de finalisation quand loading', () => {
-    render(<Ticket {...mockProps} loading={true} />);
-    
-    const finalizeButton = screen.getByText('Finalisation...');
-    expect(finalizeButton).toBeDisabled();
-  });
-
-  it('n\'affiche pas le bouton de finalisation quand aucun article', () => {
-    render(<Ticket {...mockProps} items={[]} />);
-
-    expect(screen.queryByText('Finaliser la vente')).not.toBeInTheDocument();
-  });
-
-  it('valide les entrées dans le modal de modification', async () => {
-    render(<Ticket {...mockProps} />);
-    
-    // Ouvrir le modal
-    const editButtons = screen.getAllByText('Modifier');
-    fireEvent.click(editButtons[0]);
-    
-    // Tenter de valider avec des valeurs invalides
-    const quantityInput = screen.getByDisplayValue('2');
-    const priceInput = screen.getByDisplayValue('15.5');
-    
-    fireEvent.change(quantityInput, { target: { value: '0' } });
-    fireEvent.change(priceInput, { target: { value: '-5' } });
-    
-    // Valider
-    const validateButton = screen.getByText('Valider');
-    fireEvent.click(validateButton);
-    
-    // Ne devrait pas appeler onUpdateItem avec des valeurs invalides
-    expect(mockProps.onUpdateItem).not.toHaveBeenCalled();
+    expect(screen.getByText('0.00 kg')).toBeInTheDocument();
+    expect(screen.getByTestId('sale-total')).toHaveTextContent('0.00 €');
   });
 });

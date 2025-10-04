@@ -35,6 +35,7 @@ from recyclic_api.models.cash_register import CashRegister
 from recyclic_api.models.sync_log import SyncLog
 from recyclic_api.models.registration_request import RegistrationRequest
 from recyclic_api.models.user_status_history import UserStatusHistory
+from recyclic_api.models.category import Category
 from recyclic_api.core.security import create_access_token, hash_password
 
 # Configuration de la base de données de test
@@ -62,6 +63,7 @@ def create_tables_if_not_exist():
 def db_engine():
     """Crée les tables une seule fois pour toute la session de test."""
     print("🔧 (tests) Moteur de base de données de test prêt.")
+    create_tables_if_not_exist()
     return engine
 
 @pytest.fixture(scope="function", autouse=True)

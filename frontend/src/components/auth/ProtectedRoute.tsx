@@ -5,6 +5,7 @@ import { useAuthStore } from '../../stores/authStore';
 interface ProtectedRouteProps {
   children: React.ReactElement;
   requiredRole?: 'user' | 'admin' | 'super-admin' | 'manager' | 'cashier';
+  requiredRoles?: Array<'user' | 'admin' | 'super-admin' | 'manager' | 'cashier'>;
   adminOnly?: boolean;
   adminPathFallback?: string;
 }
@@ -12,6 +13,7 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({
   children,
   requiredRole,
+  requiredRoles,
   adminOnly = false,
   adminPathFallback = '/'
 }: ProtectedRouteProps): JSX.Element {
@@ -32,6 +34,16 @@ export default function ProtectedRoute({
     const userRole = currentUser?.role;
     const hasRequiredRole = userRole === requiredRole ||
                            (requiredRole === 'cashier' && (userRole === 'admin' || userRole === 'super-admin'));
+
+    if (!hasRequiredRole) {
+      return <Navigate to={adminPathFallback} replace />;
+    }
+  }
+
+  if (requiredRoles) {
+    const userRole = currentUser?.role;
+    const hasRequiredRole = requiredRoles.includes(userRole as any) ||
+                           (requiredRoles.includes('cashier') && (userRole === 'admin' || userRole === 'super-admin'));
 
     if (!hasRequiredRole) {
       return <Navigate to={adminPathFallback} replace />;

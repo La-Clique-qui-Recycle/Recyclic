@@ -1,0 +1,32 @@
+schema: 1
+story: 'bug-b10-save-sale'
+story_title: 'Réparer l\'Enregistrement des Ventes'
+gate: PASS
+status_reason: 'Persistance confirmée; feedback utilisateur ajouté; test d\'intégration backend vert'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-03T00:00:00Z'
+
+quality_score: 93
+risk_level: 'LOW'
+complexity: 'LOW'
+
+requirements_met:
+  - 'POST /api/v1/sales déclenché au clic Finaliser (AC1)'
+  - 'Vente + items persistés en base (AC2)'
+  - 'Vérification DB via test d\'intégration (AC3)'
+
+artefacts:
+  frontend:
+    sale_page: 'frontend/src/pages/CashRegister/Sale.tsx (feedback UI)'
+    store: 'frontend/src/stores/cashSessionStore.ts (submitSale + logs)'
+  backend:
+    endpoint: 'api/src/recyclic_api/api/api_v1/endpoints/sales.py (36–79)'
+    tests: 'api/tests/test_sale_persistence.py (2 passed)'
+
+recommendations:
+  - 'Ajouter un test UI simulant le clic Finaliser et le retour succès/erreur'
+
+gate_decision: 'PASS'
+decision_reason: 'ACs satisfaits, non-régression garantie par tests'
+next_steps: 'Ready for Done'
+

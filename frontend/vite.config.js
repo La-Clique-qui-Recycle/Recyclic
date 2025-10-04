@@ -5,6 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+    cors: true,
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws',
+    },
     headers: {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
@@ -15,7 +22,6 @@ export default defineConfig({
         target: 'http://api:8000',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
         // Configuration explicite pour les requêtes POST et autres méthodes
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {

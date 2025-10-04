@@ -1,0 +1,17 @@
+# Dockerfile de développement pour le frontend React avec Vite
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances et les installer
+COPY package*.json ./
+RUN npm install
+
+# Copier le reste du code source
+COPY . .
+
+# Exposer le port du serveur de développement Vite
+EXPOSE 5173
+
+# Démarrer le serveur de développement
+CMD ["npm", "run", "dev"]

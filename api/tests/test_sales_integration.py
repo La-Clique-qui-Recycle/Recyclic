@@ -100,17 +100,19 @@ class TestSalesIntegration:
                 {
                     "category": "EEE-1",
                     "quantity": 2,
+                    "weight": 1.5,  # Poids en kg
                     "unit_price": 10.0,
-                    "total_price": 20.0
+                    "total_price": 10.0  # total_price = unit_price (pas de multiplication)
                 },
                 {
-                    "category": "EEE-2", 
+                    "category": "EEE-2",
                     "quantity": 1,
+                    "weight": 0.75,  # Poids en kg
                     "unit_price": 5.50,
                     "total_price": 5.50
                 }
             ],
-            "total_amount": 25.50
+            "total_amount": 15.50  # Mis à jour car total = 10.0 + 5.50
         }
 
         # Créer la vente
@@ -125,12 +127,13 @@ class TestSalesIntegration:
         
         # Vérifications
         assert data["cash_session_id"] == str(test_cash_session["id"])
-        assert data["total_amount"] == 25.50
+        assert data["total_amount"] == 15.50
         assert "id" in data
         assert "created_at" in data
         assert len(data["items"]) == 2
         assert data["items"][0]["category"] == "EEE-1"
         assert data["items"][0]["quantity"] == 2
+        assert data["items"][0]["weight"] == 1.5
 
     def test_create_sale_unauthorized(self, client: TestClient, test_cash_session):
         """Test de création d'une vente sans authentification"""
@@ -140,6 +143,7 @@ class TestSalesIntegration:
                 {
                     "category": "EEE-1",
                     "quantity": 1,
+                    "weight": 1.0,
                     "unit_price": 10.0,
                     "total_price": 10.0
                 }
@@ -158,6 +162,7 @@ class TestSalesIntegration:
                 {
                     "category": "EEE-1",
                     "quantity": -1,  # Quantité négative
+                    "weight": -1.0,  # Poids négatif
                     "unit_price": 10.0,
                     "total_price": -10.0
                 }

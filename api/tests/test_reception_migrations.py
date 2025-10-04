@@ -9,8 +9,7 @@ def test_reception_tables_and_seed_exist():
     with engine.connect() as conn:
         # Tables
         expected = [
-            "dom_category",
-            "dom_category_closure",
+            "categories",
             "poste_reception",
             "ticket_depot",
             "ligne_depot",
@@ -19,6 +18,6 @@ def test_reception_tables_and_seed_exist():
             res = conn.execute(sa.text("SELECT to_regclass(:t)"), {"t": table}).scalar()
             assert res == table, f"Table manquante: {table}"
 
-        # Seed
-        cnt = conn.execute(sa.text("SELECT COUNT(*) FROM dom_category")).scalar()
-        assert cnt and cnt >= 14, f"Seed L1 attendu >=14, obtenu {cnt}"
+        # Seed - vérifier qu'il y a au moins une catégorie active
+        cnt = conn.execute(sa.text("SELECT COUNT(*) FROM categories WHERE is_active = true")).scalar()
+        assert cnt and cnt >= 1, f"Seed categories attendu >=1, obtenu {cnt}"

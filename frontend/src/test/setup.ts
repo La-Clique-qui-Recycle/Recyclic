@@ -21,6 +21,8 @@ vi.mock('react-router-dom', async () => {
   };
 })
 
+// (pas de mock de react-dom/client; utiliser le render testing-library avec container explicite dans test-utils)
+
 // Mock pour lucide-react
 vi.mock('lucide-react', () => ({
   Recycle: () => React.createElement('div', { 'data-testid': 'recycle-icon' }, 'Recycle'),
@@ -45,6 +47,10 @@ vi.mock('lucide-react', () => ({
   // Ajouts nécessaires pour les composants qui utilisent Plus et X
   Plus: () => React.createElement('div', { 'data-testid': 'plus-icon' }, 'Plus'),
   X: () => React.createElement('div', { 'data-testid': 'x-icon' }, 'X'),
+  Loader2: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Loader2'
+  }, 'Loader2'),
 }))
 
 // Mock pour styled-components - approche avec styles simulés

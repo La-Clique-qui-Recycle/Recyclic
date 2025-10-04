@@ -21,15 +21,13 @@ class LigneDepot(Base):
 
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     ticket_id = Column(PGUUID(as_uuid=True), ForeignKey("ticket_depot.id"), nullable=False)
-    dom_category_id = Column(PGUUID(as_uuid=True), ForeignKey("dom_category.id"), nullable=False)
+    category_id = Column(PGUUID(as_uuid=True), ForeignKey("categories.id"), nullable=False)
     poids_kg = Column(Numeric(8, 3), nullable=False)
     destination = Column(SAEnum(Destination, name="destinationenum"), nullable=False)
     notes = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     ticket = relationship("TicketDepot", back_populates="lignes")
-    dom_category = relationship("DomCategory")
+    category = relationship("Category")
 
 

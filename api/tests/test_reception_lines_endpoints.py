@@ -15,7 +15,7 @@ def test_lines_crud_and_rules(admin_client):
     assert r.status_code == 200
     ticket_id = r.json()["id"]
 
-    # 3) Récupérer une dom_category existante via SQL direct fixture util (fallback minimal)
+    # 3) Récupérer une catégorie existante via SQL direct fixture util (fallback minimal)
     # On utilise un endpoint existant si disponible plus tard; ici test DB minimaliste dans d'autres tests
     # Pour rester simple ici, on appelle la base directement via un helper fourni par la fixture admin_client
     # Si la fixture n'expose pas de connexion, on skip si 404
@@ -26,15 +26,15 @@ def test_lines_crud_and_rules(admin_client):
     )
     engine = create_engine(db_url)
     with engine.begin() as conn:
-        dom_category_id = conn.execute(text("SELECT id FROM dom_category ORDER BY label LIMIT 1")).scalar()
-    assert dom_category_id, "Aucune dom_category trouvée pour le test"
+        category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
+    assert category_id, "Aucune catégorie active trouvée pour le test"
 
     # 4) Ajouter une ligne valide
     r = admin_client.post(
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": str(dom_category_id),
+            "category_id": str(category_id),
             "poids_kg": "1.250",
             "destination": "RECYCLAGE",
         },
@@ -49,7 +49,7 @@ def test_lines_crud_and_rules(admin_client):
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": str(dom_category_id),
+            "category_id": str(category_id),
             "poids_kg": "0",
             "destination": "MAGASIN",
         },
@@ -75,7 +75,7 @@ def test_lines_crud_and_rules(admin_client):
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": str(dom_category_id),
+            "category_id": str(category_id),
             "poids_kg": "1.000",
             "destination": "RECYCLAGE",
         },
@@ -108,14 +108,14 @@ def test_delete_line_when_ticket_open(admin_client):
     )
     engine = create_engine(db_url)
     with engine.begin() as conn:
-        dom_category_id = conn.execute(text("SELECT id FROM dom_category ORDER BY label LIMIT 1")).scalar()
-    assert dom_category_id
+        category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
+    assert category_id
 
     r = admin_client.post(
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": str(dom_category_id),
+            "category_id": str(category_id),
             "poids_kg": "3.333",
             "destination": "MAGASIN",
         },
@@ -129,8 +129,8 @@ def test_delete_line_when_ticket_open(admin_client):
     assert r.json()["status"] == "deleted"
 
 
-def test_404_invalid_dom_category_id(admin_client):
-    """Test 404 pour dom_category_id invalide (POST/PUT)."""
+def test_404_invalid_category_id(admin_client):
+    """Test 404 pour category_id invalide (POST/PUT)."""
     # Setup poste + ticket
     r = admin_client.post("/api/v1/reception/postes/open")
     assert r.status_code == 200
@@ -139,13 +139,13 @@ def test_404_invalid_dom_category_id(admin_client):
     assert r.status_code == 200
     ticket_id = r.json()["id"]
 
-    # POST avec dom_category_id invalide → 404
+    # POST avec category_id invalide → 404
     invalid_category_id = "00000000-0000-0000-0000-000000000000"
     r = admin_client.post(
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": invalid_category_id,
+            "category_id": invalid_category_id,
             "poids_kg": "1.000",
             "destination": "DECHETERIE",
         },
@@ -160,14 +160,14 @@ def test_404_invalid_dom_category_id(admin_client):
     )
     engine = create_engine(db_url)
     with engine.begin() as conn:
-        dom_category_id = conn.execute(text("SELECT id FROM dom_category ORDER BY label LIMIT 1")).scalar()
-    assert dom_category_id
+        category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
+    assert category_id
 
     r = admin_client.post(
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": str(dom_category_id),
+            "category_id": str(category_id),
             "poids_kg": "1.000",
             "destination": "DECHETERIE",
         },
@@ -175,16 +175,16 @@ def test_404_invalid_dom_category_id(admin_client):
     assert r.status_code == 200
     ligne_id = r.json()["id"]
 
-    # PUT avec dom_category_id invalide → 404
+    # PUT avec category_id invalide → 404
     r = admin_client.put(
         f"/api/v1/reception/lignes/{ligne_id}",
-        json={"dom_category_id": invalid_category_id},
+        json={"category_id": invalid_category_id},
     )
     assert r.status_code == 404
 
 
-def test_update_notes_and_dom_category_id_happy_path(admin_client):
-    """Test update notes et dom_category_id (chemin heureux)."""
+def test_update_notes_and_category_id_happy_path(admin_client):
+    """Test update notes et category_id (chemin heureux)."""
     # Setup poste + ticket
     r = admin_client.post("/api/v1/reception/postes/open")
     assert r.status_code == 200
@@ -201,7 +201,7 @@ def test_update_notes_and_dom_category_id_happy_path(admin_client):
     )
     engine = create_engine(db_url)
     with engine.begin() as conn:
-        categories = conn.execute(text("SELECT id FROM dom_category ORDER BY label LIMIT 2")).fetchall()
+        categories = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 2")).fetchall()
     assert len(categories) >= 2
     category1_id = str(categories[0][0])
     category2_id = str(categories[1][0])
@@ -211,7 +211,7 @@ def test_update_notes_and_dom_category_id_happy_path(admin_client):
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": category1_id,
+            "category_id": category1_id,
             "poids_kg": "1.000",
             "destination": "DECHETERIE",
             "notes": "Note initiale",
@@ -220,17 +220,17 @@ def test_update_notes_and_dom_category_id_happy_path(admin_client):
     assert r.status_code == 200
     ligne_id = r.json()["id"]
 
-    # Update notes et dom_category_id
+    # Update notes et category_id
     r = admin_client.put(
         f"/api/v1/reception/lignes/{ligne_id}",
         json={
-            "dom_category_id": category2_id,
+            "category_id": category2_id,
             "notes": "Note mise à jour",
         },
     )
     assert r.status_code == 200
     data = r.json()
-    assert data["dom_category_id"] == category2_id
+    assert data["category_id"] == category2_id
     assert data["notes"] == "Note mise à jour"
     assert data["poids_kg"] == "1.000"  # Inchangé
     assert data["destination"] == "DECHETERIE"  # Inchangé
@@ -254,15 +254,15 @@ def test_invalid_destination_enum_values(admin_client):
     )
     engine = create_engine(db_url)
     with engine.begin() as conn:
-        dom_category_id = conn.execute(text("SELECT id FROM dom_category ORDER BY label LIMIT 1")).scalar()
-    assert dom_category_id
+        category_id = conn.execute(text("SELECT id FROM categories WHERE is_active = true ORDER BY name LIMIT 1")).scalar()
+    assert category_id
 
     # Test valeur ENUM invalide → 422
     r = admin_client.post(
         "/api/v1/reception/lignes",
         json={
             "ticket_id": ticket_id,
-            "dom_category_id": str(dom_category_id),
+            "category_id": str(category_id),
             "poids_kg": "1.000",
             "destination": "INVALID_DESTINATION",
         },

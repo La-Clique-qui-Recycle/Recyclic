@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import styled from 'styled-components'
+import { useCategoryStore } from '../../stores/categoryStore'
 
 const CategoryContainer = styled.div`
   display: grid;
@@ -15,10 +16,21 @@ const CategoryButton = styled.button<{ $selected?: boolean }>`
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  
+  text-align: left;
+
   &:hover {
     border-color: #2c5530;
     background: #f0f8f0;
+  }
+
+  &:focus {
+    outline: 2px solid #2c5530;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `
 
@@ -37,32 +49,51 @@ interface CategorySelectorProps {
   selectedCategory?: string
 }
 
-const EEE_CATEGORIES = [
-  { id: 'EEE-1', name: 'EEE-1', description: 'Gros électroménager' },
-  { id: 'EEE-2', name: 'EEE-2', description: 'Petit électroménager' },
-  { id: 'EEE-3', name: 'EEE-3', description: 'Informatique et télécommunications' },
-  { id: 'EEE-4', name: 'EEE-4', description: 'Matériel grand public' },
-  { id: 'EEE-5', name: 'EEE-5', description: 'Éclairage' },
-  { id: 'EEE-6', name: 'EEE-6', description: 'Outils électriques et électroniques' },
-  { id: 'EEE-7', name: 'EEE-7', description: 'Jouets et équipements de loisir' },
-  { id: 'EEE-8', name: 'EEE-8', description: 'Dispositifs médicaux' }
-]
-
-export const CategorySelector: React.FC<CategorySelectorProps> = ({ 
-  onSelect, 
-  selectedCategory 
+export const CategorySelector: React.FC<CategorySelectorProps> = ({
+  onSelect,
+  selectedCategory
 }) => {
+  const { 
+    activeCategories, 
+    loading, 
+    error, 
+    fetchCategories 
+  } = useCategoryStore()
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
+
+  if (loading) {
+    return (
+      <div role="status" aria-live="polite">
+        Chargement des catégories...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div role="alert" aria-live="assertive">
+        Erreur lors du chargement des catégories: {error}
+      </div>
+    )
+  }
+
   return (
-    <CategoryContainer>
-      {EEE_CATEGORIES.map((category) => (
+    <CategoryContainer role="group" aria-label="Sélection de catégorie">
+      {activeCategories.map((category) => (
         <CategoryButton
           key={category.id}
           $selected={selectedCategory === category.id}
           onClick={() => onSelect(category.id)}
           data-testid={`category-${category.id}`}
+          data-selected={selectedCategory === category.id ? 'true' : 'false'}
+          aria-pressed={selectedCategory === category.id}
+          aria-label={`Sélectionner la catégorie ${category.name}`}
         >
           <CategoryName>{category.name}</CategoryName>
-          <CategoryDescription>{category.description}</CategoryDescription>
+          <CategoryDescription>{category.id}</CategoryDescription>
         </CategoryButton>
       ))}
     </CategoryContainer>

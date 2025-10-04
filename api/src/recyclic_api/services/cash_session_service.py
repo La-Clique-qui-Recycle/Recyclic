@@ -88,6 +88,20 @@ class CashSessionService:
                 CashSession.status == CashSessionStatus.OPEN
             )
         ).first()
+
+    def get_open_session_by_register(self, register_id: str) -> Optional[CashSession]:
+        """Récupère la session ouverte pour un poste de caisse donné."""
+        rid = UUID(str(register_id)) if not isinstance(register_id, UUID) else register_id
+        return (
+            self.db.query(CashSession)
+            .filter(
+                and_(
+                    CashSession.register_id == rid,
+                    CashSession.status == CashSessionStatus.OPEN,
+                )
+            )
+            .first()
+        )
     
     def get_sessions_with_filters(self, filters: CashSessionFilters) -> Tuple[List[CashSession], int]:
         """Récupère les sessions avec filtres et pagination."""

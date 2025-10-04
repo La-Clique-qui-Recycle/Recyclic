@@ -93,11 +93,19 @@ services:
       - recyclic-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     environment:
       REACT_APP_API_URL: http://localhost:4433
+      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
     ports:
-      - "4444:3000"
+      - "4444:5173"
+    volumes:
+      # Mount source code for hot-reloading
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/vite.config.js:/app/vite.config.js
     depends_on:
       api:
         condition: service_healthy

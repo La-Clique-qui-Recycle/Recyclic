@@ -16,7 +16,7 @@ def test_alembic_downgrade_base_removes_tables():
 
 
 def test_seed_l1_categories_and_closure_depth0():
-    # TODO: implement query counts: dom_category = 14, closure depth=0 = 14
+    # TODO: implement query counts: categories = 14, closure depth=0 = 14
     assert True
 
 

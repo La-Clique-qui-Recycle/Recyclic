@@ -28,6 +28,7 @@ from recyclic_api.schemas.cash_session import (
     CashSessionStats
 )
 from recyclic_api.services.cash_session_service import CashSessionService
+from uuid import UUID
 
 router = APIRouter()
 
@@ -96,10 +97,9 @@ logger = logging.getLogger(__name__)
 async def create_cash_session(
     session_data: CashSessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
-    
     try:
         # Vérifier qu'il n'y a pas déjà une session ouverte pour cet opérateur
         existing_session = service.get_open_session_by_operator(session_data.operator_id)
@@ -116,7 +116,7 @@ async def create_cash_session(
                 status_code=400,
                 detail="Une session de caisse est déjà ouverte pour cet opérateur"
             )
-        
+
         # Créer la nouvelle session
         cash_session = service.create_session(
             operator_id=session_data.operator_id,
@@ -124,7 +124,7 @@ async def create_cash_session(
             initial_amount=session_data.initial_amount,
             register_id=session_data.register_id,
         )
-        
+
         # Log de l'ouverture de session
         log_cash_session_opening(
             operator_id=current_user.id,
@@ -133,9 +133,19 @@ async def create_cash_session(
             initial_amount=session_data.initial_amount,
             success=True
         )
-        
+
         return CashSessionResponse.model_validate(cash_session)
-        
+    except ValueError as e:
+        log_cash_session_opening(
+            operator_id=current_user.id,
+            operator_username=current_user.username or "Unknown",
+            session_id="",
+            initial_amount=session_data.initial_amount,
+            success=False,
+            error_message=str(e)
+        )
+        # Important: renvoyer un JSON cohérent
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         log_cash_session_opening(
             operator_id=current_user.id,
@@ -146,6 +156,24 @@ async def create_cash_session(
             error_message=str(e)
         )
         raise
+
+@router.get(
+    "/status/{register_id}",
+    summary="Statut de session pour un poste de caisse",
+    description="Retourne si une session est active pour le poste donné et l'ID de session le cas échéant.",
+    tags=["Sessions de Caisse"]
+)
+async def get_cash_session_status(
+    register_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    service = CashSessionService(db)
+    session = service.get_open_session_by_register(register_id)
+    return {
+        "is_active": session is not None,
+        "session_id": str(session.id) if session else None
+    }
 
 
 @router.get(
@@ -215,7 +243,7 @@ async def get_cash_sessions(
     date_from: Optional[datetime] = Query(None, description="Date de début (ISO 8601)"),
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     
@@ -242,7 +270,7 @@ async def get_cash_sessions(
 @router.get("/current", response_model=Optional[CashSessionResponse])
 async def get_current_cash_session(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté.
@@ -261,7 +289,7 @@ async def get_current_cash_session(
 async def get_cash_session(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Récupère une session de caisse par son ID.
@@ -273,7 +301,7 @@ async def get_cash_session(
         raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
     
     # Vérifier que l'utilisateur peut accéder à cette session
-    if (current_user.role == UserRole.CASHIER and 
+    if (current_user.role == UserRole.USER and 
         str(session.operator_id) != str(current_user.id)):
         raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
     
@@ -285,7 +313,7 @@ async def update_cash_session(
     session_id: str,
     session_update: CashSessionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Met à jour une session de caisse.
@@ -297,7 +325,7 @@ async def update_cash_session(
         raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
     
     # Vérifier que l'utilisateur peut modifier cette session
-    if (current_user.role == UserRole.CASHIER and 
+    if (current_user.role == UserRole.USER and 
         str(session.operator_id) != str(current_user.id)):
         raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
     
@@ -380,7 +408,7 @@ async def close_cash_session(
     session_id: str,
     close_data: CashSessionClose,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     
@@ -400,7 +428,7 @@ async def close_cash_session(
             raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
         
         # Vérifier que l'utilisateur peut fermer cette session
-        if (current_user.role == UserRole.CASHIER and 
+        if (current_user.role == UserRole.USER and 
             str(session.operator_id) != str(current_user.id)):
             log_cash_session_closing(
                 operator_id=current_user.id,

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 from uuid import UUID
 from recyclic_api.core.database import get_db
@@ -8,6 +9,7 @@ from typing import Optional
 from recyclic_api.core.security import verify_token
 from recyclic_api.models.sale import Sale
 from recyclic_api.models.sale_item import SaleItem
+from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.sale import SaleResponse, SaleCreate
 
@@ -39,20 +41,24 @@ async def create_sale(
     db: Session = Depends(get_db),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
 ):
+    """Create new sale with items and operator traceability"""
     # Enforce 401 when no Authorization header is provided
     if credentials is None:
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
 
-    # Validate token
+    # Validate token and extract user_id (operator)
     try:
         payload = verify_token(credentials.credentials)
         user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
     except Exception:
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
-    """Create new sale with items"""
-    # Create the sale
+
+    # Create the sale with operator_id for traceability
     db_sale = Sale(
         cash_session_id=sale_data.cash_session_id,
+        operator_id=user_id,  # Associate sale with current operator
         total_amount=sale_data.total_amount
     )
     db.add(db_sale)
@@ -64,11 +70,29 @@ async def create_sale(
             sale_id=db_sale.id,
             category=item_data.category,
             quantity=item_data.quantity,
+            weight=item_data.weight,  # Poids en kg avec décimales
             unit_price=item_data.unit_price,
-            total_price=item_data.total_price
+            total_price=item_data.total_price  # Note: total_price = unit_price (pas de multiplication)
         )
         db.add(db_item)
-    
+
+    # Commit to ensure the sale is in the database before querying
     db.commit()
+
+    # Update cash session counters
+    cash_session = db.query(CashSession).filter(CashSession.id == sale_data.cash_session_id).first()
+    if cash_session:
+        # Calculate total sales and items for this session (includes the sale we just created)
+        session_sales = db.query(
+            func.coalesce(func.sum(Sale.total_amount), 0).label('total_sales'),
+            func.count(Sale.id).label('total_items')
+        ).filter(Sale.cash_session_id == sale_data.cash_session_id).first()
+
+        # Update session with totals from all sales
+        cash_session.total_sales = float(session_sales.total_sales)
+        cash_session.total_items = session_sales.total_items
+        cash_session.current_amount = cash_session.initial_amount + cash_session.total_sales
+
+        db.commit()
     db.refresh(db_sale)
     return db_sale

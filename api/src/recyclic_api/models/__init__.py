@@ -12,12 +12,12 @@ from .registration_request import RegistrationRequest
 from .user_status_history import UserStatusHistory
 from .login_history import LoginHistory
 from .admin_setting import AdminSetting
-from .dom_category import DomCategory
-from .dom_category_closure import DomCategoryClosure
 from .poste_reception import PosteReception, PosteReceptionStatus
 from .ticket_depot import TicketDepot, TicketDepotStatus
 from .ligne_depot import LigneDepot
 from .ligne_depot import Destination
+from .category import Category
+from .setting import Setting
 
 __all__ = [
     "Base",
@@ -34,11 +34,11 @@ __all__ = [
     "UserStatusHistory",
     "LoginHistory",
     "AdminSetting",
-    "DomCategory",
-    "DomCategoryClosure",
     "PosteReception",
     "PosteReceptionStatus",
     "TicketDepot",
     "TicketDepotStatus",
     "LigneDepot",
+    "Category",
+    "Setting",
 ]

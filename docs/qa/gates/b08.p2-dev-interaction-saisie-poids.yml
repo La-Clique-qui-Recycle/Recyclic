@@ -1,0 +1,47 @@
+schema: 1
+story: "B08.P2"
+story_title: "Amélioration de l'Interaction de Saisie du Poids dans le Module de Réception"
+gate: PASS
+status_reason: "Masque 2 décimales conforme, support clavier, tests unitaires passants."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-01T17:35:00Z"
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+quality_score: 98
+expires: "2025-10-15T00:00:00Z"
+
+evidence:
+  tests_reviewed: 13
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Saisie contrôlée, aucune injection possible via champ poids."
+  performance:
+    status: PASS
+    notes: "Opérations légères sur buffer; aucun hot path."
+  reliability:
+    status: PASS
+    notes: "Tests unitaires couvrant masque et keypad."
+  maintainability:
+    status: PASS
+    notes: "Utilitaires dédiés; code clair et testé."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Documenter les touches non supportées dans onKeyDown"
+      refs: ["frontend/src/pages/Reception/TicketForm.tsx"]
+
+waiver: { active: false }

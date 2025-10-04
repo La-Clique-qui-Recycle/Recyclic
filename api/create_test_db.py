@@ -34,8 +34,6 @@ try:
     from recyclic_api.models.admin_setting import AdminSetting
 
     # Reception domain models to ensure tables are created in tests
-    from recyclic_api.models.dom_category import DomCategory
-    from recyclic_api.models.dom_category_closure import DomCategoryClosure
     from recyclic_api.models.poste_reception import PosteReception, PosteReceptionStatus
     from recyclic_api.models.ticket_depot import TicketDepot, TicketDepotStatus
     from recyclic_api.models.ligne_depot import LigneDepot

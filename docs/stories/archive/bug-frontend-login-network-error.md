@@ -2,7 +2,7 @@
 story_id: bug.login-network-error
 epic_id: auth-refactoring
 title: "Bug: L'appel de login échoue avec une Network Error (ERR_CONNECTION_REFUSED)"
-status: Ready
+status: Done
 priority: Critical
 ---
 

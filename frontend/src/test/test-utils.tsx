@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react'
-import { render, RenderOptions } from '@testing-library/react'
+import { render as rtlRender, RenderOptions } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 
@@ -30,7 +30,15 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
 const customRender = (
   ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options })
+) => {
+  let container = document.getElementById('root') as HTMLElement | null
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 'root'
+    document.body.appendChild(container)
+  }
+  return rtlRender(ui, { wrapper: AllTheProviders, container, legacyRoot: true as any, ...options })
+}
 
 // Utilitaire pour tester avec des routes spécifiques
 export const renderWithRouter = (ui: React.ReactElement, route = '/') =>

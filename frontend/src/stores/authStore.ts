@@ -12,6 +12,7 @@ export interface User {
   role: 'user' | 'admin' | 'super-admin' | 'manager' | 'cashier';
   status: 'pending' | 'approved' | 'rejected';
   is_active: boolean;
+  site_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -139,8 +140,8 @@ export const useAuthStore = create<AuthState>()(
         forgotPassword: async (email: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
-            const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, { email });
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`, { email });
 
             set({
               loading: false,
@@ -159,8 +160,8 @@ export const useAuthStore = create<AuthState>()(
         resetPassword: async (token: string, newPassword: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
-            const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/reset-password`, {
               token,
               new_password: newPassword
             });
@@ -206,7 +207,9 @@ export const useAuthStore = create<AuthState>()(
 
         isCashier: () => {
           const { currentUser } = get();
-          return currentUser?.role === 'cashier' || get().isAdmin();
+          return currentUser?.role === 'cashier' || 
+                 currentUser?.role === 'user' || 
+                 get().isAdmin();
         },
 
         canManageUsers: () => {

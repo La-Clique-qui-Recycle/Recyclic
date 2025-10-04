@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Calculator, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useCashSessionStore } from '../../stores/cashSessionStore';
 import CategorySelector from '../../components/business/CategorySelector';
 import Ticket from '../../components/business/Ticket';
+import {
+  applyDigit,
+  applyDecimalPoint,
+  clearWeight,
+  formatWeightDisplay,
+  parseWeight
+} from '../../utils/weightMask';
 
 const formatEu = (n: number) => `${n.toFixed(2)} €`;
 
@@ -15,28 +22,10 @@ const Container = styled.div`
   background: #f8f9fa;
 `;
 
-const Header = styled.div`
-  background: white;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid #ddd;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  color: #2c5530;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
 const CloseButton = styled.button`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   background: #d32f2f;
   color: white;
@@ -47,6 +36,7 @@ const CloseButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
+  width: 100%;
 
   &:hover {
     background: #b71c1c;
@@ -63,6 +53,7 @@ const Content = styled.div`
   display: flex;
   gap: 2rem;
   padding: 2rem;
+  overflow: auto;
 `;
 
 const LeftPanel = styled.div`
@@ -176,7 +167,7 @@ const ErrorMessage = styled.div`
 `;
 
 
-type Mode = 'category' | 'quantity' | 'price';
+type Mode = 'category' | 'weight' | 'price';
 
 const Sale: React.FC = () => {
   const navigate = useNavigate();
@@ -193,23 +184,23 @@ const Sale: React.FC = () => {
 
   const [currentMode, setCurrentMode] = useState<Mode>('category');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [quantity, setQuantity] = useState<string>('');
+  const [weight, setWeight] = useState<string>('');
   const [price, setPrice] = useState<string>('');
-  const [quantityError, setQuantityError] = useState<string>('');
+  const [weightError, setWeightError] = useState<string>('');
   const [priceError, setPriceError] = useState<string>('');
 
   // Validation functions
-  const validateQuantity = (value: string): boolean => {
+  const validateWeight = (value: string): boolean => {
     if (!value) {
-      setQuantityError('Quantité requise');
+      setWeightError('Poids requis');
       return false;
     }
-    const num = parseInt(value);
-    if (isNaN(num) || num < 1 || num > 999) {
-      setQuantityError('Quantité doit être entre 1 et 999');
+    const num = parseFloat(value);
+    if (isNaN(num) || num <= 0 || num > 9999.99) {
+      setWeightError('Poids doit être supérieur à 0 et inférieur à 9999.99 kg');
       return false;
     }
-    setQuantityError('');
+    setWeightError('');
     return true;
   };
 
@@ -227,11 +218,11 @@ const Sale: React.FC = () => {
     return true;
   };
 
-  const isQuantityValid = useMemo(() => {
-    if (!quantity) return false;
-    const num = parseInt(quantity);
-    return !isNaN(num) && num >= 1 && num <= 999;
-  }, [quantity]);
+  const isWeightValid = useMemo(() => {
+    if (!weight) return false;
+    const num = parseFloat(weight);
+    return !isNaN(num) && num > 0 && num <= 9999.99;
+  }, [weight]);
 
   const isPriceValid = useMemo(() => {
     if (!price) return false;
@@ -246,13 +237,10 @@ const Sale: React.FC = () => {
   }, [currentSession, navigate]);
 
   const handleNumberClick = (digit: string) => {
-    if (currentMode === 'quantity') {
-      const newValue = quantity + digit;
-      // Only allow digits for quantity
-      if (/^\d+$/.test(newValue) && parseInt(newValue) <= 999) {
-        setQuantity(newValue);
-        validateQuantity(newValue);
-      }
+    if (currentMode === 'weight') {
+      const newValue = applyDigit(weight, digit);
+      setWeight(newValue);
+      validateWeight(newValue);
     } else if (currentMode === 'price') {
       const newValue = price + digit;
       // Allow digits and one decimal point for price
@@ -263,10 +251,20 @@ const Sale: React.FC = () => {
     }
   };
 
+  const handleDecimalClick = () => {
+    if (currentMode === 'weight') {
+      const newValue = applyDecimalPoint(weight);
+      setWeight(newValue);
+    } else if (currentMode === 'price') {
+      const newValue = price.includes('.') ? price : price + '.';
+      setPrice(newValue);
+    }
+  };
+
   const handleClear = () => {
-    if (currentMode === 'quantity') {
-      setQuantity('');
-      setQuantityError('');
+    if (currentMode === 'weight') {
+      setWeight('');
+      setWeightError('');
     } else if (currentMode === 'price') {
       setPrice('');
       setPriceError('');
@@ -275,33 +273,35 @@ const Sale: React.FC = () => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    setCurrentMode('quantity');
+    setCurrentMode('weight');
   };
 
-  const handleQuantityConfirm = () => {
-    if (isQuantityValid) {
+  const handleWeightConfirm = () => {
+    if (isWeightValid) {
       setCurrentMode('price');
     }
   };
 
   const handlePriceConfirm = () => {
-    if (isPriceValid && isQuantityValid && selectedCategory) {
-      const numQuantity = parseInt(quantity);
+    if (isPriceValid && isWeightValid && selectedCategory) {
+      const numWeight = parseFloat(weight);
       const numPrice = parseFloat(price);
-      const total = numQuantity * numPrice;
+      // IMPORTANT: total_price = unit_price (pas de multiplication avec le poids)
+      const total = numPrice;
 
       addSaleItem({
         category: selectedCategory,
-        quantity: numQuantity,
+        quantity: 1,  // Valeur par défaut pour compatibilité
+        weight: numWeight,
         price: numPrice,
         total: total
       });
 
       // Reset for next item
       setSelectedCategory('');
-      setQuantity('');
+      setWeight('');
       setPrice('');
-      setQuantityError('');
+      setWeightError('');
       setPriceError('');
       setCurrentMode('category');
     }
@@ -311,7 +311,12 @@ const Sale: React.FC = () => {
     if (currentSaleItems.length > 0) {
       const success = await submitSale(currentSaleItems);
       if (success) {
-        // Sale completed successfully
+        // Sale completed successfully - show confirmation
+        alert('✅ Vente enregistrée avec succès !');
+      } else {
+        // Show error from store
+        const storeError = useCashSessionStore.getState().error;
+        alert(`❌ Erreur lors de l'enregistrement de la vente: ${storeError || 'Erreur inconnue'}`);
       }
     }
   };
@@ -334,38 +339,44 @@ const Sale: React.FC = () => {
           </ModeContent>
         );
 
-      case 'quantity':
+      case 'weight':
         return (
           <ModeContent>
-            <ModeTitle>Quantité</ModeTitle>
-            <DisplayValue $isValid={!quantityError} data-testid="quantity-input">
-              {quantity || '0'}
+            <ModeTitle>Poids (kg)</ModeTitle>
+            <DisplayValue $isValid={!weightError} data-testid="weight-input">
+              {formatWeightDisplay(weight) || '0'} kg
             </DisplayValue>
-            <ErrorMessage>{quantityError}</ErrorMessage>
+            <ErrorMessage>{weightError}</ErrorMessage>
             <NumpadContainer>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, 'OK'].map((item) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '.'].map((item) => (
                 <NumpadButton
                   key={item}
-                  disabled={item === 'OK' && !isQuantityValid}
-                  style={{
-                    opacity: item === 'OK' && !isQuantityValid ? 0.5 : 1,
-                    cursor: item === 'OK' && !isQuantityValid ? 'not-allowed' : 'pointer',
-                    background: item === 'OK' && !isQuantityValid ? '#ccc' : undefined
-                  }}
-                  data-isvalid={item === 'OK' ? 'true' : undefined}
                   onClick={() => {
                     if (item === 'C') {
                       handleClear();
-                    } else if (item === 'OK') {
-                      handleQuantityConfirm();
+                    } else if (item === '.') {
+                      handleDecimalClick();
                     } else {
                       handleNumberClick(item.toString());
                     }
                   }}
                 >
-                  {item === 'OK' ? 'Valider' : item}
+                  {item}
                 </NumpadButton>
               ))}
+              <NumpadButton
+                disabled={!isWeightValid}
+                style={{
+                  opacity: !isWeightValid ? 0.5 : 1,
+                  cursor: !isWeightValid ? 'not-allowed' : 'pointer',
+                  gridColumn: 'span 3'
+                }}
+                data-testid="validate-weight-button"
+                data-isvalid={String(!!isWeightValid)}
+                onClick={handleWeightConfirm}
+              >
+                Valider
+              </NumpadButton>
             </NumpadContainer>
           </ModeContent>
         );
@@ -421,17 +432,6 @@ const Sale: React.FC = () => {
 
   return (
     <Container>
-      <Header>
-        <Title>
-          <Calculator size={24} />
-          Interface de Vente
-        </Title>
-        <CloseButton onClick={handleCloseSession}>
-          <LogOut size={20} />
-          Fermer la Session
-        </CloseButton>
-      </Header>
-
       <Content>
         <LeftPanel>
           <div>
@@ -444,14 +444,14 @@ const Sale: React.FC = () => {
                 Catégorie
               </ModeButton>
               <ModeButton
-                $active={currentMode === 'quantity'}
+                $active={currentMode === 'weight'}
                 disabled={!selectedCategory}
               >
-                Quantité
+                Poids
               </ModeButton>
               <ModeButton
                 $active={currentMode === 'price'}
-                disabled={!quantity}
+                disabled={!weight}
               >
                 Prix
               </ModeButton>
@@ -469,6 +469,10 @@ const Sale: React.FC = () => {
             onFinalizeSale={handleFinalizeSale}
             loading={loading}
           />
+          <CloseButton onClick={handleCloseSession}>
+            <LogOut size={20} />
+            Fermer la Session
+          </CloseButton>
         </RightPanel>
       </Content>
     </Container>

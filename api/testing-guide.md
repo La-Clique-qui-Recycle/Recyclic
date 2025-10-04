@@ -116,6 +116,34 @@ Le fichier `api/tests/conftest.py` est le cœur de notre configuration de test. 
 
 4.  **Authentification :** Pour tester un endpoint sécurisé, utilisez une fixture qui fournit un client avec un token JWT valide (voir `async_client` dans `conftest.py` comme exemple).
 
+5.  **Création d'utilisateurs de test :** Lors de la création d'utilisateurs de test, il est **obligatoire** de fournir un `hashed_password` car la colonne est non-nullable.
+
+    **❌ Incorrect :**
+    ```python
+    user = User(
+        id=uuid4(),
+        username="test@example.com",
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE
+    )
+    # Erreur : hashed_password est requis
+    ```
+
+    **✅ Correct :**
+    ```python
+    from recyclic_api.core.security import hash_password
+
+    user = User(
+        id=uuid4(),
+        username="test@example.com",
+        hashed_password=hash_password("testpassword"),
+        role=UserRole.USER,
+        status=UserStatus.ACTIVE
+    )
+    ```
+
+    **Note :** La fonction de hachage s'appelle `hash_password`, pas `get_password_hash`.
+
 ---
 
 ## 3. Validation de Contrat API avec OpenAPI

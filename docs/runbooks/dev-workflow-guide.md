@@ -83,8 +83,12 @@ docker build -t recyclic-api:v1.2.3 .
 
 ## 🛠️ **Comment éviter ce problème à l'avenir ?**
 
-### 1. **Toujours utiliser --no-cache en développement**
+### 1. **Utiliser le cache Docker intelligemment**
 ```bash
+# Pour les modifications de code (rapide)
+docker-compose build api
+
+# Pour les changements de dépendances (complet)
 docker-compose build --no-cache api
 ```
 
@@ -138,7 +142,8 @@ hexdump -C .env | head -1
 ## 📋 **Résumé des bonnes pratiques**
 
 ### **Développement :**
-- Utiliser `--no-cache` pour les reconstructions
+- Utiliser le cache Docker (`docker-compose build api`) pour les modifications de code
+- Utiliser `--no-cache` seulement pour les changements de dépendances
 - Tester avec montage de volume pour le développement rapide
 - Vérifier que les modifications sont dans le conteneur
 

@@ -15,6 +15,9 @@ from .endpoints import (
     admin_settings_router as admin_settings,
     dashboard_router as dashboard,
     reception_router as reception,
+    stats_router as stats,
+    categories_router as categories,
+    settings_router as settings,
 )
 
 api_router = APIRouter()
@@ -35,5 +38,8 @@ api_router.include_router(reports, prefix="/admin/reports", tags=["admin", "repo
 api_router.include_router(admin_settings, prefix="/admin/settings", tags=["admin", "settings"])
 api_router.include_router(dashboard, prefix="/admin/dashboard", tags=["admin", "dashboard"])
 api_router.include_router(reception, prefix="/reception", tags=["reception"])
+api_router.include_router(stats, prefix="/stats", tags=["stats"])
+api_router.include_router(categories, prefix="/categories", tags=["categories"])
+api_router.include_router(settings, prefix="/settings", tags=["settings"])
 
 

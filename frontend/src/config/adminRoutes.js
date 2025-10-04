@@ -1,4 +1,4 @@
-import { Users, Monitor, MapPin, Home, BarChart3 } from 'lucide-react';
+import { Users, Monitor, MapPin, Home, BarChart3, TrendingUp, Tags } from 'lucide-react';
 
 /**
  * Configuration centralisée des routes d'administration
@@ -10,7 +10,10 @@ export const ADMIN_ROUTES = {
   USERS: '/admin/users',
   CASH_REGISTERS: '/admin/cash-registers',
   SITES: '/admin/sites',
+  CATEGORIES: '/admin/categories',
   REPORTS: '/admin/reports',
+  RECEPTION_STATS: '/admin/reception-stats',
+  RECEPTION_REPORTS: '/admin/reception-reports',
   HEALTH: '/admin/health',
   SETTINGS: '/admin/settings'
 };
@@ -22,6 +25,18 @@ export const ADMIN_NAVIGATION_ITEMS = [
     icon: Home,
     exact: true,
     description: 'Vue d\'ensemble du système'
+  },
+  {
+    path: ADMIN_ROUTES.RECEPTION_STATS,
+    label: 'Statistiques Réception',
+    icon: TrendingUp,
+    description: 'Tableau de bord des réceptions'
+  },
+  {
+    path: ADMIN_ROUTES.RECEPTION_REPORTS,
+    label: 'Rapports Réception',
+    icon: BarChart3,
+    description: 'Rapports détaillés et export CSV'
   },
   {
     path: ADMIN_ROUTES.USERS,
@@ -40,6 +55,13 @@ export const ADMIN_NAVIGATION_ITEMS = [
     label: 'Sites',
     icon: MapPin,
     description: 'Gestion des sites et emplacements'
+  },
+  {
+    path: ADMIN_ROUTES.CATEGORIES,
+    label: 'Catégories',
+    icon: Tags,
+    description: 'Gestion des catégories de produits',
+    superAdminOnly: true
   }
 ];
 

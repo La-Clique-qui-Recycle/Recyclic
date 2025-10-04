@@ -12,6 +12,7 @@ from recyclic_api.schemas.cash_register import (
     CashRegisterUpdate,
 )
 from recyclic_api.services.cash_register_service import CashRegisterService
+from recyclic_api.services.cash_session_service import CashSessionService
 
 
 router = APIRouter()
@@ -24,17 +25,40 @@ async def list_cash_registers(
     site_id: Optional[str] = Query(None, description="Filtrer par site"),
     only_active: bool = Query(False, description="Ne retourner que les postes actifs"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashRegisterService(db)
     return service.list(skip=skip, limit=limit, site_id=site_id, only_active=only_active)
+
+
+@router.get("/status", summary="Statut des postes de caisse")
+async def list_cash_registers_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    """Retourne pour chaque poste de caisse: id, name, is_open (session en cours)."""
+    reg_service = CashRegisterService(db)
+    sess_service = CashSessionService(db)
+
+    registers = reg_service.list(skip=0, limit=200, site_id=None, only_active=True)
+
+    results = []
+    for r in registers:
+        is_open = bool(sess_service.get_open_session_by_register(str(r.id)))
+        results.append({
+            "id": str(r.id),
+            "name": r.name,
+            "is_open": is_open,
+        })
+
+    return {"data": results, "total": len(results)}
 
 
 @router.get("/{register_id}", response_model=CashRegisterResponse, summary="Récupérer un poste de caisse par ID")
 async def get_cash_register(
     register_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashRegisterService(db)
     register = service.get(register_id=register_id)
@@ -79,6 +103,5 @@ async def delete_cash_register(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Poste de caisse introuvable")
     service.delete(register=register)
     return None
-
 
 

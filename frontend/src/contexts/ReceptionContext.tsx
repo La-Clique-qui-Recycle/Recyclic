@@ -32,7 +32,7 @@ interface ReceptionContextType {
   error: string | null;
   openPoste: () => Promise<void>;
   closePoste: () => Promise<void>;
-  createTicket: () => Promise<void>;
+  createTicket: () => Promise<string>;
   closeTicket: (ticketId: string) => Promise<void>;
   addLineToTicket: (ticketId: string, line: Omit<TicketLine, 'id' | 'ticket_id'>) => Promise<void>;
   updateTicketLine: (ticketId: string, lineId: string, line: Partial<TicketLine>) => Promise<void>;
@@ -89,7 +89,10 @@ export const ReceptionProvider: React.FC<ReceptionProviderProps> = ({ children }
       setIsLoading(true);
       setError(null);
       const newTicket = await receptionService.createTicket(poste.id);
-      setCurrentTicket({ ...newTicket, lines: Array.isArray((newTicket as any).lines) ? (newTicket as any).lines : [] });
+      // newTicket is { id: string }
+      const ticketId = (newTicket as any).id;
+      setCurrentTicket({ id: ticketId, poste_id: poste.id, created_at: new Date().toISOString(), status: 'opened' as any, lines: [] } as any);
+      return ticketId;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la création du ticket');
       throw err;

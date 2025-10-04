@@ -13,12 +13,14 @@ class Sale(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     cash_session_id = Column(UUID(as_uuid=True), ForeignKey("cash_sessions.id"), nullable=False)
+    operator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     total_amount = Column(Float, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     cash_session = relationship("CashSession", back_populates="sales")
+    operator = relationship("User")
     items = relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
 
     def __repr__(self):

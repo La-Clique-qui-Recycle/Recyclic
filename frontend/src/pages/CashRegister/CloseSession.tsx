@@ -225,26 +225,38 @@ const LoadingSpinner = styled.div`
 
 export default function CloseSession() {
   const navigate = useNavigate();
-  const { currentSession, closeSession, loading, error } = useCashSessionStore();
-  
+  const { currentSession, closeSession, refreshSession, loading, error } = useCashSessionStore();
+
   const [actualAmount, setActualAmount] = useState<string>('');
   const [varianceComment, setVarianceComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
 
   // Calculer les montants
-  const theoreticalAmount = currentSession ? 
+  const theoreticalAmount = currentSession ?
     (currentSession.initial_amount || 0) + (currentSession.total_sales || 0) : 0;
-  
+
   const actualAmountNum = parseFloat(actualAmount) || 0;
   const variance = actualAmountNum - theoreticalAmount;
   const hasVariance = Math.abs(variance) > 0.01; // Tolérance de 1 centime
 
   useEffect(() => {
-    // Rediriger si pas de session active
-    if (!currentSession || currentSession.status !== 'open') {
+    // Charger les données actualisées de la session au montage
+    const loadSessionData = async () => {
+      setIsLoadingSession(true);
+      await refreshSession();
+      setIsLoadingSession(false);
+    };
+
+    loadSessionData();
+  }, [refreshSession]);
+
+  useEffect(() => {
+    // Rediriger si pas de session active (après le chargement initial)
+    if (!isLoadingSession && (!currentSession || currentSession.status !== 'open')) {
       navigate('/cash-register/session/open');
     }
-  }, [currentSession, navigate]);
+  }, [currentSession, navigate, isLoadingSession]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,8 +291,25 @@ export default function CloseSession() {
     navigate('/cash-register/sale');
   };
 
-  if (!currentSession || currentSession.status !== 'open') {
-    return null; // Redirection en cours
+  if (isLoadingSession || !currentSession || currentSession.status !== 'open') {
+    return (
+      <Container>
+        <Header>
+          <Title>
+            <Calculator size={24} />
+            Fermeture de Caisse
+          </Title>
+        </Header>
+        {isLoadingSession && (
+          <Card>
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <LoadingSpinner />
+              <p style={{ marginTop: '1rem' }}>Chargement des données de la session...</p>
+            </div>
+          </Card>
+        )}
+      </Container>
+    );
   }
 
   return (

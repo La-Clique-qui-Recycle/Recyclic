@@ -12,7 +12,9 @@ from recyclic_api.core.security import create_access_token, verify_password, has
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse
+from recyclic_api.schemas.pin import PinAuthRequest, PinAuthResponse
 from recyclic_api.utils.auth_metrics import auth_metrics
+from recyclic_api.core.uuid_validation import validate_and_convert_uuid
 
 router = APIRouter(tags=["auth"])
 
@@ -270,5 +272,90 @@ async def reset_password(payload: ResetPasswordRequest, db: Session = Depends(ge
     db.commit()
 
     return ResetPasswordResponse(message="Mot de passe réinitialisé avec succès.")
+
+
+@router.post("/pin", response_model=PinAuthResponse)
+@conditional_rate_limit("5/minute")
+async def authenticate_with_pin(
+    request: Request,
+    payload: PinAuthRequest,
+    db: Session = Depends(get_db)
+) -> PinAuthResponse:
+    """Authentifie un utilisateur via son ID et PIN, et retourne un JWT.
+
+    Cette route est utilisée pour le changement d'opérateur en caisse.
+    Rate limited à 5 tentatives par minute pour éviter le bruteforce.
+    """
+    start_time = time.time()
+    client_ip = getattr(request.client, 'host', 'unknown') if request.client else 'unknown'
+
+    # Validate and convert user_id to UUID
+    user_uuid = validate_and_convert_uuid(payload.user_id)
+
+    # Récupérer l'utilisateur par son ID
+    result = db.execute(select(User).where(User.id == user_uuid))
+    user = result.scalar_one_or_none()
+
+    # Vérifier si l'utilisateur existe, est actif et a un PIN défini
+    if not user or not user.is_active or not user.hashed_pin:
+        logger.warning(f"Failed PIN auth attempt for user_id: {payload.user_id}, IP: {client_ip}")
+
+        # Record metrics for failed PIN auth
+        elapsed_ms = (time.time() - start_time) * 1000
+        auth_metrics.record_login_attempt(
+            username=f"pin_auth_{payload.user_id}",
+            success=False,
+            elapsed_ms=elapsed_ms,
+            client_ip=client_ip,
+            error_type="invalid_user_or_no_pin"
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Utilisateur invalide, inactif ou PIN non défini",
+        )
+
+    # Vérifier le PIN
+    if not verify_password(payload.pin, user.hashed_pin):
+        logger.warning(f"Failed PIN auth attempt for user_id: {payload.user_id}, IP: {client_ip}")
+
+        # Record metrics for failed PIN auth
+        elapsed_ms = (time.time() - start_time) * 1000
+        auth_metrics.record_login_attempt(
+            username=f"pin_auth_{payload.user_id}",
+            success=False,
+            elapsed_ms=elapsed_ms,
+            client_ip=client_ip,
+            error_type="invalid_pin"
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="PIN invalide",
+        )
+
+    # Créer le token JWT
+    token = create_access_token({"sub": str(user.id)})
+
+    # Log successful PIN auth
+    logger.info(f"Successful PIN authentication for user_id: {user.id}")
+
+    # Record metrics for successful PIN auth
+    elapsed_ms = (time.time() - start_time) * 1000
+    auth_metrics.record_login_attempt(
+        username=f"pin_auth_{user.username}",
+        success=True,
+        elapsed_ms=elapsed_ms,
+        client_ip=client_ip,
+        user_id=str(user.id)
+    )
+
+    return PinAuthResponse(
+        access_token=token,
+        token_type="bearer",
+        user_id=str(user.id),
+        username=user.username or "",
+        role=user.role.value if hasattr(user.role, "value") else str(user.role)
+    )
 
 

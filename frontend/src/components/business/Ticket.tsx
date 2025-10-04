@@ -200,28 +200,29 @@ const Ticket: React.FC<TicketProps> = ({
   loading = false
 }) => {
   const [editingItem, setEditingItem] = useState<SaleItem | null>(null);
-  const [editQuantity, setEditQuantity] = useState<string>('');
+  const [editWeight, setEditWeight] = useState<string>('');
   const [editPrice, setEditPrice] = useState<string>('');
 
-  const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalAmount = items.reduce((sum, item) => sum + (item.total || 0), 0);
+  const totalItems = items.length; // Nombre d'articles (lignes), pas de quantités
 
   const handleEditClick = (item: SaleItem) => {
     setEditingItem(item);
-    setEditQuantity(item.quantity.toString());
+    setEditWeight((item.weight || 0).toString());
     setEditPrice(item.price.toString());
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingItem) {
-      const newQty = parseInt(editQuantity);
+      const newWeight = parseFloat(editWeight);
       const newPrice = parseFloat(editPrice);
-      
-      if (!isNaN(newQty) && !isNaN(newPrice) && newQty > 0 && newPrice > 0) {
-        onUpdateItem(editingItem.id, newQty, newPrice);
+
+      if (!isNaN(newWeight) && !isNaN(newPrice) && newWeight > 0 && newPrice > 0) {
+        // Note: onUpdateItem signature devra être adapté pour accepter le poids
+        onUpdateItem(editingItem.id, newWeight, newPrice);
         setEditingItem(null);
-        setEditQuantity('');
+        setEditWeight('');
         setEditPrice('');
       }
     }
@@ -229,7 +230,7 @@ const Ticket: React.FC<TicketProps> = ({
 
   const handleEditCancel = () => {
     setEditingItem(null);
-    setEditQuantity('');
+    setEditWeight('');
     setEditPrice('');
   };
 
@@ -249,10 +250,10 @@ const Ticket: React.FC<TicketProps> = ({
                 <ItemInfo>
                   <ItemCategory>{item.category}</ItemCategory>
                 <ItemDetails>
-                  {`${item.quantity} × ${item.price.toFixed(2)} €`}
+                  {`${(item.weight || 0).toFixed(2)} kg`}
                 </ItemDetails>
                 </ItemInfo>
-              <ItemTotal>{`${item.total.toFixed(2)} €`}</ItemTotal>
+              <ItemTotal>{`${(item.total || 0).toFixed(2)} €`}</ItemTotal>
                 <ItemActions>
                   <ActionButton
                     $variant="edit"
@@ -300,13 +301,14 @@ const Ticket: React.FC<TicketProps> = ({
               />
             </FormGroup>
             <FormGroup>
-              <Label>Quantité</Label>
+              <Label>Poids (kg)</Label>
               <Input
                 type="number"
-                value={editQuantity}
-                onChange={(e) => setEditQuantity(e.target.value)}
-                min="1"
-                max="999"
+                step="0.01"
+                value={editWeight}
+                onChange={(e) => setEditWeight(e.target.value)}
+                min="0.01"
+                max="9999.99"
                 required
               />
             </FormGroup>

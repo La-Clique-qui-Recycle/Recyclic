@@ -5,7 +5,8 @@ from datetime import datetime
 
 class SaleItemBase(BaseModel):
     category: str
-    quantity: int
+    quantity: int  # Kept for backward compatibility
+    weight: float  # Poids en kg avec décimales
     unit_price: float
     total_price: float
 

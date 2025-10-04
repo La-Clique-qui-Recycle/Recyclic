@@ -90,12 +90,20 @@ docker-compose exec api bash
 # Redémarrage service
 docker-compose restart api
 
-# Reconstruction images
-docker-compose build --no-cache
+# Reconstruction images (utiliser le cache pour plus de rapidité)
+docker-compose build api
+
+# Reconstruction complète (seulement si nécessaire)
+docker-compose build --no-cache api
 
 # Nettoyage complet
 docker-compose down -v
 ```
+
+### Optimisation du Cache Docker
+- **Développement** : Utiliser `docker-compose build api` (avec cache) pour les modifications de code
+- **Dépendances** : Utiliser `--no-cache` seulement si `requirements.txt` ou `package.json` changent
+- **Production** : Toujours utiliser `--no-cache` pour garantir la reproductibilité
 
 ## Volumes et Persistance
 

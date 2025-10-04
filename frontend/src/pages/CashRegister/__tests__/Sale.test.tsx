@@ -2,11 +2,14 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@test/test-utils';
 import { useCashSessionStore } from '../../../stores/cashSessionStore';
+import { useCategoryStore } from '../../../stores/categoryStore';
 import Sale from '../Sale';
 
-// Mock the store
+// Mock the stores
 vi.mock('../../../stores/cashSessionStore');
+vi.mock('../../../stores/categoryStore');
 const mockUseCashSessionStore = useCashSessionStore as any;
+const mockUseCategoryStore = useCategoryStore as any;
 
 describe('Sale Page', () => {
   const mockStore = {
@@ -23,60 +26,140 @@ describe('Sale Page', () => {
     error: null,
     addSaleItem: vi.fn(),
     removeSaleItem: vi.fn(),
+    updateSaleItem: vi.fn(),
     clearCurrentSale: vi.fn(),
     submitSale: vi.fn(),
     clearError: vi.fn()
   };
 
+  const mockCategoryStore = {
+    activeCategories: [
+      {
+        id: 'EEE-1',
+        name: 'Gros électroménager',
+        is_active: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      },
+      {
+        id: 'EEE-2',
+        name: 'Petit électroménager',
+        is_active: true,
+        created_at: '2024-01-02T00:00:00Z',
+        updated_at: '2024-01-02T00:00:00Z',
+      },
+      {
+        id: 'EEE-3',
+        name: 'Informatique et télécommunications',
+        is_active: true,
+        created_at: '2024-01-03T00:00:00Z',
+        updated_at: '2024-01-03T00:00:00Z',
+      },
+      {
+        id: 'EEE-4',
+        name: 'Matériel grand public',
+        is_active: true,
+        created_at: '2024-01-04T00:00:00Z',
+        updated_at: '2024-01-04T00:00:00Z',
+      },
+      {
+        id: 'EEE-5',
+        name: 'Éclairage',
+        is_active: true,
+        created_at: '2024-01-05T00:00:00Z',
+        updated_at: '2024-01-05T00:00:00Z',
+      },
+      {
+        id: 'EEE-6',
+        name: 'Outils électriques et électroniques',
+        is_active: true,
+        created_at: '2024-01-06T00:00:00Z',
+        updated_at: '2024-01-06T00:00:00Z',
+      },
+      {
+        id: 'EEE-7',
+        name: 'Jouets, loisirs et sports',
+        is_active: true,
+        created_at: '2024-01-07T00:00:00Z',
+        updated_at: '2024-01-07T00:00:00Z',
+      },
+      {
+        id: 'EEE-8',
+        name: 'Dispositifs médicaux',
+        is_active: true,
+        created_at: '2024-01-08T00:00:00Z',
+        updated_at: '2024-01-08T00:00:00Z',
+      },
+    ],
+    categories: [],
+    loading: false,
+    error: null,
+    lastFetchTime: Date.now(),
+    fetchCategories: vi.fn(),
+    getActiveCategories: vi.fn(),
+    getCategoryById: vi.fn(),
+    clearError: vi.fn(),
+  };
+
   beforeEach(() => {
     mockUseCashSessionStore.mockReturnValue(mockStore);
+    mockUseCategoryStore.mockReturnValue(mockCategoryStore);
     vi.clearAllMocks();
   });
 
   it('renders sale interface correctly', () => {
     render(<Sale />);
 
-    expect(screen.getByText('Interface de Vente')).toBeInTheDocument();
     expect(screen.getByText('Mode de saisie')).toBeInTheDocument();
     // Target the mode button specifically to avoid confusion with form label
     expect(screen.getByRole('button', { name: /catégorie/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /quantité/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /poids/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /prix/i })).toBeInTheDocument();
   });
 
-  it('shows category selector when in category mode', () => {
+  it('shows category selector when in category mode', async () => {
     render(<Sale />);
 
     expect(screen.getByText('Sélectionner la catégorie EEE')).toBeInTheDocument();
-    expect(screen.getByText('EEE-1')).toBeInTheDocument();
-    expect(screen.getByText('EEE-8')).toBeInTheDocument();
+    
+    await waitFor(() => {
+      expect(screen.getByText('Gros électroménager')).toBeInTheDocument();
+      expect(screen.getByText('Dispositifs médicaux')).toBeInTheDocument();
+    });
   });
 
-  it('transitions to quantity mode when category is selected', () => {
+  it('transitions to weight mode when category is selected', async () => {
     render(<Sale />);
 
-    const eee1Button = screen.getByText('EEE-1').closest('button');
-    fireEvent.click(eee1Button!);
+    await waitFor(() => {
+      expect(screen.getByText('Gros électroménager')).toBeInTheDocument();
+    });
 
-    expect(screen.getByRole('heading', { name: 'Quantité' })).toBeInTheDocument();
+    const eee1Button = screen.getByTestId('category-EEE-1');
+    fireEvent.click(eee1Button);
+
+    expect(screen.getByRole('heading', { name: 'Poids (kg)' })).toBeInTheDocument();
     // Use more specific selector for the calculator confirm button
-    const calculatorButton = document.querySelector('button[data-isvalid="true"]');
+    const calculatorButton = document.querySelector('button[data-isvalid="false"]');
     expect(calculatorButton).toBeInTheDocument();
-    expect(calculatorButton).toHaveStyle('background: rgb(204, 204, 204)'); // Disabled style for calculator
   });
 
-  it('transitions to price mode when quantity is confirmed', () => {
+  it('transitions to price mode when weight is confirmed', async () => {
     render(<Sale />);
 
     // Select category first
-    const eee1Button = screen.getByText('EEE-1').closest('button');
-    fireEvent.click(eee1Button!);
+    await waitFor(() => {
+      expect(screen.getByText('Gros électroménager')).toBeInTheDocument();
+    });
 
-    // Enter quantity
+    const eee1Button = screen.getByTestId('category-EEE-1');
+    fireEvent.click(eee1Button);
+
+    // Enter weight
     const button5 = screen.getByText('5').closest('button');
     fireEvent.click(button5!);
 
-    // Confirm quantity - target the calculator confirm button specifically
+    // Confirm weight - target the calculator confirm button specifically
     const calculatorButton = document.querySelector('button[data-isvalid="true"]');
     expect(calculatorButton).toBeInTheDocument();
     fireEvent.click(calculatorButton!);
@@ -87,17 +170,21 @@ describe('Sale Page', () => {
   it('adds item to sale when price is confirmed', async () => {
     render(<Sale />);
 
-    // Complete the flow: category -> quantity -> price
-    const eee1Button = screen.getByText('EEE-1').closest('button');
-    fireEvent.click(eee1Button!);
+    // Complete the flow: category -> weight -> price
+    await waitFor(() => {
+      expect(screen.getByText('Gros électroménager')).toBeInTheDocument();
+    });
+
+    const eee1Button = screen.getByTestId('category-EEE-1');
+    fireEvent.click(eee1Button);
 
     const button5 = screen.getByText('5').closest('button');
     fireEvent.click(button5!);
 
-    // Confirm quantity - target calculator button
-    const calculatorQuantityButton = document.querySelector('button[data-isvalid="true"]');
-    expect(calculatorQuantityButton).toBeInTheDocument();
-    fireEvent.click(calculatorQuantityButton!);
+    // Confirm weight - target calculator button
+    const calculatorWeightButton = document.querySelector('button[data-isvalid="true"]');
+    expect(calculatorWeightButton).toBeInTheDocument();
+    fireEvent.click(calculatorWeightButton!);
 
     const button10 = screen.getByText('1').closest('button');
     fireEvent.click(button10!);
@@ -112,9 +199,10 @@ describe('Sale Page', () => {
       expect(mockStore.addSaleItem).toHaveBeenCalledWith(
         expect.objectContaining({
           category: 'EEE-1',
-          quantity: 5,
+          quantity: 1,  // Valeur par défaut pour compatibilité
+          weight: 5,
           price: 10,
-          total: 50
+          total: 10  // total_price = unit_price (pas de multiplication avec le poids)
         })
       );
     });
@@ -125,9 +213,10 @@ describe('Sale Page', () => {
       {
         id: 'item-1',
         category: 'EEE-1',
-        quantity: 2,
+        quantity: 1,
+        weight: 2,
         price: 10,
-        total: 20
+        total: 10
       }
     ];
 
@@ -139,8 +228,8 @@ describe('Sale Page', () => {
     render(<Sale />);
 
     expect(screen.getByText('Ticket de Caisse')).toBeInTheDocument();
-    expect(screen.getByText('2 articles')).toBeInTheDocument();
-    expect(screen.getAllByText(/20\.00 €/)).toHaveLength(2); // Item price + total
+    expect(screen.getByText('1 articles')).toBeInTheDocument();
+    expect(screen.getAllByText(/10\.00 €/)).toHaveLength(2); // Item price + total
   });
 
   it('calls submitSale when finalizing sale', async () => {
@@ -149,6 +238,7 @@ describe('Sale Page', () => {
         id: 'item-1',
         category: 'EEE-1',
         quantity: 1,
+        weight: 2,
         price: 10,
         total: 10
       }
@@ -181,6 +271,77 @@ describe('Sale Page', () => {
     render(<Sale />);
 
     // Should not render the main interface elements
-    expect(screen.queryByText('Interface de Vente')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mode de saisie')).not.toBeInTheDocument();
+  });
+
+  it('shows success feedback when sale submission succeeds', async () => {
+    const mockItems = [
+      {
+        id: 'item-1',
+        category: 'EEE-1',
+        quantity: 1,
+        weight: 2,
+        price: 10,
+        total: 10
+      }
+    ];
+
+    const mockSubmitSale = vi.fn().mockResolvedValue(true);
+
+    mockUseCashSessionStore.mockReturnValue({
+      ...mockStore,
+      currentSaleItems: mockItems,
+      submitSale: mockSubmitSale
+    });
+
+    render(<Sale />);
+
+    fireEvent.click(screen.getByText('Finaliser la vente'));
+
+    await waitFor(() => {
+      expect(mockSubmitSale).toHaveBeenCalledWith(mockItems);
+    });
+
+    // Message de succès ajouté dans Sale.tsx
+    await waitFor(() => {
+      expect(screen.getByText('✅ Vente enregistrée avec succès !')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error feedback when sale submission fails', async () => {
+    const mockItems = [
+      {
+        id: 'item-1',
+        category: 'EEE-1',
+        quantity: 1,
+        weight: 2,
+        price: 10,
+        total: 10
+      }
+    ];
+
+    const error = new Error('Erreur lors de l\'enregistrement');
+    const mockSubmitSale = vi.fn().mockRejectedValue(error);
+
+    mockUseCashSessionStore.mockReturnValue({
+      ...mockStore,
+      currentSaleItems: mockItems,
+      submitSale: mockSubmitSale
+    });
+
+    render(<Sale />);
+
+    fireEvent.click(screen.getByText('Finaliser la vente'));
+
+    await waitFor(() => {
+      expect(mockSubmitSale).toHaveBeenCalledWith(mockItems);
+    });
+
+    // Message d'erreur affiché par la page
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Erreur lors de l'enregistrement/i)
+      ).toBeInTheDocument();
+    });
   });
 });

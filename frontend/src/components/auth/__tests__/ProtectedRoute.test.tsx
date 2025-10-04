@@ -196,6 +196,89 @@ describe('ProtectedRoute', () => {
     });
   });
 
+  describe('Protection par rôles multiples (requiredRoles)', () => {
+    it('devrait autoriser l\'accès pour un utilisateur avec un rôle autorisé', () => {
+      mockStore.isAuthenticated = true;
+      mockStore.currentUser = { id: '1', role: 'user' };
+      mockStore.loading = false;
+
+      render(
+        <MemoryRouter initialEntries={['/caisse']}>
+          <ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}>
+            <TestPage />
+          </ProtectedRoute>
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+    });
+
+    it('devrait autoriser l\'accès pour un admin avec un rôle autorisé', () => {
+      mockStore.isAuthenticated = true;
+      mockStore.currentUser = { id: '1', role: 'admin' };
+      mockStore.loading = false;
+
+      render(
+        <MemoryRouter initialEntries={['/caisse']}>
+          <ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}>
+            <TestPage />
+          </ProtectedRoute>
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+    });
+
+    it('devrait autoriser l\'accès pour un super-admin avec un rôle autorisé', () => {
+      mockStore.isAuthenticated = true;
+      mockStore.currentUser = { id: '1', role: 'super-admin' };
+      mockStore.loading = false;
+
+      render(
+        <MemoryRouter initialEntries={['/caisse']}>
+          <ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}>
+            <TestPage />
+          </ProtectedRoute>
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+    });
+
+    it('devrait bloquer l\'accès pour un utilisateur avec un rôle non autorisé', () => {
+      mockStore.isAuthenticated = true;
+      mockStore.currentUser = { id: '1', role: 'manager' };
+      mockStore.loading = false;
+
+      render(
+        <MemoryRouter initialEntries={['/caisse']}>
+          <ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}>
+            <TestPage />
+          </ProtectedRoute>
+        </MemoryRouter>
+      );
+
+      // Le contenu protégé ne devrait pas être affiché
+      expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
+    });
+
+    it('devrait gérer la compatibilité avec le rôle cashier (admin et super-admin autorisés)', () => {
+      mockStore.isAuthenticated = true;
+      mockStore.currentUser = { id: '1', role: 'admin' };
+      mockStore.loading = false;
+
+      render(
+        <MemoryRouter initialEntries={['/caisse']}>
+          <ProtectedRoute requiredRoles={['cashier']}>
+            <TestPage />
+          </ProtectedRoute>
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+    });
+  });
+
   describe('Intégration avec React Router', () => {
     it('devrait fonctionner avec MemoryRouter', () => {
       mockStore.isAuthenticated = true;

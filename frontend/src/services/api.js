@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -193,6 +193,84 @@ export const deleteCashRegister = async (id) => {
 // Link Telegram Account
 export const linkTelegramAccount = async (linkData) => {
   const response = await api.post('/api/v1/users/link-telegram', linkData);
+  return response.data;
+};
+
+// Reception Tickets
+export const getReceptionTickets = async (page = 1, perPage = 10) => {
+  const response = await api.get('/api/v1/reception/tickets', {
+    params: { page, per_page: perPage }
+  });
+  return response.data;
+};
+
+export const getReceptionTicketDetail = async (ticketId) => {
+  const response = await api.get(`/api/v1/reception/tickets/${ticketId}`);
+  return response.data;
+};
+
+// Reception Statistics
+export const getReceptionSummary = async (startDate, endDate) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+
+  const response = await api.get('/api/v1/stats/reception/summary', { params });
+  return response.data;
+};
+
+export const getReceptionByCategory = async (startDate, endDate) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+
+  const response = await api.get('/api/v1/stats/reception/by-category', { params });
+  return response.data;
+};
+
+// Reception Reports
+export const getReceptionLignes = async (page = 1, perPage = 50, startDate, endDate, categoryId) => {
+  const params = { page, per_page: perPage };
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (categoryId) params.category_id = categoryId;
+
+  const response = await api.get('/api/v1/reception/lignes', { params });
+  return response.data;
+};
+
+export const exportReceptionLignesCSV = async (startDate, endDate, categoryId) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (categoryId) params.category_id = categoryId;
+
+  const response = await api.get('/api/v1/reception/lignes/export-csv', {
+    params,
+    responseType: 'blob'
+  });
+
+  // Essayer d'extraire le filename du Content-Disposition
+  let filename = 'rapport_reception.csv';
+  const cd = response.headers && (response.headers['content-disposition'] || response.headers['Content-Disposition']);
+  if (cd && typeof cd === 'string') {
+    const match = cd.match(/filename\*=UTF-8''([^;\n]+)|filename="?([^";\n]+)"?/i);
+    const extracted = match ? (match[1] || match[2]) : null;
+    if (extracted) {
+      try {
+        filename = decodeURIComponent(extracted);
+      } catch (_) {
+        filename = extracted;
+      }
+    }
+  }
+
+  return { blob: response.data, filename };
+};
+
+// Reception Categories
+export const getReceptionCategories = async () => {
+  const response = await api.get('/api/v1/reception/categories');
   return response.data;
 };
 

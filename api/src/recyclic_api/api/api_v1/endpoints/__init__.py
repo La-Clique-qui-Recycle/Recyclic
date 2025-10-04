@@ -14,3 +14,6 @@ from .email import router as email_router
 from .reports import router as reports_router
 from .admin_settings import router as admin_settings_router
 from .dashboard import router as dashboard_router
+from .stats import router as stats_router
+from .categories import router as categories_router
+from .settings import router as settings_router

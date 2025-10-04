@@ -16,6 +16,8 @@ export interface CashSession {
 
 export interface CashSessionCreate {
   operator_id: string;
+  site_id: string;
+  register_id?: string;
   initial_amount: number;
 }
 
@@ -30,6 +32,7 @@ export interface SaleItem {
   id: string;
   category: string;
   quantity: number;
+  weight: number;  // Poids en kg
   price: number;
   total: number;
 }
@@ -39,6 +42,7 @@ export interface SaleCreate {
   items: {
     category: string;
     quantity: number;
+    weight: number;  // Poids en kg
     unit_price: number;
     total_price: number;
   }[];
@@ -74,6 +78,8 @@ interface CashSessionState {
   fetchSessions: () => Promise<void>;
   fetchCurrentSession: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  // UX-B10
+  resumeSession: (sessionId: string) => Promise<boolean>;
 }
 
 export const useCashSessionStore = create<CashSessionState>()(
@@ -112,15 +118,15 @@ export const useCashSessionStore = create<CashSessionState>()(
           }));
         },
 
-        updateSaleItem: (itemId: string, newQty: number, newPrice: number) => {
+        updateSaleItem: (itemId: string, newWeight: number, newPrice: number) => {
           set((state) => ({
-            currentSaleItems: state.currentSaleItems.map(item => 
-              item.id === itemId 
-                ? { 
-                    ...item, 
-                    quantity: newQty, 
-                    price: newPrice, 
-                    total: newQty * newPrice 
+            currentSaleItems: state.currentSaleItems.map(item =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    weight: newWeight,
+                    price: newPrice,
+                    total: newPrice  // total = prix (pas de multiplication)
                   }
                 : item
             )
@@ -135,7 +141,9 @@ export const useCashSessionStore = create<CashSessionState>()(
           const { currentSession } = get();
 
           if (!currentSession) {
-            set({ error: 'Aucune session de caisse active' });
+            const errorMsg = 'Aucune session de caisse active';
+            console.error('[submitSale]', errorMsg);
+            set({ error: errorMsg });
             return false;
           }
 
@@ -147,24 +155,42 @@ export const useCashSessionStore = create<CashSessionState>()(
               items: items.map(item => ({
                 category: item.category,
                 quantity: item.quantity,
+                weight: item.weight,  // Ajout du poids
                 unit_price: item.price,
                 total_price: item.total
               })),
               total_amount: items.reduce((sum, item) => sum + item.total, 0)
             };
 
-            // Call API to create sale
-            const response = await fetch('/api/v1/sales', {
+            console.log('[submitSale] Preparing sale:', saleData);
+
+            // Get token from localStorage for authentication
+            const token = localStorage.getItem('token');
+            if (!token) {
+              throw new Error('Non authentifié');
+            }
+
+            // Call API to create sale with authentication
+            console.log('[submitSale] Sending POST to /api/v1/sales/');
+            const response = await fetch('/api/v1/sales/', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
               },
               body: JSON.stringify(saleData)
             });
 
+            console.log('[submitSale] Response status:', response.status);
+
             if (!response.ok) {
-              throw new Error('Erreur lors de l\'enregistrement de la vente');
+              const errorData = await response.json().catch(() => null);
+              console.error('[submitSale] API error:', errorData);
+              throw new Error(errorData?.detail || 'Erreur lors de l\'enregistrement de la vente');
             }
+
+            const responseData = await response.json();
+            console.log('[submitSale] Sale created successfully:', responseData);
 
             // Clear current sale on success
             set({
@@ -175,6 +201,7 @@ export const useCashSessionStore = create<CashSessionState>()(
             return true;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'enregistrement de la vente';
+            console.error('[submitSale] Error:', errorMessage, error);
             set({ error: errorMessage, loading: false });
             return false;
           }
@@ -185,6 +212,27 @@ export const useCashSessionStore = create<CashSessionState>()(
           set({ loading: true, error: null });
           
           try {
+            // Pré-check 1: vérifier s'il y a déjà une session ouverte sur ce poste de caisse
+            if (data.register_id) {
+              const status = await cashSessionService.getRegisterSessionStatus(data.register_id);
+              if (status.is_active && status.session_id) {
+                const existingByRegister = await cashSessionService.getSession(status.session_id);
+                if (existingByRegister) {
+                  set({ currentSession: existingByRegister, loading: false });
+                  localStorage.setItem('currentCashSession', JSON.stringify(existingByRegister));
+                  return existingByRegister;
+                }
+              }
+            }
+
+            // Pré-check 2: session ouverte pour l'opérateur courant (fallback)
+            const existing = await cashSessionService.getCurrentSession();
+            if (existing) {
+              set({ currentSession: existing, loading: false });
+              localStorage.setItem('currentCashSession', JSON.stringify(existing));
+              return existing;
+            }
+
             const session = await cashSessionService.createSession(data);
             set({ 
               currentSession: session, 
@@ -197,6 +245,23 @@ export const useCashSessionStore = create<CashSessionState>()(
             return session;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'ouverture de session';
+            
+            // Si l'API renvoie que la session est déjà ouverte, tenter de reprendre automatiquement
+            if (data.register_id && /déjà ouverte|already open/i.test(errorMessage)) {
+              try {
+                const status = await cashSessionService.getRegisterSessionStatus(data.register_id);
+                if (status.is_active && status.session_id) {
+                  const existing = await cashSessionService.getSession(status.session_id);
+                  if (existing) {
+                    set({ currentSession: existing, loading: false });
+                    localStorage.setItem('currentCashSession', JSON.stringify(existing));
+                    return existing;
+                  }
+                }
+              } catch {
+                // ignore and fall through
+              }
+            }
             set({ error: errorMessage, loading: false });
             return null;
           }
@@ -299,7 +364,14 @@ export const useCashSessionStore = create<CashSessionState>()(
                 localStorage.removeItem('currentCashSession');
               }
             }
-            
+            // Pas de session locale: interroger l'API pour la session courante de l'opérateur
+            const current = await cashSessionService.getCurrentSession();
+            if (current && current.status === 'open') {
+              set({ currentSession: current, loading: false });
+              localStorage.setItem('currentCashSession', JSON.stringify(current));
+              return;
+            }
+
             set({ currentSession: null, loading: false });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la récupération de la session';
@@ -311,6 +383,25 @@ export const useCashSessionStore = create<CashSessionState>()(
           const { currentSession } = get();
           if (currentSession) {
             await get().fetchCurrentSession();
+          }
+        },
+
+        // UX-B10: reprendre une session existante
+        resumeSession: async (sessionId: string): Promise<boolean> => {
+          set({ loading: true, error: null });
+          try {
+            const session = await cashSessionService.getSession(sessionId);
+            if (session && session.status === 'open') {
+              set({ currentSession: session, loading: false });
+              localStorage.setItem('currentCashSession', JSON.stringify(session));
+              return true;
+            }
+            set({ loading: false, error: "Aucune session ouverte trouvée pour cet identifiant" });
+            return false;
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la reprise de session';
+            set({ error: errorMessage, loading: false });
+            return false;
           }
         }
       }),

@@ -31,6 +31,7 @@ class User(Base):
     username = Column(String, unique=True, nullable=False, index=True)
     email = Column(String, unique=False, nullable=True)
     hashed_password = Column(String, nullable=False)
+    hashed_pin = Column(String, nullable=True)
     telegram_id = Column(String, unique=False, nullable=True, index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)

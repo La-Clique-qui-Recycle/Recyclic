@@ -1,0 +1,42 @@
+schema: 1
+story: 'ux-b10-resume-session'
+story_title: 'Gestion Améliorée de l\'Ouverture/Reprise de Session de Caisse'
+gate: PASS
+status_reason: 'AC1–AC4 satisfaits; endpoint statut, service frontend, UI conditionnelle et reprise de session opérationnels'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-03T00:00:00Z'
+
+quality_score: 92
+risk_level: 'LOW'
+complexity: 'LOW'
+
+requirements_met:
+  - 'Vérification de session active avant ouverture (AC1)'
+  - 'Bouton conditionnel Reprendre/Ouvrir (AC2)'
+  - 'Reprise charge et redirige vers vente (AC3)'
+  - 'Suppression de l\'erreur bloquante dans le flux nominal (AC4)'
+
+artefacts:
+  backend_endpoint:
+    file: 'api/src/recyclic_api/api/api_v1/endpoints/cash_sessions.py'
+    route: 'GET /api/v1/cash-sessions/status/{register_id}'
+    response: '{ is_active: boolean, session_id: string | null }'
+  frontend_service:
+    file: 'frontend/src/services/cashSessionService.ts'
+    method: 'getRegisterSessionStatus(registerId)'
+  page:
+    file: 'frontend/src/pages/CashRegister/OpenCashSession.tsx'
+    logic: 'useEffect sur register_id + rendu bouton conditionnel'
+  store:
+    file: 'frontend/src/stores/cashSessionStore.ts'
+    action: 'resumeSession(sessionId)'
+  tests:
+    backend: 'api/tests/test_cash_sessions.py (verts)'
+    frontend: 'à compléter (recommandation)'
+
+recommendations:
+  - 'Ajouter 3 tests UI: bouton Reprendre/Ouvrir, appel resumeSession, navigation'
+
+gate_decision: 'PASS'
+decision_reason: 'Fonctionnel conforme, UX améliorée, risque faible'
+next_steps: 'Ready for Done'

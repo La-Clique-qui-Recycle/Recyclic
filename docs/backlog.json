@@ -1,0 +1,281 @@
+[
+  {
+    "file_path": "docs/stories/bug-reception-delete-permissions.md",
+    "story_id": "BUG-RECEPTION-DELETE-PERMS",
+    "title": "Correction des Permissions sur les Endpoints de Suppression du Module Réception",
+    "type": "Bug",
+    "status": "To Do",
+    "priority": "P1 (Élevée)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-b06-p4-1-archi-strategie-synchronisation.md",
+    "story_id": "STORY-B06-P4",
+    "title": "Conception de la Stratégie de Synchronisation et de Résolution de Conflits",
+    "type": "Architecture",
+    "status": "To Do",
+    "priority": "Basse",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-b06-p4-2-backend-endpoints-synchronisation.md",
+    "story_id": "STORY-B06-P4",
+    "title": "Implémentation des Endpoints de Synchronisation sur le Serveur Central",
+    "type": "Feature",
+    "status": "To Do",
+    "priority": "Basse",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-b06-p4-3-local-service-synchronisation.md",
+    "story_id": "STORY-B06-P4",
+    "title": "Développement du Service de Synchronisation sur le Serveur Local (Sync Agent)",
+    "type": "Feature",
+    "status": "To Do",
+    "priority": "Basse",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-b06-p4-4-tests-integration-synchronisation.md",
+    "story_id": "STORY-B06-P4",
+    "title": "Création d'une Suite de Tests d'Intégration pour la Synchronisation Offline",
+    "type": "Test",
+    "status": "To Do",
+    "priority": "Basse",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-b11-p1-infra-sauvegarde-automatisee.md",
+    "story_id": "STORY-B11-P1",
+    "title": "Stratégie de Sauvegarde Automatisée et Externalisée de la Base de Données",
+    "type": "Infrastructure",
+    "status": "To Do",
+    "priority": "P1 (Critique)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-b11-p2-feature-export-manuel-db.md",
+    "story_id": "STORY-B11-P2",
+    "title": "Export Manuel de la Base de Données depuis l'Interface SuperAdmin",
+    "type": "Feature",
+    "status": "To Do",
+    "priority": "P3 (Moyenne)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-bug-b10-ticket-crash.md",
+    "story_id": "STORY-BUG-B10-TICKET-CRASH",
+    "title": "Correction du Bug Critique d'Affichage du Ticket de Caisse (Page Blanche)",
+    "type": "Bug",
+    "status": "To Do",
+    "priority": "P0 (Critique)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-consolidate-p1-hierarchy.md",
+    "story_id": "STORY-CONSOLIDATE-P1-HIERARCHY",
+    "title": "Faire Évoluer le Modèle de Catégories pour la Hiérarchie",
+    "type": "Backend",
+    "status": "In Progress",
+    "priority": "P0 (Critique)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-consolidate-p2-data-migration.md",
+    "story_id": "STORY-CONSOLIDATE-P2-DATA-MIGRATION",
+    "title": "Migrer les Données de dom_category vers categories",
+    "type": "Migration",
+    "status": "To Do",
+    "priority": "P0 (Critique)",
+    "notes": "Bloquée par P1"
+  },
+  {
+    "file_path": "docs/stories/story-consolidate-p3-refactor-reception.md",
+    "story_id": "STORY-CONSOLIDATE-P3-REFACTOR-RECEPTION",
+    "title": "Mettre à Jour les Modules Réception et Stats pour Utiliser les Nouvelles Catégories",
+    "type": "Refactoring",
+    "status": "To Do",
+    "priority": "P0 (Critique)",
+    "notes": "Bloquée par P2"
+  },
+  {
+    "file_path": "docs/stories/story-consolidate-p4-refactor-caisse.md",
+    "story_id": "STORY-CONSOLIDATE-P4-REFACTOR-CAISSE",
+    "title": "Connecter le Module Caisse au Système de Catégories Unifié",
+    "type": "Refactoring",
+    "status": "To Do",
+    "priority": "P0 (Critique)",
+    "notes": "Bloquée par P3"
+  },
+  {
+    "file_path": "docs/stories/story-consolidate-p5-cleanup.md",
+    "story_id": "STORY-CONSOLIDATE-P5-CLEANUP",
+    "title": "Supprimer l'Ancien Modèle et la Table dom_category",
+    "type": "Chore",
+    "status": "To Do",
+    "priority": "P1 (Élevée)",
+    "notes": "Bloquée par P4"
+  },
+  {
+    "file_path": "docs/stories/story-future-copilotkit-integration.md",
+    "story_id": null,
+    "title": "Intégration d'un Chatbot d'Administration avec CopilotKit",
+    "type": "Feature",
+    "status": "To Do",
+    "priority": "Basse (Post-MVP)",
+    "notes": "Statut 'Draft'."
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-admin-pending-tests.md",
+    "story_id": "STORY-TECH-DEBT-ADMIN-PENDING-TESTS",
+    "title": "Correction des Tests admin_pending_endpoints",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P2 (Élevée)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-b09-frontend-cache.md",
+    "story_id": "STORY-TECH-DEBT-B09-FRONTEND",
+    "title": "Amélioration de la Stratégie de Cache Frontend pour les Catégories",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P3 (Basse)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-b09-perf-reliability.md",
+    "story_id": "STORY-TECH-DEBT-B09-PERF",
+    "title": "Amélioration Performance et Fiabilité de l'API Catégories",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P1 (Sanitisation) / P3 (Cache)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-b09-security-audit.md",
+    "story_id": "STORY-TECH-DEBT-B09-SECURITY",
+    "title": "Sécurisation et Traçabilité de l'API Catégories",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P1 (Rate Limiting) / P2 (Audit Log)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-b10-monitoring-audit.md",
+    "story_id": "STORY-TECH-DEBT-B10-MONITORING",
+    "title": "Implémentation du Monitoring et de l'Audit pour le Module Caisse",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P2 (Moyenne)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-b10-tests-coverage.md",
+    "story_id": "STORY-TECH-DEBT-B10-TESTS",
+    "title": "Renforcement de la Couverture de Tests Automatisés du Module Caisse",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P1 (Élevée)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-backend-ergonomie-improvements.md",
+    "story_id": "STORY-TECH-DEBT-BACKEND-ERGONOMIE-IMPROVEMENTS",
+    "title": "Améliorations Backend (Export) et Ergonomie (Saisie)",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P4 (Basse)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-cash-sessions-api-hardening.md",
+    "story_id": "STORY-TECH-DEBT-CASH-SESSIONS",
+    "title": "Durcissement de l'API des Sessions de Caisse",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "Basse",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-email-service.md",
+    "story_id": "tech-debt.email",
+    "title": "Mise en place du service d'envoi d'emails",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": null,
+    "notes": "Statut 'Ready'."
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-externalize-versions.md",
+    "story_id": "debt.externalize-versions",
+    "title": "Externaliser les versions de Node.js et Python du workflow CI/CD",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "Low",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-frontend-tests-coverage.md",
+    "story_id": "STORY-TECH-DEBT-FRONTEND-TESTS-COVERAGE",
+    "title": "Amélioration de la Couverture de Tests Frontend pour les Dashboards et Rapports",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P3 (Moyenne)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-ia-performance-metrics.md",
+    "story_id": null,
+    "title": "Métriques de Performance IA vs Humain",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "Moyenne",
+    "notes": "Statut 'Draft'."
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-load-testing.md",
+    "story_id": null,
+    "title": "Tests de Charge pour la Validation en Masse",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "Basse",
+    "notes": "Statut 'Draft'."
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-reception-history-api.md",
+    "story_id": "STORY-TECH-DEBT-RECEPTION-HISTORY-API",
+    "title": "Vérification de l'Appel API pour l'Historique des Tickets de Réception",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P2 (Élevée)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-reception-module-hardening.md",
+    "story_id": "STORY-TECH-DEBT-RECEPTION-MODULE",
+    "title": "Finalisation et Durcissement du Module de Réception",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P3 (Moyenne)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-remove-cashier-role.md",
+    "story_id": "STORY-TECH-DEBT-REMOVE-CASHIER",
+    "title": "Suppression Complète du Rôle Utilisateur 'cashier'",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P0 (Critique)",
+    "notes": ""
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-stats-optimization.md",
+    "story_id": "STORY-TECH-DEBT-STATS-OPTIMIZATION",
+    "title": "Optimisation des Endpoints de Statistiques (Cache et Métriques)",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "Basse",
+    "notes": ""
+  }
+]

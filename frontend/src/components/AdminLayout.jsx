@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { ADMIN_NAVIGATION_ITEMS } from '../config/adminRoutes';
+import { useAuthStore } from '../stores/authStore';
 
 const LayoutContainer = styled.div`
   display: flex;
@@ -81,6 +82,7 @@ const MainContent = styled.main`
 
 const AdminLayout = () => {
   const location = useLocation();
+  const { currentUser } = useAuthStore();
 
   const isActiveRoute = (path, exact = false) => {
     if (exact) {
@@ -89,12 +91,21 @@ const AdminLayout = () => {
     return location.pathname.startsWith(path);
   };
 
+  // Filter navigation items based on user role
+  const visibleNavigationItems = ADMIN_NAVIGATION_ITEMS.filter(item => {
+    // If item requires super-admin, only show for super-admins
+    if (item.superAdminOnly) {
+      return currentUser?.role === 'super-admin';
+    }
+    return true;
+  });
+
   return (
     <LayoutContainer>
       <TopNav aria-label="Navigation administrative">
         <TopNavTitle id="admin-nav-heading">Administration</TopNavTitle>
         <TopNavList role="list" aria-labelledby="admin-nav-heading">
-          {ADMIN_NAVIGATION_ITEMS.map(({ path, label, icon: Icon, exact }) => (
+          {visibleNavigationItems.map(({ path, label, icon: Icon, exact }) => (
             <TopNavItem key={path} role="listitem">
               <TopNavLink
                 to={path}

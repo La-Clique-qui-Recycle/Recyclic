@@ -282,8 +282,28 @@ describe('useAuthStore', () => {
       });
 
       expect(result.current.isAdmin()).toBe(false);
-      expect(result.current.isCashier()).toBe(false);
+      expect(result.current.isCashier()).toBe(true); // Les utilisateurs 'user' peuvent maintenant accéder à la caisse
       expect(result.current.canManageUsers()).toBe(false);
+    });
+
+    it('should allow user role to access cashier functionality', () => {
+      const { result } = renderHook(() => useAuthStore());
+
+      act(() => {
+        result.current.setCurrentUser({
+          id: 'user-456',
+          username: 'regular_user',
+          role: 'user',
+          status: 'approved',
+          is_active: true,
+          created_at: '2025-01-27T10:00:00Z',
+          updated_at: '2025-01-27T10:00:00Z'
+        });
+      });
+
+      // Vérifier que l'utilisateur 'user' peut accéder à la caisse
+      expect(result.current.isCashier()).toBe(true);
+      expect(result.current.isAdmin()).toBe(false);
     });
   });
 
