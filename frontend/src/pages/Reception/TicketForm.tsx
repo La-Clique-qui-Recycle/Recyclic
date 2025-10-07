@@ -605,8 +605,8 @@ interface TicketLine {
   destination: 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE';
   created_at?: string;
   updated_at?: string;
-  dom_category_id?: string;
-  dom_category_label?: string;
+  category_id?: string;
+  category_label?: string;
   category?: string;
   notes?: string;
   timestamp?: string;
@@ -701,7 +701,7 @@ const TicketForm: React.FC = () => {
     try {
       if (ticketId) {
         await receptionService.addLineToTicket(ticketId, {
-          dom_category_id: selectedCategory,
+          category_id: selectedCategory,
           weight: parseWeight(formattedWeight),
           destination,
           notes: notes || undefined
@@ -710,7 +710,7 @@ const TicketForm: React.FC = () => {
         setLoadedTicket(updatedTicket);
       } else {
         await addLineToTicket(currentTicket.id, {
-          dom_category_id: selectedCategory,
+          category_id: selectedCategory,
           weight: parseWeight(formattedWeight),
           destination,
           notes: notes || undefined
@@ -740,7 +740,7 @@ const TicketForm: React.FC = () => {
     try {
       if (ticketId) {
         await receptionService.updateTicketLine(ticketId, lineId, {
-          dom_category_id: selectedCategory,
+          category_id: selectedCategory,
           weight: parseWeight(formattedWeight),
           destination,
           notes: notes || undefined
@@ -749,7 +749,7 @@ const TicketForm: React.FC = () => {
         setLoadedTicket(updatedTicket);
       } else {
         await updateTicketLine(currentTicket.id, lineId, {
-          dom_category_id: selectedCategory,
+          category_id: selectedCategory,
           weight: parseWeight(formattedWeight),
           destination,
           notes: notes || undefined
@@ -789,7 +789,7 @@ const TicketForm: React.FC = () => {
 
   const handleEditLine = (line: TicketLine) => {
     setEditingLineId(line.id);
-    setSelectedCategory(line.dom_category_id || line.category || '');
+    setSelectedCategory(line.category_id || line.category || '');
     const initial = (line.poids_kg || line.weight || 0);
     setWeightInput(parseToInput(initial));
     setDestination(line.destination);
@@ -1127,9 +1127,9 @@ const TicketForm: React.FC = () => {
               <LineItem key={line.id}>
                 <LineInfo>
                   <LineCategory>
-                    {line.dom_category_label ||
-                     categories.find(cat => cat.id === line.dom_category_id)?.label ||
-                     line.dom_category_id ||
+                    {line.category_label ||
+                     categories.find(cat => cat.id === line.category_id)?.label ||
+                     line.category_id ||
                      line.category || 'N/A'}
                   </LineCategory>
                   <LineDetails>

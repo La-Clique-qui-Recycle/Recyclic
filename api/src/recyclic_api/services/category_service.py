@@ -44,6 +44,19 @@ class CategoryService:
         if existing:
             raise HTTPException(status_code=400, detail=f"Category with name '{category_data.name}' already exists")
 
+        # Validate price fields: prices can only be set on subcategories (with parent_id)
+        has_price_fields = any([
+            category_data.price is not None,
+            category_data.min_price is not None,
+            category_data.max_price is not None
+        ])
+
+        if has_price_fields and not category_data.parent_id:
+            raise HTTPException(
+                status_code=422,
+                detail="Price fields can only be set on subcategories (categories with a parent_id)"
+            )
+
         # Validate parent_id if provided
         parent_id = None
         if category_data.parent_id:
@@ -56,12 +69,12 @@ class CategoryService:
                 ).first()
                 if not parent:
                     raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
-                
+
                 # Check hierarchy depth
                 parent_depth = self._get_hierarchy_depth(parent_id)
                 if parent_depth >= self.MAX_HIERARCHY_DEPTH:
                     raise HTTPException(
-                        status_code=400, 
+                        status_code=400,
                         detail=f"Cannot create category: maximum hierarchy depth of {self.MAX_HIERARCHY_DEPTH} levels exceeded"
                     )
             except ValueError:
@@ -71,7 +84,10 @@ class CategoryService:
         new_category = Category(
             name=category_data.name,
             is_active=True,
-            parent_id=parent_id
+            parent_id=parent_id,
+            price=category_data.price,
+            min_price=category_data.min_price,
+            max_price=category_data.max_price
         )
 
         self.db.add(new_category)
@@ -134,43 +150,64 @@ class CategoryService:
             if existing:
                 raise HTTPException(status_code=400, detail=f"Category with name '{category_data.name}' already exists")
 
-        # Validate parent_id if provided
-        if category_data.parent_id is not None:
+        # Determine final parent_id value for validation
+        # We need to check if parent_id was provided in the update, even if it's None
+        update_data_dict = category_data.model_dump(exclude_unset=True)
+        parent_id_provided = 'parent_id' in update_data_dict
+
+        final_parent_id = category.parent_id  # Start with current value
+        if parent_id_provided:
             if category_data.parent_id:
                 try:
-                    parent_id = UUID(category_data.parent_id)
+                    final_parent_id = UUID(category_data.parent_id)
                     # Check if parent exists and is active
                     parent = self.db.query(Category).filter(
-                        Category.id == parent_id,
+                        Category.id == final_parent_id,
                         Category.is_active == True
                     ).first()
                     if not parent:
                         raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
                     # Prevent self-reference
-                    if parent_id == cat_uuid:
+                    if final_parent_id == cat_uuid:
                         raise HTTPException(status_code=400, detail="Category cannot be its own parent")
-                    
+
                     # Check hierarchy depth
-                    parent_depth = self._get_hierarchy_depth(parent_id)
+                    parent_depth = self._get_hierarchy_depth(final_parent_id)
                     if parent_depth >= self.MAX_HIERARCHY_DEPTH:
                         raise HTTPException(
-                            status_code=400, 
+                            status_code=400,
                             detail=f"Cannot update category: maximum hierarchy depth of {self.MAX_HIERARCHY_DEPTH} levels exceeded"
                         )
                 except ValueError:
                     raise HTTPException(status_code=400, detail=f"Invalid parent_id format: '{category_data.parent_id}'")
             else:
-                parent_id = None
-        else:
-            # parent_id not provided in update, keep existing value
-            parent_id = category.parent_id
+                final_parent_id = None
+
+        # Validate price fields: prices can only be set on subcategories (with parent_id)
+        # Check both incoming price fields and existing ones on the category
+        has_new_price_fields = any([
+            category_data.price is not None,
+            category_data.min_price is not None,
+            category_data.max_price is not None
+        ])
+
+        has_existing_price_fields = any([
+            category.price is not None,
+            category.min_price is not None,
+            category.max_price is not None
+        ])
+
+        if (has_new_price_fields or has_existing_price_fields) and not final_parent_id:
+            raise HTTPException(
+                status_code=422,
+                detail="Price fields can only be set on subcategories (categories with a parent_id)"
+            )
 
         # Update fields
-        update_data = category_data.model_dump(exclude_unset=True)
+        update_data = update_data_dict  # Already computed above
         # Always update parent_id if it was provided in the request (even if None)
-        # We know parent_id was provided if we went through the validation above
-        if category_data.parent_id is not None:
-            update_data['parent_id'] = parent_id
+        if parent_id_provided:
+            update_data['parent_id'] = final_parent_id
 
         if update_data:
             for key, value in update_data.items():

@@ -4,17 +4,29 @@ export interface Category {
   id: string;
   name: string;
   is_active: boolean;
+  parent_id?: string | null;
+  price?: number | null;
+  min_price?: number | null;
+  max_price?: number | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface CategoryCreate {
   name: string;
+  parent_id?: string | null;
+  price?: number | null;
+  min_price?: number | null;
+  max_price?: number | null;
 }
 
 export interface CategoryUpdate {
   name?: string;
   is_active?: boolean;
+  parent_id?: string | null;
+  price?: number | null;
+  min_price?: number | null;
+  max_price?: number | null;
 }
 
 /**

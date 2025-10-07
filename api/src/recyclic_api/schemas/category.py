@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional, List
 from datetime import datetime
+from decimal import Decimal
 
 
 class CategoryBase(BaseModel):
@@ -9,18 +10,27 @@ class CategoryBase(BaseModel):
 
 class CategoryCreate(CategoryBase):
     parent_id: Optional[str] = None
+    price: Optional[Decimal] = None
+    min_price: Optional[Decimal] = None
+    max_price: Optional[Decimal] = None
 
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     is_active: Optional[bool] = None
     parent_id: Optional[str] = None
+    price: Optional[Decimal] = None
+    min_price: Optional[Decimal] = None
+    max_price: Optional[Decimal] = None
 
 
 class CategoryRead(CategoryBase):
     id: str
     is_active: bool
     parent_id: Optional[str] = None
+    price: Optional[Decimal] = None
+    min_price: Optional[Decimal] = None
+    max_price: Optional[Decimal] = None
     created_at: datetime
     updated_at: datetime
 

@@ -1,5 +1,6 @@
 """Tests for categories endpoints"""
 import pytest
+from decimal import Decimal
 from httpx import AsyncClient
 from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
@@ -538,3 +539,126 @@ async def test_update_category_exceeds_max_depth(async_client: AsyncClient, supe
     )
     assert response.status_code == 400
     assert "maximum hierarchy depth" in response.json()["detail"]
+
+
+# Test price field validation
+@pytest.mark.asyncio
+async def test_create_category_with_price_on_subcategory(async_client: AsyncClient, super_admin_token: str, parent_category: Category):
+    """Test creating a subcategory with price fields (should succeed)"""
+    headers = {"Authorization": f"Bearer {super_admin_token}"}
+    response = await async_client.post(
+        "/api/v1/categories/",
+        json={
+            "name": "Premium Laptops",
+            "parent_id": str(parent_category.id),
+            "price": "299.99",
+            "min_price": "199.99",
+            "max_price": "499.99"
+        },
+        headers=headers
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Premium Laptops"
+    assert data["parent_id"] == str(parent_category.id)
+    assert float(data["price"]) == 299.99
+    assert float(data["min_price"]) == 199.99
+    assert float(data["max_price"]) == 499.99
+
+
+@pytest.mark.asyncio
+async def test_create_category_with_price_on_root_category_fails(async_client: AsyncClient, super_admin_token: str):
+    """Test creating a root category with price fields (should fail with 422)"""
+    headers = {"Authorization": f"Bearer {super_admin_token}"}
+    response = await async_client.post(
+        "/api/v1/categories/",
+        json={
+            "name": "Root Electronics",
+            "price": "299.99"
+        },
+        headers=headers
+    )
+    assert response.status_code == 422
+    assert "Price fields can only be set on subcategories" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_update_category_add_price_to_subcategory(async_client: AsyncClient, super_admin_token: str, child_category: Category):
+    """Test updating a subcategory to add price fields (should succeed)"""
+    headers = {"Authorization": f"Bearer {super_admin_token}"}
+    response = await async_client.put(
+        f"/api/v1/categories/{child_category.id}",
+        json={
+            "price": "199.99",
+            "min_price": "99.99",
+            "max_price": "299.99"
+        },
+        headers=headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert float(data["price"]) == 199.99
+    assert float(data["min_price"]) == 99.99
+    assert float(data["max_price"]) == 299.99
+
+
+@pytest.mark.asyncio
+async def test_update_category_add_price_to_root_category_fails(async_client: AsyncClient, super_admin_token: str, parent_category: Category):
+    """Test updating a root category to add price fields (should fail with 422)"""
+    headers = {"Authorization": f"Bearer {super_admin_token}"}
+    response = await async_client.put(
+        f"/api/v1/categories/{parent_category.id}",
+        json={"price": "199.99"},
+        headers=headers
+    )
+    assert response.status_code == 422
+    assert "Price fields can only be set on subcategories" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_update_category_remove_parent_with_price_fails(async_client: AsyncClient, super_admin_token: str, db_session: Session, parent_category: Category):
+    """Test removing parent from a category that has price fields (should fail with 422)"""
+    # Create a subcategory with price
+    subcategory = Category(
+        name="Priced Subcategory",
+        is_active=True,
+        parent_id=parent_category.id,
+        price=Decimal("199.99")
+    )
+    db_session.add(subcategory)
+    db_session.commit()
+    db_session.refresh(subcategory)
+
+    headers = {"Authorization": f"Bearer {super_admin_token}"}
+    response = await async_client.put(
+        f"/api/v1/categories/{subcategory.id}",
+        json={"parent_id": None},
+        headers=headers
+    )
+    assert response.status_code == 422
+    assert "Price fields can only be set on subcategories" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_get_category_with_price_fields(async_client: AsyncClient, normal_user_token: str, db_session: Session, parent_category: Category):
+    """Test retrieving a category with price fields"""
+    # Create a subcategory with price
+    subcategory = Category(
+        name="Priced Laptop",
+        is_active=True,
+        parent_id=parent_category.id,
+        price=Decimal("299.99"),
+        min_price=Decimal("199.99"),
+        max_price=Decimal("499.99")
+    )
+    db_session.add(subcategory)
+    db_session.commit()
+    db_session.refresh(subcategory)
+
+    headers = {"Authorization": f"Bearer {normal_user_token}"}
+    response = await async_client.get(f"/api/v1/categories/{subcategory.id}", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert float(data["price"]) == 299.99
+    assert float(data["min_price"]) == 199.99
+    assert float(data["max_price"]) == 499.99

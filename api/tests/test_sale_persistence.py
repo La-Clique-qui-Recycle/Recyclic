@@ -88,10 +88,13 @@ class TestSalePersistence:
         """
         Test que la création d'une vente via l'API persiste bien les données en base.
 
-        Acceptance Criteria:
+        Acceptance Criteria (STORY-B12-P5):
         1. Une requête POST /api/v1/sales/ crée une vente
         2. La vente et ses lignes sont dans la base de données
         3. Les données correspondent à ce qui a été envoyé
+        4. Le poids (weight) est enregistré correctement
+        5. Le prix (total_price) est enregistré correctement
+        6. Le total = somme des total_price (SANS multiplication par le poids)
         """
         # Arrange: Préparer les données de la vente
         sale_data = {
@@ -100,19 +103,19 @@ class TestSalePersistence:
                 {
                     "category": "EEE-1",
                     "quantity": 1,
-                    "weight": 2.5,
+                    "weight": 2.5,  # Poids en kg
                     "unit_price": 15.0,
-                    "total_price": 15.0
+                    "total_price": 15.0  # Contribue 15.0 au total (PAS 2.5 * 15.0 = 37.5)
                 },
                 {
                     "category": "EEE-3",
                     "quantity": 1,
-                    "weight": 0.75,
+                    "weight": 0.75,  # Poids en kg
                     "unit_price": 8.50,
-                    "total_price": 8.50
+                    "total_price": 8.50  # Contribue 8.50 au total (PAS 0.75 * 8.50 = 6.375)
                 }
             ],
-            "total_amount": 23.50
+            "total_amount": 23.50  # Total = 15.0 + 8.50 = 23.50 (somme des total_price)
         }
 
         # Act: Créer la vente via l'API
@@ -132,7 +135,13 @@ class TestSalePersistence:
         # Assert: Vérifier que la vente existe en base de données
         db_sale = db_session.query(Sale).filter(Sale.id == sale_id).first()
         assert db_sale is not None, "La vente n'a pas été trouvée en base de données"
-        assert float(db_sale.total_amount) == 23.50
+
+        # Vérification critique : le total = somme des prix (sans multiplication par poids)
+        assert float(db_sale.total_amount) == 23.50, (
+            f"Expected total_amount 23.50 (sum of total_price), got {db_sale.total_amount}. "
+            "CRITICAL: total should be sum of prices, NOT sum of (weight * price)"
+        )
+
         assert str(db_sale.cash_session_id) == str(setup_test_data["session_id"])
         assert str(db_sale.operator_id) == str(setup_test_data["user_id"])
 
@@ -140,19 +149,25 @@ class TestSalePersistence:
         db_items = db_session.query(SaleItem).filter(SaleItem.sale_id == sale_id).all()
         assert len(db_items) == 2, f"Expected 2 items, found {len(db_items)}"
 
-        # Vérifier le premier article
+        # Vérifier le premier article (poids, prix, total)
         item1 = next((item for item in db_items if item.category == "EEE-1"), None)
-        assert item1 is not None
-        assert float(item1.weight) == 2.5
-        assert float(item1.unit_price) == 15.0
-        assert float(item1.total_price) == 15.0
+        assert item1 is not None, "Item EEE-1 not found in database"
+        assert float(item1.weight) == 2.5, f"Item 1: expected weight 2.5, got {item1.weight}"
+        assert float(item1.unit_price) == 15.0, f"Item 1: expected unit_price 15.0, got {item1.unit_price}"
+        assert float(item1.total_price) == 15.0, (
+            f"Item 1: expected total_price 15.0 (same as unit_price), got {item1.total_price}. "
+            "Weight should NOT be multiplied into total_price"
+        )
 
-        # Vérifier le deuxième article
+        # Vérifier le deuxième article (poids, prix, total)
         item2 = next((item for item in db_items if item.category == "EEE-3"), None)
-        assert item2 is not None
-        assert float(item2.weight) == 0.75
-        assert float(item2.unit_price) == 8.50
-        assert float(item2.total_price) == 8.50
+        assert item2 is not None, "Item EEE-3 not found in database"
+        assert float(item2.weight) == 0.75, f"Item 2: expected weight 0.75, got {item2.weight}"
+        assert float(item2.unit_price) == 8.50, f"Item 2: expected unit_price 8.50, got {item2.unit_price}"
+        assert float(item2.total_price) == 8.50, (
+            f"Item 2: expected total_price 8.50 (same as unit_price), got {item2.total_price}. "
+            "Weight should NOT be multiplied into total_price"
+        )
 
     def test_sale_fails_without_authentication(self, client, setup_test_data):
         """Test que la création d'une vente échoue sans authentification"""

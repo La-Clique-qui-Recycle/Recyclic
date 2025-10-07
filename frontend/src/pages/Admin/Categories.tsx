@@ -12,7 +12,9 @@ import {
   ActionIcon,
   Paper,
   Modal,
-  LoadingOverlay
+  LoadingOverlay,
+  Box,
+  Collapse
 } from '@mantine/core';
 import {
   IconPlus,
@@ -20,7 +22,9 @@ import {
   IconAlertCircle,
   IconEdit,
   IconTrash,
-  IconCheck
+  IconCheck,
+  IconChevronDown,
+  IconChevronRight
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { Category, categoryService } from '../../services/categoryService';
@@ -32,6 +36,7 @@ const AdminCategories: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -105,7 +110,7 @@ const AdminCategories: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (data: { name: string }) => {
+  const handleSubmit = async (data: { name: string; parent_id?: string | null; price?: number | null; min_price?: number | null; max_price?: number | null }) => {
     try {
       if (editingCategory) {
         await categoryService.updateCategory(editingCategory.id, data);
@@ -133,47 +138,129 @@ const AdminCategories: React.FC = () => {
     }
   };
 
-  const rows = categories.map((category) => (
-    <tr key={category.id}>
-      <td>{category.name}</td>
-      <td>
-        <Badge color={category.is_active ? 'green' : 'gray'}>
-          {category.is_active ? 'Actif' : 'Inactif'}
-        </Badge>
-      </td>
-      <td>
-        <Group gap="xs">
-          <ActionIcon
-            variant="light"
-            color="blue"
-            onClick={() => handleEdit(category)}
-            title="Modifier"
-          >
-            <IconEdit size={18} />
-          </ActionIcon>
-          {category.is_active ? (
-            <ActionIcon
-              variant="light"
-              color="red"
-              onClick={() => handleDelete(category)}
-              title="Désactiver"
-            >
-              <IconTrash size={18} />
-            </ActionIcon>
-          ) : (
-            <ActionIcon
-              variant="light"
-              color="green"
-              onClick={() => handleReactivate(category)}
-              title="Réactiver"
-            >
-              <IconCheck size={18} />
-            </ActionIcon>
-          )}
-        </Group>
-      </td>
-    </tr>
-  ));
+  // Fonction pour organiser les catégories en hiérarchie
+  const organizeCategories = (categories: Category[]) => {
+    const categoryMap = new Map<string, Category & { children: Category[] }>();
+    const rootCategories: (Category & { children: Category[] })[] = [];
+
+    // Créer un map avec des enfants vides
+    categories.forEach(cat => {
+      categoryMap.set(cat.id, { ...cat, children: [] });
+    });
+
+    // Organiser la hiérarchie
+    categories.forEach(cat => {
+      const categoryWithChildren = categoryMap.get(cat.id)!;
+      if (cat.parent_id && categoryMap.has(cat.parent_id)) {
+        categoryMap.get(cat.parent_id)!.children.push(categoryWithChildren);
+      } else {
+        rootCategories.push(categoryWithChildren);
+      }
+    });
+
+    return rootCategories;
+  };
+
+  // Fonction pour basculer l'expansion d'une catégorie
+  const toggleExpansion = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  // Composant récursif pour afficher la hiérarchie
+  const CategoryTreeItem: React.FC<{ 
+    category: Category & { children: Category[] }; 
+    level: number;
+  }> = ({ category, level }) => {
+    const isExpanded = expandedCategories.has(category.id);
+    const hasChildren = category.children.length > 0;
+    const indent = level * 20;
+
+    return (
+      <>
+        <tr key={category.id}>
+          <td>
+            <Group gap="xs" style={{ paddingLeft: indent }}>
+              {hasChildren && (
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => toggleExpansion(category.id)}
+                  data-testid={`expand-${category.id}`}
+                >
+                  {isExpanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                </ActionIcon>
+              )}
+              {!hasChildren && <Box w={20} />}
+              <Text size="sm" fw={level === 0 ? 600 : 400}>
+                {category.name}
+              </Text>
+            </Group>
+          </td>
+          <td>
+            <Badge color={category.is_active ? 'green' : 'gray'}>
+              {category.is_active ? 'Actif' : 'Inactif'}
+            </Badge>
+          </td>
+          <td>
+            <Group gap="xs">
+              <ActionIcon
+                variant="light"
+                color="blue"
+                onClick={() => handleEdit(category)}
+                title="Modifier"
+                data-testid={`edit-${category.id}`}
+              >
+                <IconEdit size={18} />
+              </ActionIcon>
+              {category.is_active ? (
+                <ActionIcon
+                  variant="light"
+                  color="red"
+                  onClick={() => handleDelete(category)}
+                  title="Désactiver"
+                  data-testid={`delete-${category.id}`}
+                >
+                  <IconTrash size={18} />
+                </ActionIcon>
+              ) : (
+                <ActionIcon
+                  variant="light"
+                  color="green"
+                  onClick={() => handleReactivate(category)}
+                  title="Réactiver"
+                  data-testid={`reactivate-${category.id}`}
+                >
+                  <IconCheck size={18} />
+                </ActionIcon>
+              )}
+            </Group>
+          </td>
+        </tr>
+        {hasChildren && isExpanded && (
+          <>
+            {category.children.map(child => (
+              <CategoryTreeItem 
+                key={child.id} 
+                category={child} 
+                level={level + 1} 
+              />
+            ))}
+          </>
+        )}
+      </>
+    );
+  };
+
+  // Organiser les catégories en hiérarchie
+  const hierarchicalCategories = organizeCategories(categories);
 
   return (
     <Container size="lg" py="xl">
@@ -220,8 +307,14 @@ const AdminCategories: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.length > 0 ? (
-                rows
+              {hierarchicalCategories.length > 0 ? (
+                hierarchicalCategories.map(category => (
+                  <CategoryTreeItem 
+                    key={category.id} 
+                    category={category} 
+                    level={0} 
+                  />
+                ))
               ) : (
                 <tr>
                   <td colSpan={3}>

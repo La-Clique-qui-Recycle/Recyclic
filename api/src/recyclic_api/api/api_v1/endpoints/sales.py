@@ -41,7 +41,14 @@ async def create_sale(
     db: Session = Depends(get_db),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
 ):
-    """Create new sale with items and operator traceability"""
+    """
+    Create new sale with items and operator traceability.
+
+    STORY-B12-P5: Finalisation du Ticket de Caisse
+    - Accepts: category, weight (kg), unit_price, total_price for each item
+    - CRITICAL: total_amount = sum of all total_price (NO multiplication by weight)
+    - Example: Item with weight=2.5kg and total_price=15.0 contributes 15.0 to total (NOT 37.5)
+    """
     # Enforce 401 when no Authorization header is provided
     if credentials is None:
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})

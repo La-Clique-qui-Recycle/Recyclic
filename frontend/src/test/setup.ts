@@ -51,6 +51,26 @@ vi.mock('lucide-react', () => ({
     ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
     'data-icon-name': 'Loader2'
   }, 'Loader2'),
+  Save: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Save'
+  }, 'Save'),
+  Trash2: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Trash2'
+  }, 'Trash2'),
+  Edit: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Edit'
+  }, 'Edit'),
+  Receipt: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Receipt'
+  }, 'Receipt'),
+  Check: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Check'
+  }, 'Check'),
 }))
 
 // Mock pour styled-components - approche avec styles simulés

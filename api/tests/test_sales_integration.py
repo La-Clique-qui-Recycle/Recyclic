@@ -80,7 +80,14 @@ class TestSalesIntegration:
         return create_access_token(data={"sub": str(test_cashier["id"])})
 
     def test_create_sale_success(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):
-        """Test de création d'une vente avec succès"""
+        """
+        Test de création d'une vente avec succès.
+
+        Valide que :
+        1. Le poids (weight) est enregistré correctement
+        2. Le prix (total_price) est enregistré correctement
+        3. Le total de la vente = somme des total_price (SANS multiplication par le poids)
+        """
         # Créer les données de test en base
         user = User(**test_cashier)
         site = Site(**test_site)
@@ -124,16 +131,33 @@ class TestSalesIntegration:
 
         assert response.status_code == 200
         data = response.json()
-        
-        # Vérifications
+
+        # Vérifications de base
         assert data["cash_session_id"] == str(test_cash_session["id"])
-        assert data["total_amount"] == 15.50
         assert "id" in data
         assert "created_at" in data
         assert len(data["items"]) == 2
-        assert data["items"][0]["category"] == "EEE-1"
-        assert data["items"][0]["quantity"] == 2
-        assert data["items"][0]["weight"] == 1.5
+
+        # Vérification critique : le total = somme des prix (sans multiplication par poids)
+        # Item 1 : weight=1.5, total_price=10.0 → contribue 10.0 au total (PAS 1.5 * 10.0 = 15.0)
+        # Item 2 : weight=0.75, total_price=5.50 → contribue 5.50 au total (PAS 0.75 * 5.50 = 4.125)
+        # Total attendu : 10.0 + 5.50 = 15.50
+        assert data["total_amount"] == 15.50, f"Expected total 15.50, got {data['total_amount']}"
+
+        # Vérification item 1 : poids et prix
+        item1 = data["items"][0]
+        assert item1["category"] == "EEE-1"
+        assert item1["quantity"] == 2
+        assert item1["weight"] == 1.5, f"Item 1: expected weight 1.5, got {item1['weight']}"
+        assert item1["unit_price"] == 10.0, f"Item 1: expected unit_price 10.0, got {item1['unit_price']}"
+        assert item1["total_price"] == 10.0, f"Item 1: expected total_price 10.0, got {item1['total_price']}"
+
+        # Vérification item 2 : poids et prix
+        item2 = data["items"][1]
+        assert item2["category"] == "EEE-2"
+        assert item2["weight"] == 0.75, f"Item 2: expected weight 0.75, got {item2['weight']}"
+        assert item2["unit_price"] == 5.50, f"Item 2: expected unit_price 5.50, got {item2['unit_price']}"
+        assert item2["total_price"] == 5.50, f"Item 2: expected total_price 5.50, got {item2['total_price']}"
 
     def test_create_sale_unauthorized(self, client: TestClient, test_cash_session):
         """Test de création d'une vente sans authentification"""

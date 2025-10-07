@@ -105,16 +105,82 @@ describe('Sale Page', () => {
     mockUseCashSessionStore.mockReturnValue(mockStore);
     mockUseCategoryStore.mockReturnValue(mockCategoryStore);
     vi.clearAllMocks();
+    // Mock window.alert
+    global.alert = vi.fn();
   });
 
   it('renders sale interface correctly', () => {
     render(<Sale />);
 
     expect(screen.getByText('Mode de saisie')).toBeInTheDocument();
-    // Target the mode button specifically to avoid confusion with form label
-    expect(screen.getByRole('button', { name: /catégorie/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /poids/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /prix/i })).toBeInTheDocument();
+    // Check for mode buttons using data-active attribute
+    const buttons = screen.getAllByRole('button');
+    const categoryButton = buttons.find(b => b.textContent === 'Catégorie' && b.hasAttribute('data-active'));
+    const weightButton = buttons.find(b => b.textContent === 'Poids');
+    const priceButton = buttons.find(b => b.textContent === 'Prix');
+
+    expect(categoryButton).toBeInTheDocument();
+    expect(weightButton).toBeInTheDocument();
+    expect(priceButton).toBeInTheDocument();
+  });
+
+  it('renders two-panel layout with wizard on left and ticket on right', () => {
+    render(<Sale />);
+
+    // Verify SaleWizard is present (left panel)
+    expect(screen.getByText('Mode de saisie')).toBeInTheDocument();
+    expect(screen.getByText('Sélectionner la catégorie EEE')).toBeInTheDocument();
+
+    // Verify Ticket is present (right panel)
+    expect(screen.getByText('Ticket de Caisse')).toBeInTheDocument();
+    expect(screen.getByText('Aucun article ajouté')).toBeInTheDocument();
+
+    // Verify Close Session button is present
+    expect(screen.getByText('Fermer la Session')).toBeInTheDocument();
+  });
+
+  it('updates ticket when item is added via wizard', async () => {
+    const addSaleItemMock = vi.fn();
+
+    mockUseCashSessionStore.mockReturnValue({
+      ...mockStore,
+      addSaleItem: addSaleItemMock
+    });
+
+    render(<Sale />);
+
+    // Complete flow: category -> weight -> price
+    await waitFor(() => {
+      expect(screen.getByText('Gros électroménager')).toBeInTheDocument();
+    });
+
+    const eee1Button = screen.getByTestId('category-EEE-1');
+    fireEvent.click(eee1Button);
+
+    const button5 = screen.getByText('5').closest('button');
+    fireEvent.click(button5!);
+
+    const calculatorWeightButton = document.querySelector('button[data-isvalid="true"]');
+    fireEvent.click(calculatorWeightButton!);
+
+    const button1 = screen.getByText('1').closest('button');
+    fireEvent.click(button1!);
+    fireEvent.click(screen.getByText('0').closest('button')!);
+
+    const calculatorPriceButton = document.querySelector('button[data-isvalid="true"]');
+    fireEvent.click(calculatorPriceButton!);
+
+    // Verify that addSaleItem was called with correct data
+    await waitFor(() => {
+      expect(addSaleItemMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'EEE-1',
+          weight: 5,
+          price: 10,
+          total: 10
+        })
+      );
+    });
   });
 
   it('shows category selector when in category mode', async () => {
@@ -302,9 +368,9 @@ describe('Sale Page', () => {
       expect(mockSubmitSale).toHaveBeenCalledWith(mockItems);
     });
 
-    // Message de succès ajouté dans Sale.tsx
+    // Check that alert was called with success message
     await waitFor(() => {
-      expect(screen.getByText('✅ Vente enregistrée avec succès !')).toBeInTheDocument();
+      expect(global.alert).toHaveBeenCalledWith('✅ Vente enregistrée avec succès !');
     });
   });
 
@@ -320,14 +386,20 @@ describe('Sale Page', () => {
       }
     ];
 
-    const error = new Error('Erreur lors de l\'enregistrement');
-    const mockSubmitSale = vi.fn().mockRejectedValue(error);
+    const mockSubmitSale = vi.fn().mockResolvedValue(false);
+    const mockGetState = vi.fn().mockReturnValue({
+      error: 'Erreur lors de l\'enregistrement'
+    });
 
     mockUseCashSessionStore.mockReturnValue({
       ...mockStore,
       currentSaleItems: mockItems,
-      submitSale: mockSubmitSale
+      submitSale: mockSubmitSale,
+      error: 'Erreur lors de l\'enregistrement'
     });
+
+    // Mock the getState function
+    (mockUseCashSessionStore as any).getState = mockGetState;
 
     render(<Sale />);
 
@@ -337,11 +409,9 @@ describe('Sale Page', () => {
       expect(mockSubmitSale).toHaveBeenCalledWith(mockItems);
     });
 
-    // Message d'erreur affiché par la page
+    // Check that alert was called with error message
     await waitFor(() => {
-      expect(
-        screen.getByText(/Erreur lors de l'enregistrement/i)
-      ).toBeInTheDocument();
+      expect(global.alert).toHaveBeenCalledWith('❌ Erreur lors de l\'enregistrement de la vente: Erreur lors de l\'enregistrement');
     });
   });
 });
