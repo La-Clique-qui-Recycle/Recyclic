@@ -57,6 +57,30 @@ docker-compose run --rm api-migrations alembic upgrade head
 -   **Variables d'environnement :** Toutes les variables PostgreSQL nécessaires sont automatiquement injectées.
 -   **Dépendances :** Le service attend que PostgreSQL soit démarré et sain avant d'exécuter les migrations.
 
+### Commandes de Diagnostic des Migrations
+
+Pour diagnostiquer les problèmes de migration, utilisez les commandes suivantes :
+
+```bash
+# Vérifier le nombre de têtes (doit être 1)
+docker-compose run --rm api-migrations alembic heads
+
+# Voir l'historique détaillé des migrations
+docker-compose run --rm api-migrations alembic history -v
+
+# Vérifier la révision actuelle de la base de données
+docker-compose run --rm api-migrations alembic current
+
+# Voir le plan d'upgrade sans l'exécuter
+docker-compose run --rm api-migrations alembic upgrade head --sql
+```
+
+**Problèmes courants et solutions :**
+
+1. **"Multiple head revisions are present"** : Plusieurs branches de migration existent. Contactez l'équipe de développement.
+2. **"Can't locate revision"** : Une révision est manquante ou corrompue. Vérifiez que tous les fichiers de migration sont présents dans `api/migrations/versions/`.
+3. **"Target database is not up to date"** : Exécutez `alembic upgrade head` pour mettre à jour.
+
 ### Lancer un Fichier de Test Spécifique
 
 Pour débugger, vous pouvez lancer un seul fichier :

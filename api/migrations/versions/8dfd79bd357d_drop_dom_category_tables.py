@@ -11,18 +11,24 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '8dfd79bd357d'
-down_revision = 'k1l2m3n4o5p6'
+down_revision = '24b194c1b790'
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
     """Drop dom_category and dom_category_closure tables."""
-    # Drop dom_category_closure table first (due to foreign key constraints)
+    # Drop foreign key constraints from ligne_depot first
+    op.drop_constraint('ligne_depot_dom_category_id_fkey', 'ligne_depot', type_='foreignkey')
+
+    # Drop dom_category_closure table (due to foreign key constraints)
     op.drop_table('dom_category_closure')
-    
+
     # Drop dom_category table
     op.drop_table('dom_category')
+
+    # Drop the dom_category_id column from ligne_depot (no longer needed)
+    op.drop_column('ligne_depot', 'dom_category_id')
 
 
 def downgrade() -> None:

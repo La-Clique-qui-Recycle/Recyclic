@@ -1,7 +1,7 @@
 """Robust migration of data from dom_category to categories with idempotence
 
 Revision ID: k1l2m3n4o5p6
-Revises: 9a2b3c4d5e6f
+Revises: g1h2i3j4k5l6
 Create Date: 2025-01-27 13:30:00.000000
 
 """

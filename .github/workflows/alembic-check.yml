@@ -1,0 +1,134 @@
+name: Alembic Migration Check
+
+on:
+  pull_request:
+    paths:
+      - 'api/migrations/versions/**'
+      - 'api/alembic.ini'
+      - '.github/workflows/alembic-check.yml'
+
+jobs:
+  alembic-validation:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: recyclic
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: recyclic_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'api/requirements.txt'
+
+      - name: Install dependencies
+        working-directory: api
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configure Alembic for CI
+        working-directory: api
+        run: |
+          # Update alembic.ini to use CI database
+          sed -i 's|sqlalchemy.url = .*|sqlalchemy.url = postgresql://recyclic:postgres@localhost:5432/recyclic_test|' alembic.ini
+
+      - name: Check single migration head
+        working-directory: api
+        run: |
+          echo "Checking for single migration head..."
+          HEADS=$(alembic heads)
+          echo "Current heads: $HEADS"
+
+          # Count number of heads (should be exactly 1)
+          HEAD_COUNT=$(echo "$HEADS" | grep -c "(head)" || echo "0")
+
+          if [ "$HEAD_COUNT" -ne 1 ]; then
+            echo "❌ ERROR: Expected exactly 1 head, found $HEAD_COUNT"
+            echo "Multiple heads detected. Please merge migration branches."
+            exit 1
+          fi
+
+          # Verify the head is m3npr1c3dr0p (current expected head)
+          if ! echo "$HEADS" | grep -q "m3npr1c3dr0p"; then
+            echo "⚠️  WARNING: Expected head 'm3npr1c3dr0p' not found"
+            echo "This may be expected if new migrations were added"
+          fi
+
+          echo "✅ Single migration head confirmed"
+
+      - name: Verify migration history integrity
+        working-directory: api
+        run: |
+          echo "Verifying migration history..."
+          alembic history -v > history.txt
+
+          # Check for any duplicate revision IDs
+          if grep -E "^Rev:" history.txt | cut -d' ' -f2 | sort | uniq -d | grep -q .; then
+            echo "❌ ERROR: Duplicate revision IDs detected"
+            exit 1
+          fi
+
+          echo "✅ No duplicate revisions found"
+
+      - name: Test dry-run upgrade to head
+        working-directory: api
+        run: |
+          echo "Testing SQL generation for upgrade..."
+          alembic upgrade head --sql > upgrade.sql
+
+          # Verify SQL was generated
+          if [ ! -s upgrade.sql ]; then
+            echo "❌ ERROR: No SQL generated for upgrade"
+            exit 1
+          fi
+
+          echo "✅ SQL generation successful"
+          echo "Generated $(wc -l < upgrade.sql) lines of SQL"
+
+      - name: Test actual upgrade to head
+        working-directory: api
+        run: |
+          echo "Executing migrations..."
+          alembic upgrade head
+
+          echo "✅ All migrations executed successfully"
+
+      - name: Verify current revision
+        working-directory: api
+        run: |
+          echo "Verifying database is at expected revision..."
+          CURRENT=$(alembic current)
+          echo "Current revision: $CURRENT"
+
+          if [ -z "$CURRENT" ]; then
+            echo "❌ ERROR: No current revision found"
+            exit 1
+          fi
+
+          echo "✅ Database at current revision"
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "🎉 All Alembic checks passed!"
+          echo "✅ Single migration head"
+          echo "✅ No duplicate revisions"
+          echo "✅ SQL generation successful"
+          echo "✅ Migrations execute without errors"

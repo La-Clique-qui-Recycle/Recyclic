@@ -12,22 +12,12 @@ from sqlalchemy.dialects.postgresql import UUID
 
 # revision identifiers, used by Alembic.
 revision = 'g1h2i3j4k5l6'
-down_revision = 'b1c2d3e4f5a6'
+down_revision = 'f4g5h6i7j8k9'
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    # Create categories table if it doesn't exist
-    op.create_table(
-        'categories',
-        sa.Column('id', UUID(as_uuid=True), primary_key=True, nullable=False),
-        sa.Column('name', sa.String(), nullable=False, unique=True, index=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-    )
-    
     # Add parent_id column to categories table
     op.add_column('categories', sa.Column('parent_id', UUID(as_uuid=True), nullable=True))
     
