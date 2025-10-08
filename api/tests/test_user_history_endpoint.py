@@ -49,7 +49,7 @@ def test_user(db_session: Session):
         hashed_password=hash_password("userpwd"),
         first_name="Test",
         last_name="User",
-        role=UserRole.CASHIER,
+    role=UserRole.USER,
         status=UserStatus.APPROVED,
         is_active=True
     )

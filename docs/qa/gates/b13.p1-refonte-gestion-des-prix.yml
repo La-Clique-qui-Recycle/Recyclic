@@ -1,0 +1,36 @@
+schema: 1
+story: "b13.p1"
+story_title: "Refonte de la Gestion des Prix des Catégories"
+gate: PASS
+status_reason: "Refonte conforme: price utilisé comme minimum, suppression de min_price, max_price géré; UI et API alignées"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T11:10:00Z"
+
+# Issues non bloquantes
+top_issues: []
+
+waiver: { active: false }
+
+quality_score: 94
+
+# Evidence
+evidence:
+  tests_reviewed: 8
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ac_gaps: []
+
+nfr_validation:
+  security: { status: PASS, notes: "Aucun impact sécurité côté prix" }
+  performance: { status: PASS, notes: "Pas d'impact notable; simple logique conditionnelle" }
+  reliability: { status: PASS, notes: "Validations côté service et UI" }
+  maintainability: { status: PASS, notes: "Schémas et services nettoyés; suppression min_price" }
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter message d'aide UI: Prix saisi doit être entre min et max"
+      refs: ["frontend/src/components/business/SaleWizard.tsx", "frontend/src/components/business/CategoryForm.tsx"]
+    - action: "Ajouter test e2e couvrant flux prix min/max en caisse"
+      refs: ["frontend/src/test/integration/cash-register-workflow.test.tsx"]

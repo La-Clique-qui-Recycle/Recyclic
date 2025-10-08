@@ -26,7 +26,7 @@ def test_user(client, db_session: Session):
         hashed_password=hashed_password,
         first_name="Test",
         last_name="Cashier",
-        role=UserRole.CASHIER,
+    role=UserRole.USER,
         status=UserStatus.APPROVED,
         is_active=True
     )

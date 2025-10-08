@@ -80,9 +80,12 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     )
   }
 
+  // Filtrer pour ne montrer que les catégories racines (sans parent_id)
+  const rootCategories = activeCategories.filter(category => !category.parent_id);
+
   return (
     <CategoryContainer role="group" aria-label="Sélection de catégorie">
-      {activeCategories.map((category) => (
+      {rootCategories.map((category) => (
         <CategoryButton
           key={category.id}
           $selected={selectedCategory === category.id}
@@ -93,7 +96,9 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           aria-label={`Sélectionner la catégorie ${category.name}`}
         >
           <CategoryName>{category.name}</CategoryName>
-          <CategoryDescription>{category.id}</CategoryDescription>
+          {category.description && (
+            <CategoryDescription>{category.description}</CategoryDescription>
+          )}
         </CategoryButton>
       ))}
     </CategoryContainer>

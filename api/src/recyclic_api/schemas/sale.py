@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator, ConfigDict
 from uuid import UUID
 from typing import List, Optional
 from datetime import datetime
+from recyclic_api.models.sale import PaymentMethod
 
 class SaleItemBase(BaseModel):
     category: str
@@ -27,11 +28,15 @@ class SaleItemResponse(SaleItemBase):
 class SaleBase(BaseModel):
     cash_session_id: str
     total_amount: float
+    donation: Optional[float] = 0.0
+    payment_method: Optional[PaymentMethod] = PaymentMethod.CASH
 
 class SaleCreate(BaseModel):
     cash_session_id: UUID
     items: List[SaleItemCreate]
     total_amount: float
+    donation: Optional[float] = 0.0
+    payment_method: Optional[PaymentMethod] = PaymentMethod.CASH
 
 class SaleResponse(SaleBase):
     id: str

@@ -19,7 +19,6 @@ vi.mock('../../services/adminService', () => ({
     SUPER_ADMIN: 'super-admin',
     ADMIN: 'admin',
     MANAGER: 'manager',
-    CASHIER: 'cashier',
     USER: 'user',
   },
   UserStatus: {

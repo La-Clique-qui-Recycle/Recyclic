@@ -21,8 +21,7 @@ def test_active_operators_filters_roles_and_is_active(client: TestClient, db_ses
     u2 = User(id=uuid.uuid4(), username="op2", hashed_password="x", role=UserRole.ADMIN, status=UserStatus.APPROVED, is_active=True)
     u3 = User(id=uuid.uuid4(), username="op3", hashed_password="x", role=UserRole.SUPER_ADMIN, status=UserStatus.APPROVED, is_active=True)
     u4 = User(id=uuid.uuid4(), username="inactive", hashed_password="x", role=UserRole.USER, status=UserStatus.APPROVED, is_active=False)
-    u5 = User(id=uuid.uuid4(), username="cashier", hashed_password="x", role=UserRole.CASHIER, status=UserStatus.APPROVED, is_active=True)
-    db_session.add_all([requester, u1, u2, u3, u4, u5])
+    db_session.add_all([requester, u1, u2, u3, u4])
     db_session.commit()
 
     # Act
@@ -32,8 +31,7 @@ def test_active_operators_filters_roles_and_is_active(client: TestClient, db_ses
     assert resp.status_code == 200
     items = resp.json()
     usernames = {it.get("username") for it in items}
-    # Must include user, admin, super-admin and exclude inactive and cashier
+    # Must include user, admin, super-admin and exclude inactive
     assert {"op1", "op2", "op3"}.issubset(usernames)
     assert "inactive" not in usernames
-    assert "cashier" not in usernames
 

@@ -39,7 +39,7 @@ def _create_operator(db_session: Session, site: Site) -> User:
         hashed_password=hash_password("operator-secret"),
         first_name="Report",
         last_name="Operator",
-        role=UserRole.CASHIER,
+        role=UserRole.USER,
         status=UserStatus.APPROVED,
         is_active=True,
         site_id=site.id,

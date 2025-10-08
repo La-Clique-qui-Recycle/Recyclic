@@ -12,6 +12,8 @@ from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.core.security import hash_password
 
+pytestmark = pytest.mark.skip(reason="Telegram retiré du système - tests désactivés")
+
 def validate_with_resolver(instance, schema, openapi_schema):
     """Valide une instance contre un schéma OpenAPI avec résolution des références."""
     # Résoudre manuellement les références $ref dans le schéma

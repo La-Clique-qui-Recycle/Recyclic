@@ -27,6 +27,9 @@ describe('AdminLayout', () => {
     // Check that the sidebar title is present
     expect(screen.getByText('Administration')).toBeInTheDocument();
 
+    // Check for "Return to App" link
+    expect(screen.getByText('Retour à l\'application')).toBeInTheDocument();
+
     // Check that all navigation items are present
     expect(screen.getByText('Tableau de bord')).toBeInTheDocument();
     expect(screen.getByText('Utilisateurs')).toBeInTheDocument();
@@ -77,5 +80,13 @@ describe('AdminLayout', () => {
     // Check for main content area
     const main = screen.getByRole('main');
     expect(main).toBeInTheDocument();
+  });
+
+  it('should have a back link to return to the main application', () => {
+    renderWithRouter();
+
+    const backLink = screen.getByRole('link', { name: /retourner à l'application principale/i });
+    expect(backLink).toBeInTheDocument();
+    expect(backLink).toHaveAttribute('href', '/');
   });
 });

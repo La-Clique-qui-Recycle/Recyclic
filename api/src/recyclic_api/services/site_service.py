@@ -84,9 +84,9 @@ class SiteService:
                 f"{cash_registers_count} poste(s) de caisse y sont associés."
             )
 
-        # Check for users with this site as primary
+        # Check for users assigned to this site
         users_count = self._db.query(User).filter(
-            User.primary_site_id == site.id
+            User.site_id == site.id
         ).count()
 
         if users_count > 0:

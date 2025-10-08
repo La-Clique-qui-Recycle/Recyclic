@@ -4,7 +4,15 @@ from typing import List
 from recyclic_api.core.database import get_db
 from recyclic_api.core.uuid_validation import validate_and_convert_uuid
 from recyclic_api.models.user import User, UserRole
-from recyclic_api.schemas.user import UserResponse, UserCreate, UserUpdate, UserStatusUpdate, LinkTelegramRequest
+from recyclic_api.schemas.user import (
+    UserResponse,
+    UserCreate,
+    UserUpdate,
+    UserStatusUpdate,
+    LinkTelegramRequest,
+    UserSelfUpdate,
+    PasswordChangeRequest,
+)
 from recyclic_api.schemas.pin import PinSetRequest
 from recyclic_api.core.auth import require_role_strict, get_current_user
 from recyclic_api.core.security import hash_password
@@ -12,6 +20,55 @@ from recyclic_api.services.telegram_link_service import TelegramLinkService
 from recyclic_api.utils.rate_limit import conditional_rate_limit
 
 router = APIRouter()
+
+
+# --- Self endpoints MUST come before /{user_id} to avoid route shadowing ---
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    payload: UserSelfUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour les informations de l'utilisateur connecté (champs non sensibles)."""
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.put("/me/password", response_model=dict)
+async def change_my_password(
+    payload: PasswordChangeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Changer le mot de passe de l'utilisateur connecté."""
+    # La validation de robustesse et de confirmation est gérée par le schéma
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}
+
+
+@router.put("/me/pin", response_model=dict)
+async def set_user_pin(
+    pin_request: PinSetRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Définir ou modifier le PIN de l'utilisateur connecté.
+
+    Le PIN doit être exactement 4 chiffres et sera haché avant stockage.
+    """
+    # Hash the PIN using the same security mechanism as passwords
+    current_user.hashed_pin = hash_password(pin_request.pin)
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {"message": "PIN successfully set"}
 
 @router.get("/active-operators", response_model=List[UserResponse])
 async def get_active_operators(db: Session = Depends(get_db), current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))):
@@ -95,6 +152,7 @@ async def delete_user(user_id: str, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "User deleted successfully"}
 
+
 @conditional_rate_limit("5/minute")
 @router.post("/link-telegram", response_model=dict)
 async def link_telegram_account(link_request: LinkTelegramRequest, request: Request, db: Session = Depends(get_db)):
@@ -118,22 +176,5 @@ async def link_telegram_account(link_request: LinkTelegramRequest, request: Requ
         raise HTTPException(status_code=400, detail=message)
 
 
-@router.put("/me/pin", response_model=dict)
-async def set_user_pin(
-    pin_request: PinSetRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Définir ou modifier le PIN de l'utilisateur connecté.
-
-    Le PIN doit être exactement 4 chiffres et sera haché avant stockage.
-    """
-    # Hash the PIN using the same security mechanism as passwords
-    current_user.hashed_pin = hash_password(pin_request.pin)
-
-    db.commit()
-    db.refresh(current_user)
-
-    return {"message": "PIN successfully set"}
 
 

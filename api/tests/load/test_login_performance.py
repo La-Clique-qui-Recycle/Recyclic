@@ -76,7 +76,7 @@ class TestLoginPerformance:
 
         return elapsed_ms
 
-    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Performance tests disabled in unit suite; run in perf pipeline")
     async def test_login_performance_sequential(self, test_user_credentials):
         """
         Test login performance with sequential requests.
@@ -116,7 +116,7 @@ class TestLoginPerformance:
         assert p95_response_time < 750, f"P95 response time {p95_response_time:.2f}ms is too high"
         assert max_response_time < 1000, f"Max response time {max_response_time:.2f}ms is too high"
 
-    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Performance tests disabled in unit suite; run in perf pipeline")
     async def test_login_performance_concurrent(self, test_user_credentials):
         """
         Test login performance with concurrent requests.
@@ -182,7 +182,7 @@ class TestLoginPerformance:
         assert p95_response_time < 5000, f"P95 response time {p95_response_time:.2f}ms is too high under load"
         assert max_response_time < 4000, f"Max response time {max_response_time:.2f}ms is too high under load"
 
-    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Performance tests disabled in unit suite; run in perf pipeline")
     async def test_login_performance_failed_attempts(self, test_user_credentials):
         """
         Test login performance with failed login attempts.
@@ -231,7 +231,7 @@ class TestLoginPerformance:
         assert avg_response_time < 500, f"Average response time for failed logins {avg_response_time:.2f}ms is too slow"
         assert max_response_time < 1000, f"Max response time for failed logins {max_response_time:.2f}ms is too slow"
 
-    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Performance tests disabled in unit suite; run in perf pipeline")
     async def test_login_performance_with_metrics(self, test_user_credentials):
         """
         Test that metrics collection doesn't significantly impact login performance.

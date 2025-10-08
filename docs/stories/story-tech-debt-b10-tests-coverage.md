@@ -28,6 +28,7 @@
 - [ ] **Tests d'Intégration (Composants) :**
     - [ ] Créer un fichier de test pour `PinSettings.tsx` et tester la logique de validation et de soumission.
     - [ ] Créer un fichier de test pour `OperatorLockScreen.tsx` et tester ses deux modes (liste et PIN).
+    - [ ] **(Nouveau B13)** Créer un fichier de test pour la page `AdminDashboard.tsx` afin de valider le fonctionnement des filtres (par date et par opérateur) sur l'historique des sessions.
 - [ ] **Tests de Régression Visuelle :**
     - [ ] Intégrer un outil de test de régression visuelle (ex: Playwright, Percy, ou autre) sur la page de vente.
     - [ ] Créer un test de snapshot de référence de l'interface de vente.

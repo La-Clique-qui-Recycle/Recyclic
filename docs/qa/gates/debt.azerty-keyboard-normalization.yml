@@ -1,0 +1,35 @@
+title: Normalisation util clavier AZERTY (frontend)
+type: DEBT
+area: frontend
+component: utils/azertyKeyboard.ts
+decision: RESOLVED
+status: DONE
+createdAt: 2025-10-08
+updatedAt: 2025-10-08
+owner: DEV Agent
+rationale:
+  - L’utilitaire `frontend/src/utils/azertyKeyboard.ts` a été complété (Shift/AltGr, filtrage strict)
+  - Tests unitaires ajoutés et verts; util prêt pour homogénéiser l’entrée numérique
+scope:
+  - Compléter `isAZERTYShiftMapped(key, event)` et `isSpecialKey(key)`
+  - Vérifier et documenter l’usage (si non utilisé, préparer migration future)
+  - Couvrir par tests unitaires
+tasks:
+  - Implémenter `isAZERTYShiftMapped` (support Shift/AltGr) et `isSpecialKey` (Backspace/Delete/., ,) ✅
+  - Renforcer `mapAZERTYToNumeric` et `handleAZERTYInput` avec cas limites (maxLength, décimales) ✅
+  - Ajouter `frontend/src/utils/azertyKeyboard.test.ts` (tests clés: top-row, Shift, AltGr, Backspace/Delete, virgule) ✅
+  - Optionnel: unifier usages pour quantité/prix si pertinent (sinon laisser en util prêt) ➖
+acceptance:
+  - 100% des tests unitaires verts ✅
+  - Comportement identique ou meilleur que `weightMask` pour cas couverts ✅
+  - Pas de régressions UX (tests e2e non requis pour cette dette) ✅
+evidence:
+  - code:
+      - frontend/src/utils/azertyKeyboard.ts
+      - frontend/src/utils/weightMask.ts (intégration poids conservée)
+  - tests:
+      - frontend/src/utils/azertyKeyboard.test.ts (21 tests PASS)
+      - frontend/src/utils/lineAmount.test.ts (7 tests PASS, locale/fragments validés)
+  - notes:
+      - L’utilitaire est prêt pour unifier quantité/prix ultérieurement, sans changer `weightMask.ts` dans cette dette
+

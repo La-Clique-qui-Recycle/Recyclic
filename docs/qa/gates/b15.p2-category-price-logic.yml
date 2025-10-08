@@ -1,0 +1,42 @@
+schema: 1
+story: "STORY-B15-P2-CATEGORY-PRICE-LOGIC"
+story_title: "Affiner la Logique de Prix sur les Catégories 'Feuilles'"
+gate: PASS
+status_reason: "Validation 'leaf categories only' implémentée backend/frontend, tests d'intégration ajoutés, interface adaptée avec désactivation des champs prix."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-07T00:00:00Z"
+
+top_issues: []
+
+waiver: { active: false }
+
+quality_score: 96
+
+evidence:
+  tests_reviewed: 5
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Pas d'impact sécurité direct."
+  performance:
+    status: PASS
+    notes: "Impact minimal; validation simple."
+  reliability:
+    status: PASS
+    notes: "Logique métier claire et bien testée."
+  maintainability:
+    status: PASS
+    notes: "Code lisible avec messages explicatifs utilisateur."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter script de migration pour vérifier catégories existantes avec prix ET enfants"
+      refs: ["api/migrations/"]
+    - action: "Considérer indicateur visuel pour identifier catégories 'feuilles'"
+      refs: ["frontend/src/components/business/CategoryForm.tsx"]

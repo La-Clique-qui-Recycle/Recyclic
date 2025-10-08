@@ -44,7 +44,6 @@ vi.mock('../../generated/api', () => ({
 vi.mock('../../generated/types', () => ({
   UserRole: {
     USER: 'user',
-    CASHIER: 'cashier',
     MANAGER: 'manager',
     ADMIN: 'admin',
     SUPER_ADMIN: 'super-admin'

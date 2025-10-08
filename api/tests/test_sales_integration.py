@@ -32,7 +32,7 @@ class TestSalesIntegration:
             "id": uuid.uuid4(),
             "username": "test_cashier",
             "hashed_password": "hashed_password",
-            "role": UserRole.CASHIER,
+    "role": UserRole.USER,
             "status": UserStatus.APPROVED,
             "is_active": True
         }
@@ -119,7 +119,9 @@ class TestSalesIntegration:
                     "total_price": 5.50
                 }
             ],
-            "total_amount": 15.50  # Mis à jour car total = 10.0 + 5.50
+            "total_amount": 15.50,  # Mis à jour car total = 10.0 + 5.50
+            "donation": 2.50,
+            "payment_method": "cash"
         }
 
         # Créer la vente
@@ -158,6 +160,59 @@ class TestSalesIntegration:
         assert item2["weight"] == 0.75, f"Item 2: expected weight 0.75, got {item2['weight']}"
         assert item2["unit_price"] == 5.50, f"Item 2: expected unit_price 5.50, got {item2['unit_price']}"
         assert item2["total_price"] == 5.50, f"Item 2: expected total_price 5.50, got {item2['total_price']}"
+
+        # Vérification des nouveaux champs (Story B14-P1)
+        assert data["donation"] == 2.50, f"Expected donation 2.50, got {data['donation']}"
+        assert data["payment_method"] == "cash", f"Expected payment_method 'cash', got {data['payment_method']}"
+
+    def test_create_sale_with_card_payment_and_donation(self, client: TestClient, test_cashier, test_site, test_cash_register, test_cash_session, cashier_token, db_session):
+        """
+        Test de création d'une vente avec paiement carte et don.
+
+        Story B14-P1: Valide que donation et payment_method sont bien enregistrés.
+        """
+        # Créer les données de test en base
+        user = User(**test_cashier)
+        site = Site(**test_site)
+        cash_register = CashRegister(**test_cash_register)
+        cash_session = CashSession(**test_cash_session)
+
+        db_session.add(user)
+        db_session.add(site)
+        db_session.add(cash_register)
+        db_session.add(cash_session)
+        db_session.commit()
+
+        # Données de la vente avec paiement carte et don
+        sale_data = {
+            "cash_session_id": str(test_cash_session["id"]),
+            "items": [
+                {
+                    "category": "EEE-3",
+                    "quantity": 1,
+                    "weight": 2.0,
+                    "unit_price": 20.0,
+                    "total_price": 20.0
+                }
+            ],
+            "total_amount": 20.0,
+            "donation": 5.0,
+            "payment_method": "card"
+        }
+
+        response = client.post(
+            "/api/v1/sales/",
+            json=sale_data,
+            headers={"Authorization": f"Bearer {cashier_token}"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Vérifications
+        assert data["total_amount"] == 20.0
+        assert data["donation"] == 5.0
+        assert data["payment_method"] == "card"
 
     def test_create_sale_unauthorized(self, client: TestClient, test_cash_session):
         """Test de création d'une vente sans authentification"""

@@ -57,7 +57,7 @@ def test_dashboard_stats_endpoint(admin_client: TestClient, db_session: Session)
     app.dependency_overrides[get_current_user] = lambda: admin_user
     
     try:
-        response = admin_client.get(f"/api/v1/admin/dashboard/dashboard/stats?site_id={site.id}")
+        response = admin_client.get(f"/api/v1/admin/dashboard/stats?site_id={site.id}")
         
         assert response.status_code == 200
         data = response.json()

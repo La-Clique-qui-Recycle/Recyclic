@@ -278,7 +278,7 @@ export default function CloseSession() {
       });
 
       if (success) {
-        navigate('/dashboard');
+        navigate('/admin');
       }
     } catch (err) {
       console.error('Erreur lors de la fermeture de session:', err);

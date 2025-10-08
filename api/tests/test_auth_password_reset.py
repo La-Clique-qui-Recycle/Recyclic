@@ -6,10 +6,14 @@ Story auth.E - Gestion du Mot de Passe Oublié
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from datetime import timedelta
 
 from recyclic_api.main import app
 from recyclic_api.models.user import User, UserRole, UserStatus
-from recyclic_api.core.security import hash_password, create_reset_token, verify_reset_token
+from recyclic_api.core.security import hash_password, create_password_reset_token, verify_reset_token
+
+# Import the deprecated alias only for the compatibility tests
+from recyclic_api.core.security import create_reset_token
 
 
 class TestAuthPasswordResetEndpoints:
@@ -122,7 +126,7 @@ class TestAuthPasswordResetEndpoints:
         db_session.refresh(test_user)
 
         # Générer un token de réinitialisation valide
-        reset_token = create_reset_token(str(test_user.id))
+        reset_token = create_password_reset_token(str(test_user.id))
 
         # Réinitialiser le mot de passe
         response = client.post(
@@ -177,7 +181,7 @@ class TestAuthPasswordResetEndpoints:
 
         # Générer un token expiré (expiration immédiate)
         from datetime import timedelta
-        expired_token = create_reset_token(str(test_user.id), timedelta(seconds=-1))
+        expired_token = create_password_reset_token(str(test_user.id), timedelta(seconds=-1))
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -230,7 +234,7 @@ class TestAuthPasswordResetEndpoints:
 
         # Générer un token pour un ID d'utilisateur inexistant
         fake_user_id = "99999999-9999-9999-9999-999999999999"
-        reset_token = create_reset_token(fake_user_id)
+        reset_token = create_password_reset_token(fake_user_id)
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -262,7 +266,7 @@ class TestAuthPasswordResetEndpoints:
         db_session.refresh(inactive_user)
 
         # Générer un token valide pour cet utilisateur
-        reset_token = create_reset_token(str(inactive_user.id))
+        reset_token = create_password_reset_token(str(inactive_user.id))
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -317,7 +321,7 @@ class TestAuthPasswordResetEndpoints:
         db_session.commit()
         db_session.refresh(test_user)
 
-        reset_token = create_reset_token(str(test_user.id))
+        reset_token = create_password_reset_token(str(test_user.id))
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -348,7 +352,7 @@ class TestAuthPasswordResetEndpoints:
         db_session.commit()
         db_session.refresh(test_user)
 
-        reset_token = create_reset_token(str(test_user.id))
+        reset_token = create_password_reset_token(str(test_user.id))
 
         response = client.post(
             "/api/v1/auth/reset-password",
@@ -380,7 +384,7 @@ class TestAuthPasswordResetEndpoints:
         db_session.refresh(test_user)
 
         # Test de création et vérification de token
-        token = create_reset_token(str(test_user.id))
+        token = create_password_reset_token(str(test_user.id))
         assert isinstance(token, str)
         assert len(token) > 0
 
@@ -410,3 +414,54 @@ class TestAuthPasswordResetEndpoints:
             json={"email": "ratelimit@example.com"}
         )
         assert response.status_code == 200
+
+
+class TestResetTokenAliasCompatibility:
+    """Tests unitaires pour l'alias create_reset_token (backward compatibility)"""
+
+    def test_alias_creates_valid_token(self):
+        """Test que l'alias create_reset_token crée un token valide identique à create_password_reset_token"""
+        user_id = "test-user-123"
+
+        # Créer un token via l'alias
+        token_from_alias = create_reset_token(user_id)
+
+        # Vérifier que le token est une chaîne non vide
+        assert isinstance(token_from_alias, str)
+        assert len(token_from_alias) > 0
+
+        # Vérifier que le token peut être vérifié
+        verified_user_id = verify_reset_token(token_from_alias)
+        assert verified_user_id == user_id
+
+    def test_alias_respects_expiration_delta(self):
+        """Test que l'alias respecte le paramètre expires_delta"""
+        user_id = "test-user-456"
+        custom_expiration = timedelta(minutes=5)
+
+        # Créer un token avec expiration personnalisée via l'alias
+        token_from_alias = create_reset_token(user_id, expires_delta=custom_expiration)
+
+        # Vérifier que le token est valide
+        assert isinstance(token_from_alias, str)
+        assert len(token_from_alias) > 0
+
+        # Vérifier que le token peut être vérifié
+        verified_user_id = verify_reset_token(token_from_alias)
+        assert verified_user_id == user_id
+
+    def test_alias_behaves_identically_to_original(self):
+        """Test que l'alias produit des tokens équivalents à la fonction originale"""
+        user_id = "test-user-789"
+
+        # Créer des tokens avec les deux fonctions
+        token_from_alias = create_reset_token(user_id)
+        token_from_original = create_password_reset_token(user_id)
+
+        # Les tokens seront différents (timestamps différents) mais les deux doivent être valides
+        verified_from_alias = verify_reset_token(token_from_alias)
+        verified_from_original = verify_reset_token(token_from_original)
+
+        # Les deux doivent retourner le même user_id
+        assert verified_from_alias == user_id
+        assert verified_from_original == user_id

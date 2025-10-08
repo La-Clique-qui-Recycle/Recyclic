@@ -1,0 +1,43 @@
+gate_id: "epic-maintenance-et-dette-technique.story-b14-p3-bug-reception-422"
+story_id: "story-b14-p3-bug-reception-422"
+epic: "Maintenance & Dette Technique"
+title: "Correction de l'Erreur 422 (Unprocessable Entity) à l'Ajout d'une Ligne en Réception"
+reviewer: "Quinn (Test Architect & Quality Advisor)"
+review_date: "2025-01-27"
+gate_decision: "CONCERNS"
+implementation_status: "NOT_STARTED"
+tests_status: "NOT_STARTED"
+
+summary: |
+  Le bug 422 lors de l'ajout d'une ligne en réception nécessite une investigation approfondie. 
+  Le problème semble être un désalignement entre le format des données envoyées par le frontend 
+  et celui attendu par le backend.
+
+validations:
+  - "API Backend identifiée: Endpoint POST /api/v1/reception/lignes dans api/src/recyclic_api/api/api_v1/endpoints/reception.py (lignes 80-108)"
+  - "Schéma backend analysé: CreateLigneRequest attend ticket_id, category_id, poids_kg, destination, notes"
+  - "Frontend identifié: Service receptionService.ts envoie dom_category_id au lieu de category_id"
+  - "Désalignement confirmé: Le frontend envoie dom_category_id mais l'API attend category_id"
+
+risks:
+  - risk: "Désalignement API"
+    description: "Le frontend et le backend utilisent des noms de champs différents"
+    severity: "high"
+  - risk: "Impact utilisateur"
+    description: "Le module de réception est complètement bloqué"
+    severity: "critical"
+  - risk: "Complexité"
+    description: "Peut nécessiter des modifications sur le frontend ET le backend"
+    severity: "medium"
+
+recommendations:
+  - "Action immédiate: Corriger le mapping des champs dans frontend/src/services/receptionService.ts"
+  - "Investigation: Vérifier si d'autres endpoints ont le même problème de désalignement"
+  - "Tests: Ajouter des tests d'intégration pour valider la cohérence des schémas API"
+  - "Documentation: Documenter les conventions de nommage des champs API"
+
+technical_notes:
+  - "Root cause: Désalignement entre frontend (dom_category_id) et backend (category_id)"
+  - "Impact: Module de réception complètement bloqué"
+  - "Solution: Corriger le mapping des champs dans receptionService.ts"
+  - "Prevention: Tests d'intégration et documentation des conventions API"

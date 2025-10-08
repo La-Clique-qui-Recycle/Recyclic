@@ -1,0 +1,25 @@
+storyId: STORY-B19-P1
+epic: Refonte du Workflow de Caisse V2
+title: Raffinements du Workflow de Saisie de la Caisse
+priority: P1
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Tests B19P1 validés: 8/8 tests passent avec couverture complète des AC
+  - Navigation non-linéaire: Breadcrumb cliquable testé et fonctionnel
+  - Page Poids: Pas d'auto-add, bouton +, Enter validés
+  - Page Quantité: Calcul temps réel et Enter validés
+  - Support AZERTY: Touches clavier étendues validées
+mustTests:
+  - AC1 Navigation: Breadcrumb permet retour à étapes précédentes
+  - AC2 Poids: Pas d'auto-add, ajout manuel via bouton +, validation Enter
+  - AC3 Quantité: Calcul dynamique prix×quantité, validation Enter
+  - AC4 AZERTY: Support touches &é"'(-è_çà → 1-0 sur poids et quantité
+qualityAttributes:
+  - accessibility: focus visible, ARIA labels/roles, navigation clavier complète.
+  - performance: pas de frame drops pendant calculs; handlers clavier légers.
+  - usability: lisibilité et actions primaires au-dessus du pli sur 3 tailles.
+status: APPROVED
+

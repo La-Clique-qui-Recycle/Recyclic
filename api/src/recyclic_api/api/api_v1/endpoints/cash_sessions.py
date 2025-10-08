@@ -25,7 +25,9 @@ from recyclic_api.schemas.cash_session import (
     CashSessionResponse,
     CashSessionListResponse,
     CashSessionFilters,
-    CashSessionStats
+    CashSessionStats,
+    CashSessionDetailResponse,
+    SaleDetail
 )
 from recyclic_api.services.cash_session_service import CashSessionService
 from uuid import UUID
@@ -97,7 +99,7 @@ logger = logging.getLogger(__name__)
 async def create_cash_session(
     session_data: CashSessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     try:
@@ -166,7 +168,7 @@ async def create_cash_session(
 async def get_cash_session_status(
     register_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     session = service.get_open_session_by_register(register_id)
@@ -243,7 +245,7 @@ async def get_cash_sessions(
     date_from: Optional[datetime] = Query(None, description="Date de début (ISO 8601)"),
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     
@@ -267,10 +269,140 @@ async def get_cash_sessions(
     )
 
 
+@router.get(
+    "/{session_id}",
+    response_model=CashSessionDetailResponse,
+    summary="Récupérer les détails d'une session de caisse",
+    description="""
+    Récupère les détails complets d'une session de caisse, y compris toutes les ventes associées.
+    
+    **Permissions requises :** ADMIN ou SUPER_ADMIN
+    
+    **Informations retournées :**
+    - Détails de la session (opérateur, montants, dates, etc.)
+    - Liste complète des ventes avec leurs détails
+    - Informations sur l'opérateur et le site
+    
+    **Audit :** L'accès aux détails de session est tracé dans les logs d'audit
+    """,
+    responses={
+        200: {
+            "description": "Détails de la session récupérés avec succès",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "operator_id": "550e8400-e29b-41d4-a716-446655440001",
+                        "operator_name": "Jean Dupont",
+                        "site_id": "550e8400-e29b-41d4-a716-446655440002",
+                        "site_name": "Site Principal",
+                        "initial_amount": 50.0,
+                        "current_amount": 100.0,
+                        "status": "closed",
+                        "opened_at": "2025-01-27T10:30:00Z",
+                        "closed_at": "2025-01-27T18:00:00Z",
+                        "total_sales": 50.0,
+                        "total_items": 5,
+                        "sales": [
+                            {
+                                "id": "550e8400-e29b-41d4-a716-446655440003",
+                                "total_amount": 25.0,
+                                "donation": 5.0,
+                                "payment_method": "cash",
+                                "created_at": "2025-01-27T11:00:00Z",
+                                "operator_id": "550e8400-e29b-41d4-a716-446655440001"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Session non trouvée",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Session de caisse non trouvée"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Accès non autorisé",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Accès non autorisé"
+                    }
+                }
+            }
+        }
+    },
+    tags=["Sessions de Caisse"]
+)
+async def get_cash_session_detail(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    """Récupère les détails complets d'une session de caisse avec ses ventes."""
+    service = CashSessionService(db)
+    
+    try:
+        # Récupérer la session avec ses relations
+        session = service.get_session_with_details(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=404,
+                detail="Session de caisse non trouvée"
+            )
+        
+        # Log de l'accès aux détails
+        log_cash_session_access(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            action="view_details",
+            success=True
+        )
+        
+        # Construire la réponse avec les ventes
+        sales_data = []
+        for sale in session.sales:
+            sales_data.append(SaleDetail.model_validate(sale))
+        
+        # Construire la réponse détaillée
+        response_data = CashSessionResponse.model_validate(session).model_dump()
+        response_data.update({
+            "sales": sales_data,
+            "operator_name": session.operator.username if session.operator else None,
+            "site_name": session.site.name if session.site else None
+        })
+        
+        return CashSessionDetailResponse(**response_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log de l'erreur d'accès
+        log_cash_session_access(
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
+            session_id=session_id,
+            action="view_details",
+            success=False,
+            error_message=str(e)
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la récupération des détails de la session"
+        )
+
+
 @router.get("/current", response_model=Optional[CashSessionResponse])
 async def get_current_cash_session(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté.
@@ -285,27 +417,6 @@ async def get_current_cash_session(
     return CashSessionResponse.model_validate(session)
 
 
-@router.get("/{session_id}", response_model=CashSessionResponse)
-async def get_cash_session(
-    session_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
-):
-    """
-    Récupère une session de caisse par son ID.
-    """
-    service = CashSessionService(db)
-    
-    session = service.get_session_by_id(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
-    
-    # Vérifier que l'utilisateur peut accéder à cette session
-    if (current_user.role == UserRole.USER and 
-        str(session.operator_id) != str(current_user.id)):
-        raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
-    
-    return CashSessionResponse.model_validate(session)
 
 
 @router.put("/{session_id}", response_model=CashSessionResponse)
@@ -313,7 +424,7 @@ async def update_cash_session(
     session_id: str,
     session_update: CashSessionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
     Met à jour une session de caisse.
@@ -408,7 +519,7 @@ async def close_cash_session(
     session_id: str,
     close_data: CashSessionClose,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.CASHIER, UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     service = CashSessionService(db)
     

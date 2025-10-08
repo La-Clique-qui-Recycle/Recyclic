@@ -66,7 +66,9 @@ async def create_sale(
     db_sale = Sale(
         cash_session_id=sale_data.cash_session_id,
         operator_id=user_id,  # Associate sale with current operator
-        total_amount=sale_data.total_amount
+        total_amount=sale_data.total_amount,
+        donation=sale_data.donation,
+        payment_method=sale_data.payment_method
     )
     db.add(db_sale)
     db.flush()  # Get the sale ID

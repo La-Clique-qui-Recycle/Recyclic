@@ -91,6 +91,73 @@ export function handleWeightKey(currentInput: string, key: string): string {
   return normalizeWeightInput(currentInput);
 }
 
+/**
+ * Map AZERTY keys to their numeric equivalents for weight input
+ */
+const AZERTY_KEY_MAP: Record<string, string> = {
+  '&': '1',
+  'é': '2', 
+  '"': '3',
+  "'": '4',
+  '(': '5',
+  '-': '6',
+  'è': '7',
+  '_': '8',
+  'ç': '9',
+  'à': '0'
+};
+
+// Mapping pour les touches avec Shift/AltGr
+const AZERTY_SHIFT_MAP: Record<string, string> = {
+  '1': '1', // Shift+& = 1
+  '2': '2', // Shift+é = 2
+  '3': '3', // Shift+" = 3
+  '4': '4', // Shift+' = 4
+  '5': '5', // Shift+( = 5
+  '6': '6', // Shift+- = 6
+  '7': '7', // Shift+è = 7
+  '8': '8', // Shift+_ = 8
+  '9': '9', // Shift+ç = 9
+  '0': '0', // Shift+à = 0
+};
+
+/**
+ * Handle AZERTY keyboard input for weight entry
+ * Maps AZERTY special keys to their numeric equivalents
+ */
+export function handleAZERTYWeightKey(currentInput: string, key: string, event?: KeyboardEvent): string {
+  // Ignorer les touches de modification
+  if (key === 'Shift' || key === 'Control' || key === 'Alt' || key === 'Meta') {
+    return currentInput;
+  }
+  
+  // Check if it's a direct numeric key
+  if (/^[0-9]$/.test(key)) {
+    return applyDigit(currentInput, key);
+  }
+  
+  // Check if it's an AZERTY mapped key
+  if (AZERTY_KEY_MAP[key]) {
+    return applyDigit(currentInput, AZERTY_KEY_MAP[key]);
+  }
+  
+  // Check if it's a Shift+AZERTY combination
+  if (event && event.shiftKey && AZERTY_SHIFT_MAP[key]) {
+    return applyDigit(currentInput, AZERTY_SHIFT_MAP[key]);
+  }
+  
+  // Handle special keys
+  if (key === 'Backspace' || key === 'Delete') {
+    return backspaceWeight(currentInput);
+  }
+  if (key === '.' || key === ',') {
+    return applyDecimalPoint(currentInput);
+  }
+  
+  // Ignorer toutes les autres touches
+  return currentInput;
+}
+
 
 
 

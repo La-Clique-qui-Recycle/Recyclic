@@ -1,18 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LogOut } from 'lucide-react';
 import { useCashSessionStore } from '../../stores/cashSessionStore';
 import SaleWizard from '../../components/business/SaleWizard';
 import Ticket from '../../components/business/Ticket';
+import FinalizationScreen, { FinalizationData } from '../../components/business/FinalizationScreen';
 import type { SaleItemData } from '../../components/business/SaleWizard';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #f8f9fa;
-`;
+import PageLayout, { PageTitle, PageSection } from '../../components/layout/PageLayout';
 
 const CloseButton = styled.button`
   display: flex;
@@ -44,8 +39,12 @@ const Content = styled.div`
   flex: 1;
   display: flex;
   gap: 2rem;
-  padding: 2rem;
   overflow: auto;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+  }
 `;
 
 const LeftPanel = styled.div`
@@ -54,6 +53,10 @@ const LeftPanel = styled.div`
   border-radius: 8px;
   padding: 2rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `;
 
 const RightPanel = styled.div`
@@ -65,6 +68,9 @@ const RightPanel = styled.div`
 
 const Sale: React.FC = () => {
   const navigate = useNavigate();
+  const [isFinalizing, setIsFinalizing] = useState<boolean>(false);
+  const [finalizationData, setFinalizationData] = useState<FinalizationData | null>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false);
   const {
     currentSession,
     currentSaleItems,
@@ -84,7 +90,8 @@ const Sale: React.FC = () => {
   const handleItemComplete = (itemData: SaleItemData) => {
     addSaleItem({
       category: itemData.category,
-      quantity: 1,
+      subcategory: itemData.subcategory,
+      quantity: itemData.quantity,
       weight: itemData.weight,
       price: itemData.price,
       total: itemData.total
@@ -92,17 +99,8 @@ const Sale: React.FC = () => {
   };
 
   const handleFinalizeSale = async () => {
-    if (currentSaleItems.length > 0) {
-      const success = await submitSale(currentSaleItems);
-      if (success) {
-        // Sale completed successfully - show confirmation
-        alert('✅ Vente enregistrée avec succès !');
-      } else {
-        // Show error from store
-        const storeError = useCashSessionStore.getState().error;
-        alert(`❌ Erreur lors de l'enregistrement de la vente: ${storeError || 'Erreur inconnue'}`);
-      }
-    }
+    if (currentSaleItems.length === 0) return;
+    setIsFinalizing(true);
   };
 
   const handleCloseSession = () => {
@@ -113,8 +111,31 @@ const Sale: React.FC = () => {
     return null;
   }
 
+  const ticketTotal = useMemo(() => currentSaleItems.reduce((sum, it) => sum + (it.total || 0), 0), [currentSaleItems]);
+
+  const handleCancelFinalization = () => {
+    setIsFinalizing(false);
+    setFinalizationData(null);
+  };
+
+  const handleConfirmFinalization = async (data: FinalizationData) => {
+    setFinalizationData(data);
+    setIsFinalizing(false);
+    const success = await submitSale(currentSaleItems, data);
+    if (success) {
+      // Afficher une popup de succès qui disparaît automatiquement après 3 secondes
+      setShowSuccessPopup(true);
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+      }, 3000);
+    } else {
+      const storeError = useCashSessionStore.getState().error;
+      alert(`❌ Erreur lors de l'enregistrement de la vente: ${storeError || 'Erreur inconnue'}`);
+    }
+  };
+
   return (
-    <Container>
+    <PageLayout>
       <Content>
         <LeftPanel>
           <SaleWizard onItemComplete={handleItemComplete} />
@@ -128,13 +149,38 @@ const Sale: React.FC = () => {
             onFinalizeSale={handleFinalizeSale}
             loading={loading}
           />
+          <FinalizationScreen
+            open={isFinalizing}
+            totalAmount={ticketTotal}
+            onCancel={handleCancelFinalization}
+            onConfirm={handleConfirmFinalization}
+          />
+          {showSuccessPopup && (
+            <div style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: '#4caf50',
+              color: 'white',
+              padding: '1rem 2rem',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              zIndex: 3000,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              textAlign: 'center'
+            }}>
+              ✅ Vente enregistrée avec succès !
+            </div>
+          )}
           <CloseButton onClick={handleCloseSession}>
             <LogOut size={20} />
             Fermer la Session
           </CloseButton>
         </RightPanel>
       </Content>
-    </Container>
+    </PageLayout>
   );
 };
 

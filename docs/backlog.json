@@ -6,7 +6,9 @@
     "type": "Bug",
     "status": "To Do",
     "priority": "P1 (Élevée)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-03 01:47:19",
+    "last_modified_date": "2025-10-03 01:47:19"
   },
   {
     "file_path": "docs/stories/story-b06-p4-1-archi-strategie-synchronisation.md",
@@ -15,7 +17,9 @@
     "type": "Architecture",
     "status": "To Do",
     "priority": "Basse",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 16:30:52",
+    "last_modified_date": "2025-10-01 16:30:52"
   },
   {
     "file_path": "docs/stories/story-b06-p4-2-backend-endpoints-synchronisation.md",
@@ -24,7 +28,9 @@
     "type": "Feature",
     "status": "To Do",
     "priority": "Basse",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 16:32:12",
+    "last_modified_date": "2025-10-01 16:32:12"
   },
   {
     "file_path": "docs/stories/story-b06-p4-3-local-service-synchronisation.md",
@@ -33,7 +39,9 @@
     "type": "Feature",
     "status": "To Do",
     "priority": "Basse",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 16:32:29",
+    "last_modified_date": "2025-10-01 16:32:29"
   },
   {
     "file_path": "docs/stories/story-b06-p4-4-tests-integration-synchronisation.md",
@@ -42,7 +50,9 @@
     "type": "Test",
     "status": "To Do",
     "priority": "Basse",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 16:32:42",
+    "last_modified_date": "2025-10-01 16:32:42"
   },
   {
     "file_path": "docs/stories/story-b11-p1-infra-sauvegarde-automatisee.md",
@@ -51,7 +61,9 @@
     "type": "Infrastructure",
     "status": "To Do",
     "priority": "P1 (Critique)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-02 23:51:32",
+    "last_modified_date": "2025-10-02 23:51:32"
   },
   {
     "file_path": "docs/stories/story-b11-p2-feature-export-manuel-db.md",
@@ -60,25 +72,130 @@
     "type": "Feature",
     "status": "To Do",
     "priority": "P3 (Moyenne)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-02 23:51:45",
+    "last_modified_date": "2025-10-02 23:51:45"
   },
   {
-    "file_path": "docs/stories/story-bug-b10-ticket-crash.md",
-    "story_id": "STORY-BUG-B10-TICKET-CRASH",
-    "title": "Correction du Bug Critique d'Affichage du Ticket de Caisse (Page Blanche)",
+    "file_path": "docs/stories/story-b12-p1-backend-evolution-categories.md",
+    "story_id": "STORY-B12-P1",
+    "title": "Évolution du Modèle de Catégories pour la Gestion des Prix",
+    "type": "Backend",
+    "status": "Done",
+    "priority": "P1 (Critique)",
+    "notes": "",
+    "creation_date": "2025-10-04 16:20:18",
+    "last_modified_date": "2025-10-04 16:29:27"
+  },
+  {
+    "file_path": "docs/stories/story-b12-p2-bis-ux-hierarchie-admin.md",
+    "story_id": "STORY-B12-P2-BIS",
+    "title": "Amélioration de l'Affichage Hiérarchique dans l'Admin des Catégories",
+    "type": "Feature",
+    "status": "Done",
+    "priority": "P2 (Élevée)",
+    "notes": "",
+    "creation_date": "2025-10-04 16:30:46",
+    "last_modified_date": "2025-10-04 16:54:12"
+  },
+  {
+    "file_path": "docs/stories/story-b12-p2-frontend-admin-categories.md",
+    "story_id": "STORY-B12-P2",
+    "title": "Interface d'Admin pour la Gestion des Prix des Catégories",
+    "type": "Feature",
+    "status": "Done",
+    "priority": "P2 (Élevée)",
+    "notes": "",
+    "creation_date": "2025-10-04 16:34:21",
+    "last_modified_date": "2025-10-04 16:53:58"
+  },
+  {
+    "file_path": "docs/stories/story-b12-p3-frontend-assistant-saisie-caisse.md",
+    "story_id": "STORY-B12-P3",
+    "title": "Assistant de Saisie Guidée pour la Caisse",
+    "type": "Feature",
+    "status": "Done",
+    "priority": "P2 (Élevée)",
+    "notes": "",
+    "creation_date": "2025-10-04 17:07:48",
+    "last_modified_date": "2025-10-04 17:10:24"
+  },
+  {
+    "file_path": "docs/stories/story-b12-p4-frontend-page-principale-caisse.nmd",
+    "story_id": "STORY-B12-P4",
+    "title": "Refonte de la Page Principale de la Caisse",
+    "type": "Feature",
+    "status": "Done",
+    "priority": "P2 (Élevée)",
+    "notes": "",
+    "creation_date": "2025-10-04 17:18:14",
+    "last_modified_date": "2025-10-07 12:41:36"
+  },
+  {
+    "file_path": "docs/stories/story-b12-p5-backend-finalisation-ticket.md",
+    "story_id": "STORY-B12-P5",
+    "title": "Finalisation du Ticket de Caisse avec la Nouvelle Logique",
+    "type": "Backend",
+    "status": "Done",
+    "priority": "P1 (Critique)",
+    "notes": "",
+    "creation_date": "2025-10-04 17:27:11",
+    "last_modified_date": "2025-10-07 12:41:35"
+  },
+  {
+    "file_path": "docs/stories/story-b14-p1-sale-api-v2.md",
+    "story_id": "STORY-B14-P1-SALE-API-V2",
+    "title": "Évolution de l'API de Vente V2",
+    "type": "Backend",
+    "status": "To Do",
+    "priority": "P1 (Critique)",
+    "notes": "",
+    "creation_date": "2025-10-07 15:10:00",
+    "last_modified_date": "2025-10-07 15:10:00"
+  },
+  {
+    "file_path": "docs/stories/story-b14-p2-sale-wizard-v2.md",
+    "story_id": "STORY-B14-P2-SALE-WIZARD-V2",
+    "title": "Évolution de l'Assistant de Saisie V2",
+    "type": "Feature",
+    "status": "To Do",
+    "priority": "P1 (Critique)",
+    "notes": "",
+    "creation_date": "2025-10-07 15:10:00",
+    "last_modified_date": "2025-10-07 15:10:00"
+  },
+  {
+    "file_path": "docs/stories/story-b14-p3-finalization-screen.md",
+    "story_id": "STORY-B14-P3-FINALIZATION-SCREEN",
+    "title": "Implémentation de l'Écran de Finalisation de Vente",
+    "type": "Feature",
+    "status": "To Do",
+    "priority": "P1 (Critique)",
+    "notes": "",
+    "creation_date": "2025-10-07 15:10:00",
+    "last_modified_date": "2025-10-07 15:10:00"
+  },
+  {
+    "file_path": "docs/stories/story-bug-b10-save-sale.md",
+    "story_id": "STORY-BUG-B10-SAVE-SALE",
+    "title": "Réparer l'Enregistrement des Ventes en Base de Données",
     "type": "Bug",
     "status": "To Do",
     "priority": "P0 (Critique)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-03 14:32:09",
+    "last_modified_date": "2025-10-03 17:28:21"
   },
   {
-    "file_path": "docs/stories/story-consolidate-p1-hierarchy.md",
-    "story_id": "STORY-CONSOLIDATE-P1-HIERARCHY",
-    "title": "Faire Évoluer le Modèle de Catégories pour la Hiérarchie",
-    "type": "Backend",
-    "status": "In Progress",
+    "file_path": "docs/stories/story-bug-reception-categories-final.md",
+    "story_id": "STORY-BUG-RECEPTION-CATEGORIES",
+    "title": "Correction Critique - Finaliser la Migration des Catégories dans le Module Réception",
+    "type": "Bug",
+    "status": "To Do",
     "priority": "P0 (Critique)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-04 17:08:50",
+    "last_modified_date": "2025-10-07 11:35:39"
   },
   {
     "file_path": "docs/stories/story-consolidate-p2-data-migration.md",
@@ -87,7 +204,20 @@
     "type": "Migration",
     "status": "To Do",
     "priority": "P0 (Critique)",
-    "notes": "Bloquée par P1"
+    "notes": "",
+    "creation_date": "2025-10-03 02:49:20",
+    "last_modified_date": "2025-10-04 14:49:27"
+  },
+  {
+    "file_path": "docs/stories/story-consolidate-p3-bis-refactor-reception-final.md",
+    "story_id": "STORY-CONSOLIDATE-P3-BIS",
+    "title": "Finalisation de la Migration des Catégories dans le Module Réception",
+    "type": "Refactoring",
+    "status": "To Do",
+    "priority": "P0 (Critique)",
+    "notes": "",
+    "creation_date": "2025-10-04 17:03:09",
+    "last_modified_date": "2025-10-04 17:03:09"
   },
   {
     "file_path": "docs/stories/story-consolidate-p3-refactor-reception.md",
@@ -96,7 +226,9 @@
     "type": "Refactoring",
     "status": "To Do",
     "priority": "P0 (Critique)",
-    "notes": "Bloquée par P2"
+    "notes": "",
+    "creation_date": "2025-10-03 02:49:29",
+    "last_modified_date": "2025-10-03 04:15:05"
   },
   {
     "file_path": "docs/stories/story-consolidate-p4-refactor-caisse.md",
@@ -105,7 +237,9 @@
     "type": "Refactoring",
     "status": "To Do",
     "priority": "P0 (Critique)",
-    "notes": "Bloquée par P3"
+    "notes": "",
+    "creation_date": "2025-10-03 02:49:38",
+    "last_modified_date": "2025-10-03 04:48:45"
   },
   {
     "file_path": "docs/stories/story-consolidate-p5-cleanup.md",
@@ -114,7 +248,9 @@
     "type": "Chore",
     "status": "To Do",
     "priority": "P1 (Élevée)",
-    "notes": "Bloquée par P4"
+    "notes": "",
+    "creation_date": "2025-10-03 02:49:51",
+    "last_modified_date": "2025-10-03 05:06:14"
   },
   {
     "file_path": "docs/stories/story-future-copilotkit-integration.md",
@@ -123,7 +259,9 @@
     "type": "Feature",
     "status": "To Do",
     "priority": "Basse (Post-MVP)",
-    "notes": "Statut 'Draft'."
+    "notes": "Statut 'Draft'.",
+    "creation_date": "2025-09-18 15:38:16",
+    "last_modified_date": "2025-09-18 15:38:16"
   },
   {
     "file_path": "docs/stories/story-tech-debt-admin-pending-tests.md",
@@ -132,7 +270,42 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P2 (Élevée)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-09-23 02:40:52",
+    "last_modified_date": "2025-09-23 02:40:52"
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-alembic-stability.md",
+    "story_id": "STORY-TECH-DEBT-ALEMBIC-STABILITY",
+    "title": "Stabilisation Alembic et Alignement du Service de Migrations",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P0 (Critique)",
+    "notes": "",
+    "creation_date": "2025-10-07 13:06:29",
+    "last_modified_date": "2025-10-07 13:16:11"
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-api-security-hardening.md",
+    "story_id": "STORY-TECH-DEBT-API-SECURITY-HARDENING",
+    "title": "Sécurisation et Traçabilité des Endpoints Critiques (Catégories & Ventes)",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P1 (Rate Limiting) / P2 (Audit Log)",
+    "notes": "",
+    "creation_date": "2025-10-04 17:33:04",
+    "last_modified_date": "2025-10-04 17:33:04"
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-auth-tests-alignment.md",
+    "story_id": "STORY-TECH-DEBT-AUTH-TESTS-ALIGNMENT",
+    "title": "Alignement des Tests d'Authentification sur l'API Sécurité Actuelle",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P1 (Élevée)",
+    "notes": "",
+    "creation_date": "2025-10-07 13:56:55",
+    "last_modified_date": "2025-10-07 13:56:55"
   },
   {
     "file_path": "docs/stories/story-tech-debt-b09-frontend-cache.md",
@@ -141,7 +314,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P3 (Basse)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-03 00:44:00",
+    "last_modified_date": "2025-10-03 00:59:10"
   },
   {
     "file_path": "docs/stories/story-tech-debt-b09-perf-reliability.md",
@@ -150,7 +325,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P1 (Sanitisation) / P3 (Cache)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-03 00:43:44",
+    "last_modified_date": "2025-10-03 00:59:03"
   },
   {
     "file_path": "docs/stories/story-tech-debt-b09-security-audit.md",
@@ -159,7 +336,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P1 (Rate Limiting) / P2 (Audit Log)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-03 00:43:52",
+    "last_modified_date": "2025-10-04 17:38:55"
   },
   {
     "file_path": "docs/stories/story-tech-debt-b10-monitoring-audit.md",
@@ -168,7 +347,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P2 (Moyenne)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-03 00:55:17",
+    "last_modified_date": "2025-10-03 00:59:20"
   },
   {
     "file_path": "docs/stories/story-tech-debt-b10-tests-coverage.md",
@@ -177,7 +358,31 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P1 (Élevée)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-03 00:55:08",
+    "last_modified_date": "2025-10-03 00:59:15"
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-b12-a11y-tests.md",
+    "story_id": "STORY-TECH-DEBT-B12-A11Y-TESTS",
+    "title": "Amélioration de l'Accessibilité et des Tests d'Intégration de la Caisse",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P2 (Moyenne)",
+    "notes": "",
+    "creation_date": "2025-10-04 17:20:06",
+    "last_modified_date": "2025-10-04 17:20:06"
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-b12-sales-api-security.md",
+    "story_id": "STORY-TECH-DEBT-B12-SALES-API-SECURITY",
+    "title": "Sécurisation de l'API des Ventes (Rate Limiting & Audit)",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P2 (Moyenne)",
+    "notes": "",
+    "creation_date": "2025-10-04 17:41:17",
+    "last_modified_date": "2025-10-04 17:41:17"
   },
   {
     "file_path": "docs/stories/story-tech-debt-backend-ergonomie-improvements.md",
@@ -186,7 +391,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P4 (Basse)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 21:24:42",
+    "last_modified_date": "2025-10-01 21:24:42"
   },
   {
     "file_path": "docs/stories/story-tech-debt-cash-sessions-api-hardening.md",
@@ -195,7 +402,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "Basse",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-09-22 19:07:02",
+    "last_modified_date": "2025-09-22 19:07:02"
   },
   {
     "file_path": "docs/stories/story-tech-debt-email-service.md",
@@ -204,7 +413,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": null,
-    "notes": "Statut 'Ready'."
+    "notes": "Statut 'Ready'.",
+    "creation_date": "2025-09-17 13:57:46",
+    "last_modified_date": "2025-09-17 18:04:18"
   },
   {
     "file_path": "docs/stories/story-tech-debt-externalize-versions.md",
@@ -213,7 +424,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "Low",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-09-14 23:45:28",
+    "last_modified_date": "2025-09-19 17:54:34"
   },
   {
     "file_path": "docs/stories/story-tech-debt-frontend-tests-coverage.md",
@@ -222,7 +435,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P3 (Moyenne)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 21:24:23",
+    "last_modified_date": "2025-10-01 21:24:23"
   },
   {
     "file_path": "docs/stories/story-tech-debt-ia-performance-metrics.md",
@@ -231,7 +446,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "Moyenne",
-    "notes": "Statut 'Draft'."
+    "notes": "Statut 'Draft'.",
+    "creation_date": "2025-09-16 00:12:39",
+    "last_modified_date": "2025-09-16 00:12:40"
   },
   {
     "file_path": "docs/stories/story-tech-debt-load-testing.md",
@@ -240,7 +457,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "Basse",
-    "notes": "Statut 'Draft'."
+    "notes": "Statut 'Draft'.",
+    "creation_date": "2025-09-16 00:12:48",
+    "last_modified_date": "2025-09-16 00:12:48"
   },
   {
     "file_path": "docs/stories/story-tech-debt-reception-history-api.md",
@@ -249,7 +468,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P2 (Élevée)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 14:00:06",
+    "last_modified_date": "2025-10-01 14:00:06"
   },
   {
     "file_path": "docs/stories/story-tech-debt-reception-module-hardening.md",
@@ -258,7 +479,9 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P3 (Moyenne)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 18:37:09",
+    "last_modified_date": "2025-10-01 18:37:09"
   },
   {
     "file_path": "docs/stories/story-tech-debt-remove-cashier-role.md",
@@ -267,7 +490,20 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "P0 (Critique)",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-02 23:42:48",
+    "last_modified_date": "2025-10-02 23:42:48"
+  },
+  {
+    "file_path": "docs/stories/story-tech-debt-remove-reset-token-alias.md",
+    "story_id": "STORY-TECH-DEBT-REMOVE-RESET-TOKEN-ALIAS",
+    "title": "Suppression de l'alias create_reset_token déprécié",
+    "type": "Tech Debt",
+    "status": "To Do",
+    "priority": "P3 (Low)",
+    "notes": "Statut 'Draft'.",
+    "creation_date": "2025-10-07 13:56:14",
+    "last_modified_date": "2025-10-07 13:56:14"
   },
   {
     "file_path": "docs/stories/story-tech-debt-stats-optimization.md",
@@ -276,6 +512,8 @@
     "type": "Tech Debt",
     "status": "To Do",
     "priority": "Basse",
-    "notes": ""
+    "notes": "",
+    "creation_date": "2025-10-01 14:32:31",
+    "last_modified_date": "2025-10-01 14:32:31"
   }
 ]

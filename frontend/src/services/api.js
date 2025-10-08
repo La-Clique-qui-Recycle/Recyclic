@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Configuration pour utiliser le proxy Vite en développement
+// En développement, VITE_API_URL n'est pas définie, donc on utilise une chaîne vide
+// pour que les requêtes passent par le proxy Vite configuré dans vite.config.js
+// En production (Docker), REACT_APP_API_URL est définie dans docker-compose.yml
+const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -27,9 +31,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid, redirect to login
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Token expired, invalid, or insufficient permissions
       localStorage.removeItem('token');
+      // Mettre à jour le store d'authentification
+      if (window.useAuthStore) {
+        window.useAuthStore.getState().logout();
+      }
       window.location.href = '/login';
     }
     return Promise.reject(error);

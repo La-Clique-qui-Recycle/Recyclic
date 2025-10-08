@@ -14,7 +14,7 @@ const createSessionId = () => {
 interface CashSession {
   id: string
   site_id: string
-  cashier_id: string
+  operator_id: string
   opening_amount: number
   closing_amount?: number
   actual_amount?: number
@@ -40,14 +40,14 @@ export const useCashSession = () => {
     error: null
   })
 
-  const openSession = async (cashierId: string, openingAmount: number) => {
+  const openSession = async (operatorId: string, openingAmount: number) => {
     setSessionState(prev => ({ ...prev, isLoading: true, error: null }))
 
     try {
       const newSession: CashSession = {
         id: createSessionId(),
         site_id: '1', // Default site
-        cashier_id: cashierId,
+        operator_id: operatorId,
         opening_amount: openingAmount,
         status: 'opened',
         opened_at: new Date()

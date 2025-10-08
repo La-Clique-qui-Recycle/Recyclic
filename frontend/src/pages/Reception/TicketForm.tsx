@@ -10,6 +10,7 @@ import SessionHeader from '../../components/SessionHeader';
 import { useCategoryStore } from '../../stores/categoryStore';
 import {
   handleWeightKey,
+  handleAZERTYWeightKey,
   formatWeightDisplay,
   clearWeight,
   backspaceWeight,
@@ -96,35 +97,36 @@ const CategoriesColumn = styled.div`
 const CategoryGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 8px;
 
   @media (max-width: 1024px) and (min-width: 769px) {
     grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 10px;
+    gap: 5px;
+    padding: 6px;
   }
 
   @media (max-width: 768px) {
     display: grid;
-    grid-template-rows: repeat(2, minmax(50px, 50px));  /* 2 lignes 50px */
-    grid-auto-flow: column;  /* Remplir par colonnes */
-    grid-auto-columns: 140px;  /* Largeur fixe */
-    gap: 6px;
-    padding: 8px;
-    overflow-x: auto;  /* Scroll horizontal */
+    grid-template-rows: repeat(2, minmax(44px, 44px));
+    grid-auto-flow: column;
+    grid-auto-columns: 140px;
+    gap: 5px;
+    padding: 6px;
+    overflow-x: auto;
     overflow-y: hidden;
   }
 `;
 
 const CategoryButton = styled.button<{ $selected?: boolean }>`
-  padding: 10px 8px;
+  padding: 8px 6px;
+  min-height: 44px;
   border: 2px solid ${props => props.$selected ? '#2e7d32' : '#e0e0e0'};
-  border-radius: 6px;
+  border-radius: 4px;
   background: ${props => props.$selected ? '#e8f5e8' : 'white'};
   color: ${props => props.$selected ? '#2e7d32' : '#333'};
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   transition: all 0.2s;
   text-align: center;
@@ -138,35 +140,85 @@ const CategoryButton = styled.button<{ $selected?: boolean }>`
   }
 
   @media (max-width: 1024px) and (min-width: 769px) {
-    font-size: 11px;
-    padding: 8px 6px;
+    font-size: 10px;
+    padding: 6px 5px;
   }
 
   @media (max-width: 768px) {
     font-size: 10px;
-    padding: 8px 6px;
-    min-height: 40px;
-    width: 100%;  /* Prend toute la largeur de la cellule */
-    height: 100%;  /* Prend toute la hauteur */
+    padding: 6px 5px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
   }
+`;
+
+const CategoryHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 11px;
+  font-weight: 500;
+`;
+
+const BackButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f0f0f0;
+    border-color: #999;
+  }
+`;
+
+const Breadcrumb = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #666;
+  font-size: 12px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 20px;
+`;
+
+const BreadcrumbItem = styled.span`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+  color: #2e7d32;
+  font-weight: 500;
 `;
 
 // ===== CENTER COLUMN: ENTRY ZONE =====
 
 const CenterColumn = styled.div`
   background: white;
-  padding: 16px;
+  padding: 12px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   flex: 1;
 
   @media (max-width: 1024px) and (min-width: 769px) {
-    padding: 12px;
+    padding: 8px;
   }
 
   @media (max-width: 768px) {
-    padding: 10px;
+    padding: 8px;
     overflow: visible;  /* Pas de scroll interne sur mobile */
     flex: none;  /* Prend la hauteur naturelle */
   }
@@ -174,7 +226,7 @@ const CenterColumn = styled.div`
 
 const EntryLayout = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 12px;
   flex: 1;
   overflow: hidden;
 
@@ -188,13 +240,13 @@ const EntryLayout = styled.div`
 const WeighPadColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 280px;
 
   @media (max-width: 768px) {
     min-width: 0;
-    padding-bottom: 16px;
-    margin-bottom: 16px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
     border-bottom: 2px solid #e0e0e0;  /* Trait de séparation */
   }
 `;
@@ -202,10 +254,10 @@ const WeighPadColumn = styled.div`
 const ControlsColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   justify-content: space-between;
   min-width: 250px;
-  padding-left: 16px;
+  padding-left: 12px;
   border-left: 2px solid #e0e0e0;  /* Ligne grise séparation */
 
   @media (max-width: 768px) {
@@ -224,24 +276,25 @@ const FormGroup = styled.div`
 const Label = styled.label`
   font-weight: 500;
   color: #333;
-  font-size: 14px;
+  font-size: 13px;
 
   @media (max-width: 768px) {
-    font-size: 12px;
+    font-size: 11px;
   }
 `;
 
 const WeightDisplay = styled.input`
   width: 100%;
-  padding: 8px;
+  padding: 6px;
   border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 28px;
+  border-radius: 6px;
+  font-size: 24px;
   text-align: center;
   font-weight: bold;
   background: #f9f9f9;
   color: #333;
-  height: 50px;
+  height: 44px;
+  min-height: 44px;
 
   &:focus {
     outline: none;
@@ -249,24 +302,25 @@ const WeightDisplay = styled.input`
   }
 
   @media (max-width: 1024px) and (min-width: 769px) {
-    font-size: 24px;
-    height: 45px;
+    font-size: 22px;
+    height: 44px;
   }
 
   @media (max-width: 768px) {
-    font-size: 22px;
-    height: 40px;
+    font-size: 20px;
+    height: 44px;
   }
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 14px;
   background: white;
   cursor: pointer;
+  min-height: 44px;
 
   &:focus {
     outline: none;
@@ -274,20 +328,20 @@ const Select = styled.select`
   }
 
   @media (max-width: 768px) {
-    font-size: 14px;
-    padding: 10px;
+    font-size: 13px;
+    padding: 8px;
   }
 `;
 
 const Textarea = styled.textarea`
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   resize: vertical;
-  min-height: 60px;
-  max-height: 100px;
+  min-height: 50px;
+  max-height: 80px;
   font-family: inherit;
 
   &:focus {
@@ -296,26 +350,27 @@ const Textarea = styled.textarea`
   }
 
   @media (max-width: 768px) {
-    font-size: 12px;
-    min-height: 50px;
+    font-size: 11px;
+    min-height: 44px;
   }
 `;
 
 const AddButton = styled.button`
   width: 100%;
-  padding: 12px;
+  padding: 10px;
+  min-height: 44px;
   background: #2e7d32;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 
   &:hover {
     background: #1b5e20;
@@ -331,8 +386,8 @@ const AddButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    font-size: 14px;
-    padding: 10px;
+    font-size: 13px;
+    padding: 8px;
   }
 `;
 
@@ -640,6 +695,13 @@ const TicketForm: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
 
+  // Navigation hiérarchique des catégories
+  // Source de vérité : currentParentId gère le niveau hiérarchique actuel
+  // - null = niveau racine (catégories avec parent_id === null)
+  // - string = ID de la catégorie parent dont on affiche les enfants
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
+  const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<string[]>([]);
+
   const formattedWeight = formatWeightDisplay(weightInput);
 
   const parseToInput = (val: number | string): string => {
@@ -649,11 +711,26 @@ const TicketForm: React.FC = () => {
   };
 
   // Map categories from store to the format expected by the component
-  const categories = activeCategories.map(cat => ({
-    id: cat.id,
-    label: cat.name,
-    slug: cat.name.toLowerCase().replace(/\s+/g, '-')
-  }));
+  // Filtrer les catégories selon le niveau hiérarchique actuel
+  // Filtrer les catégories selon le niveau hiérarchique
+  // Politique de filtrage basée sur currentParentId :
+  // - Si currentParentId === null : afficher les catégories racines (parent_id === null)
+  // - Si currentParentId === string : afficher les enfants de cette catégorie
+  const categories = activeCategories
+    .filter(cat => {
+      // Si currentParentId est null, afficher les catégories racines (parent_id === null)
+      if (currentParentId === null) {
+        return cat.parent_id === null;
+      }
+      // Sinon, afficher les enfants de currentParentId
+      return cat.parent_id === currentParentId;
+    })
+    .map(cat => ({
+      id: cat.id,
+      label: cat.name,
+      slug: cat.name.toLowerCase().replace(/\s+/g, '-'),
+      hasChildren: activeCategories.some(child => child.parent_id === cat.id)
+    }));
 
   useEffect(() => {
     fetchCategories();
@@ -709,8 +786,8 @@ const TicketForm: React.FC = () => {
         const updatedTicket = await receptionService.getTicket(ticketId);
         setLoadedTicket(updatedTicket);
       } else {
-        await addLineToTicket(currentTicket.id, {
-          category_id: selectedCategory,
+        await addLineToTicket(currentTicket!.id, {
+          category: selectedCategory,
           weight: parseWeight(formattedWeight),
           destination,
           notes: notes || undefined
@@ -748,8 +825,8 @@ const TicketForm: React.FC = () => {
         const updatedTicket = await receptionService.getTicket(ticketId);
         setLoadedTicket(updatedTicket);
       } else {
-        await updateTicketLine(currentTicket.id, lineId, {
-          category_id: selectedCategory,
+        await updateTicketLine(currentTicket!.id, lineId, {
+          category: selectedCategory,
           weight: parseWeight(formattedWeight),
           destination,
           notes: notes || undefined
@@ -779,7 +856,7 @@ const TicketForm: React.FC = () => {
           const updatedTicket = await receptionService.getTicket(ticketId);
           setLoadedTicket(updatedTicket);
         } else {
-          await deleteTicketLine(currentTicket.id, lineId);
+          await deleteTicketLine(currentTicket!.id, lineId);
         }
       } catch (err) {
         console.error('Erreur lors de la suppression de la ligne:', err);
@@ -797,12 +874,64 @@ const TicketForm: React.FC = () => {
   };
 
   const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    setTimeout(() => {
-      if (weightInputRef.current) {
-        weightInputRef.current.focus();
+    const category = activeCategories.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    // Vérifier si la catégorie a des enfants
+    const hasChildren = activeCategories.some(child => child.parent_id === categoryId);
+    
+    if (hasChildren) {
+      // Navigation vers les sous-catégories
+      setCurrentParentId(categoryId);
+      setCategoryBreadcrumb(prev => [...prev, category.name]);
+      // Reset selection when navigating
+      setSelectedCategory('');
+    } else {
+      // Sélection de la catégorie finale
+      setSelectedCategory(categoryId);
+      // Reset navigation state when selecting final category
+      setCurrentParentId(null);
+      setCategoryBreadcrumb([]);
+      setTimeout(() => {
+        if (weightInputRef.current) {
+          weightInputRef.current.focus();
+        }
+      }, 100);
+    }
+  };
+
+  const handleCategoryBack = () => {
+    if (categoryBreadcrumb.length > 0) {
+      // Retirer le dernier élément du breadcrumb
+      const newBreadcrumb = categoryBreadcrumb.slice(0, -1);
+      setCategoryBreadcrumb(newBreadcrumb);
+      
+      if (newBreadcrumb.length === 0) {
+        // Retour à la racine
+        setCurrentParentId(null);
+      } else {
+        // Retour au parent précédent
+        const parentCategory = activeCategories.find(cat => cat.name === newBreadcrumb[newBreadcrumb.length - 1]);
+        setCurrentParentId(parentCategory?.id || null);
       }
-    }, 100);
+      // Reset selection when navigating back
+      setSelectedCategory('');
+    }
+  };
+
+  // Gestion de la navigation clavier
+  const handleKeyDown = (event: React.KeyboardEvent, categoryId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleCategorySelect(categoryId);
+    }
+  };
+
+  const handleBackKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleCategoryBack();
+    }
   };
 
   const handleCloseTicket = async () => {
@@ -817,7 +946,7 @@ const TicketForm: React.FC = () => {
           await receptionService.closeTicket(ticketId);
           navigate('/reception');
         } else {
-          await closeTicket(currentTicket.id);
+          await closeTicket(currentTicket!.id);
           navigate('/reception');
         }
       } catch (err) {
@@ -830,9 +959,11 @@ const TicketForm: React.FC = () => {
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     const key = e.key;
-    if (/^[0-9]$/.test(key) || key === 'Backspace' || key === 'Delete' || key === '.' || key === ',') {
+    // Utiliser handleAZERTYWeightKey pour supporter les touches AZERTY
+    const newWeight = handleAZERTYWeightKey(weightInput, key, e.nativeEvent);
+    if (newWeight !== weightInput) {
       e.preventDefault();
-      setWeightInput((prev) => handleWeightKey(prev, key));
+      setWeightInput(newWeight);
     } else if (key === 'Enter') {
       e.preventDefault();
       if (selectedCategory && weightInput) {
@@ -908,15 +1039,41 @@ const TicketForm: React.FC = () => {
           /* MOBILE LAYOUT - Vertical stacking, no resize panels */
           <>
             <CategoriesColumn>
+              {currentParentId && (
+                <CategoryHeader>
+                 <BackButton 
+                   onClick={handleCategoryBack}
+                   onKeyDown={handleBackKeyDown}
+                   tabIndex={0}
+                   role="button"
+                   aria-label="Retour au niveau précédent"
+                 >
+                   ← Retour
+                 </BackButton>
+                 <Breadcrumb>
+                   {categoryBreadcrumb.map((item, index) => (
+                     <React.Fragment key={index}>
+                       {index > 0 && <span style={{ color: '#999', margin: '0 4px' }}>›</span>}
+                       <BreadcrumbItem title={item}>{item}</BreadcrumbItem>
+                     </React.Fragment>
+                   ))}
+                 </Breadcrumb>
+                </CategoryHeader>
+              )}
               <CategoryGrid>
                 {categories.map((category) => (
-                  <CategoryButton
-                    key={category.id}
-                    $selected={selectedCategory === category.id}
-                    onClick={() => handleCategorySelect(category.id)}
-                  >
-                    {category.label}
-                  </CategoryButton>
+                 <CategoryButton
+                   key={category.id}
+                   $selected={selectedCategory === category.id}
+                   onClick={() => handleCategorySelect(category.id)}
+                   onKeyDown={(e) => handleKeyDown(e, category.id)}
+                   tabIndex={0}
+                   role="button"
+                   aria-label={category.hasChildren ? `Naviguer vers ${category.label}` : `Sélectionner ${category.label}`}
+                   aria-pressed={selectedCategory === category.id}
+                 >
+                   {category.label}
+                 </CategoryButton>
                 ))}
               </CategoryGrid>
             </CategoriesColumn>
@@ -994,15 +1151,41 @@ const TicketForm: React.FC = () => {
             {/* LEFT PANEL: Categories */}
             <Panel defaultSize={layoutPrefs.categoriesSize} minSize={15} maxSize={30}>
               <CategoriesColumn>
+                {currentParentId && (
+                  <CategoryHeader>
+                 <BackButton 
+                   onClick={handleCategoryBack}
+                   onKeyDown={handleBackKeyDown}
+                   tabIndex={0}
+                   role="button"
+                   aria-label="Retour au niveau précédent"
+                 >
+                   ← Retour
+                 </BackButton>
+                 <Breadcrumb>
+                   {categoryBreadcrumb.map((item, index) => (
+                     <React.Fragment key={index}>
+                       {index > 0 && <span style={{ color: '#999', margin: '0 4px' }}>›</span>}
+                       <BreadcrumbItem title={item}>{item}</BreadcrumbItem>
+                     </React.Fragment>
+                   ))}
+                 </Breadcrumb>
+                  </CategoryHeader>
+                )}
                 <CategoryGrid>
                   {categories.map((category) => (
-                    <CategoryButton
-                      key={category.id}
-                      $selected={selectedCategory === category.id}
-                      onClick={() => handleCategorySelect(category.id)}
-                    >
-                      {category.label}
-                    </CategoryButton>
+                 <CategoryButton
+                   key={category.id}
+                   $selected={selectedCategory === category.id}
+                   onClick={() => handleCategorySelect(category.id)}
+                   onKeyDown={(e) => handleKeyDown(e, category.id)}
+                   tabIndex={0}
+                   role="button"
+                   aria-label={category.hasChildren ? `Naviguer vers ${category.label}` : `Sélectionner ${category.label}`}
+                   aria-pressed={selectedCategory === category.id}
+                 >
+                   {category.label}
+                 </CategoryButton>
                   ))}
                 </CategoryGrid>
               </CategoriesColumn>

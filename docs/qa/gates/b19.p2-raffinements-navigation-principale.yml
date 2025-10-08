@@ -1,0 +1,29 @@
+storyId: STORY-B19-P2
+epic: Refondation de l'Expérience Utilisateur et de l'Architecture Frontend
+title: Raffinements de la Navigation Principale et de l'Authentification
+priority: P2
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Navigation conditionnelle: implémentation correcte avec vue minimale pour utilisateurs non connectés
+  - Affichage nom utilisateur: logique robuste avec fallbacks multiples (username → prénom nom → "Utilisateur")
+  - Journal de Caisse: correctement déplacé vers Administration dans adminRoutes.js
+  - Tests: couverture complète (9 tests PASS) couvrant tous les états d'authentification et rôles
+evidence:
+  - code:
+      - frontend/src/components/Header.jsx (navigation conditionnelle, affichage nom utilisateur)
+      - frontend/src/config/adminRoutes.js (Journal de Caisse dans ADMIN_NAVIGATION_ITEMS)
+  - tests:
+      - frontend/src/test/components/ui/Header.test.tsx (9 tests PASS)
+  - coverage:
+      - Vue déconnectée: seul "Tableau de bord" visible
+      - Affichage nom utilisateur: visible à côté du bouton "Déconnexion"
+      - Journal de Caisse: retiré du menu principal, accessible via Administration
+      - Tests unitaires: tous les états d'authentification et rôles couverts
+qualityAttributes:
+  - usability: Navigation claire et adaptée au statut de connexion
+  - accessibility: Structure sémantique correcte avec rôles ARIA
+  - maintainability: Logique d'affichage conditionnel robuste et maintenable
+status: APPROVED

@@ -185,7 +185,7 @@ describe('Sites Page', () => {
       renderWithProviders(<Sites />);
 
       await waitFor(() => {
-        expect(screen.getByText('Erreur de chargement')).toBeInTheDocument();
+        expect(screen.getByText('Erreur de chargement des sites')).toBeInTheDocument();
       });
     });
 
@@ -203,7 +203,7 @@ describe('Sites Page', () => {
       vi.mocked(getSites).mockResolvedValue(mockSites);
 
       // Trigger reload by opening and closing form
-      const createButton = screen.getByRole('button', { name: /créer un site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -232,7 +232,7 @@ describe('Sites Page', () => {
         expect(screen.getByRole('table')).toBeInTheDocument();
       });
 
-      const createButton = screen.getByRole('button', { name: /créer un site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -251,7 +251,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /créer un site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -282,7 +282,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /créer un site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -494,7 +494,8 @@ describe('Sites Page', () => {
       expect(screen.getByText('123 Rue de la Paix')).toBeInTheDocument();
       expect(screen.getByText('Paris')).toBeInTheDocument();
       expect(screen.getByText('75001')).toBeInTheDocument();
-      expect(screen.getByText('France')).toBeInTheDocument();
+      // "France" apparaît sur plusieurs lignes, on vérifie qu'au moins une occurrence existe
+      expect(screen.getAllByText('France').length).toBeGreaterThanOrEqual(1);
 
       // Check active status
       const activeStatuses = screen.getAllByText('Oui');
@@ -540,7 +541,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /créer un site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -564,7 +565,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /créer un site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -614,7 +615,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form (should not have editing data)
-      const createButton = screen.getByRole('button', { name: /créer un site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });

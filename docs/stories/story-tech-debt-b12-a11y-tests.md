@@ -25,11 +25,15 @@
 - [ ] **Accessibilité (Navigation Clavier) :**
     - [ ] Revoir tous les composants de l'interface de caisse (`SaleWizard.tsx`, `Ticket.tsx`, etc.).
     - [ ] S'assurer que l'ordre de tabulation (`tabindex`) est logique et que tous les éléments interactifs sont atteignables et activables via le clavier (ex: `Enter`, `Space`).
+    - [ ] **(Nouveau B15)** Implémenter la navigation au clavier sur l'écran de finalisation de la caisse et sur la sélection hiérarchique en réception.
 - [ ] **Accessibilité (ARIA) :**
     - [ ] Ajouter des attributs `aria-label`, `aria-labelledby`, ou `role` pertinents sur les boutons, champs et conteneurs pour décrire leur fonction aux technologies d'assistance.
+    - [ ] **(Nouveau B15)** Ajouter les labels ARIA manquants sur l'écran de finalisation et la sélection hiérarchique.
 - [ ] **Tests de Bout en Bout (E2E) :**
     - [ ] Créer un nouveau fichier de test E2E (ex: avec Playwright).
     - [ ] Écrire un scénario de test qui simule une vente complète, de la sélection de la catégorie à la finalisation, en vérifiant que chaque étape fonctionne comme attendu.
+    - [ ] **(Nouveau B13/B14)** Étendre le test E2E de la Caisse pour valider la saisie dans une plage de prix et l'utilisation de différents moyens de paiement.
+    - [ ] **(Nouveau B15)** Ajouter un test E2E pour le parcours de navigation dans la hiérarchie des catégories en réception.
 
 ## Dev Notes
 

@@ -17,8 +17,7 @@ interface UserListTableProps {
 //       return 'red';
 //     case UserRole.MANAGER:
 //       return 'orange';
-//     case UserRole.CASHIER:
-//       return 'green';
+//     // rôle 'cashier' supprimé
 //     case UserRole.USER:
 //     default:
 //       return 'blue';
@@ -140,7 +139,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
                 {user.role === UserRole.SUPER_ADMIN ? 'Super Admin' :
                  user.role === UserRole.ADMIN ? 'Administrateur' :
                  user.role === UserRole.MANAGER ? 'Manager' :
-                 user.role === UserRole.CASHIER ? 'Caissier' : 'Utilisateur'}
+                 'Utilisateur'}
               </Badge>
             </Table.Td>
             <Table.Td>

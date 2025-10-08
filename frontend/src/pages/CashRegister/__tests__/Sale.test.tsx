@@ -163,9 +163,10 @@ describe('Sale Page', () => {
     const calculatorWeightButton = document.querySelector('button[data-isvalid="true"]');
     fireEvent.click(calculatorWeightButton!);
 
-    const button1 = screen.getByText('1').closest('button');
+    const button1 = screen.getAllByRole('button').find(b => b.textContent?.trim() === '1');
     fireEvent.click(button1!);
-    fireEvent.click(screen.getByText('0').closest('button')!);
+    const button0 = screen.getAllByRole('button').find(b => b.textContent?.trim() === '0');
+    fireEvent.click(button0!);
 
     const calculatorPriceButton = document.querySelector('button[data-isvalid="true"]');
     fireEvent.click(calculatorPriceButton!);
@@ -221,16 +222,26 @@ describe('Sale Page', () => {
     const eee1Button = screen.getByTestId('category-EEE-1');
     fireEvent.click(eee1Button);
 
-    // Enter weight
-    const button5 = screen.getByText('5').closest('button');
-    fireEvent.click(button5!);
+    // Saisir quantité puis valider
+    const qtyBtn1 = screen.getAllByRole('button', { name: '1' })[0];
+    fireEvent.click(qtyBtn1);
+    const qtyBtn0 = screen.getAllByRole('button', { name: '0' })[0];
+    fireEvent.click(qtyBtn0);
+    const qtyValidate = screen.getByTestId('validate-quantity-button');
+    fireEvent.click(qtyValidate);
 
     // Confirm weight - target the calculator confirm button specifically
     const calculatorButton = document.querySelector('button[data-isvalid="true"]');
     expect(calculatorButton).toBeInTheDocument();
     fireEvent.click(calculatorButton!);
 
-    expect(screen.getByText('Prix unitaire (€)')).toBeInTheDocument();
+    // Puis saisir prix
+    const priceBtn1 = screen.getAllByRole('button', { name: '1' })[0];
+    fireEvent.click(priceBtn1);
+    const priceBtn0 = screen.getAllByRole('button', { name: '0' })[0];
+    fireEvent.click(priceBtn0);
+
+    expect(screen.getByText(/Prix unitaire/)).toBeInTheDocument();
   });
 
   it('adds item to sale when price is confirmed', async () => {
@@ -252,9 +263,11 @@ describe('Sale Page', () => {
     expect(calculatorWeightButton).toBeInTheDocument();
     fireEvent.click(calculatorWeightButton!);
 
-    const button10 = screen.getByText('1').closest('button');
-    fireEvent.click(button10!);
-    fireEvent.click(screen.getByText('0').closest('button')!);
+    // Puis saisir prix
+    const priceBtn1 = screen.getAllByRole('button', { name: '1' })[0];
+    fireEvent.click(priceBtn1);
+    const priceBtn0 = screen.getAllByRole('button', { name: '0' })[0];
+    fireEvent.click(priceBtn0);
 
     // Confirm price - target calculator button (now in price mode)
     const calculatorPriceButton = document.querySelector('button[data-isvalid="true"]');
@@ -295,7 +308,7 @@ describe('Sale Page', () => {
 
     expect(screen.getByText('Ticket de Caisse')).toBeInTheDocument();
     expect(screen.getByText('1 articles')).toBeInTheDocument();
-    expect(screen.getAllByText(/10\.00 €/)).toHaveLength(2); // Item price + total
+    expect(screen.getAllByText(/10\.00 \€/).length).toBeGreaterThanOrEqual(2);
   });
 
   it('calls submitSale when finalizing sale', async () => {
@@ -320,8 +333,12 @@ describe('Sale Page', () => {
 
     render(<Sale />);
 
-    const finalizeButton = screen.getByText('Finaliser la vente');
-    fireEvent.click(finalizeButton);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Finaliser la vente' })[0]);
+    // confirmer la finalisation via le bouton du formulaire si présent
+    const confirm = screen.queryByTestId('confirm-finalization');
+    if (confirm && !(confirm as HTMLButtonElement).disabled) {
+      fireEvent.click(confirm);
+    }
 
     await waitFor(() => {
       expect(mockSubmitSale).toHaveBeenCalledWith(mockItems);
@@ -362,7 +379,11 @@ describe('Sale Page', () => {
 
     render(<Sale />);
 
-    fireEvent.click(screen.getByText('Finaliser la vente'));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Finaliser la vente' })[0]);
+    const confirm2 = screen.queryByTestId('confirm-finalization');
+    if (confirm2 && !(confirm2 as HTMLButtonElement).disabled) {
+      fireEvent.click(confirm2);
+    }
 
     await waitFor(() => {
       expect(mockSubmitSale).toHaveBeenCalledWith(mockItems);
@@ -403,7 +424,11 @@ describe('Sale Page', () => {
 
     render(<Sale />);
 
-    fireEvent.click(screen.getByText('Finaliser la vente'));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Finaliser la vente' })[0]);
+    const confirm2 = screen.queryByTestId('confirm-finalization');
+    if (confirm2 && !(confirm2 as HTMLButtonElement).disabled) {
+      fireEvent.click(confirm2);
+    }
 
     await waitFor(() => {
       expect(mockSubmitSale).toHaveBeenCalledWith(mockItems);

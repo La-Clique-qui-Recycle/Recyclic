@@ -46,7 +46,8 @@ describe('TicketDisplay Component', () => {
       />
     )
     
-    expect(screen.getByTestId('receipt-icon')).toBeInTheDocument()
+    // L'icône Receipt est rendue via data-icon-name dans le mock
+    expect(screen.getByText('Receipt')).toBeInTheDocument()
   })
 
   it('should render formatted date and time', () => {

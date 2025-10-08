@@ -11,7 +11,6 @@ class CategoryBase(BaseModel):
 class CategoryCreate(CategoryBase):
     parent_id: Optional[str] = None
     price: Optional[Decimal] = None
-    min_price: Optional[Decimal] = None
     max_price: Optional[Decimal] = None
 
 
@@ -20,7 +19,6 @@ class CategoryUpdate(BaseModel):
     is_active: Optional[bool] = None
     parent_id: Optional[str] = None
     price: Optional[Decimal] = None
-    min_price: Optional[Decimal] = None
     max_price: Optional[Decimal] = None
 
 
@@ -29,7 +27,6 @@ class CategoryRead(CategoryBase):
     is_active: bool
     parent_id: Optional[str] = None
     price: Optional[Decimal] = None
-    min_price: Optional[Decimal] = None
     max_price: Optional[Decimal] = None
     created_at: datetime
     updated_at: datetime
@@ -51,3 +48,14 @@ class CategoryWithChildren(CategoryRead):
     children: List['CategoryWithChildren'] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CategoryImportAnalyzeResponse(BaseModel):
+    session_id: Optional[str]
+    summary: dict
+    sample: List[dict]
+    errors: List[str]
+
+
+class CategoryImportExecuteRequest(BaseModel):
+    session_id: str

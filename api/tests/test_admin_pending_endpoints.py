@@ -109,6 +109,7 @@ class TestPendingUsersEndpoints:
         response = admin_client.post(f"/api/v1/admin/users/{user.id}/reject")
         assert response.status_code == 400
 
+    @pytest.mark.skip(reason="Telegram retiré du système")
     @patch('recyclic_api.services.telegram_service.telegram_service.send_user_approval_notification', side_effect=Exception("Telegram error"))
     def test_approve_user_telegram_error_continues_operation(self, mock_send_notification, admin_client: TestClient, db_session: Session):
         """Teste que l'approbation réussit même si la notification Telegram échoue."""
@@ -120,6 +121,7 @@ class TestPendingUsersEndpoints:
         db_session.refresh(user)
         assert user.status == UserStatus.APPROVED
 
+    @pytest.mark.skip(reason="Telegram retiré du système")
     @patch('recyclic_api.services.telegram_service.telegram_service.send_user_rejection_notification', side_effect=Exception("Telegram error"))
     def test_reject_user_telegram_error_continues_operation(self, mock_send_notification, admin_client: TestClient, db_session: Session):
         """Teste que le rejet réussit même si la notification Telegram échoue."""

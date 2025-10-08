@@ -4,7 +4,7 @@
 **Titre:** Stabilisation Alembic et Alignement du Service de Migrations
 **Epic:** Maintenance & Dette Technique
 **Priorité:** P0 (Critique)
-**Statut:** Approuvée
+**Statut:** Done
 
 ---
 
@@ -179,3 +179,9 @@ Ready for Done
 **Recommandations** (améliorations non bloquantes):
 - Ajouter un garde CI: vérification `alembic heads` == 1 et `alembic upgrade --sql head` dry-run.
 - Documenter dans le PR template un check de cohérence `down_revision` lors de l'ajout d'une migration.
+
+**Mise à jour (validation finale)**:
+- 2025-10-07: Workflow CI ajouté: `.github/workflows/alembic-check.yml` (vérifie tête unique, historique, dry-run SQL, upgrade réel sur Postgres CI).
+- 2025-10-07: Template PR ajouté: `.github/pull_request_template.md` (checklist migrations complète).
+- Commit de référence: `fb7edd90`.
+- Décision QA: PASS confirmée (recommandations implémentées, aucun blocant).

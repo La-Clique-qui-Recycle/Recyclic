@@ -9,7 +9,7 @@ export interface User {
   username?: string;
   first_name?: string;
   last_name?: string;
-  role: 'user' | 'admin' | 'super-admin' | 'manager' | 'cashier';
+  role: 'user' | 'admin' | 'super-admin' | 'manager';
   status: 'pending' | 'approved' | 'rejected';
   is_active: boolean;
   site_id?: string;
@@ -35,10 +35,11 @@ interface AuthState {
   setError: (error: string | null) => void;
   clearError: () => void;
   logout: () => void;
+  initializeAuth: () => Promise<void>;
 
   // Computed
   isAdmin: () => boolean;
-  isCashier: () => boolean;
+  hasCashAccess: () => boolean;
   canManageUsers: () => boolean;
 }
 
@@ -140,7 +141,7 @@ export const useAuthStore = create<AuthState>()(
         forgotPassword: async (email: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`, { email });
 
             set({
@@ -160,7 +161,7 @@ export const useAuthStore = create<AuthState>()(
         resetPassword: async (token: string, newPassword: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/reset-password`, {
               token,
               new_password: newPassword
@@ -199,17 +200,35 @@ export const useAuthStore = create<AuthState>()(
           localStorage.removeItem('token');
         },
 
+        initializeAuth: async () => {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            set({ 
+              currentUser: null, 
+              isAuthenticated: false, 
+              loading: false 
+            });
+            return;
+          }
+
+          // Pour l'instant, on fait confiance au token stocké
+          // L'intercepteur axios gérera les erreurs 401/403
+          set({ 
+            isAuthenticated: true, 
+            loading: false 
+          });
+        },
+
         // Computed
         isAdmin: () => {
           const { currentUser } = get();
           return currentUser?.role === 'admin' || currentUser?.role === 'super-admin';
         },
 
-        isCashier: () => {
+        hasCashAccess: () => {
           const { currentUser } = get();
-          return currentUser?.role === 'cashier' || 
-                 currentUser?.role === 'user' || 
-                 get().isAdmin();
+          // La caisse est accessible aux utilisateurs, managers et admins
+          return currentUser?.role === 'user' || currentUser?.role === 'manager' || get().isAdmin();
         },
 
         canManageUsers: () => {

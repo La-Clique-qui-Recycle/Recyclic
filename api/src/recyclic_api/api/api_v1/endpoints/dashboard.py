@@ -20,7 +20,7 @@ from recyclic_api.services.cash_session_service import CashSessionService
 from recyclic_api.utils.financial_security import encrypt_string
 from recyclic_api.utils.rate_limit import conditional_rate_limit
 
-router = APIRouter(prefix="/dashboard", tags=["admin", "dashboard"])
+router = APIRouter(tags=["admin", "dashboard"])
 
 RECENT_SESSION_LIMIT = 5
 RECENT_REPORT_LIMIT = 5

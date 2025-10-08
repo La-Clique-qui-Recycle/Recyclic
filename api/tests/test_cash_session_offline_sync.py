@@ -31,7 +31,7 @@ class TestCashSessionOfflineSync:
             "username": "test_cashier",
             "first_name": "Test",
             "last_name": "Cashier",
-            "role": UserRole.CASHIER,
+    "role": UserRole.USER,
             "is_active": True
         }
     

@@ -168,10 +168,10 @@ describe('Sites', () => {
     fireEvent.click(deleteButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Confirmer')).toBeInTheDocument();
+      expect(screen.getByTestId('confirm-delete-button')).toBeInTheDocument();
     });
 
-    const confirmButton = screen.getByText('Confirmer');
+    const confirmButton = screen.getByTestId('confirm-delete-button');
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -227,7 +227,7 @@ describe('Sites', () => {
     renderSites();
 
     await waitFor(() => {
-      expect(screen.getByText('Aucun site trouvé')).toBeInTheDocument();
+      expect(screen.getByText('Aucun site configuré')).toBeInTheDocument();
       expect(screen.getByLabelText('Créer le premier site')).toBeInTheDocument();
     });
   });

@@ -262,21 +262,7 @@ describe('ProtectedRoute', () => {
       expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     });
 
-    it('devrait gérer la compatibilité avec le rôle cashier (admin et super-admin autorisés)', () => {
-      mockStore.isAuthenticated = true;
-      mockStore.currentUser = { id: '1', role: 'admin' };
-      mockStore.loading = false;
-
-      render(
-        <MemoryRouter initialEntries={['/caisse']}>
-          <ProtectedRoute requiredRoles={['cashier']}>
-            <TestPage />
-          </ProtectedRoute>
-        </MemoryRouter>
-      );
-
-      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
-    });
+    // Test supprimé: le rôle supprimé n'existe plus
   });
 
   describe('Intégration avec React Router', () => {

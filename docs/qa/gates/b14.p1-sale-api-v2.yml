@@ -1,0 +1,42 @@
+schema: 1
+story: "STORY-B14-P1-SALE-API-V2"
+story_title: "Évolution de l'API pour le Nouveau Workflow de Vente Avancé"
+gate: PASS
+status_reason: "Tous les critères d'acceptation satisfaits: modèles mis à jour, migration créée, endpoint fonctionnel, tests passants."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-07T00:00:00Z"
+
+top_issues: []
+
+waiver: { active: false }
+
+quality_score: 96
+
+evidence:
+  tests_reviewed: 5
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun impact sécurité; ajout de champs métier standard."
+  performance:
+    status: PASS
+    notes: "Impact minimal; champs nullable avec defaults."
+  reliability:
+    status: PASS
+    notes: "Migration non destructive; tests complets (5/5)."
+  maintainability:
+    status: PASS
+    notes: "Enum PaymentMethod bien défini; code propre."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter contraintes de validation sur donation (>= 0)"
+      refs: ["api/src/recyclic_api/models/sale.py"]
+    - action: "Documenter les nouveaux champs dans l'API documentation"
+      refs: ["docs/"]

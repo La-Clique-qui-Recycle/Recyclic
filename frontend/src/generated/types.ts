@@ -37,7 +37,6 @@ export enum UserRole {
   SUPER_ADMIN = 'super-admin',
   ADMIN = 'admin',
   MANAGER = 'manager',
-  CASHIER = 'cashier',
   USER = 'user'
 }
 export enum UserStatus {

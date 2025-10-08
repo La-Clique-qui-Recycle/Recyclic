@@ -1,0 +1,43 @@
+schema: 1
+story: "STORY-B14-P2.1-WIZARD-STATE-QUANTITY"
+story_title: "Refonte de la Machine d'État du Wizard et Ajout de la Saisie de Quantité"
+gate: PASS
+status_reason: "Étapes Sous‑Catégorie et Quantité intégrées; 16 tests couvrent les transitions et validations."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-07T00:00:00Z"
+
+top_issues: []
+
+waiver: { active: false }
+
+quality_score: 95
+
+evidence:
+  tests_reviewed: 16
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucun impact sécurité."
+  performance:
+    status: PASS
+    notes: "Flux UI; impact minimal."
+  reliability:
+    status: PASS
+    notes: "Tests complets; reset wizard à surveiller."
+  maintainability:
+    status: PASS
+    notes: "Machine d'état claire; tests robustes."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter test de reset complet du wizard"
+      refs: ["frontend/src/components/business/SaleWizard.test.tsx"]
+    - action: "Activer logs debug steps en dev"
+      refs: ["frontend/src/components/business/SaleWizard.tsx"]
+

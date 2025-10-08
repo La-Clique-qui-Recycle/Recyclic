@@ -1,0 +1,52 @@
+schema: 1
+story: "STORY-TECH-DEBT-AUTH-TESTS-ALIGNMENT"
+story_title: "Alignement des Tests d'Authentification sur l'API Sécurité Actuelle"
+gate: PASS
+status_reason: "ImportError résolue, alias `create_reset_token()` ajouté, suite d'authentification verte."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-07T00:00:00Z"
+
+top_issues: []
+
+waiver: { active: false }
+
+quality_score: 94
+
+evidence:
+  tests_reviewed: 2
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucune nouvelle surface; alias vers implémentation existante JWT."
+  performance:
+    status: PASS
+    notes: "Sans impact; simple wrapper."
+  reliability:
+    status: PASS
+    notes: "Tests auth complets au vert; erreur d'import éliminée."
+  maintainability:
+    status: PASS
+    notes: "Docstring ajoutée; recommandation de déprécier l'alias à terme."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Mettre à jour progressivement les tests pour utiliser `create_password_reset_token`"
+      refs: ["api/src/recyclic_api/core/security.py"]
+      status: DONE (tests migrés)
+    - action: "Ajouter un test unitaire minimal pour l'alias afin de verrouiller la compat compat"
+      refs: ["api/tests/"]
+      status: DONE (3 tests dédiés)
+
+followups:
+  - story: STORY-TECH-DEBT-REMOVE-RESET-TOKEN-ALIAS
+    file: docs/stories/story-tech-debt-remove-reset-token-alias.md
+    status: Planned (P3)
+    window: 3-6 months
+
+

@@ -1,0 +1,35 @@
+story_id: story-b14-p3-finalization-screen
+epic_id: évolution-du-workflow-de-vente-en-caisse
+gate_decision: PASS
+reviewer: Quinn (Test Architect & Quality Advisor)
+review_date: 2025-10-07
+review_type: frontend_feature
+confidence_level: HIGH
+
+quality_assessment:
+  overall_score: 88/100
+  risk_level: LOW
+  technical_debt: LOW
+
+functional_assessment:
+  - ✅ Écran/modal de finalisation après clic
+  - ✅ Champ Don + prise en compte dans calcul total
+  - ✅ Sélecteur Moyen de Paiement (espèces/carte/chèque)
+  - ✅ Champ conditionnel Montant Donné si espèces
+  - ✅ Calcul automatique de la monnaie
+  - ✅ Soumission des données étendue au store/API
+
+tests_summary:
+  - ✅ 5 tests unitaires `FinalizationScreen`
+  - ✅ 2 tests d’intégration `Sale.finalization`
+
+risks_notes:
+  - Précision/arrondis monétaires (2 décimales) et formats d’entrée
+  - Accessibilité (navigation clavier, labels explicites)
+  - UX erreurs pour montants insuffisants/invalides
+
+recommendations:
+  - Centraliser helpers de formatage/arrondi monétaire + tests dédiés
+  - Ajouter tests a11y (axe-core, focus trap si modale)
+  - Ajouter test E2E pour espèces (avec monnaie) et carte (sans monnaie)
+

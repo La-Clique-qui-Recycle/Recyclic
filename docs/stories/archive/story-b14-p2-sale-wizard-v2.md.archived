@@ -1,0 +1,44 @@
+# Story (Frontend): Évolution de l'Assistant de Saisie V2
+
+**ID:** STORY-B14-P2-SALE-WIZARD-V2
+**Titre:** Évolution de l'Assistant de Saisie d'Article en Caisse
+**Epic:** Évolution du Workflow de Vente en Caisse
+**Priorité:** P1 (Critique)
+**Statut:** Approuvée
+
+---
+
+## User Story
+
+**En tant que** Caissier,
+**Je veux** un assistant de saisie amélioré qui me guide pas-à-pas (catégorie, quantité, poids multiples, prix) et qui affiche un fil d'Ariane,
+**Afin de** saisir les articles de manière plus intuitive et sans erreur.
+
+## Acceptance Criteria
+
+1.  L'assistant de saisie existant est étendu pour suivre un flux en 4 ou 5 étapes : Catégorie -> Sous-Catégorie -> Quantité -> Poids -> Prix (optionnel).
+2.  L'étape "Poids" permet d'ajouter plusieurs pesées pour un même lot d'articles. Un historique des pesées et le total sont visibles.
+3.  Un "fil d'Ariane" ou une ligne de ticket temporaire est visible pendant la saisie, montrant les informations déjà entrées.
+
+## Tasks / Subtasks
+
+- [ ] **Refonte du `SaleWizard.tsx` :**
+    - [ ] Étendre la machine d'état pour gérer les nouvelles étapes : `CATEGORY`, `SUB_CATEGORY`, `QUANTITY`, `WEIGHT`, `PRICE`.
+    - [ ] Implémenter l'écran de sélection de sous-catégorie.
+    - [ ] Implémenter l'écran de saisie de la Quantité.
+- [ ] **Implémentation des Pesées Multiples :**
+    - [ ] Créer un nouveau composant pour l'étape "Poids" qui gère une liste de pesées et calcule le total.
+- [ ] **Implémentation du Fil d'Ariane :**
+    - [ ] Créer un composant `StagingItem` qui affiche l'état de l'article en cours de saisie.
+
+## Note pour les Tests (MCP DevTool)
+
+- Pour tester manuellement l'interface, utilisez les identifiants suivants :
+- **Utilisateur :** `admintest`
+- **Mot de passe :** `AdminTest1!`
+
+## Definition of Done
+
+- [ ] Le nouvel assistant de saisie est fonctionnel, y compris les pesées multiples.
+- [ ] Le fil d'Ariane est visible et se met à jour à chaque étape.
+- [ ] La story a été validée par un agent QA.

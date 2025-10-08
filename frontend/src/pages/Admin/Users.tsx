@@ -178,7 +178,6 @@ const AdminUsers: React.FC = () => {
             onChange={(value) => handleFilterChange('role', value)}
             data={[
               { value: UserRole.USER, label: 'Utilisateur' },
-              { value: UserRole.CASHIER, label: 'Caissier' },
               { value: UserRole.MANAGER, label: 'Manager' },
               { value: UserRole.ADMIN, label: 'Administrateur' },
               { value: UserRole.SUPER_ADMIN, label: 'Super Admin' },

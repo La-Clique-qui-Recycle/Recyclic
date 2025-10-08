@@ -1,0 +1,260 @@
+"""Service for exporting categories to PDF and Excel formats (Story B21-P3)."""
+
+from io import BytesIO
+from datetime import datetime
+from typing import List, Optional
+from decimal import Decimal
+
+from sqlalchemy.orm import Session
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, KeepTogether
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
+
+from ..models.category import Category
+from ..schemas.category import CategoryRead
+
+
+class CategoryExportService:
+    """Service for exporting categories in PDF and Excel formats"""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def _get_all_categories_hierarchy(self) -> List[Category]:
+        """Get all categories ordered hierarchically (root first, then children)"""
+        # Get all active categories
+        categories = self.db.query(Category).filter(Category.is_active == True).order_by(Category.name).all()
+
+        # Build hierarchy: root categories first, then their children recursively
+        hierarchy = []
+        root_categories = [cat for cat in categories if cat.parent_id is None]
+
+        def add_category_and_children(category: Category, level: int = 0):
+            hierarchy.append((category, level))
+            children = [cat for cat in categories if cat.parent_id == category.id]
+            for child in sorted(children, key=lambda x: x.name):
+                add_category_and_children(child, level + 1)
+
+        for root in sorted(root_categories, key=lambda x: x.name):
+            add_category_and_children(root)
+
+        return hierarchy
+
+    def _format_price(self, price: Optional[Decimal]) -> str:
+        """Format price for display"""
+        if price is None:
+            return "-"
+        return f"{float(price):.2f} €"
+
+    def export_to_pdf(self) -> BytesIO:
+        """
+        Generate a PDF export of all categories with professional layout.
+        Manages page breaks to avoid splitting category groups.
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            leftMargin=2*cm,
+            rightMargin=2*cm,
+            topMargin=2*cm,
+            bottomMargin=2*cm
+        )
+
+        # Container for PDF elements
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # Custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor('#2c3e50'),
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+
+        subtitle_style = ParagraphStyle(
+            'CustomSubtitle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#7f8c8d'),
+            spaceAfter=20,
+            alignment=TA_CENTER
+        )
+
+        # Title
+        elements.append(Paragraph("Configuration des Catégories", title_style))
+        elements.append(Paragraph(
+            f"Export généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}",
+            subtitle_style
+        ))
+        elements.append(Spacer(1, 0.5*cm))
+
+        # Get categories hierarchy
+        hierarchy = self._get_all_categories_hierarchy()
+
+        if not hierarchy:
+            elements.append(Paragraph("Aucune catégorie active trouvée.", styles['Normal']))
+        else:
+            # Process categories grouped by root category to manage page breaks
+            root_categories = [cat for cat, level in hierarchy if level == 0]
+
+            for root_idx, root_cat in enumerate(root_categories):
+                # Collect this root and all its descendants
+                group_data = []
+
+                # Add header row for this group
+                group_data.append([
+                    Paragraph('<b>Nom de la catégorie</b>', styles['Normal']),
+                    Paragraph('<b>Prix Min</b>', styles['Normal']),
+                    Paragraph('<b>Prix Max</b>', styles['Normal'])
+                ])
+
+                # Add root and children
+                for cat, level in hierarchy:
+                    if level == 0 and cat.id != root_cat.id:
+                        continue  # Skip other root categories
+                    if level == 0 or self._is_descendant_of(cat, root_cat.id, hierarchy):
+                        indent = "    " * level
+                        name_text = f"{indent}{cat.name}"
+                        group_data.append([
+                            Paragraph(name_text, styles['Normal']),
+                            Paragraph(self._format_price(cat.price), styles['Normal']),
+                            Paragraph(self._format_price(cat.max_price), styles['Normal'])
+                        ])
+
+                # Create table for this group
+                col_widths = [10*cm, 3*cm, 3*cm]
+                table = Table(group_data, colWidths=col_widths)
+
+                # Table styling
+                table.setStyle(TableStyle([
+                    # Header row
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+
+                    # Data rows
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#2c3e50')),
+                    ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+                    ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.lightgrey]),
+
+                    # Grid
+                    ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+
+                # Use KeepTogether to prevent splitting this category group across pages
+                elements.append(KeepTogether(table))
+
+                # Add spacing between root categories (but not after the last one)
+                if root_idx < len(root_categories) - 1:
+                    elements.append(Spacer(1, 0.8*cm))
+
+        # Footer
+        elements.append(Spacer(1, 1*cm))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#95a5a6'),
+            alignment=TA_CENTER
+        )
+        elements.append(Paragraph(
+            f"Document généré par Recyclic - {datetime.now().year}",
+            footer_style
+        ))
+
+        # Build PDF
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer
+
+    def _is_descendant_of(self, cat: Category, root_id, hierarchy) -> bool:
+        """Check if a category is a descendant of the given root category"""
+        current = cat
+        while current.parent_id is not None:
+            if current.parent_id == root_id:
+                return True
+            # Find parent in hierarchy
+            parent = next((c for c, _ in hierarchy if c.id == current.parent_id), None)
+            if parent is None:
+                break
+            current = parent
+        return False
+
+    def export_to_excel(self) -> BytesIO:
+        """
+        Generate an Excel export of all categories.
+        Returns a BytesIO buffer containing the .xlsx file.
+        """
+        buffer = BytesIO()
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Catégories"
+
+        # Header styling
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="3498DB", end_color="3498DB", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        # Headers
+        headers = ["ID Catégorie Parente", "Nom Catégorie", "Prix Minimum", "Prix Maximum", "Info", "Image URL"]
+        ws.append(headers)
+
+        # Apply header styling
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+        # Get categories hierarchy
+        hierarchy = self._get_all_categories_hierarchy()
+
+        # Data rows
+        for cat, level in hierarchy:
+            row = [
+                str(cat.parent_id) if cat.parent_id else "",
+                cat.name,
+                float(cat.price) if cat.price is not None else "",
+                float(cat.max_price) if cat.max_price is not None else "",
+                "",  # Info column (empty for now)
+                ""   # Image URL column (empty for now)
+            ]
+            ws.append(row)
+
+        # Column widths
+        ws.column_dimensions['A'].width = 38
+        ws.column_dimensions['B'].width = 30
+        ws.column_dimensions['C'].width = 15
+        ws.column_dimensions['D'].width = 15
+        ws.column_dimensions['E'].width = 20
+        ws.column_dimensions['F'].width = 20
+
+        # Cell alignment for data
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+            row[0].alignment = Alignment(horizontal="left")   # Parent ID
+            row[1].alignment = Alignment(horizontal="left")   # Name
+            row[2].alignment = Alignment(horizontal="right")  # Min Price
+            row[3].alignment = Alignment(horizontal="right")  # Max Price
+            row[4].alignment = Alignment(horizontal="left")   # Info
+            row[5].alignment = Alignment(horizontal="left")   # Image URL
+
+        # Save to buffer
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer

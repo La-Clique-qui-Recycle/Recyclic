@@ -1,30 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, Button, Group, Stack, NumberInput, Select } from '@mantine/core';
+import { TextInput, Button, Group, Stack, NumberInput, Select, Alert } from '@mantine/core';
 import { Category, categoryService } from '../../services/categoryService';
 
 interface CategoryFormProps {
   category: Category | null;
-  onSubmit: (data: { name: string; parent_id?: string | null; price?: number | null; min_price?: number | null; max_price?: number | null }) => Promise<void>;
+  onSubmit: (data: { name: string; parent_id?: string | null; price?: number | null; max_price?: number | null }) => Promise<void>;
   onCancel: () => void;
+  onDelete?: () => Promise<void>;
 }
 
 export const CategoryForm: React.FC<CategoryFormProps> = ({
   category,
   onSubmit,
   onCancel,
+  onDelete,
 }) => {
   const [name, setName] = useState('');
   const [parentId, setParentId] = useState<string | null>(null);
   const [price, setPrice] = useState<number | string>('');
-  const [minPrice, setMinPrice] = useState<number | string>('');
   const [maxPrice, setMaxPrice] = useState<number | string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [hasChildren, setHasChildren] = useState(false);
 
-  // Determine if price fields should be enabled (only for subcategories with parent_id)
-  const hasParent = parentId != null;
+  // NEW RULE: Prices are allowed only on leaf categories.
+  // UX: Always enable inputs so users can CLEAR prices even if the category currently has children.
+  // Guard in submit: if has children, only allow empty/zero (treated as null) values.
+  const canSetNonNullPrice = !hasChildren;
 
   // Charger les catégories disponibles
   useEffect(() => {
@@ -52,14 +56,25 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       setName(category.name);
       setParentId(category.parent_id || null);
       setPrice(category.price ?? '');
-      setMinPrice(category.min_price ?? '');
       setMaxPrice(category.max_price ?? '');
+
+      // NEW RULE: Check if category has children to determine if price fields should be disabled
+      const checkChildren = async () => {
+        try {
+          const children = await categoryService.getCategoryChildren(category.id);
+          setHasChildren(children.length > 0);
+        } catch (err) {
+          console.error('Erreur lors du chargement des enfants de la catégorie:', err);
+          setHasChildren(false);
+        }
+      };
+      checkChildren();
     } else {
       setName('');
       setParentId(null);
       setPrice('');
-      setMinPrice('');
       setMaxPrice('');
+      setHasChildren(false);
     }
   }, [category]);
 
@@ -74,17 +89,26 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
     setLoading(true);
     try {
-      const data: { name: string; parent_id?: string | null; price?: number | null; min_price?: number | null; max_price?: number | null } = {
+      const data: { name: string; parent_id?: string | null; price?: number | null; max_price?: number | null } = {
         name: name.trim(),
         parent_id: parentId,
       };
 
-      // Only include price fields if category has a parent (subcategory)
-      if (hasParent) {
-        data.price = price === '' ? null : Number(price);
-        data.min_price = minPrice === '' ? null : Number(minPrice);
-        data.max_price = maxPrice === '' ? null : Number(maxPrice);
+      // Normalize: treat empty or 0.00 as null
+      const normalizedPrice = price === '' || Number(price) === 0 ? null : Number(price);
+      const normalizedMaxPrice = maxPrice === '' || Number(maxPrice) === 0 ? null : Number(maxPrice);
+
+      // Guard: if category has children, only allow clearing (null), not setting non-null prices
+      if (!canSetNonNullPrice) {
+        if (normalizedPrice !== null || normalizedMaxPrice !== null) {
+          setError("Cette catégorie a des sous-catégories. Vous pouvez uniquement vider les prix (laisser vide ou 0).);");
+          setLoading(false);
+          return;
+        }
       }
+
+      data.price = normalizedPrice;
+      data.max_price = normalizedMaxPrice;
 
       await onSubmit(data);
     } catch (err: any) {
@@ -97,6 +121,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   return (
     <form onSubmit={handleSubmit}>
       <Stack gap="md">
+        {hasChildren && (
+          (price !== '' && Number(price) !== 0) || (maxPrice !== '' && Number(maxPrice) !== 0)
+        ) && (
+          <Alert color="yellow" title="Avertissement">
+            Cette catégorie a des sous-catégories. Pour pouvoir créer des sous-catégories, videz les champs de prix (laisser vide ou 0).
+          </Alert>
+        )}
         <TextInput
           label="Nom de la catégorie"
           placeholder="Ex: Électronique, Meubles, Vêtements..."
@@ -123,49 +154,56 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           searchable
           loading={loadingCategories}
           data-testid="parent-category-select"
+          aria-label="Sélecteur de catégorie parente"
         />
 
-        {hasParent && (
-          <>
-            <NumberInput
-              label="Prix fixe"
-              placeholder="Prix suggéré (optionnel)"
-              value={price}
-              onChange={setPrice}
-              min={0}
-              decimalScale={2}
-              fixedDecimalScale
-              prefix="€ "
-              data-testid="price-input"
-            />
+        <NumberInput
+          label="Prix fixe"
+          placeholder={canSetNonNullPrice ? "Prix suggéré (optionnel)" : "Laisser vide ou 0 pour enlever le prix (catégorie avec sous-catégories)"}
+          value={price}
+          onChange={setPrice}
+          min={0}
+          decimalScale={2}
+          fixedDecimalScale
+          prefix="€ "
+          data-testid="price-input"
+          aria-label="Prix minimum"
+          description={!canSetNonNullPrice ? "Catégorie avec sous-catégories: seuls les champs vides ou 0 sont acceptés (supprime le prix)." : undefined}
+        />
 
-            <NumberInput
-              label="Prix minimum"
-              placeholder="Prix minimum (optionnel)"
-              value={minPrice}
-              onChange={setMinPrice}
-              min={0}
-              decimalScale={2}
-              fixedDecimalScale
-              prefix="€ "
-              data-testid="min-price-input"
-            />
+        <NumberInput
+          label="Prix maximum"
+          placeholder={canSetNonNullPrice ? "Prix maximum (optionnel)" : "Laisser vide ou 0 pour enlever le prix"}
+          value={maxPrice}
+          onChange={setMaxPrice}
+          min={0}
+          decimalScale={2}
+          fixedDecimalScale
+          prefix="€ "
+          data-testid="max-price-input"
+          aria-label="Prix maximum"
+          description={!canSetNonNullPrice ? "Catégorie avec sous-catégories: seuls les champs vides ou 0 sont acceptés." : undefined}
+        />
 
-            <NumberInput
-              label="Prix maximum"
-              placeholder="Prix maximum (optionnel)"
-              value={maxPrice}
-              onChange={setMaxPrice}
-              min={0}
-              decimalScale={2}
-              fixedDecimalScale
-              prefix="€ "
-              data-testid="max-price-input"
-            />
-          </>
-        )}
-
-        <Group justify="flex-end" gap="sm">
+        <Group justify="space-between" gap="sm">
+          {category && onDelete && (
+            <Button
+              color="red"
+              variant="light"
+              onClick={async () => {
+                const ok = confirm('Supprimer définitivement cette catégorie ? Cette action la retirera de la vue.');
+                if (!ok) return;
+                setLoading(true);
+                try {
+                  await onDelete();
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              Supprimer
+            </Button>
+          )}
           <Button variant="subtle" onClick={onCancel} disabled={loading}>
             Annuler
           </Button>

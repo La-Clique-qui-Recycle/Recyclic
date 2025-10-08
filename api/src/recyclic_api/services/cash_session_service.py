@@ -79,6 +79,22 @@ class CashSessionService:
         sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
         return self.db.query(CashSession).filter(CashSession.id == sid).first()
     
+    def get_session_with_details(self, session_id: str) -> Optional[CashSession]:
+        """Récupère une session avec toutes ses relations (opérateur, site, ventes)."""
+        from sqlalchemy.orm import selectinload
+        
+        sid = UUID(str(session_id)) if not isinstance(session_id, UUID) else session_id
+        return (
+            self.db.query(CashSession)
+            .options(
+                selectinload(CashSession.operator),
+                selectinload(CashSession.site),
+                selectinload(CashSession.sales)
+            )
+            .filter(CashSession.id == sid)
+            .first()
+        )
+    
     def get_open_session_by_operator(self, operator_id: str) -> Optional[CashSession]:
         """Récupère la session ouverte d'un opérateur."""
         oid = UUID(str(operator_id)) if not isinstance(operator_id, UUID) else operator_id

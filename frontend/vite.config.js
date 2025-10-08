@@ -63,7 +63,7 @@ export default defineConfig({
             './src/pages/Admin/PendingUsers.tsx'
           ],
           // Chunk pour les pages de caisse
-          cashier: [
+          cash: [
             './src/pages/CashRegister.jsx'
           ]
         }

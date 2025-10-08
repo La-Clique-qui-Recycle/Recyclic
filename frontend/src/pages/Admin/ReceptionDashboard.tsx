@@ -6,8 +6,8 @@ import { getReceptionSummary, getReceptionByCategory } from '../../services/api'
 // Styled Components
 const DashboardContainer = styled.div`
   padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 `;
 
@@ -69,8 +69,8 @@ const DateInput = styled.input`
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: 24px;
+  margin-bottom: 32px;
 `;
 
 const StatCard = styled.div`
@@ -104,13 +104,13 @@ const ChartSection = styled.div`
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 28px;
+  margin-bottom: 32px;
   box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
 `;
 
 const ChartTitle = styled.h2`
-  margin: 0 0 20px 0;
+  margin: 0 0 24px 0;
   font-size: 1.3rem;
   color: #1f2937;
 `;

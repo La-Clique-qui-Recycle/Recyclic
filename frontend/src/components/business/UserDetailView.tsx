@@ -67,8 +67,6 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
         return 'red';
       case UserRole.MANAGER:
         return 'orange';
-      case UserRole.CASHIER:
-        return 'green';
       case UserRole.USER:
       default:
         return 'blue';
@@ -109,8 +107,6 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
         return 'Administrateur';
       case UserRole.MANAGER:
         return 'Manager';
-      case UserRole.CASHIER:
-        return 'Caissier';
       case UserRole.USER:
       default:
         return 'Utilisateur';

@@ -133,3 +133,32 @@ class CashSessionStats(BaseModel):
     total_sales: float = Field(..., description="Total des ventes")
     total_items: int = Field(..., description="Total des articles vendus")
     average_session_duration: Optional[float] = Field(None, description="Durée moyenne des sessions en heures")
+
+
+class SaleDetail(BaseModel):
+    """Schéma pour les détails d'une vente dans une session."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str = Field(..., description="ID de la vente")
+    total_amount: float = Field(..., description="Montant total de la vente")
+    donation: Optional[float] = Field(None, description="Montant du don")
+    payment_method: Optional[str] = Field(None, description="Méthode de paiement")
+    created_at: datetime = Field(..., description="Date et heure de la vente")
+    operator_id: Optional[str] = Field(None, description="ID de l'opérateur")
+    
+    @field_validator('id', 'operator_id', mode='before')
+    @classmethod
+    def convert_uuid_to_str(cls, v):
+        """Convertit les UUIDs en strings pour la sérialisation"""
+        if v is None:
+            return v
+        if hasattr(v, '__str__'):
+            return str(v)
+        return v
+
+
+class CashSessionDetailResponse(CashSessionResponse):
+    """Schéma de réponse détaillée pour une session de caisse avec ses ventes."""
+    sales: List[SaleDetail] = Field(..., description="Liste des ventes de la session")
+    operator_name: Optional[str] = Field(None, description="Nom de l'opérateur")
+    site_name: Optional[str] = Field(None, description="Nom du site")

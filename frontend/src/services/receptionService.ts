@@ -29,14 +29,14 @@ export interface CreateTicketRequest {
 }
 
 export interface CreateTicketLineRequest {
-  dom_category_id: string;
+  category_id: string;
   weight: number;
   destination: 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE';
   notes?: string;
 }
 
 export interface UpdateTicketLineRequest {
-  dom_category_id?: string;
+  category_id?: string;
   weight?: number;
   destination?: 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE';
   notes?: string;
@@ -66,7 +66,7 @@ class ReceptionService {
   async addLineToTicket(ticketId: string, line: CreateTicketLineRequest): Promise<TicketLine> {
     const response = await api.post('/api/v1/reception/lignes', {
       ticket_id: ticketId,
-      dom_category_id: line.dom_category_id,
+      category_id: line.category_id,
       poids_kg: line.weight,
       destination: line.destination,
       notes: line.notes
@@ -75,8 +75,8 @@ class ReceptionService {
     return {
       id: response.data.id,
       ticket_id: response.data.ticket_id,
-      category: response.data.dom_category_id, // Pour compatibilité
-      dom_category_id: response.data.dom_category_id,
+      category: response.data.category_id, // Pour compatibilité
+      dom_category_id: response.data.category_id,
       weight: response.data.poids_kg,
       poids_kg: response.data.poids_kg,
       destination: response.data.destination,
@@ -88,7 +88,7 @@ class ReceptionService {
 
   async updateTicketLine(ticketId: string, lineId: string, line: UpdateTicketLineRequest): Promise<TicketLine> {
     const response = await api.put(`/api/v1/reception/lignes/${lineId}`, {
-      dom_category_id: line.dom_category_id,
+      category_id: line.category_id,
       poids_kg: line.weight,
       destination: line.destination,
       notes: line.notes
@@ -97,8 +97,8 @@ class ReceptionService {
     return {
       id: response.data.id,
       ticket_id: response.data.ticket_id,
-      category: response.data.dom_category_id, // Pour compatibilité
-      dom_category_id: response.data.dom_category_id,
+      category: response.data.category_id, // Pour compatibilité
+      dom_category_id: response.data.category_id,
       weight: response.data.poids_kg,
       poids_kg: response.data.poids_kg,
       destination: response.data.destination,

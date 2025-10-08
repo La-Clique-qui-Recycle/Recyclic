@@ -1,0 +1,66 @@
+Catégorie racine,Sous-catégorie,Prix minimum (€),Prix maximum (€)
+Ameublement & Literie,Gros meuble en bois massif,30,
+Ameublement & Literie,Gros meuble en plastique/stratifié,20,
+Ameublement & Literie,Meuble moyen en bois massif,30,
+Ameublement & Literie,Meuble moyen en plastique/stratifié,20,
+Ameublement & Literie,Petit meuble / chaise en bois massif,12,
+Ameublement & Literie,Petit meuble / chaise en plastique/stratifié,8,
+Ameublement & Literie,Canapé,30,80
+Ameublement & Literie,Literie,15,40
+Ameublement & Literie,Table à repasser,5,10
+Ameublement & Literie,Rangement,10,25
+Bricolage & Outils,Quincaillerie,"0,5",5
+Bricolage & Outils,Gants,"0,5",2
+Bricolage & Outils,Métal,"0,5",5
+Électroménager,Mixer main,5,
+Électroménager,Plaque cuisson,15,
+Électroménager,Raclette,10,
+Électroménager,Réfrigérateur,30,
+Électroménager,Bouilloire,5,10
+Électronique / IT / Audio-vidéo,Ordinateur,30,100
+Électronique / IT / Audio-vidéo,Réveil,2,10
+Électronique / IT / Audio-vidéo,Télévision,20,50
+Jardin & Extérieur,Parasol,5,15
+Jardin & Extérieur,Transat,5,20
+Jardin & Extérieur,Bascule,5,20
+Jouets,Jouets,"0,5",10
+Jouets,Puzzle,"0,5",5
+Livres & Médias,Livre,1,
+Livres & Médias,CD,1,3
+Livres & Médias,DVD,1,3
+Livres & Médias,Album photo,2,5
+Luminaires & Décoration,Cadre / Tableau,"0,5",
+Luminaires & Décoration,Lampe,3,
+Luminaires & Décoration,Décoration,1,10
+Luminaires & Décoration,Luminaires,3,15
+Luminaires & Décoration,Boîte à couture,3,10
+Matériaux & Bâtiment,Matériaux divers,1,10
+Mobilité douce,Vélo adulte (hors asso),20,
+Mobilité douce,"Vélo elliptique, rameur, etc.",20,
+Mobilité douce,Vélo enfant,10,
+Mobilité douce,Trottinette,10,30
+Puériculture & Bébé,Poussette,10,30
+Puériculture & Bébé,Siège auto,10,25
+Puériculture & Bébé,Lit parapluie,10,20
+Puériculture & Bébé,Landeau,10,20
+Sports & Loisirs,Ballon en cuir,2,
+Sports & Loisirs,Ballon plastique,"0,5",
+Sports & Loisirs,Instrument de musique,5,30
+Textiles – Linge – Chaussures,Chaussures,3,
+Textiles – Linge – Chaussures,Chaussures enfants,2,
+Textiles – Linge – Chaussures,"Chemise, top",3,
+Textiles – Linge – Chaussures,Drap,3,
+Textiles – Linge – Chaussures,Drap ancien,12,
+Textiles – Linge – Chaussures,"Jupe longue, robe, pantalon, pull",3,
+Textiles – Linge – Chaussures,Manteaux adultes,5,
+Textiles – Linge – Chaussures,Manteaux enfants,3,
+Textiles – Linge – Chaussures,Sac,3,
+Textiles – Linge – Chaussures,Taie,1,
+Textiles – Linge – Chaussures,T-shirt,2,
+Textiles – Linge – Chaussures,Linge de maison,3,10
+Vaisselle & Cuisine / Maison,Casserole,3,
+Vaisselle & Cuisine / Maison,Cocotte,8,
+Vaisselle & Cuisine / Maison,Couvert,"0,2",
+Vaisselle & Cuisine / Maison,Plat,3,
+Vaisselle & Cuisine / Maison,Verre,"0,5",
+Vaisselle & Cuisine / Maison,Carafe / Pichet,1,3

@@ -10,13 +10,7 @@ import {
   RecentReportSummary,
 } from '../../services/dashboardService'
 import reportsService from '../../services/reportsService'
-
-const DashboardContainer = styled.div`
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-`
+import PageLayout, { PageTitle, SectionTitle, PageSection, Card, Grid, ButtonGroup, FilterRow } from '../../components/layout/PageLayout'
 
 const Header = styled.div`
   display: flex;
@@ -29,18 +23,6 @@ const Header = styled.div`
     justify-content: space-between;
     align-items: center;
   }
-`
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: 1.8rem;
-  color: #1f2937;
-`
-
-const ButtonGroup = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
 `
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
@@ -61,12 +43,7 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   }
 `
 
-const FiltersRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 24px;
-`
+// Les composants FilterRow, Grid, Card, etc. sont maintenant importés de PageLayout
 
 const Select = styled.select`
   padding: 8px 12px;
@@ -76,46 +53,34 @@ const Select = styled.select`
   background: #ffffff;
 `
 
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+const Input = styled.input`
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  min-width: 200px;
+  background: #ffffff;
 `
+
+// StatsGrid est maintenant remplacé par le composant Grid de PageLayout
 
 const StatCard = styled.div`
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `
 
 const StatLabel = styled.div`
   font-size: 0.9rem;
   color: #6b7280;
+  margin-bottom: 8px;
 `
 
 const StatValue = styled.div`
   font-size: 2.2rem;
   font-weight: 700;
   color: #111827;
-  margin-top: 8px;
-`
-
-const SectionCard = styled.div`
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e5e7eb;
-  margin-bottom: 24px;
-`
-
-const SectionTitle = styled.h2`
-  margin: 0 0 16px 0;
-  font-size: 1.2rem;
-  color: #1f2937;
 `
 
 const Table = styled.table`
@@ -138,6 +103,15 @@ const Td = styled.td`
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.95rem;
   color: #1f2937;
+`
+
+const ClickableRow = styled.tr`
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f9fafb;
+  }
 `
 
 const Badge = styled.span<{ variant?: 'open' | 'closed' }>`
@@ -226,6 +200,11 @@ interface SessionRow {
   closedAt?: string | null
 }
 
+/**
+ * Formate un montant en devise EUR avec gestion des valeurs invalides
+ * @param value - Montant à formater
+ * @returns Montant formaté ou "--" si invalide
+ */
 const formatCurrency = (value?: number) => {
   if (typeof value !== 'number' || !isFinite(value)) {
     return '--'
@@ -241,6 +220,9 @@ const AdminDashboard: React.FC = () => {
   const [thresholds, setThresholds] = useState<AlertThresholds>(defaultThresholds)
   const [siteOptions, setSiteOptions] = useState<SiteOption[]>([])
   const [selectedSite, setSelectedSite] = useState<string>('all')
+  const [dateFrom, setDateFrom] = useState<string>('')
+  const [dateTo, setDateTo] = useState<string>('')
+  const [operatorId, setOperatorId] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [settingsOpened, setSettingsOpened] = useState<boolean>(false)
@@ -248,7 +230,10 @@ const AdminDashboard: React.FC = () => {
 
   const filters: DashboardFilters = useMemo(() => ({
     siteId: selectedSite !== 'all' ? selectedSite : undefined,
-  }), [selectedSite])
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    operatorId: operatorId || undefined,
+  }), [selectedSite, dateFrom, dateTo, operatorId])
 
   const dsAny: any = dashboardService
 
@@ -300,12 +285,12 @@ const AdminDashboard: React.FC = () => {
       ])
       setData(aggregate)
       setReports(reportsPayload?.reports ?? [])
-    } catch (err) {
-      console.error(err)
-      setError('Erreur lors du chargement des donn\uFFFDes du dashboard')
-    } finally {
-      setLoading(false)
-    }
+      } catch (err) {
+        console.error('Erreur lors du chargement du dashboard:', err)
+        setError('Erreur lors du chargement des données du dashboard')
+      } finally {
+        setLoading(false)
+      }
   }, [filters])
 
   const loadSites = useCallback(async () => {
@@ -328,6 +313,10 @@ const AdminDashboard: React.FC = () => {
 
   const handleRefresh = async () => {
     await loadDashboard()
+  }
+
+  const handleSessionClick = (sessionId: string) => {
+    navigate(`/admin/cash-sessions/${sessionId}`)
   }
 
   const handleThresholdUpdate = async () => {
@@ -451,20 +440,20 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <DashboardContainer>
+    <PageLayout isAdminMode={true}>
       <Header>
-        <Title>Dashboard Administrateur</Title>
+        <PageTitle>Dashboard Administrateur</PageTitle>
         <ButtonGroup>
           <Button variant="secondary" onClick={() => setSettingsOpened(true)}>
-            ?? Configuration
+            ⚙️ Configuration
           </Button>
           <Button onClick={handleRefresh}>
-            ?? Actualiser
+            🔄 Actualiser
           </Button>
         </ButtonGroup>
       </Header>
 
-      <FiltersRow>
+      <FilterRow>
         <Select value={selectedSite} onChange={(event) => setSelectedSite(event.target.value)}>
           <option value="all">Tous les sites</option>
           {siteOptions.map((site) => (
@@ -473,14 +462,35 @@ const AdminDashboard: React.FC = () => {
             </option>
           ))}
         </Select>
-      </FiltersRow>
+        <Input
+          type="date"
+          value={dateFrom}
+          onChange={(event) => setDateFrom(event.target.value)}
+          placeholder="Date de début"
+          title="Filtrer par date de début"
+        />
+        <Input
+          type="date"
+          value={dateTo}
+          onChange={(event) => setDateTo(event.target.value)}
+          placeholder="Date de fin"
+          title="Filtrer par date de fin"
+        />
+        <Input
+          type="text"
+          value={operatorId}
+          onChange={(event) => setOperatorId(event.target.value)}
+          placeholder="ID opérateur"
+          title="Filtrer par ID d'opérateur"
+        />
+        </FilterRow>
 
       {error && (
         <ErrorState>
           <div>{error}</div>
           <div>
             <Button variant="secondary" onClick={handleRefresh}>
-              R�essayer
+              🔄 Réessayer
             </Button>
           </div>
         </ErrorState>
@@ -490,31 +500,34 @@ const AdminDashboard: React.FC = () => {
         <LoadingState>Chargement...</LoadingState>
       ) : (
         <>
-          <StatsGrid>
-            <StatCard>
-              <StatLabel>Caisses ouvertes</StatLabel>
-              <StatValue>{stats?.openSessions ?? 0}</StatValue>
-            </StatCard>
-            <StatCard>
-              <StatLabel>Caisses fermées</StatLabel>
-              <StatValue>{stats?.closedSessions ?? 0}</StatValue>
-            </StatCard>
-            <StatCard>
-              <StatLabel>Total sessions</StatLabel>
-              <StatValue>{stats?.totalSessions ?? 0}</StatValue>
-            </StatCard>
-            <StatCard>
-              <StatLabel>Ventes réalisées</StatLabel>
-              <StatValue>{formattedTotalSales}</StatValue>
-            </StatCard>
-            <StatCard>
-              <StatLabel>Articles vendus</StatLabel>
-              <StatValue>{stats?.totalItems ?? 0}</StatValue>
-            </StatCard>
-          </StatsGrid>
+          <PageSection>
+            <Grid columns={5}>
+              <StatCard>
+                <StatLabel>Caisses ouvertes</StatLabel>
+                <StatValue>{stats?.openSessions ?? 0}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Caisses fermées</StatLabel>
+                <StatValue>{stats?.closedSessions ?? 0}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Total sessions</StatLabel>
+                <StatValue>{stats?.totalSessions ?? 0}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Ventes réalisées</StatLabel>
+                <StatValue>{formattedTotalSales}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Articles vendus</StatLabel>
+                <StatValue>{stats?.totalItems ?? 0}</StatValue>
+              </StatCard>
+            </Grid>
+          </PageSection>
 
-          <SectionCard>
-            <SectionTitle>Historique des Sessions de Caisse</SectionTitle>
+          <PageSection>
+            <Card>
+              <SectionTitle>Historique des Sessions de Caisse</SectionTitle>
             {!sessions.length ? (
               <EmptyState>Aucune session disponible pour ce filtre.</EmptyState>
             ) : (
@@ -534,13 +547,13 @@ const AdminDashboard: React.FC = () => {
                 </thead>
                 <tbody>
                   {sessions.map((session) => (
-                    <tr key={session.id}>
+                    <ClickableRow key={session.id} onClick={() => handleSessionClick(session.id)}>
                       <Td>{session.id}</Td>
                       <Td>{session.siteId}</Td>
                       <Td>{session.operator}</Td>
                       <Td>
                         <Badge variant={session.status === 'open' ? 'open' : 'closed'}>
-                          {session.status === 'open' ? 'Ouverte' : 'Ferm\uFFFDe'}
+                          {session.status === 'open' ? 'Ouverte' : 'Fermée'}
                         </Badge>
                       </Td>
                       <Td>{formatCurrency(session.initialAmount)}</Td>
@@ -550,15 +563,17 @@ const AdminDashboard: React.FC = () => {
                       <Td>
                         {calcDuration(session.openedAt, session.closedAt, session.status)}
                       </Td>
-                    </tr>
+                    </ClickableRow>
                   ))}
                 </tbody>
               </Table>
             )}
-          </SectionCard>
+            </Card>
+          </PageSection>
 
-          <SectionCard>
-            <SectionTitle>Rapports récents</SectionTitle>
+          <PageSection>
+            <Card>
+              <SectionTitle>Rapports récents</SectionTitle>
             {!reports.length ? (
               <EmptyState>Aucun rapport disponible pour ce filtre.</EmptyState>
             ) : (
@@ -590,12 +605,13 @@ const AdminDashboard: React.FC = () => {
                 </tbody>
               </Table>
             )}
-          </SectionCard>
+            </Card>
+          </PageSection>
         </>
       )}
 
       {renderThresholdModal()}
-    </DashboardContainer>
+    </PageLayout>
   )
 }
 

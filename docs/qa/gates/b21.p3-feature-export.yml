@@ -1,0 +1,25 @@
+storyId: STORY-B21-P3
+epic: Gestion Centralisée des Catégories de Produits
+title: Export PDF et XLS de la Configuration des Catégories
+priority: P3
+decision: CONCERNS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Deux endpoints présents (/api/v1/categories/actions/export et /api/v1/categories/export); risque de duplication.
+  - Implémentation PDF (ReportLab) et XLS (openpyxl) trouvée, mais non validée par exécution.
+  - Tests backend présents mais non exécutés localement (environnement python absent).
+mustTests:
+  - AuthZ SUPER_ADMIN requise; non-auth/role insuffisant → 401/403.
+  - format requis: pdf|xls; invalid → 400; manquant → 422.
+  - PDF: en-tête, date, hiérarchie intacte (sauts de page), pied de page.
+  - XLS: entêtes conformes, valeurs prix min/max, hiérarchie déroulée, formats cellules.
+  - Frontend: menu Exporter PDF/XLS, téléchargement effectif, gestion erreurs.
+qualityAttributes:
+  - security: contrôle role strict.
+  - usability: export accessible, feedback d’état.
+  - performance: export hiérarchie large sans timeouts.
+status: PENDING_VALIDATION
+
+

@@ -378,7 +378,7 @@ const TicketView: React.FC = () => {
                   
                   <LigneItem>
                     <Tag size={16} />
-                    Catégorie : {ligne.dom_category_label || ligne.dom_category_id}
+                    Catégorie : {ligne.category_label || ligne.category_id}
                   </LigneItem>
                   
                   {ligne.notes && (

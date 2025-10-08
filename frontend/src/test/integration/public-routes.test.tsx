@@ -42,7 +42,7 @@ const TestRoutes = (
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/telegram-auth" element={<TelegramAuth />} />
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/caisse" element={<ProtectedRoute requiredRole="cashier"><CashRegister /></ProtectedRoute>} />
+    <Route path="/caisse" element={<ProtectedRoute requiredRole="user"><CashRegister /></ProtectedRoute>} />
     <Route path="/inscription" element={<Registration />} />
     <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
   </Routes>
@@ -189,7 +189,7 @@ describe('Public Routes Integration Tests', () => {
       })
     })
 
-    it('should redirect to login when accessing cashier routes without authentication', async () => {
+    it('should redirect to login when accessing cash routes without authentication', async () => {
       renderAppWithRoute('/caisse')
 
       await waitFor(() => {

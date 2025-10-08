@@ -1,0 +1,41 @@
+gate_id: "epic-maintenance-et-dette-technique.story-b14-p2-bug-gestion-sites-connexion"
+story_id: "story-b14-p2-bug-gestion-sites-connexion"
+epic: "Maintenance & Dette Technique"
+title: "Correction de l'Erreur de Connexion sur la Gestion des Sites"
+reviewer: "Quinn (Test Architect & Quality Advisor)"
+review_date: "2025-01-27"
+gate_decision: "PASS"
+implementation_status: "DONE"
+tests_status: "DONE"
+
+summary: |
+  Le bug de connexion sur la gestion des sites a été résolu avec succès. Le problème était causé par une 
+  configuration incohérente entre les variables d'environnement VITE_API_URL et REACT_APP_API_URL en production Docker.
+
+validations:
+  - "Configuration API corrigée: Ajout du support pour REACT_APP_API_URL dans tous les services"
+  - "Services modifiés: api.js, authService.ts, authStore.ts, generated/api.ts"
+  - "Tests de validation: Services Docker démarrés et fonctionnels"
+  - "Frontend accessible: http://localhost:4444 répond correctement"
+  - "API fonctionnelle: http://localhost:8000/health retourne un statut sain"
+  - "Page sites fonctionnelle: La page /admin/sites se charge et affiche la liste des sites"
+  - "Création de sites: La fonctionnalité de création de nouveaux sites est opérationnelle"
+
+risks:
+  - risk: "Configuration"
+    description: "La gestion des variables d'environnement peut être complexe entre développement et production"
+    severity: "medium"
+  - risk: "Docker"
+    description: "Les variables d'environnement Docker doivent être cohérentes avec la configuration frontend"
+    severity: "low"
+
+recommendations:
+  - "Standardiser l'utilisation des variables d'environnement (privilégier VITE_API_URL partout)"
+  - "Ajouter des tests d'intégration pour valider la configuration API en différents environnements"
+  - "Documenter la configuration des variables d'environnement pour les déploiements"
+
+technical_notes:
+  - "Root cause: Configuration incohérente entre VITE_API_URL et REACT_APP_API_URL"
+  - "Solution: Ajout du fallback REACT_APP_API_URL dans tous les services API"
+  - "Impact: Page /admin/sites maintenant fonctionnelle avec création de sites"
+  - "Prevention: Standardisation des variables d'environnement et tests de configuration"

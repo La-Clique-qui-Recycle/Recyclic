@@ -111,3 +111,6 @@ login_data.json
 .claude/
 .cursor/
 test_reception_api.js
+
+# other datas
+/docs/photos_imports/*

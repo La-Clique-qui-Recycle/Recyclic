@@ -52,7 +52,7 @@ def test_cashier():
         "username": "test_cashier",
         "first_name": "Test",
         "last_name": "Cashier",
-        "role": UserRole.CASHIER,
+    "role": UserRole.USER,
         "status": UserStatus.APPROVED,
         "is_active": True,
         "hashed_password": hash_password("testpassword123")

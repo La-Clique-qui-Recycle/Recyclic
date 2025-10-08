@@ -1,0 +1,24 @@
+storyId: STORY-B22-P2
+epic: Améliorations de l'Expérience Utilisateur
+title: Menu Utilisateur et Page "Mon Profil"
+priority: P2
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Menu utilisateur conforme (Profil + Déconnexion) dans le header
+  - Route `/profil` protégée
+  - Endpoints self-service update/password avec commit + refresh
+  - Tests UI profil présents et verts
+evidence:
+  - frontend/src/components/Header.jsx
+  - frontend/src/App.jsx
+  - api/src/recyclic_api/api/api_v1/endpoints/users.py
+  - frontend/src/test/pages/Profile.test.tsx
+qualityAttributes:
+  - usability: Accès direct au profil via menu utilisateur
+  - security: Route profil protégée, endpoints self-service sécurisés
+  - maintainability: Tests UI présents
+status: APPROVED
+

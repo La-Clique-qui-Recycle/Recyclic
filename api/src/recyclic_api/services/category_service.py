@@ -44,19 +44,6 @@ class CategoryService:
         if existing:
             raise HTTPException(status_code=400, detail=f"Category with name '{category_data.name}' already exists")
 
-        # Validate price fields: prices can only be set on subcategories (with parent_id)
-        has_price_fields = any([
-            category_data.price is not None,
-            category_data.min_price is not None,
-            category_data.max_price is not None
-        ])
-
-        if has_price_fields and not category_data.parent_id:
-            raise HTTPException(
-                status_code=422,
-                detail="Price fields can only be set on subcategories (categories with a parent_id)"
-            )
-
         # Validate parent_id if provided
         parent_id = None
         if category_data.parent_id:
@@ -69,6 +56,13 @@ class CategoryService:
                 ).first()
                 if not parent:
                     raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
+
+                # NEW RULE: Check if parent has any price defined
+                if parent.price is not None or parent.max_price is not None:
+                    raise HTTPException(
+                        status_code=422,
+                        detail="Cannot add a subcategory to a category that has prices defined. Remove prices from parent category first."
+                    )
 
                 # Check hierarchy depth
                 parent_depth = self._get_hierarchy_depth(parent_id)
@@ -86,7 +80,6 @@ class CategoryService:
             is_active=True,
             parent_id=parent_id,
             price=category_data.price,
-            min_price=category_data.min_price,
             max_price=category_data.max_price
         )
 
@@ -167,6 +160,14 @@ class CategoryService:
                     ).first()
                     if not parent:
                         raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
+
+                    # NEW RULE: Check if parent has any price defined
+                    if parent.price is not None or parent.max_price is not None:
+                        raise HTTPException(
+                            status_code=422,
+                            detail="Cannot add a subcategory to a category that has prices defined. Remove prices from parent category first."
+                        )
+
                     # Prevent self-reference
                     if final_parent_id == cat_uuid:
                         raise HTTPException(status_code=400, detail="Category cannot be its own parent")
@@ -183,25 +184,25 @@ class CategoryService:
             else:
                 final_parent_id = None
 
-        # Validate price fields: prices can only be set on subcategories (with parent_id)
-        # Check both incoming price fields and existing ones on the category
+        # NEW RULE: Validate price fields - prices can only be set on "leaf" categories (without children)
+        # Check if trying to set price on a category that has children
         has_new_price_fields = any([
             category_data.price is not None,
-            category_data.min_price is not None,
             category_data.max_price is not None
         ])
 
-        has_existing_price_fields = any([
-            category.price is not None,
-            category.min_price is not None,
-            category.max_price is not None
-        ])
+        if has_new_price_fields:
+            # Count existing children
+            children_count = self.db.query(Category).filter(
+                Category.parent_id == cat_uuid,
+                Category.is_active == True
+            ).count()
 
-        if (has_new_price_fields or has_existing_price_fields) and not final_parent_id:
-            raise HTTPException(
-                status_code=422,
-                detail="Price fields can only be set on subcategories (categories with a parent_id)"
-            )
+            if children_count > 0:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Cannot set prices on a category that has subcategories. Prices can only be set on leaf categories (without children)."
+                )
 
         # Update fields
         update_data = update_data_dict  # Already computed above
@@ -346,3 +347,25 @@ class CategoryService:
         self.db.refresh(category)
 
         return CategoryRead.model_validate(category)
+
+    async def hard_delete_category(self, category_id: str) -> None:
+        """Hard delete a category from the database.
+
+        Guard: refuse deletion if the category has active or inactive children.
+        """
+        try:
+            cat_uuid = UUID(category_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid category id")
+
+        category = self.db.query(Category).filter(Category.id == cat_uuid).first()
+        if not category:
+            raise HTTPException(status_code=404, detail="Category not found")
+
+        # Guard: any children (active or not)
+        has_children = self.db.query(Category).filter(Category.parent_id == cat_uuid).first() is not None
+        if has_children:
+            raise HTTPException(status_code=422, detail="Impossible de supprimer: la catégorie possède des sous-catégories")
+
+        self.db.delete(category)
+        self.db.commit()

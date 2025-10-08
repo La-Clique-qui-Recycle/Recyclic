@@ -327,7 +327,7 @@ export const adminService = {
           timestamp: new Date(Date.now() - 3600000).toISOString(), // 1h ago
           metadata: {
             oldRole: 'USER',
-            newRole: 'CASHIER',
+            newRole: 'MANAGER',
             adminId: 'admin-123'
           }
         }

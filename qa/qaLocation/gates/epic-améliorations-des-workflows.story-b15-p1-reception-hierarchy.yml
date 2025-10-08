@@ -1,0 +1,35 @@
+story_id: story-b15-p1-reception-hierarchy
+epic_id: améliorations-des-workflows
+gate_decision: PASS
+reviewer: Quinn (Test Architect & Quality Advisor)
+review_date: 2025-10-07
+review_type: frontend_feature
+confidence_level: MEDIUM
+
+quality_assessment:
+  overall_score: 65/100
+  risk_level: MEDIUM
+  technical_debt: LOW
+
+status:
+  implementation: DONE
+  tests: DONE
+
+concerns:
+  - Résolu: Mocks hiérarchiques stabilisés et assertions adaptées (textContent)
+
+acceptance_focus:
+  - Navigation descendante parent → enfants
+  - Remontée via bouton Retour/fil d’Ariane
+  - Sélection catégorie finale sans enfants
+
+test_requirements:
+  - Tests unitaires de navigation multi-niveaux et reset d’état (OK)
+  - Tests d’intégration sur parcours complet + remontée (OK)
+  - E2E minimal: profondeur 2 niveaux + retour racine (recommandé)
+
+recommendations:
+  - Ajouter un sélecteur utilitaire `selectChildrenByParentId(parentId)`
+  - Envisager un breadcrumb simple si utile à l’UX
+  - Prévoir optimisation list rendering si dataset large
+

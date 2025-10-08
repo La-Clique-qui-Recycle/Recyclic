@@ -247,14 +247,14 @@ describe('useAuthStore', () => {
       expect(result.current.canManageUsers()).toBe(true);
     });
 
-    it('should correctly identify cashier users', () => {
+    it('should correctly identify operator users (cash access)', () => {
       const { result } = renderHook(() => useAuthStore());
 
       act(() => {
         result.current.setCurrentUser({
-          id: 'cashier-123',
-          username: 'cashier',
-          role: 'cashier',
+          id: 'operator-123',
+          username: 'operator',
+          role: 'manager',
           status: 'approved',
           is_active: true,
           created_at: '2025-01-27T10:00:00Z',
@@ -262,7 +262,7 @@ describe('useAuthStore', () => {
         });
       });
 
-      expect(result.current.isCashier()).toBe(true);
+      expect(result.current.hasCashAccess()).toBe(true);
       expect(result.current.canManageUsers()).toBe(false);
     });
 
@@ -282,11 +282,11 @@ describe('useAuthStore', () => {
       });
 
       expect(result.current.isAdmin()).toBe(false);
-      expect(result.current.isCashier()).toBe(true); // Les utilisateurs 'user' peuvent maintenant accéder à la caisse
+      expect(result.current.hasCashAccess()).toBe(true); // Les utilisateurs 'user' peuvent accéder à la caisse
       expect(result.current.canManageUsers()).toBe(false);
     });
 
-    it('should allow user role to access cashier functionality', () => {
+    it('should allow user role to access cash functionality', () => {
       const { result } = renderHook(() => useAuthStore());
 
       act(() => {
@@ -302,7 +302,7 @@ describe('useAuthStore', () => {
       });
 
       // Vérifier que l'utilisateur 'user' peut accéder à la caisse
-      expect(result.current.isCashier()).toBe(true);
+      expect(result.current.hasCashAccess()).toBe(true);
       expect(result.current.isAdmin()).toBe(false);
     });
   });

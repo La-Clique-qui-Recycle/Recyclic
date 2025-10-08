@@ -1,0 +1,39 @@
+gate_id: "epic-améliorations-des-workflows.story-b15-p2-category-price-logic"
+story_id: "story-b15-p2-category-price-logic"
+epic: "Améliorations des Workflows"
+title: "Affiner la Logique de Prix des Catégories"
+reviewer: "Quinn (Test Architect & Quality Advisor)"
+review_date: "2025-01-27"
+gate_decision: "PASS"
+implementation_status: "DONE"
+tests_status: "DONE"
+
+summary: |
+  L'implémentation de la logique de prix des catégories "feuilles" est complète et fonctionnelle. 
+  Tous les critères d'acceptation ont été respectés avec une architecture robuste et des tests complets.
+
+validations:
+  - "Backend validation: Logique de validation dans category_service.py (lignes 187-205) vérifie l'absence d'enfants avant autorisation de prix"
+  - "Tests d'intégration: 5 nouveaux tests d'intégration dans test_categories_endpoint.py couvrent tous les scénarios de validation"
+  - "Frontend adapté: CategoryForm.tsx avec logique canHavePrice = !hasChildren, champs désactivés et messages explicatifs"
+  - "Service frontend: Méthode getCategoryChildren() ajoutée dans categoryService.ts"
+  - "Tests validés: Tests d'intégration passent avec succès (status 200)"
+
+risks:
+  - risk: "Migration des données"
+    description: "Vérifier que les catégories existantes avec prix n'ont pas d'enfants avant déploiement"
+    severity: "medium"
+  - risk: "Cohérence métier"
+    description: "La logique 'leaf categories only' est maintenant la source de vérité"
+    severity: "low"
+
+recommendations:
+  - "Ajouter un script de migration pour vérifier/alerter sur les catégories existantes avec prix ET enfants"
+  - "Considérer l'ajout d'un indicateur visuel dans l'interface pour identifier rapidement les catégories 'feuilles'"
+  - "Documentation de la nouvelle règle métier pour les utilisateurs administrateurs"
+
+technical_notes:
+  - "Root cause: Remplacement de l'ancienne logique de validation basée sur parent_id"
+  - "Solution: Nouvelle règle 'leaf categories only' - prix uniquement sur catégories sans enfants"
+  - "Impact: Interface d'administration adaptée avec désactivation des champs prix"
+  - "Prevention: Tests d'intégration complets et validation backend robuste"

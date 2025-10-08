@@ -1,0 +1,29 @@
+storyId: STORY-B20-P2
+epic: Module de Réception
+title: Support Clavier Étendu pour la Saisie du Poids en Réception
+priority: P2
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Support clavier AZERTY: implémentation correcte dans TicketForm.tsx avec réutilisation de handleAZERTYWeightKey depuis weightMask.ts
+  - Cohérence: même logique que le module de Caisse (STORY-B19-P1), garantissant une expérience utilisateur uniforme
+  - Maintien compatibilité: support existant pour pavé numérique, touches spéciales (Backspace, Delete, ., ,) préservé
+  - Mapping complet: toutes les touches AZERTY de la rangée supérieure supportées (&→1, é→2, "→3, '→4, (→5, -→6, è→7, _→8, ç→9, à→0)
+evidence:
+  - code:
+      - frontend/src/pages/Reception/TicketForm.tsx (import et utilisation handleAZERTYWeightKey)
+      - frontend/src/utils/weightMask.ts (fonction centralisée handleAZERTYWeightKey)
+      - frontend/src/components/business/MultipleWeightEntry.tsx (réutilisation de la même fonction)
+  - features:
+      - Support AZERTY: toutes les touches de la rangée supérieure fonctionnent
+      - Compatibilité: pavé numérique, Backspace, Delete, point décimal maintenus
+      - Cohérence: comportement identique entre modules Caisse et Réception
+      - Réutilisation: code partagé via weightMask.ts, pas de duplication
+qualityAttributes:
+  - usability: Expérience utilisateur cohérente entre modules Caisse et Réception
+  - maintainability: Code centralisé dans weightMask.ts, réutilisation efficace
+  - consistency: Même logique de saisie clavier dans toute l'application
+  - compatibility: Maintien du support existant pour toutes les touches
+status: APPROVED

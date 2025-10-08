@@ -83,7 +83,7 @@ test.describe('Interface d\'Administration E2E', () => {
             username: 'user2',
             first_name: 'Jane',
             last_name: 'Smith',
-            role: 'cashier',
+            role: 'manager',
             status: 'approved',
             is_active: true,
             created_at: '2024-01-02T00:00:00Z',
@@ -137,7 +137,7 @@ test.describe('Interface d\'Administration E2E', () => {
             message: 'Rôle mis à jour avec succès',
             data: {
               user_id: 'user-1',
-              role: 'cashier',
+              role: 'manager',
               previous_role: 'user'
             }
           })
@@ -154,7 +154,7 @@ test.describe('Interface d\'Administration E2E', () => {
     await page.locator('[data-testid="role-selector-button"]').first().click();
     
     // Sélectionner le nouveau rôle
-    await page.locator('[data-testid="role-option-cashier"]').click();
+    await page.locator('[data-testid="role-option-manager"]').click();
     
     // Confirmer la modification
     await page.locator('[data-testid="confirm-role-change"]').click();
@@ -206,7 +206,7 @@ test.describe('Interface d\'Administration E2E', () => {
             username: 'user2',
             first_name: 'Jane',
             last_name: 'Smith',
-            role: 'cashier',
+            role: 'manager',
             status: 'approved',
             is_active: true,
             created_at: '2024-01-02T00:00:00Z',
@@ -317,7 +317,7 @@ test.describe('Interface d\'Administration E2E', () => {
       const search = url.searchParams.get('search');
 
       let users = [
-        {
+          {
           id: 'user-1',
           telegram_id: '123456789',
           username: 'john_doe',
@@ -335,7 +335,7 @@ test.describe('Interface d\'Administration E2E', () => {
           username: 'jane_smith',
           first_name: 'Jane',
           last_name: 'Smith',
-          role: 'cashier',
+            role: 'manager',
           status: 'approved',
           is_active: true,
           created_at: '2024-01-02T00:00:00Z',
@@ -565,7 +565,7 @@ test.describe('Performance Administration', () => {
     const startTime = Date.now();
     
     await page.locator('[data-testid="role-selector-button"]').first().click();
-    await page.locator('[data-testid="role-option-cashier"]').click();
+    await page.locator('[data-testid="role-option-manager"]').click();
     await page.locator('[data-testid="confirm-role-change"]').click();
     
     await page.waitForSelector('[data-testid="success-notification"]');

@@ -14,7 +14,6 @@ interface RoleSelectorProps {
 
 const roleOptions = [
   { value: UserRole.USER, label: 'Utilisateur', icon: IconUser, color: 'blue' },
-  { value: UserRole.CASHIER, label: 'Caissier', icon: IconCash, color: 'green' },
   { value: UserRole.MANAGER, label: 'Manager', icon: IconSettings, color: 'orange' },
   { value: UserRole.ADMIN, label: 'Administrateur', icon: IconShield, color: 'red' },
   { value: UserRole.SUPER_ADMIN, label: 'Super Admin', icon: IconShield, color: 'purple' },

@@ -68,7 +68,7 @@ def test_cash_session_report_workflow(monkeypatch, tmp_path: Path, client: TestC
     )
 
     site = _create_site(db_session, "Workflow Site")
-    cashier = _create_user(db_session, username="cashier_workflow", role=UserRole.CASHIER, site=site)
+    cashier = _create_user(db_session, username="cashier_workflow", role=UserRole.USER, site=site)
     admin = _create_user(db_session, username="admin_workflow", role=UserRole.ADMIN, site=site)
 
     session = CashSession(
@@ -145,7 +145,7 @@ def test_cash_session_report_site_restriction(monkeypatch, tmp_path: Path, clien
     site_a = _create_site(db_session, "Site A")
     site_b = _create_site(db_session, "Site B")
 
-    operator = _create_user(db_session, username="cashier_a", role=UserRole.CASHIER, site=site_a)
+    operator = _create_user(db_session, username="cashier_a", role=UserRole.USER, site=site_a)
     admin_same = _create_user(db_session, username="admin_a", role=UserRole.ADMIN, site=site_a)
     admin_other = _create_user(db_session, username="admin_b", role=UserRole.ADMIN, site=site_b)
 

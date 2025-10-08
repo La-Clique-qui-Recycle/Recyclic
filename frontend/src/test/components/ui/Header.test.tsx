@@ -16,8 +16,9 @@ vi.mock('react-router-dom', async () => {
 // Mock authStore
 const mockAuthStore = {
   isAuthenticated: false,
+  currentUser: null,
   isAdmin: vi.fn(() => false),
-  isCashier: vi.fn(() => false),
+  hasCashAccess: vi.fn(() => false),
   logout: vi.fn()
 }
 
@@ -35,8 +36,9 @@ describe('Header Component', () => {
     mockUseLocation.mockReturnValue({ pathname: '/' })
     // Reset mocks
     mockAuthStore.isAuthenticated = false
+    mockAuthStore.currentUser = null
     mockAuthStore.isAdmin.mockReturnValue(false)
-    mockAuthStore.isCashier.mockReturnValue(false)
+    mockAuthStore.hasCashAccess.mockReturnValue(false)
     mockAuthStore.logout.mockClear()
   })
 
@@ -47,48 +49,59 @@ describe('Header Component', () => {
     // Note: The Recycle icon doesn't have a test-id, so we check for the text
   })
 
-  it('should render basic navigation links for unauthenticated users', () => {
+  it('should render minimal navigation for unauthenticated users', () => {
     render(<Header />)
-    
+
+    // Only "Tableau de bord" should be visible for unauthenticated users
     expect(screen.getByText('Tableau de bord')).toBeInTheDocument()
-    expect(screen.getByText('Dépôts')).toBeInTheDocument()
-    expect(screen.getByText('Rapports')).toBeInTheDocument()
     
     // These should NOT be visible for unauthenticated users
+    expect(screen.queryByText('Réception')).not.toBeInTheDocument()
     expect(screen.queryByText('Caisse')).not.toBeInTheDocument()
     expect(screen.queryByText('Administration')).not.toBeInTheDocument()
+    expect(screen.queryByText('Journal de Caisse')).not.toBeInTheDocument()
+    expect(screen.queryByText('Rapports')).not.toBeInTheDocument()
   })
 
-  it('should render cashier navigation for cashier users', () => {
+  it('should render cash navigation for operator-capable users', () => {
     mockAuthStore.isAuthenticated = true
-    mockAuthStore.isCashier.mockReturnValue(true)
-    
+    mockAuthStore.hasCashAccess.mockReturnValue(true)
+
     render(<Header />)
-    
+
     expect(screen.getByText('Caisse')).toBeInTheDocument()
     expect(screen.getByText('Tableau de bord')).toBeInTheDocument()
-    expect(screen.getByText('Dépôts')).toBeInTheDocument()
-    expect(screen.getByText('Rapports')).toBeInTheDocument()
+    expect(screen.getByText('Réception')).toBeInTheDocument()
+    // Rapports removed from main menu - now in Administration
+    expect(screen.queryByText('Rapports')).not.toBeInTheDocument()
   })
 
   it('should render admin navigation for admin users', () => {
     mockAuthStore.isAuthenticated = true
     mockAuthStore.isAdmin.mockReturnValue(true)
-    mockAuthStore.isCashier.mockReturnValue(true) // Admins are also cashiers
-    
+    mockAuthStore.hasCashAccess.mockReturnValue(true) // Admins have cash access
+
     render(<Header />)
-    
+
     expect(screen.getByText('Administration')).toBeInTheDocument()
     expect(screen.getByText('Caisse')).toBeInTheDocument()
     expect(screen.getByText('Tableau de bord')).toBeInTheDocument()
+    expect(screen.getByText('Réception')).toBeInTheDocument()
+    // Rapports removed from main menu - now in Administration
+    expect(screen.queryByText('Rapports')).not.toBeInTheDocument()
+    
+    // Journal de Caisse is now in Administration, not in main menu
+    expect(screen.queryByText('Journal de Caisse')).not.toBeInTheDocument()
   })
 
-  it('should show logout button for authenticated users', () => {
+  it('should show logout button and username for authenticated users', () => {
     mockAuthStore.isAuthenticated = true
+    mockAuthStore.currentUser = { username: 'testuser', first_name: 'Test', last_name: 'User' }
     
     render(<Header />)
     
     expect(screen.getByText('Déconnexion')).toBeInTheDocument()
+    expect(screen.getByText('testuser')).toBeInTheDocument()
   })
 
   it('should not show logout button for unauthenticated users', () => {
@@ -101,25 +114,20 @@ describe('Header Component', () => {
 
   it('should have correct href attributes for navigation links', () => {
     mockAuthStore.isAuthenticated = true
-    mockAuthStore.isCashier.mockReturnValue(true)
+    mockAuthStore.hasCashAccess.mockReturnValue(true)
     mockAuthStore.isAdmin.mockReturnValue(true)
 
     render(<Header />)
 
     const dashboardLink = screen.getByRole('link', { name: /tableau de bord/i })
-    // Be more specific to avoid confusion with "Rapports caisse"
     const cashLink = screen.getByRole('link', { name: /^Calculator Caisse$/ })
-    const depositsLink = screen.getByRole('link', { name: /dépôts/i })
-    const reportsLink = screen.getByRole('link', { name: /Rapports$/ })
+    const receptionLink = screen.getByRole('link', { name: /réception/i })
     const adminLink = screen.getByRole('link', { name: /administration/i })
-    const adminReportsLink = screen.getByRole('link', { name: /rapports caisse/i })
 
     expect(dashboardLink).toHaveAttribute('href', '/')
     expect(cashLink).toHaveAttribute('href', '/caisse')
-    expect(depositsLink).toHaveAttribute('href', '/depots')
-    expect(reportsLink).toHaveAttribute('href', '/rapports')
-    expect(adminLink).toHaveAttribute('href', '/admin/users')
-    expect(adminReportsLink).toHaveAttribute('href', '/admin/reports')
+    expect(receptionLink).toHaveAttribute('href', '/reception')
+    expect(adminLink).toHaveAttribute('href', '/admin')
   })
 
   it('should call logout when logout button is clicked', () => {

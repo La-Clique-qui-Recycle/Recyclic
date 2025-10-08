@@ -20,7 +20,7 @@ import {
 // CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -49,6 +49,15 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Token expired, invalid, or insufficient permissions
+      localStorage.removeItem('token');
+      // Mettre à jour le store d'authentification
+      if (window.useAuthStore) {
+        window.useAuthStore.getState().logout();
+      }
+      window.location.href = '/login';
+    }
     if (error.response?.data) {
       return Promise.reject(error.response.data);
     }
@@ -504,7 +513,7 @@ export class AdminApi {
    * Get Dashboard Stats
    */
   static async dashboardstatsapiv1admindashboarddashboardstatsget(params?: any): Promise<DashboardStatsResponse> {
-    const response: AxiosResponse<DashboardStatsResponse> = await apiClient.get(`/api/v1/admin/dashboard/dashboard/stats?${new URLSearchParams(params).toString()}`);
+    const response: AxiosResponse<DashboardStatsResponse> = await apiClient.get(`/api/v1/admin/dashboard/stats?${new URLSearchParams(params).toString()}`);
     return response.data;
   }
 }

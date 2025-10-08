@@ -31,6 +31,9 @@ export interface CashSessionUpdate {
 export interface SaleItem {
   id: string;
   category: string;
+  subcategory?: string;
+  categoryName?: string;
+  subcategoryName?: string;
   quantity: number;
   weight: number;  // Poids en kg
   price: number;
@@ -69,7 +72,7 @@ interface CashSessionState {
   removeSaleItem: (itemId: string) => void;
   updateSaleItem: (itemId: string, newQty: number, newPrice: number) => void;
   clearCurrentSale: () => void;
-  submitSale: (items: SaleItem[]) => Promise<boolean>;
+  submitSale: (items: SaleItem[], finalization?: { donation: number; paymentMethod: 'cash'|'card'|'check'; cashGiven?: number; change?: number; }) => Promise<boolean>;
   
   // Async actions
   openSession: (data: CashSessionCreate) => Promise<CashSession | null>;
@@ -137,7 +140,7 @@ export const useCashSessionStore = create<CashSessionState>()(
           set({ currentSaleItems: [] });
         },
 
-        submitSale: async (items: SaleItem[]): Promise<boolean> => {
+        submitSale: async (items: SaleItem[], finalization?: { donation: number; paymentMethod: 'cash'|'card'|'check'; cashGiven?: number; change?: number; }): Promise<boolean> => {
           const { currentSession } = get();
 
           if (!currentSession) {
@@ -162,6 +165,15 @@ export const useCashSessionStore = create<CashSessionState>()(
               total_amount: items.reduce((sum, item) => sum + item.total, 0)
             };
 
+            // Étendre le payload pour inclure finalisation (don, paiement, espèces, monnaie)
+            const extendedPayload = {
+              ...saleData,
+              donation: finalization?.donation ?? 0,
+              payment_method: finalization?.paymentMethod ?? 'cash',
+              cash_given: finalization?.paymentMethod === 'cash' ? (finalization?.cashGiven ?? null) : null,
+              change: finalization?.paymentMethod === 'cash' ? (finalization?.change ?? null) : null,
+            } as any;
+
             console.log('[submitSale] Preparing sale:', saleData);
 
             // Get token from localStorage for authentication
@@ -178,7 +190,7 @@ export const useCashSessionStore = create<CashSessionState>()(
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify(saleData)
+              body: JSON.stringify(extendedPayload)
             });
 
             console.log('[submitSale] Response status:', response.status);

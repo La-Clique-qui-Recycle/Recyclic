@@ -85,7 +85,7 @@ const mockUsers: AdminUser[] = [
     last_name: 'Smith',
     full_name: 'Jane Smith',
     email: 'jane@example.com',
-    role: UserRole.CASHIER,
+    role: UserRole.MANAGER,
     status: UserStatus.APPROVED,
     is_active: true,
     site_id: 'site-1',
@@ -202,7 +202,7 @@ describe('AdminUsers', () => {
     
     // Test direct des handlers plutôt que l'interaction UI
     // Simuler l'appel direct des handlers comme le ferait le composant
-    const newFilters = { ...mockStore.filters, role: 'cashier' };
+    const newFilters = { ...mockStore.filters, role: 'manager' };
     mockStore.setFilters(newFilters);
     mockStore.filterUsers(newFilters);
     
@@ -255,10 +255,10 @@ describe('AdminUsers', () => {
     renderWithProvider();
     
     // Test direct de la fonction updateUserRole
-    await mockStore.updateUserRole('user-1', 'cashier');
+    await mockStore.updateUserRole('user-1', 'manager');
     
     // Vérifier que la fonction est appelée
-    expect(mockStore.updateUserRole).toHaveBeenCalledWith('user-1', 'cashier');
+    expect(mockStore.updateUserRole).toHaveBeenCalledWith('user-1', 'manager');
   });
 
   it('should show success notification on successful role update', async () => {
@@ -267,11 +267,11 @@ describe('AdminUsers', () => {
     renderWithProvider();
     
     // Test direct de la fonction updateUserRole avec succès
-    const result = await mockStore.updateUserRole('user-1', 'cashier');
+    const result = await mockStore.updateUserRole('user-1', 'manager');
     
     // Vérifier que la fonction retourne true
     expect(result).toBe(true);
-    expect(mockStore.updateUserRole).toHaveBeenCalledWith('user-1', 'cashier');
+    expect(mockStore.updateUserRole).toHaveBeenCalledWith('user-1', 'manager');
   });
 
   it('should show error notification on failed role update', async () => {
@@ -280,10 +280,10 @@ describe('AdminUsers', () => {
     renderWithProvider();
     
     // Test direct de la fonction updateUserRole avec échec
-    const result = await mockStore.updateUserRole('user-1', 'cashier');
+    const result = await mockStore.updateUserRole('user-1', 'manager');
     
     // Vérifier que la fonction retourne false
     expect(result).toBe(false);
-    expect(mockStore.updateUserRole).toHaveBeenCalledWith('user-1', 'cashier');
+    expect(mockStore.updateUserRole).toHaveBeenCalledWith('user-1', 'manager');
   });
 });

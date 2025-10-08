@@ -8,7 +8,7 @@ export interface AuthUser {
   username?: string;
   first_name?: string;
   last_name?: string;
-  role: 'user' | 'admin' | 'super-admin' | 'manager' | 'cashier';
+  role: 'user' | 'admin' | 'super-admin' | 'manager';
   status?: string;
   is_active: boolean;
   created_at?: string;
@@ -21,7 +21,7 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+const API_BASE = import.meta.env.REACT_APP_API_URL ?? import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
 
 export async function login(request: LoginRequest): Promise<LoginResponse> {
   const response = await fetch(`${API_BASE}/auth/login`, {

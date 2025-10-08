@@ -96,9 +96,17 @@ describe('Admin Layout Navigation Integration', () => {
 
     expect(screen.getByText('Tableau de Bord')).toBeInTheDocument();
 
-    const usersCard = screen.getByRole('button', { name: 'Accéder à Gestion des utilisateurs: Gérer les comptes utilisateurs, les rôles et les permissions' });
+    const usersCard = screen.getByRole('listitem', { name: 'Accéder à Gestion des utilisateurs: Gérer les comptes utilisateurs, les rôles et les permissions' });
     fireEvent.click(usersCard);
 
     expect(mockNavigate).toHaveBeenCalledWith('/admin/users');
+  });
+
+  it('should have a back link to return to main application', () => {
+    renderAdminRoutes(['/admin']);
+
+    const backLink = screen.getByRole('link', { name: /retourner à l'application principale/i });
+    expect(backLink).toBeInTheDocument();
+    expect(backLink).toHaveAttribute('href', '/');
   });
 });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { SaleItem } from '../../stores/cashSessionStore';
+import { useCategoryStore } from '../../stores/categoryStore';
 
 const TicketContainer = styled.div`
   background: white;
@@ -199,6 +200,7 @@ const Ticket: React.FC<TicketProps> = ({
   onFinalizeSale,
   loading = false
 }) => {
+  const { getCategoryById } = useCategoryStore();
   const [editingItem, setEditingItem] = useState<SaleItem | null>(null);
   const [editWeight, setEditWeight] = useState<string>('');
   const [editPrice, setEditPrice] = useState<string>('');
@@ -245,31 +247,38 @@ const Ticket: React.FC<TicketProps> = ({
           </p>
         ) : (
           <>
-            {items.map((item) => (
-              <TicketItem key={item.id}>
-                <ItemInfo>
-                  <ItemCategory>{item.category}</ItemCategory>
-                <ItemDetails>
-                  {`${(item.weight || 0).toFixed(2)} kg`}
-                </ItemDetails>
-                </ItemInfo>
-              <ItemTotal>{`${(item.total || 0).toFixed(2)} €`}</ItemTotal>
-                <ItemActions>
-                  <ActionButton
-                    $variant="edit"
-                    onClick={() => handleEditClick(item)}
-                  >
-                    Modifier
-                  </ActionButton>
-                  <ActionButton
-                    $variant="delete"
-                    onClick={() => onRemoveItem(item.id)}
-                  >
-                    Supprimer
-                  </ActionButton>
-                </ItemActions>
-              </TicketItem>
-            ))}
+            {items.map((item) => {
+              // Get category and subcategory names
+              const category = getCategoryById(item.category);
+              const subcategory = item.subcategory ? getCategoryById(item.subcategory) : null;
+              const displayName = subcategory?.name || category?.name || item.category;
+              
+              return (
+                <TicketItem key={item.id}>
+                  <ItemInfo>
+                    <ItemCategory>{displayName}</ItemCategory>
+                    <ItemDetails>
+                      {`${(item.weight || 0).toFixed(2)} kg • ${(item.price || 0).toFixed(2)} €/unité`}
+                    </ItemDetails>
+                  </ItemInfo>
+                  <ItemTotal>{`${(item.total || 0).toFixed(2)} €`}</ItemTotal>
+                  <ItemActions>
+                    <ActionButton
+                      $variant="edit"
+                      onClick={() => handleEditClick(item)}
+                    >
+                      Modifier
+                    </ActionButton>
+                    <ActionButton
+                      $variant="delete"
+                      onClick={() => onRemoveItem(item.id)}
+                    >
+                      Supprimer
+                    </ActionButton>
+                  </ItemActions>
+                </TicketItem>
+              );
+            })}
             
             <TotalSection>
               <TotalRow>

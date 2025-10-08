@@ -138,3 +138,20 @@ def verify_reset_token(token: str) -> str:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token invalide ou expiré",
         )
+
+
+# Aliases for backward compatibility with tests
+def create_reset_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
+    """Alias pour create_password_reset_token pour compatibilité avec les tests.
+
+    DEPRECATED: Cette fonction est un alias de compatibilité et sera supprimée dans une version future.
+    Utilisez directement `create_password_reset_token()` à la place.
+
+    Args:
+        user_id: L'identifiant de l'utilisateur
+        expires_delta: Durée de validité du token (optionnel)
+
+    Returns:
+        Le token JWT de réinitialisation
+    """
+    return create_password_reset_token(user_id, expires_delta)

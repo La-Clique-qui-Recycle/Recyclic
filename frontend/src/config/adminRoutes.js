@@ -27,6 +27,12 @@ export const ADMIN_NAVIGATION_ITEMS = [
     description: 'Vue d\'ensemble du système'
   },
   {
+    path: ADMIN_ROUTES.REPORTS,
+    label: 'Journal de Caisse',
+    icon: BarChart3,
+    description: 'Rapports de caisse et exports'
+  },
+  {
     path: ADMIN_ROUTES.RECEPTION_STATS,
     label: 'Statistiques Réception',
     icon: TrendingUp,

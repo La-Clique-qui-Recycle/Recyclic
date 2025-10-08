@@ -71,6 +71,14 @@ vi.mock('lucide-react', () => ({
     ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
     'data-icon-name': 'Check'
   }, 'Check'),
+  TrendingUp: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'TrendingUp'
+  }, 'TrendingUp'),
+  Tags: (props: any = {}) => React.createElement('div', {
+    ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
+    'data-icon-name': 'Tags'
+  }, 'Tags'),
 }))
 
 // Mock pour styled-components - approche avec styles simulés
@@ -155,7 +163,7 @@ vi.mock('styled-components', () => {
       };
 
   const styled: any = (tag: string) => h(tag);
-  ['div','button','input','label','span','h1','h2','h3','nav','header','form','select','textarea','p','a','table','thead','tbody','tr','th','td','main','ul','li']
+  ['div','button','input','label','span','h1','h2','h3','h4','nav','header','form','select','textarea','p','a','table','thead','tbody','tr','th','td','main','ul','li']
     .forEach(t => { styled[t] = h(t); });
 
   styled.css = () => '';
@@ -234,6 +242,8 @@ vi.mock('@tabler/icons-react', () => {
     IconCalendar: createIconComponent('IconCalendar', 'icon-calendar'),
     IconShoppingCart: createIconComponent('IconShoppingCart', 'icon-shopping-cart'),
     IconTruck: createIconComponent('IconTruck', 'icon-truck'),
+    IconBuilding: createIconComponent('IconBuilding', 'icon-building'),
+    IconCashRegister: createIconComponent('IconCashRegister', 'icon-cash-register'),
   };
 })
 
@@ -256,6 +266,9 @@ vi.mock('@mantine/notifications', () => {
 window.URL.createObjectURL = vi.fn(() => 'blob:test');
 // @ts-ignore
 HTMLAnchorElement.prototype.click = vi.fn();
+
+// Mock global pour window.alert pour éviter les erreurs jsdom dans les tests
+vi.spyOn(window, 'alert').mockImplementation(() => {});
 
 // Mock pour ResizeObserver (requis par Mantine)
 global.ResizeObserver = vi.fn().mockImplementation(() => ({

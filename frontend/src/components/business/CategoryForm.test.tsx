@@ -90,7 +90,7 @@ describe('CategoryForm', () => {
     });
 
     expect(screen.queryByTestId('price-input')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('min-price-input')).not.toBeInTheDocument();
+    // min_price supprimé dans la refonte
     expect(screen.queryByTestId('max-price-input')).not.toBeInTheDocument();
   });
 
@@ -118,7 +118,7 @@ describe('CategoryForm', () => {
     });
 
     expect(screen.getByTestId('price-input')).toBeInTheDocument();
-    expect(screen.getByTestId('min-price-input')).toBeInTheDocument();
+    // min_price supprimé dans la refonte
     expect(screen.getByTestId('max-price-input')).toBeInTheDocument();
   });
 
@@ -129,7 +129,7 @@ describe('CategoryForm', () => {
       is_active: true,
       parent_id: '1',
       price: 299.99,
-      min_price: 199.99,
+      // min_price supprimé
       max_price: 499.99,
       created_at: '2025-01-01T00:00:00Z',
       updated_at: '2025-01-01T00:00:00Z',
@@ -150,7 +150,7 @@ describe('CategoryForm', () => {
 
     // Verify price fields are present (they should be rendered for subcategories)
     expect(screen.getByTestId('price-input')).toBeInTheDocument();
-    expect(screen.getByTestId('min-price-input')).toBeInTheDocument();
+    // min_price supprimé dans la refonte
     expect(screen.getByTestId('max-price-input')).toBeInTheDocument();
   });
 
@@ -196,7 +196,7 @@ describe('CategoryForm', () => {
       is_active: true,
       parent_id: '1',
       price: 299.99,
-      min_price: 199.99,
+      // min_price supprimé
       max_price: 499.99,
       created_at: '2025-01-01T00:00:00Z',
       updated_at: '2025-01-01T00:00:00Z',
@@ -215,9 +215,8 @@ describe('CategoryForm', () => {
       expect(mockGetCategories).toHaveBeenCalledWith(true);
     });
 
-    // Verify price fields are rendered
+    // Verify price fields are rendered (min_price supprimé dans la refonte)
     expect(screen.getByTestId('price-input')).toBeInTheDocument();
-    expect(screen.getByTestId('min-price-input')).toBeInTheDocument();
     expect(screen.getByTestId('max-price-input')).toBeInTheDocument();
 
     const submitButton = screen.getByRole('button', { name: /Mettre à jour/i });
@@ -228,7 +227,6 @@ describe('CategoryForm', () => {
         name: 'Laptops',
         parent_id: '1',
         price: 299.99,
-        min_price: 199.99,
         max_price: 499.99,
       });
     });
@@ -315,7 +313,6 @@ describe('CategoryForm', () => {
         name: 'New Subcategory',
         parent_id: '1',
         price: null,
-        min_price: null,
         max_price: null,
       });
     });
@@ -352,7 +349,6 @@ describe('CategoryForm', () => {
     // Now price fields should be visible
     await waitFor(() => {
       expect(screen.getByTestId('price-input')).toBeInTheDocument();
-      expect(screen.getByTestId('min-price-input')).toBeInTheDocument();
       expect(screen.getByTestId('max-price-input')).toBeInTheDocument();
     });
   });

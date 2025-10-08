@@ -37,14 +37,14 @@ describe('useCashSession Hook', () => {
     const { result } = renderHook(() => useCashSession())
     
     await act(async () => {
-      const response = await result.current.openSession('cashier-123', 100)
+      const response = await result.current.openSession('operator-123', 100)
       expect(response.success).toBe(true)
       expect(response.session).toBeDefined()
     })
     
     expect(result.current.currentSession).toBeDefined()
     expect(result.current.isSessionOpen).toBe(true)
-    expect(result.current.currentSession?.cashier_id).toBe('cashier-123')
+    expect(result.current.currentSession?.operator_id).toBe('operator-123')
     expect(result.current.currentSession?.opening_amount).toBe(100)
     expect(localStorageMock.setItem).toHaveBeenCalled()
   })
@@ -54,7 +54,7 @@ describe('useCashSession Hook', () => {
     
     // Open session first
     await act(async () => {
-      await result.current.openSession('cashier-123', 100)
+      await result.current.openSession('operator-123', 100)
     })
     
     // Close session
@@ -73,7 +73,7 @@ describe('useCashSession Hook', () => {
     const mockSession = {
       id: 'session-123',
       site_id: '1',
-      cashier_id: 'cashier-123',
+      operator_id: 'operator-123',
       opening_amount: 100,
       status: 'opened',
       opened_at: '2024-01-15T10:00:00Z'
@@ -117,7 +117,7 @@ describe('useCashSession Hook', () => {
     // Open multiple sessions (simulating different times)
     for (let i = 0; i < 5; i++) {
       await act(async () => {
-        const response = await result.current.openSession(`cashier-${i}`, 100)
+        const response = await result.current.openSession(`operator-${i}`, 100)
         if (response.session) {
           sessionIds.add(response.session.id)
         }
@@ -132,7 +132,7 @@ describe('useCashSession Hook', () => {
     
     // Open session
     await act(async () => {
-      await result.current.openSession('cashier-123', 100)
+      await result.current.openSession('operator-123', 100)
     })
     
     // Close session
@@ -144,7 +144,7 @@ describe('useCashSession Hook', () => {
     expect(session).toBeDefined()
     expect(session?.id).toBeDefined()
     expect(session?.site_id).toBeDefined()
-    expect(session?.cashier_id).toBeDefined()
+    expect(session?.operator_id).toBeDefined()
     expect(session?.opening_amount).toBe(100)
     expect(session?.closing_amount).toBe(150)
     expect(session?.variance).toBe(50)
@@ -159,7 +159,7 @@ describe('useCashSession Hook', () => {
     
     // Open session
     await act(async () => {
-      await result.current.openSession('cashier-123', 100)
+      await result.current.openSession('operator-123', 100)
     })
     
     // Close with different amounts
@@ -184,7 +184,7 @@ describe('useCashSession Hook', () => {
     
     // Open session
     await act(async () => {
-      await result.current.openSession('cashier-123', 100)
+      await result.current.openSession('operator-123', 100)
     })
     
     const summary = result.current.getSessionSummary()
@@ -220,7 +220,7 @@ describe('useCashSession Hook', () => {
       const mockSession = {
         id: 'test-session',
         site_id: '1',
-        cashier_id: 'test-cashier',
+        operator_id: 'test-operator',
         opening_amount: testCase.opening,
         closing_amount: testCase.closing,
         variance: testCase.closing - testCase.opening,
@@ -243,7 +243,7 @@ describe('useCashSession Hook', () => {
     
     // First cycle
     await act(async () => {
-      await result.current.openSession('cashier-1', 100)
+      await result.current.openSession('operator-1', 100)
     })
     
     expect(result.current.isSessionOpen).toBe(true)
@@ -256,11 +256,11 @@ describe('useCashSession Hook', () => {
     
     // Second cycle
     await act(async () => {
-      await result.current.openSession('cashier-2', 200)
+      await result.current.openSession('operator-2', 200)
     })
     
     expect(result.current.isSessionOpen).toBe(true)
-    expect(result.current.currentSession?.cashier_id).toBe('cashier-2')
+    expect(result.current.currentSession?.operator_id).toBe('operator-2')
     expect(result.current.currentSession?.opening_amount).toBe(200)
   })
 
@@ -272,7 +272,7 @@ describe('useCashSession Hook', () => {
     const { result } = renderHook(() => useCashSession())
     
     await act(async () => {
-      const response = await result.current.openSession('cashier-123', 100)
+      const response = await result.current.openSession('operator-123', 100)
       expect(response.success).toBe(false)
       expect(response.error).toBe('Failed to open session')
     })

@@ -40,7 +40,7 @@
 
 - [x] L'API de finalisation de la vente est mise à jour et fonctionnelle.
 - [x] Les ventes sont enregistrées correctement en base de données avec la nouvelle structure.
-- [ ] La story a été validée par un agent QA.
+- [x] La story a été validée par un agent QA.
 
 ---
 
@@ -158,60 +158,34 @@
 
 **Ready for Review:** ✅ YES - All acceptance criteria met, all tests passing, code quality excellent.
 
----
-
 ## QA Results
 
-### Review Date: 2025-01-12
+### Review Date: 2025-10-07
 
 ### Reviewed By: Quinn (Test Architect)
 
 ### Code Quality Assessment
 
-**Excellente qualité d'implémentation** - L'architecture backend est solide avec une séparation claire des responsabilités. Le code suit parfaitement les bonnes pratiques FastAPI/SQLAlchemy avec une gestion d'erreurs robuste et une documentation claire. La logique de calcul du total est correctement implémentée et bien documentée.
-
-### Refactoring Performed
-
-Aucun refactoring nécessaire - Le code est déjà de qualité production avec une architecture propre et des tests complets.
+Implementation is correct and consistent with the target model: items accept `category`, `quantity`, `weight`, `unit_price`, `total_price`; sale `total_amount` equals the sum of `total_price` across items (not weight-multiplied). Endpoint enforces auth and updates cash session counters reliably.
 
 ### Compliance Check
 
-- **Coding Standards**: ✓ Conforme aux standards Python/FastAPI, utilisation appropriée de Pydantic et SQLAlchemy
-- **Project Structure**: ✓ Architecture respectée avec séparation claire des modèles, schémas et endpoints
-- **Testing Strategy**: ✓ Couverture de tests excellente (7 tests) couvrant tous les cas critiques
-- **All ACs Met**: ✓ Tous les critères d'acceptation sont implémentés et testés
+- Coding Standards: ✓ Type hints and docstring present where applicable; logic kept in endpoint consistent with current codebase
+- Tests: ✓ Integration and persistence tests assert weight, unit_price, total_price, and total_amount behavior; 7/7 passing
+- Security: ✓ Auth required (401 without token), token verified
+- Data Integrity: ✓ DB writes for `Sale` and `SaleItem` verified; session totals recalculated post-commit
 
 ### Improvements Checklist
 
-- [x] Architecture backend solide avec modèles SQLAlchemy appropriés
-- [x] Schémas Pydantic complets avec validation des données
-- [x] Endpoint sécurisé avec authentification obligatoire
-- [x] Tests complets couvrant tous les scénarios critiques
-- [x] Logique de calcul du total correctement implémentée
-- [x] Gestion des erreurs et validation des données
-- [x] Documentation claire dans le code
-- [ ] Consider adding audit logging for sales operations
-- [ ] Add rate limiting for sales endpoint to prevent abuse
-- [ ] Consider adding soft delete functionality for sales
-
-### Security Review
-
-Sécurité excellente - Authentification obligatoire, validation des données via Pydantic, et gestion appropriée des tokens JWT. Aucun problème de sécurité identifié.
-
-### Performance Considerations
-
-Performance excellente - Opérations de base de données optimisées avec relations appropriées, gestion des transactions, et requêtes efficaces.
-
-### Files Modified During Review
-
-Aucun fichier modifié lors de la révision - Le code était déjà de qualité production.
+- [x] Accepts new item structure and persists fields
+- [x] Total equals sum of `total_price`
+- [x] Session counters updated (total_sales, total_items, current_amount)
+- [x] Tests updated and passing (7/7)
 
 ### Gate Status
 
-**Gate: PASS** → `docs/qa/gates/b12.p5-backend-finalisation-ticket.yml`
-**Quality Score**: 96/100
-**Risk Level**: Very Low
+Gate: PASS → see `docs/qa/gates/b12.p5-backend-finalisation-ticket.yml`
 
 ### Recommended Status
 
-✓ **Ready for Done** - Implementation complète, bien testée et conforme aux standards
+✓ Ready for Done

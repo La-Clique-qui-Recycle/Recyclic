@@ -21,3 +21,7 @@ google-generativeai>=0.4.1,<0.5.0
 sib-api-v3-sdk==7.6.0
 email-validator==2.3.0
 webdavclient3==3.14.6
+reportlab==4.0.9
+openpyxl==3.1.2
+PyPDF2==3.0.1
+python-multipart==0.0.9

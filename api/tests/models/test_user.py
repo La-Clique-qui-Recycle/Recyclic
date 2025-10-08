@@ -10,7 +10,7 @@ def test_user_role_enum_values():
     assert UserRole.SUPER_ADMIN == "super-admin"
     assert UserRole.ADMIN == "admin"
     assert UserRole.MANAGER == "manager"
-    assert UserRole.CASHIER == "cashier"
+    assert "cashier" not in [r.value for r in UserRole]
     assert UserRole.USER == "user"
 
 def test_user_status_enum_values():

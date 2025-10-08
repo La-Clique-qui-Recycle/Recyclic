@@ -1,0 +1,42 @@
+schema: 1
+story: "STORY-TECH-DEBT-ALEMBIC-STABILITY"
+story_title: "Stabilisation Alembic et Alignement du Service de Migrations"
+gate: PASS
+status_reason: "Single head confirmée, upgrade head réussi, tests backend passent la phase migrations. Chaîne de migrations corrigée et linéaire."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-07T00:00:00Z"
+
+top_issues: []
+
+waiver: { active: false }
+
+quality_score: 93
+
+evidence:
+  tests_reviewed: 3
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Aucune logique sensible, opérations Alembic standard"
+  performance:
+    status: PASS
+    notes: "Impact minimal; exécution migrations contrôlée"
+  reliability:
+    status: PASS
+    notes: "Chaîne de révisions cohérente, ordre des opérations corrigé"
+  maintainability:
+    status: PASS
+    notes: "Documentation et guides de diagnostic mis à jour"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Ajouter un job CI qui vérifie `alembic heads` == 1 et fait un dry-run `alembic upgrade --sql head`"
+      refs: ["api/testing-guide.md"]
+
+

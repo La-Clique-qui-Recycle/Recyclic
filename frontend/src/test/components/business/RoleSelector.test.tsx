@@ -71,7 +71,6 @@ describe('RoleSelector Component', () => {
     
     // Utiliser getAllByText car "Utilisateur" apparaît dans le bouton et dans le select
     expect(screen.getAllByText('Utilisateur')).toHaveLength(2)
-    expect(screen.getByText('Caissier')).toBeInTheDocument()
     expect(screen.getByText('Manager')).toBeInTheDocument()
     expect(screen.getByText('Administrateur')).toBeInTheDocument()
     expect(screen.getByText('Super Admin')).toBeInTheDocument()
@@ -200,7 +199,6 @@ describe('RoleSelector Component', () => {
   it('should render correct role icons', () => {
     const roles = [
       { role: UserRole.USER, icon: 'icon-user' },
-      { role: UserRole.CASHIER, icon: 'icon-cash' },
       { role: UserRole.MANAGER, icon: 'icon-settings' },
       { role: UserRole.ADMIN, icon: 'icon-shield' },
       { role: UserRole.SUPER_ADMIN, icon: 'icon-shield' }
@@ -216,7 +214,6 @@ describe('RoleSelector Component', () => {
   it('should handle different user roles correctly', () => {
     const testCases = [
       { role: UserRole.USER, expectedLabel: 'Utilisateur' },
-      { role: UserRole.CASHIER, expectedLabel: 'Caissier' },
       { role: UserRole.MANAGER, expectedLabel: 'Manager' },
       { role: UserRole.ADMIN, expectedLabel: 'Administrateur' },
       { role: UserRole.SUPER_ADMIN, expectedLabel: 'Super Admin' }

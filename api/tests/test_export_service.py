@@ -41,7 +41,7 @@ def sample_data(db_session):
     cashier = User(
         username="cashier",
         hashed_password="hashed",
-        role=UserRole.CASHIER,
+        role=UserRole.USER,
         status=UserStatus.APPROVED,
         site_id=site.id,
     )

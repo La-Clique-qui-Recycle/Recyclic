@@ -1,0 +1,47 @@
+schema: 1
+story: "STORY-TECH-DEBT-REMOVE-RESET-TOKEN-ALIAS"
+story_title: "Suppression de l'alias create_reset_token déprécié"
+gate: WAIVED
+status_reason: "Planifié: dette technique à exécuter quand plus aucune dépendance externe n'utilise l'alias (3–6 mois)."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-07T00:00:00Z"
+
+top_issues: []
+
+waiver:
+  active: true
+  reason: "Compatibilité externe potentielle; défaire proprement au bon moment."
+  until: "2026-01-15"
+
+quality_score: 0
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 1
+  trace:
+    ac_covered: []
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: N/A
+    notes: "Aucun impact sécurité direct; alias déjà déprécié."
+  performance:
+    status: N/A
+    notes: "Sans impact."
+  reliability:
+    status: N/A
+    notes: "Suppression simple; faible risque."
+  maintainability:
+    status: PASS
+    notes: "Améliore la lisibilité et réduit la dette."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Auditer usages externes éventuels avant suppression"
+      refs: ["docs/stories/story-tech-debt-remove-reset-token-alias.md"]
+    - action: "Supprimer alias et tests de compatibilité"
+      refs: ["api/src/recyclic_api/core/security.py", "api/tests/test_auth_password_reset.py"]
+
+

@@ -14,6 +14,7 @@ export interface DashboardFilters {
   siteId?: string
   dateFrom?: string
   dateTo?: string
+  operatorId?: string
 }
 
 export interface DashboardSessionSummary {
@@ -79,6 +80,11 @@ const applyAuthHeaders = () => {
   return headers
 }
 
+/**
+ * Normalise une valeur en nombre valide, avec gestion robuste des cas limites
+ * @param value - Valeur à normaliser
+ * @returns Nombre normalisé ou 0 si invalide
+ */
 const normaliseNumber = (value: unknown): number => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value
@@ -105,6 +111,10 @@ const buildQueryParams = (filters?: DashboardFilters) => {
 
   if (filters.dateTo) {
     params.append('date_to', filters.dateTo)
+  }
+
+  if (filters.operatorId) {
+    params.append('operator_id', filters.operatorId)
   }
 
   const query = params.toString()
@@ -252,40 +262,96 @@ export const dashboardService = {
     }
   },
 
+  /**
+   * Calcule la durée d'une session de caisse avec validation robuste
+   * @param openedAt - Date d'ouverture (ISO string)
+   * @param closedAt - Date de fermeture (ISO string, optionnel)
+   * @param status - Statut de la session ('open' | 'closed')
+   * @returns Durée formatée (ex: "2h 30m") ou "N/A" si invalide
+   */
   calculateSessionDuration(openedAt: string, closedAt?: string | null, status?: string): string {
+    // Valider que openedAt est une date valide
+    if (!openedAt) {
+      return 'N/A'
+    }
+
     const opened = new Date(openedAt)
+    
+    // Vérifier que la date est valide
+    if (isNaN(opened.getTime())) {
+      return 'N/A'
+    }
 
     if (status === 'open' || (!closedAt && status !== 'closed')) {
       const now = new Date()
       const diffMs = now.getTime() - opened.getTime()
-      if (diffMs <= 0) {
+      if (diffMs <= 0 || isNaN(diffMs)) {
         return '0h 00m'
       }
 
       const hours = Math.floor(diffMs / (1000 * 60 * 60))
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+      
+      // Vérifier que les valeurs sont valides
+      if (isNaN(hours) || isNaN(minutes)) {
+        return 'N/A'
+      }
+      
       return `${hours}h ${minutes.toString().padStart(2, '0')}m`
     }
 
     if (closedAt) {
       const closed = new Date(closedAt)
+      
+      // Vérifier que la date de fermeture est valide
+      if (isNaN(closed.getTime())) {
+        return 'N/A'
+      }
+      
       const diffMs = closed.getTime() - opened.getTime()
-      if (diffMs <= 0) {
+      if (diffMs <= 0 || isNaN(diffMs)) {
         return '0h 00m'
       }
 
       const hours = Math.floor(diffMs / (1000 * 60 * 60))
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+      
+      // Vérifier que les valeurs sont valides
+      if (isNaN(hours) || isNaN(minutes)) {
+        return 'N/A'
+      }
+      
       return `${hours}h ${minutes.toString().padStart(2, '0')}m`
     }
 
     return 'N/A'
   },
 
+  /**
+   * Formate une date ISO en format français localisé
+   * @param dateString - Chaîne de date ISO
+   * @returns Date formatée ou "N/A" si invalide
+   */
   formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleString('fr-FR')
+    if (!dateString) {
+      return 'N/A'
+    }
+    
+    const date = new Date(dateString)
+    
+    // Vérifier que la date est valide
+    if (isNaN(date.getTime())) {
+      return 'N/A'
+    }
+    
+    return date.toLocaleString('fr-FR')
   },
 
+  /**
+   * Construit un lookup des utilisateurs à partir des sessions
+   * @param data - Données agrégées du dashboard
+   * @returns Dictionnaire des opérateurs
+   */
   buildUserLookup(data: DashboardAggregate | undefined): Record<string, string> {
     if (!data?.sessions) {
       return {}

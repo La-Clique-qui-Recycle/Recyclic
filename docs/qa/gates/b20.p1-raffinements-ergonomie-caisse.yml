@@ -1,0 +1,31 @@
+storyId: STORY-B20-P1
+epic: Refonte du Workflow de Caisse V2
+title: Raffinements Ergonomiques du Workflow de Caisse
+priority: P1
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Page Poids: validation directe implémentée (auto-ajout dès saisie valide), bouton "Ajouter" remplacé par "+", bouton "Effacer" supprimé, support touche Entrée pour valider le poids total
+  - Page Quantité: calcul en temps réel déplacé à droite du pavé numérique (layout en colonnes), support touche Entrée pour validation
+  - Page Prix: support touche Entrée pour validation et ajout au ticket
+  - Fin de vente: popup de succès auto-disparition après 3 secondes, réinitialisation automatique des champs
+evidence:
+  - code:
+      - frontend/src/components/business/MultipleWeightEntry.tsx (auto-ajout pesées, bouton "+", support Entrée)
+      - frontend/src/components/business/SaleWizard.tsx (layout quantité, support Entrée global)
+      - frontend/src/pages/CashRegister/Sale.tsx (popup auto-disparition)
+      - frontend/src/components/business/FinalizationScreen.tsx (réinitialisation champs)
+  - features:
+      - Validation directe des pesées: ajout automatique dès saisie valide
+      - Layout quantité: calcul en temps réel à droite du pavé, pas de scroll
+      - Support touche Entrée: validation pour poids, quantité, prix
+      - Popup succès: disparition automatique après 3 secondes
+      - Réinitialisation: champs remis à zéro/vide, moyen de paiement "Espèces"
+qualityAttributes:
+  - usability: Workflow plus fluide et intuitif avec validation directe
+  - performance: Pas de scroll sur la page quantité, layout optimisé
+  - accessibility: Support complet du clavier physique (touche Entrée)
+  - maintainability: Code propre avec gestionnaires d'événements ciblés
+status: APPROVED

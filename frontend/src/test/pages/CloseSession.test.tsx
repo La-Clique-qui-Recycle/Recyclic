@@ -49,7 +49,8 @@ const mockCashSessionStore = {
   },
   loading: false,
   error: null,
-  closeSession: vi.fn()
+  closeSession: vi.fn(),
+  refreshSession: vi.fn().mockResolvedValue(undefined)
 }
 
 vi.mock('../../stores/cashSessionStore', () => ({
