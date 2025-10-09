@@ -10,13 +10,14 @@
 
 1. [Pré-requis](#pré-requis)
 2. [Installation](#installation)
-3. [Lancement](#lancement)
-4. [Post-Installation - Étape 1 : Création du Super-Administrateur](#post-installation---étape-1--création-du-super-administrateur)
-5. [Post-Installation - Étape 2 : Import des Données Initiales](#post-installation---étape-2--import-des-données-initiales)
-6. [Phase de Test](#phase-de-test)
-7. [Post-Installation - Étape 3 : Purge des Données de Test](#post-installation---étape-3--purge-des-données-de-test)
-8. [Go-Live](#go-live)
-9. [Dépannage](#dépannage)
+3. [Déploiement Alternatif : Utilisation de Traefik](#déploiement-alternatif--utilisation-de-traefik)
+4. [Lancement](#lancement)
+5. [Post-Installation - Étape 1 : Création du Super-Administrateur](#post-installation---étape-1--création-du-super-administrateur)
+6. [Post-Installation - Étape 2 : Import des Données Initiales](#post-installation---étape-2--import-des-données-initiales)
+7. [Phase de Test](#phase-de-test)
+8. [Post-Installation - Étape 3 : Purge des Données de Test](#post-installation---étape-3--purge-des-données-de-test)
+9. [Go-Live](#go-live)
+10. [Dépannage](#dépannage)
 
 ---
 
@@ -207,6 +208,117 @@ sudo nginx -t
 # Recharger Nginx
 sudo systemctl reload nginx
 ```
+
+---
+
+## Déploiement Alternatif : Utilisation de Traefik
+
+**⚙️ Cette section concerne uniquement les serveurs VPS utilisant déjà Traefik comme reverse proxy.**
+
+Si votre infrastructure utilise déjà Traefik pour gérer d'autres services, vous pouvez utiliser le fichier `docker-compose.vps.yml` à la place de la configuration Nginx décrite ci-dessus.
+
+### Quand utiliser cette méthode ?
+
+✅ **Utilisez Traefik (`docker-compose.vps.yml`)** si :
+- Votre serveur utilise déjà Traefik comme reverse proxy
+- Vous gérez plusieurs applications sur le même serveur avec Traefik
+- Vous préférez une gestion centralisée des certificats SSL avec Traefik
+
+❌ **Utilisez Nginx (configuration standard)** si :
+- Vous déployez Recyclic sur un serveur dédié
+- Vous n'utilisez pas encore de reverse proxy
+- Vous préférez une solution simple et autonome
+
+### Configuration avec Traefik
+
+#### 1. Prérequis Traefik
+
+Assurez-vous que Traefik est déjà installé et configuré sur votre serveur avec :
+- Un réseau Docker nommé `proxy`
+- Des entrypoints `web` (80) et `websecure` (443)
+- La gestion automatique des certificats SSL (Let's Encrypt)
+
+#### 2. Créer le Réseau Proxy
+
+```bash
+# Créer le réseau proxy si nécessaire
+docker network create proxy || true
+```
+
+#### 3. Modifier le fichier docker-compose.vps.yml
+
+Éditez le fichier `docker-compose.vps.yml` et remplacez `recyclic.ton-domaine.tld` par votre domaine réel :
+
+```bash
+nano docker-compose.vps.yml
+```
+
+Exemple de modification :
+```yaml
+# Avant
+- "traefik.http.routers.recyclic-api.rule=Host(`recyclic.ton-domaine.tld`) && PathPrefix(`/api`)"
+
+# Après
+- "traefik.http.routers.recyclic-api.rule=Host(`recyclic.votre-domaine.com`) && PathPrefix(`/api`)"
+```
+
+#### 4. Démarrer les Services avec Traefik
+
+```bash
+# Se placer dans le répertoire du projet
+cd /opt/recyclic
+
+# Démarrer avec les deux fichiers de configuration
+docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+
+# Vérifier le statut des services
+docker compose ps
+```
+
+#### 5. Vérification
+
+```bash
+# Vérifier que Traefik détecte les services
+docker logs traefik 2>&1 | grep recyclic
+
+# Tester l'accès via Traefik
+curl https://recyclic.votre-domaine.com/api/v1/health/
+curl https://recyclic.votre-domaine.com/
+```
+
+### Différences avec la Configuration Standard
+
+| Aspect | Configuration Standard (Nginx) | Configuration Traefik |
+|--------|-------------------------------|----------------------|
+| **Fichier Docker Compose** | `docker-compose.yml` uniquement | `docker-compose.yml` + `docker-compose.vps.yml` |
+| **Reverse Proxy** | Nginx installé séparément | Traefik existant sur le serveur |
+| **Certificats SSL** | Gérés manuellement dans Nginx | Gérés automatiquement par Traefik |
+| **Réseau** | `recyclic-network` uniquement | `recyclic-network` + `proxy` |
+| **Configuration** | Fichier Nginx séparé | Labels Docker dans `docker-compose.vps.yml` |
+
+### Commandes Spécifiques Traefik
+
+```bash
+# Démarrer les services
+docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+
+# Arrêter les services
+docker compose -f docker-compose.yml -f docker-compose.vps.yml down
+
+# Voir les logs
+docker compose -f docker-compose.yml -f docker-compose.vps.yml logs -f
+
+# Redémarrer un service
+docker compose -f docker-compose.yml -f docker-compose.vps.yml restart api
+```
+
+### Points d'Attention
+
+⚠️ **Important** :
+- Ne démarrez **PAS** de service Nginx séparé si vous utilisez Traefik
+- Assurez-vous que le réseau `proxy` existe avant de démarrer les services
+- Vérifiez que votre configuration Traefik autorise bien les domaines utilisés
+- Les ports 80 et 443 doivent être gérés par Traefik, pas par les services Recyclic
 
 ---
 
