@@ -20,7 +20,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.recyclic-api.rule=Host(`recyclic.jarvos.eu`) && PathPrefix(`/api`)"
-      - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api/v1"
       - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip"
       - "traefik.http.routers.recyclic-api.entrypoints=web,websecure"
       - "traefik.http.routers.recyclic-api.tls=true"
