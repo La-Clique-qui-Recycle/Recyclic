@@ -2,7 +2,7 @@
 # Configuration de surcharge pour déploiement sur VPS avec Traefik
 #
 # Usage:
-#   docker network create proxy || true
+#   docker network create traefik-public || true
 #   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
 #
 # Cette configuration permet d'utiliser Traefik comme reverse proxy à la place de Nginx,
@@ -11,28 +11,28 @@
 version: '3.8'
 
 networks:
-  proxy:
+  traefik-public:
     external: true
 
 services:
   api:
     networks:
-      - proxy
+      - traefik-public
       - recyclic-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.recyclic-api.rule=Host(`recyclic.ton-domaine.tld`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-api.rule=Host(`www.recyclic.jarvos.eu`) && PathPrefix(`/api`)"
       - "traefik.http.routers.recyclic-api.entrypoints=websecure"
       - "traefik.http.routers.recyclic-api.tls=true"
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
 
   frontend:
     networks:
-      - proxy
+      - traefik-public
       - recyclic-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.recyclic-front.rule=Host(`recyclic.ton-domaine.tld`) && PathPrefix(`/`)"
+      - "traefik.http.routers.recyclic-front.rule=Host(`www.recyclic.jarvos.eu`) && PathPrefix(`/`)"
       - "traefik.http.routers.recyclic-front.entrypoints=websecure"
       - "traefik.http.routers.recyclic-front.tls=true"
       - "traefik.http.services.recyclic-front.loadbalancer.server.port=80"
