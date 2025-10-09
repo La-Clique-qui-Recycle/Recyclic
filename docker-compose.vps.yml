@@ -39,7 +39,7 @@ services:
       - traefik-public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.recyclic-frontend.rule=Host(`recyclic.jarvos.eu`)"
+      - "traefik.http.routers.recyclic-frontend.rule=Host(`recyclic.jarvos.eu`) && !PathPrefix(`/api`)"
       - "traefik.http.routers.recyclic-frontend.entrypoints=websecure"
       - "traefik.http.routers.recyclic-frontend.tls.certresolver=myresolver"
       - "traefik.http.routers.recyclic-frontend.priority=1"
