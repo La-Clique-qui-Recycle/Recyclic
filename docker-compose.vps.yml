@@ -18,14 +18,7 @@ services:
       - traefik-public
       - recyclic-network
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.recyclic-api.rule=Host(`recyclic.jarvos.eu`) && PathPrefix(`/api/v1`)"
-      - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api/v1"
-      - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip"
-      - "traefik.http.routers.recyclic-api.entrypoints=web,websecure"
-      - "traefik.http.routers.recyclic-api.tls=true"
-      - "traefik.http.routers.recyclic-api.tls.certresolver=myresolver"
-      - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
+      - "traefik.enable=false"
 
   frontend:
     build:
