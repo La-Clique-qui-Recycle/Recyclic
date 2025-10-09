@@ -1,8 +1,6 @@
 # docker-compose.vps.yml
 # Configuration de surcharge pour déploiement sur VPS avec Traefik
 
-version: "3.8"
-
 networks:
   traefik-public:
     external: true
@@ -10,6 +8,8 @@ networks:
 services:
   api:
     environment:
+      - HOST=0.0.0.0
+      - UVICORN_CMD_ARGS=--proxy-headers --forwarded-allow-ips='*'
       - ALLOWED_HOSTS=recyclic.jarvos.eu,localhost,127.0.0.1
       - CORS_ALLOW_ORIGINS=https://recyclic.jarvos.eu
       - BACKEND_CORS_ORIGINS=https://recyclic.jarvos.eu
