@@ -16,9 +16,14 @@ services:
       - FRONTEND_URL=https://recyclic.jarvos.eu
     networks:
       - traefik-public
-      - recyclic-network
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.recyclic-api.rule=Host(`recyclic.jarvos.eu`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-api.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-api.tls.certresolver=letsencrypt"
+      - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip"
+      - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
 
   frontend:
     build:
@@ -30,11 +35,9 @@ services:
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
     networks:
       - traefik-public
-      - recyclic-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.recyclic-front.rule=Host(`recyclic.jarvos.eu`)"
-      - "traefik.http.routers.recyclic-front.entrypoints=web,websecure"
-      - "traefik.http.routers.recyclic-front.tls=true"
-      - "traefik.http.routers.recyclic-front.tls.certresolver=myresolver"
-      - "traefik.http.services.recyclic-front.loadbalancer.server.port=80"
+      - "traefik.http.routers.recyclic-frontend.rule=Host(`recyclic.jarvos.eu`)"
+      - "traefik.http.routers.recyclic-frontend.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.recyclic-frontend.loadbalancer.server.port=80"
