@@ -213,6 +213,26 @@ sudo systemctl reload nginx
 
 ## Déploiement Alternatif : Utilisation de Traefik
 
+### ⚙️ Configuration Actuelle (Production – Octobre 2025)
+
+> 🚀 **La configuration actuellement en production utilise Traefik comme reverse proxy unique.**
+> Le domaine `https://recyclic.jarvos.eu` est géré par le service Traefik global du VPS `srv806876.hstgr.cloud` (réseau `traefik-public`).
+>
+> * Le **frontend** et l’**API** Recyclic sont exposés via `docker-compose.vps.yml`.
+> * Les labels Traefik sont **définis dans ce fichier**, pas dans `docker-compose.yml`.
+> * Le **healthcheck du frontend est désactivé** (stabilité certifiée).
+> * La ligne `version:` a été retirée du YAML (obsolète).
+> * Les certificats HTTPS sont délivrés automatiquement par le resolver `myresolver`.
+>
+> ✅ Pour tout redéploiement, utiliser **uniquement :**
+>
+> ```bash
+> git pull
+> docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --force-recreate
+> ```
+>
+> 👉 Ne pas réactiver Nginx ni modifier la configuration Traefik globale située dans `/srv/traefik/traefik.yml`.
+
 **⚙️ Cette section concerne uniquement les serveurs VPS utilisant déjà Traefik comme reverse proxy.**
 
 Si votre infrastructure utilise déjà Traefik pour gérer d'autres services, vous pouvez utiliser le fichier `docker-compose.vps.yml` à la place de la configuration Nginx décrite ci-dessus.

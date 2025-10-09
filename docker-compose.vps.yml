@@ -25,6 +25,9 @@ services:
       context: ./frontend
       args:
         REACT_APP_API_URL: "https://recyclic.jarvos.eu/api"
+    environment:
+      - HOST=0.0.0.0
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
     networks:
       - traefik-public
       - recyclic-network
