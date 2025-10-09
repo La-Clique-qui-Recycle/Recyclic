@@ -1,15 +1,18 @@
 # Dockerfile.migrations - Image dédiée pour les migrations Alembic
 FROM python:3.11-slim
 
-# Switch to root to modify files
-USER root
+WORKDIR /app
 
-# Override Alembic configuration with Docker-compatible URL
-# This ensures migrations always connect to the postgres service in Docker network
+# Copier uniquement ce qui est nécessaire pour Alembic
+COPY alembic.ini .
+COPY migrations ./migrations
+COPY requirements.txt .
+
+# Installer les dépendances minimales
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Modifier la configuration Alembic pour pointer vers le service postgres Docker
 RUN sed -i 's|sqlalchemy.url = .*|sqlalchemy.url = postgresql://recyclic:postgres@postgres:5432/recyclic|' alembic.ini
 
-# Switch back to non-root user
-USER recyclic
-
-# Set the command to run Alembic migrations
+# Commande de lancement
 CMD ["alembic", "upgrade", "head"]
