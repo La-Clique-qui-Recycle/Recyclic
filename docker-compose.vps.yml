@@ -10,7 +10,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - UVICORN_CMD_ARGS=
-      - ALLOWED_HOSTS=localhost,127.0.0.1,recyclic.jarvos.eu
+      - ALLOWED_HOSTS=recyclic.jarvos.eu,localhost,127.0.0.1
       - CORS_ALLOW_ORIGINS=https://recyclic.jarvos.eu
       - BACKEND_CORS_ORIGINS=https://recyclic.jarvos.eu
       - FRONTEND_URL=https://recyclic.jarvos.eu
