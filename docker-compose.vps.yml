@@ -10,7 +10,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - UVICORN_CMD_ARGS=--proxy-headers --forwarded-allow-ips='*'
-      - ALLOWED_HOSTS=recyclic.jarvos.eu,localhost,127.0.0.1
+      - ALLOWED_HOSTS=localhost,127.0.0.1,recyclic.jarvos.eu
       - CORS_ALLOW_ORIGINS=https://recyclic.jarvos.eu
       - BACKEND_CORS_ORIGINS=https://recyclic.jarvos.eu
       - FRONTEND_URL=https://recyclic.jarvos.eu
@@ -23,7 +23,8 @@ services:
       - "traefik.http.routers.recyclic-api.tls.certresolver=myresolver"
       - "traefik.http.routers.recyclic-api.priority=100"
       - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api"
-      - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip"
+      - "traefik.http.middlewares.recyclic-api-host.headers.customRequestHeaders.Host=localhost"
+      - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip,recyclic-api-host"
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
       - "traefik.http.services.recyclic-api.loadbalancer.passhostheader=false"
 
