@@ -9,7 +9,7 @@ services:
   api:
     environment:
       - HOST=0.0.0.0
-      - UVICORN_CMD_ARGS=--proxy-headers --forwarded-allow-ips='*'
+      - UVICORN_CMD_ARGS=
       - ALLOWED_HOSTS=localhost,127.0.0.1,recyclic.jarvos.eu
       - CORS_ALLOW_ORIGINS=https://recyclic.jarvos.eu
       - BACKEND_CORS_ORIGINS=https://recyclic.jarvos.eu
