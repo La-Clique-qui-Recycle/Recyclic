@@ -27,12 +27,18 @@ services:
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
 
   frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: "https://recyclic.jarvos.eu/api"
     networks:
       - traefik-public
       - recyclic-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.recyclic-front.rule=Host(`www.recyclic.jarvos.eu`) && PathPrefix(`/`)"
+      - "traefik.http.routers.recyclic-front.rule=Host(`recyclic.jarvos.eu`)"
       - "traefik.http.routers.recyclic-front.entrypoints=websecure"
       - "traefik.http.routers.recyclic-front.tls=true"
+      - "traefik.http.routers.recyclic-front.tls.certresolver=myresolver"
       - "traefik.http.services.recyclic-front.loadbalancer.server.port=80"
+
