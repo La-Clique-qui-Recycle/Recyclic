@@ -28,4 +28,4 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
-CMD ["bash", "-c", "DANGEROUSLY_DISABLE_HOST_CHECK=true HOST=0.0.0.0 npm start"]
+CMD ["nginx", "-g", "daemon off;"]
