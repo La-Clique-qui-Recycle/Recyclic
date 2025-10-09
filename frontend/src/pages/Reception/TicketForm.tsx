@@ -24,12 +24,14 @@ const LAYOUT_STORAGE_KEY = 'recyclic_ticket_layout';
 
 interface LayoutPreferences {
   categoriesSize: number;
-  weighPadSize: number;
+  centerSize: number;
+  summarySize: number;
 }
 
 const DEFAULT_LAYOUT: LayoutPreferences = {
-  categoriesSize: 20, // 20% for categories
-  weighPadSize: 60,   // 60% for weight pad, 40% for controls
+  categoriesSize: 25, // 25% for categories (augmenté pour boutons plus grands)
+  centerSize: 50,     // 50% for center workspace
+  summarySize: 25,    // 25% for summary
 };
 
 const loadLayoutPreferences = (): LayoutPreferences => {
@@ -119,14 +121,14 @@ const CategoryGrid = styled.div`
 `;
 
 const CategoryButton = styled.button<{ $selected?: boolean }>`
-  padding: 8px 6px;
-  min-height: 44px;
+  padding: 12px 10px;
+  min-height: 60px;
   border: 2px solid ${props => props.$selected ? '#2e7d32' : '#e0e0e0'};
-  border-radius: 4px;
+  border-radius: 8px;
   background: ${props => props.$selected ? '#e8f5e8' : 'white'};
   color: ${props => props.$selected ? '#2e7d32' : '#333'};
   cursor: pointer;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
   text-align: center;
@@ -140,14 +142,15 @@ const CategoryButton = styled.button<{ $selected?: boolean }>`
   }
 
   @media (max-width: 1024px) and (min-width: 769px) {
-    font-size: 10px;
-    padding: 6px 5px;
+    font-size: 13px;
+    padding: 10px 8px;
+    min-height: 55px;
   }
 
   @media (max-width: 768px) {
-    font-size: 10px;
-    padding: 6px 5px;
-    min-height: 44px;
+    font-size: 13px;
+    padding: 10px 8px;
+    min-height: 55px;
     width: 100%;
     height: 100%;
   }
@@ -203,9 +206,33 @@ const BreadcrumbItem = styled.span`
   font-weight: 500;
 `;
 
-// ===== CENTER COLUMN: ENTRY ZONE =====
+// ===== BREADCRUMB FOR CENTER COLUMN =====
 
-const CenterColumn = styled.div`
+const CenterBreadcrumb = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 12px;
+`;
+
+const CenterBreadcrumbItem = styled.span`
+  color: #2e7d32;
+  font-weight: 500;
+`;
+
+const CenterBreadcrumbSeparator = styled.span`
+  color: #999;
+  margin: 0 4px;
+`;
+
+// ===== CENTER WORKSPACE COLUMN =====
+
+const CenterWorkspace = styled.div`
   background: white;
   padding: 12px;
   overflow-y: auto;
@@ -219,53 +246,163 @@ const CenterColumn = styled.div`
 
   @media (max-width: 768px) {
     padding: 8px;
-    overflow: visible;  /* Pas de scroll interne sur mobile */
-    flex: none;  /* Prend la hauteur naturelle */
+    overflow: visible;
+    flex: none;
   }
 `;
 
-const EntryLayout = styled.div`
+const WorkspaceContent = styled.div`
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
   flex: 1;
-  overflow: hidden;
-
-  @media (max-width: 900px) {
-    flex-direction: column;
-    overflow: visible;  /* Pas de scroll interne */
-    flex: none;  /* Hauteur naturelle */
-  }
+  min-height: 0; /* Permet au contenu de se compresser */
+  padding: 0 4px; /* Réduire l'espacement latéral */
 `;
 
-const WeighPadColumn = styled.div`
+const WeightSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 280px;
-
-  @media (max-width: 768px) {
-    min-width: 0;
-    padding-bottom: 12px;
-    margin-bottom: 12px;
-    border-bottom: 2px solid #e0e0e0;  /* Trait de séparation */
-  }
+  gap: 6px;
+  flex-shrink: 0; /* Ne pas compresser cette section */
 `;
 
-const ControlsColumn = styled.div`
+const NumericPadSection = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: 2px 0;
+  flex-shrink: 0; /* Ne pas compresser cette section */
+  padding: 4px;
+`;
+
+const ControlsSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  justify-content: space-between;
-  min-width: 250px;
-  padding-left: 12px;
-  border-left: 2px solid #e0e0e0;  /* Ligne grise séparation */
+  gap: 6px;
+  margin-top: auto;
+  flex-shrink: 0; /* Ne pas compresser cette section */
+`;
+
+// ===== RIGHT SUMMARY COLUMN =====
+
+const SummaryColumn = styled.div`
+  background: #f9f9f9;
+  border-left: 1px solid #e0e0e0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 
   @media (max-width: 768px) {
-    min-width: 0;
-    padding-left: 0;
     border-left: none;
+    border-top: 1px solid #e0e0e0;
+    flex-shrink: 0;
+    overflow: visible;
   }
 `;
+
+const SummaryHeader = styled.div`
+  padding: 12px 16px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+`;
+
+const SummaryContent = styled.div`
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+`;
+
+const SummaryItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: white;
+`;
+
+const SummaryItemInfo = styled.div`
+  flex: 1;
+`;
+
+const SummaryItemCategory = styled.div`
+  font-weight: 600;
+  color: #2e7d32;
+  margin-bottom: 4px;
+  font-size: 13px;
+`;
+
+const SummaryItemDetails = styled.div`
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+`;
+
+const SummaryItemActions = styled.div`
+  display: flex;
+  gap: 4px;
+`;
+
+const SummaryActionButton = styled.button`
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  &.edit {
+    background: #ffc107;
+    color: #212529;
+
+    &:hover {
+      background: #e0a800;
+    }
+  }
+
+  &.delete {
+    background: #dc3545;
+    color: white;
+
+    &:hover {
+      background: #c82333;
+    }
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const SummaryEmptyState = styled.div`
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+  font-size: 13px;
+`;
+
+const SummaryStats = styled.div`
+  padding: 12px;
+  background: #f0f0f0;
+  border-top: 1px solid #e0e0e0;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+`;
+
+// ===== LEGACY COMPONENTS (TO BE REMOVED) =====
+// Ces composants sont conservés pour compatibilité mais ne sont plus utilisés
+// dans le nouveau layout à 3 colonnes
 
 const FormGroup = styled.div`
   display: flex;
@@ -285,16 +422,16 @@ const Label = styled.label`
 
 const WeightDisplay = styled.input`
   width: 100%;
-  padding: 6px;
+  padding: 8px;
   border: 2px solid #e0e0e0;
   border-radius: 6px;
-  font-size: 24px;
+  font-size: 20px;
   text-align: center;
   font-weight: bold;
   background: #f9f9f9;
   color: #333;
-  height: 44px;
-  min-height: 44px;
+  height: 48px;
+  min-height: 48px;
 
   &:focus {
     outline: none;
@@ -302,25 +439,27 @@ const WeightDisplay = styled.input`
   }
 
   @media (max-width: 1024px) and (min-width: 769px) {
-    font-size: 22px;
+    font-size: 18px;
     height: 44px;
+    min-height: 44px;
   }
 
   @media (max-width: 768px) {
-    font-size: 20px;
-    height: 44px;
+    font-size: 16px;
+    height: 40px;
+    min-height: 40px;
   }
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   background: white;
   cursor: pointer;
-  min-height: 44px;
+  min-height: 40px;
 
   &:focus {
     outline: none;
@@ -328,20 +467,21 @@ const Select = styled.select`
   }
 
   @media (max-width: 768px) {
-    font-size: 13px;
-    padding: 8px;
+    font-size: 12px;
+    padding: 6px;
+    min-height: 36px;
   }
 `;
 
 const Textarea = styled.textarea`
   width: 100%;
-  padding: 8px;
+  padding: 6px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 12px;
   resize: vertical;
-  min-height: 50px;
-  max-height: 80px;
+  min-height: 40px;
+  max-height: 60px;
   font-family: inherit;
 
   &:focus {
@@ -351,26 +491,27 @@ const Textarea = styled.textarea`
 
   @media (max-width: 768px) {
     font-size: 11px;
-    min-height: 44px;
+    min-height: 36px;
+    max-height: 50px;
   }
 `;
 
 const AddButton = styled.button`
   width: 100%;
-  padding: 10px;
-  min-height: 44px;
+  padding: 8px;
+  min-height: 40px;
   background: #2e7d32;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 
   &:hover {
     background: #1b5e20;
@@ -386,8 +527,9 @@ const AddButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    font-size: 13px;
-    padding: 8px;
+    font-size: 12px;
+    padding: 6px;
+    min-height: 36px;
   }
 `;
 
@@ -692,7 +834,6 @@ const TicketForm: React.FC = () => {
   const [destination, setDestination] = useState<'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE'>('MAGASIN');
   const [notes, setNotes] = useState<string>('');
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
 
   // Navigation hiérarchique des catégories
@@ -992,11 +1133,12 @@ const TicketForm: React.FC = () => {
   }, []);
 
   const handleLayoutChange = (sizes: number[]) => {
-    const [categoriesSize, weighPadSize] = sizes;
-    if (categoriesSize && weighPadSize) {
+    const [categoriesSize, centerSize, summarySize] = sizes;
+    if (categoriesSize && centerSize && summarySize) {
       const newPrefs: LayoutPreferences = {
         categoriesSize: Math.round(categoriesSize),
-        weighPadSize: Math.round(weighPadSize),
+        centerSize: Math.round(centerSize),
+        summarySize: Math.round(summarySize),
       };
       saveLayoutPreferences(newPrefs);
     }
@@ -1078,10 +1220,20 @@ const TicketForm: React.FC = () => {
               </CategoryGrid>
             </CategoriesColumn>
 
-            <CenterColumn>
+            <CenterWorkspace>
+              {/* Fil d'Ariane pour la colonne du milieu */}
+              {selectedCategory && (
+                <CenterBreadcrumb>
+                  <span>Catégorie sélectionnée:</span>
+                  <CenterBreadcrumbItem>
+                    {activeCategories.find(cat => cat.id === selectedCategory)?.name || 'Inconnue'}
+                  </CenterBreadcrumbItem>
+                </CenterBreadcrumb>
+              )}
+
               {!isTicketClosed && (
-                <EntryLayout>
-                  <WeighPadColumn>
+                <WorkspaceContent>
+                  <WeightSection>
                     <FormGroup>
                       <Label>Poids (kg) *</Label>
                       <WeightDisplay
@@ -1094,7 +1246,9 @@ const TicketForm: React.FC = () => {
                         readOnly
                       />
                     </FormGroup>
+                  </WeightSection>
 
+                  <NumericPadSection>
                     <NumericKeypad
                       onKeyPress={(key) => {
                         if (key === 'C') return;
@@ -1107,9 +1261,9 @@ const TicketForm: React.FC = () => {
                       onClear={() => setWeightInput(clearWeight())}
                       onBackspace={() => setWeightInput((prev) => backspaceWeight(prev))}
                     />
-                  </WeighPadColumn>
+                  </NumericPadSection>
 
-                  <ControlsColumn>
+                  <ControlsSection>
                     <FormGroup>
                       <Label>Destination</Label>
                       <Select
@@ -1140,16 +1294,68 @@ const TicketForm: React.FC = () => {
                       <Save size={18} />
                       {isEditing ? 'Mettre à jour' : 'Ajouter l\'objet'}
                     </AddButton>
-                  </ControlsColumn>
-                </EntryLayout>
+                  </ControlsSection>
+                </WorkspaceContent>
               )}
-            </CenterColumn>
+            </CenterWorkspace>
+
+            <SummaryColumn>
+              <SummaryHeader>
+                Résumé du Ticket
+              </SummaryHeader>
+              <SummaryContent>
+                {lines.length === 0 ? (
+                  <SummaryEmptyState>Aucune ligne ajoutée</SummaryEmptyState>
+                ) : (
+                  lines.map((line: TicketLine) => (
+                    <SummaryItem key={line.id}>
+                      <SummaryItemInfo>
+                        <SummaryItemCategory>
+                          {line.category_label ||
+                           categories.find(cat => cat.id === line.category_id)?.label ||
+                           line.category_id ||
+                           line.category || 'N/A'}
+                        </SummaryItemCategory>
+                        <SummaryItemDetails>
+                          {line.poids_kg || line.weight}kg - {DESTINATIONS.find(d => d.value === line.destination)?.label}
+                          {line.notes && <><br />{line.notes}</>}
+                        </SummaryItemDetails>
+                      </SummaryItemInfo>
+                      {!isTicketClosed && (
+                        <SummaryItemActions>
+                          <SummaryActionButton
+                            className="edit"
+                            onClick={() => handleEditLine(line)}
+                            disabled={isLoading}
+                          >
+                            <Edit size={12} />
+                          </SummaryActionButton>
+                          <SummaryActionButton
+                            className="delete"
+                            onClick={() => handleDeleteLine(line.id)}
+                            disabled={isLoading}
+                          >
+                            <Trash2 size={12} />
+                          </SummaryActionButton>
+                        </SummaryItemActions>
+                      )}
+                    </SummaryItem>
+                  ))
+                )}
+              </SummaryContent>
+              <SummaryStats>
+                {lines.length} ligne{lines.length > 1 ? 's' : ''} • Total: {lines.reduce((sum, line) => {
+                  const weight = line.poids_kg || line.weight || 0;
+                  return sum + (typeof weight === 'number' ? weight : 0);
+                }, 0).toFixed(2)}kg
+              </SummaryStats>
+            </SummaryColumn>
           </>
         ) : (
-          /* DESKTOP LAYOUT - Horizontal with resize panels */
+          /* DESKTOP LAYOUT - 3 colonnes avec resize panels */
           <PanelGroup direction="horizontal" onLayout={handleLayoutChange}>
-            {/* LEFT PANEL: Categories */}
-            <Panel defaultSize={layoutPrefs.categoriesSize} minSize={15} maxSize={30}>
+            {/* COLONNE GAUCHE: Catégories */}
+            <Panel defaultSize={layoutPrefs.categoriesSize} minSize={15} maxSize={70}>
               <CategoriesColumn>
                 {currentParentId && (
                   <CategoryHeader>
@@ -1195,161 +1401,151 @@ const TicketForm: React.FC = () => {
               <ResizeHandleStyled />
             </PanelResizeHandle>
 
-            {/* CENTER PANEL: Entry Zone */}
-            <Panel minSize={50}>
-              <CenterColumn>
-                {!isTicketClosed && (
-                  <EntryLayout>
-                    <PanelGroup direction="horizontal">
-                      {/* Weight Pad Panel (LEFT - 60%) */}
-                      <Panel defaultSize={layoutPrefs.weighPadSize} minSize={40} maxSize={70}>
-                        <WeighPadColumn>
-                          <FormGroup>
-                            <Label>Poids (kg) *</Label>
-                            <WeightDisplay
-                              ref={weightInputRef}
-                              type="text"
-                              value={formattedWeight}
-                              onChange={() => {}}
-                              onKeyDown={onKeyDown}
-                              placeholder="0.00"
-                              readOnly
-                            />
-                          </FormGroup>
-
-                          <NumericKeypad
-                            onKeyPress={(key) => {
-                              if (key === 'C') return;
-                              if (key === '.') {
-                                setWeightInput((prev) => applyDecimalPoint(prev));
-                              } else if (/^[0-9]$/.test(key)) {
-                                setWeightInput((prev) => applyDigit(prev, key));
-                              }
-                            }}
-                            onClear={() => setWeightInput(clearWeight())}
-                            onBackspace={() => setWeightInput((prev) => backspaceWeight(prev))}
-                          />
-                        </WeighPadColumn>
-                      </Panel>
-
-                      <PanelResizeHandle>
-                        <ResizeHandleStyled />
-                      </PanelResizeHandle>
-
-                      {/* Controls Panel (RIGHT - 40%) */}
-                      <Panel minSize={30}>
-                        <ControlsColumn>
-                          <FormGroup>
-                            <Label>Destination</Label>
-                            <Select
-                              value={destination}
-                              onChange={(e) => setDestination(e.target.value as 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE')}
-                            >
-                              {DESTINATIONS.map((dest) => (
-                                <option key={dest.value} value={dest.value}>
-                                  {dest.label}
-                                </option>
-                              ))}
-                            </Select>
-                          </FormGroup>
-
-                          <FormGroup>
-                            <Label>Notes (optionnel)</Label>
-                            <Textarea
-                              value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
-                              placeholder="Notes sur l'objet..."
-                            />
-                          </FormGroup>
-
-                          <AddButton
-                            onClick={isEditing ? () => handleUpdateLine(editingLineId!) : handleAddLine}
-                            disabled={isLoading || !selectedCategory || !weightInput}
-                          >
-                            <Save size={18} />
-                            {isEditing ? 'Mettre à jour' : 'Ajouter l\'objet'}
-                          </AddButton>
-                        </ControlsColumn>
-                      </Panel>
-                    </PanelGroup>
-                  </EntryLayout>
+            {/* COLONNE DU MILIEU: Poste de travail */}
+            <Panel defaultSize={layoutPrefs.centerSize} minSize={30} maxSize={70}>
+              <CenterWorkspace>
+                {/* Fil d'Ariane */}
+                {selectedCategory && (
+                  <CenterBreadcrumb>
+                    <span>Catégorie sélectionnée:</span>
+                    <CenterBreadcrumbItem>
+                      {activeCategories.find(cat => cat.id === selectedCategory)?.name || 'Inconnue'}
+                    </CenterBreadcrumbItem>
+                  </CenterBreadcrumb>
                 )}
-              </CenterColumn>
+
+                {!isTicketClosed && (
+                  <WorkspaceContent>
+                    <WeightSection>
+                      <FormGroup>
+                        <Label>Poids (kg) *</Label>
+                        <WeightDisplay
+                          ref={weightInputRef}
+                          type="text"
+                          value={formattedWeight}
+                          onChange={() => {}}
+                          onKeyDown={onKeyDown}
+                          placeholder="0.00"
+                          readOnly
+                        />
+                      </FormGroup>
+                    </WeightSection>
+
+                    <NumericPadSection>
+                      <NumericKeypad
+                        onKeyPress={(key) => {
+                          if (key === 'C') return;
+                          if (key === '.') {
+                            setWeightInput((prev) => applyDecimalPoint(prev));
+                          } else if (/^[0-9]$/.test(key)) {
+                            setWeightInput((prev) => applyDigit(prev, key));
+                          }
+                        }}
+                        onClear={() => setWeightInput(clearWeight())}
+                        onBackspace={() => setWeightInput((prev) => backspaceWeight(prev))}
+                      />
+                    </NumericPadSection>
+
+                    <ControlsSection>
+                      <FormGroup>
+                        <Label>Destination</Label>
+                        <Select
+                          value={destination}
+                          onChange={(e) => setDestination(e.target.value as 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE')}
+                        >
+                          {DESTINATIONS.map((dest) => (
+                            <option key={dest.value} value={dest.value}>
+                              {dest.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormGroup>
+
+                      <FormGroup>
+                        <Label>Notes (optionnel)</Label>
+                        <Textarea
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Notes sur l'objet..."
+                        />
+                      </FormGroup>
+
+                      <AddButton
+                        onClick={isEditing ? () => handleUpdateLine(editingLineId!) : handleAddLine}
+                        disabled={isLoading || !selectedCategory || !weightInput}
+                      >
+                        <Save size={18} />
+                        {isEditing ? 'Mettre à jour' : 'Ajouter l\'objet'}
+                      </AddButton>
+                    </ControlsSection>
+                  </WorkspaceContent>
+                )}
+              </CenterWorkspace>
+            </Panel>
+
+            <PanelResizeHandle>
+              <ResizeHandleStyled />
+            </PanelResizeHandle>
+
+            {/* COLONNE DE DROITE: Résumé du ticket */}
+            <Panel defaultSize={layoutPrefs.summarySize} minSize={15} maxSize={70}>
+              <SummaryColumn>
+                <SummaryHeader>
+                  Résumé du Ticket
+                </SummaryHeader>
+                <SummaryContent>
+                  {lines.length === 0 ? (
+                    <SummaryEmptyState>Aucune ligne ajoutée</SummaryEmptyState>
+                  ) : (
+                    lines.map((line: TicketLine) => (
+                      <SummaryItem key={line.id}>
+                        <SummaryItemInfo>
+                          <SummaryItemCategory>
+                            {line.category_label ||
+                             categories.find(cat => cat.id === line.category_id)?.label ||
+                             line.category_id ||
+                             line.category || 'N/A'}
+                          </SummaryItemCategory>
+                          <SummaryItemDetails>
+                            {line.poids_kg || line.weight}kg - {DESTINATIONS.find(d => d.value === line.destination)?.label}
+                            {line.notes && <><br />{line.notes}</>}
+                          </SummaryItemDetails>
+                        </SummaryItemInfo>
+                        {!isTicketClosed && (
+                          <SummaryItemActions>
+                            <SummaryActionButton
+                              className="edit"
+                              onClick={() => handleEditLine(line)}
+                              disabled={isLoading}
+                            >
+                              <Edit size={12} />
+                            </SummaryActionButton>
+                            <SummaryActionButton
+                              className="delete"
+                              onClick={() => handleDeleteLine(line.id)}
+                              disabled={isLoading}
+                            >
+                              <Trash2 size={12} />
+                            </SummaryActionButton>
+                          </SummaryItemActions>
+                        )}
+                      </SummaryItem>
+                    ))
+                  )}
+                </SummaryContent>
+                <SummaryStats>
+                  {lines.length} ligne{lines.length > 1 ? 's' : ''} • Total: {lines.reduce((sum, line) => {
+                    const weight = line.poids_kg || line.weight || 0;
+                    return sum + (typeof weight === 'number' ? weight : 0);
+                  }, 0).toFixed(2)}kg
+                </SummaryStats>
+              </SummaryColumn>
             </Panel>
           </PanelGroup>
         )}
       </MainLayout>
 
-      {/* TICKET DRAWER (Overlay) */}
-      <DrawerOverlay $isOpen={isDrawerOpen} onClick={() => setIsDrawerOpen(false)} />
-
-      <DrawerContainer $isOpen={isDrawerOpen}>
-        <DrawerHeader>
-          <DrawerTitle>
-            <Receipt size={20} />
-            Ticket #{ticket.id.slice(-8)}
-          </DrawerTitle>
-          <DrawerCloseButton onClick={() => setIsDrawerOpen(false)}>
-            <X size={24} />
-          </DrawerCloseButton>
-        </DrawerHeader>
-
-        <DrawerContent>
-          <TicketInfo>
-            {new Date(ticket.created_at || Date.now()).toLocaleString('fr-FR')}
-          </TicketInfo>
-
-          <h4 style={{ marginTop: 0, marginBottom: '12px', color: '#333' }}>
-            Lignes du ticket ({lines.length})
-          </h4>
-
-          {lines.length === 0 ? (
-            <EmptyState>Aucune ligne ajoutée</EmptyState>
-          ) : (
-            lines.map((line: TicketLine) => (
-              <LineItem key={line.id}>
-                <LineInfo>
-                  <LineCategory>
-                    {line.category_label ||
-                     categories.find(cat => cat.id === line.category_id)?.label ||
-                     line.category_id ||
-                     line.category || 'N/A'}
-                  </LineCategory>
-                  <LineDetails>
-                    {line.poids_kg || line.weight}kg - {DESTINATIONS.find(d => d.value === line.destination)?.label}
-                    {line.notes && <><br />{line.notes}</>}
-                  </LineDetails>
-                </LineInfo>
-                {!isTicketClosed && (
-                  <LineActions>
-                    <ActionButton
-                      className="edit"
-                      onClick={() => {
-                        handleEditLine(line);
-                        setIsDrawerOpen(false);
-                      }}
-                      disabled={isLoading}
-                    >
-                      <Edit size={14} />
-                    </ActionButton>
-                    <ActionButton
-                      className="delete"
-                      onClick={() => handleDeleteLine(line.id)}
-                      disabled={isLoading}
-                    >
-                      <Trash2 size={14} />
-                    </ActionButton>
-                  </LineActions>
-                )}
-              </LineItem>
-            ))
-          )}
-        </DrawerContent>
-      </DrawerContainer>
-
-      <TicketTrigger $isOpen={isDrawerOpen} onClick={() => setIsDrawerOpen(!isDrawerOpen)}>
-        Voir le Ticket ({lines.length})
-      </TicketTrigger>
+      {/* L'ancien drawer a été remplacé par la colonne de résumé intégrée */}
     </KioskContainer>
   );
 };

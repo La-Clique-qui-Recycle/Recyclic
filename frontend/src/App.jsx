@@ -85,7 +85,8 @@ function App() {
   const kioskModeRoutes = [
     '/reception/ticket',
     /^\/reception\/ticket\/[^/]+$/,
-    /^\/reception\/ticket\/[^/]+\/view$/
+    /^\/reception\/ticket\/[^/]+\/view$/,
+    '/cash-register/sale'
   ];
 
   // Vérifier si la route actuelle est en mode kiosque

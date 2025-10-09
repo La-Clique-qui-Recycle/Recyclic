@@ -1,0 +1,30 @@
+storyId: STORY-B12-P6-1
+epic: Refonte Complète du Workflow de Caisse V2
+title: Refonte du Layout de la Page de Vente (Sale.tsx)
+priority: P1
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Layout Kiosk 2 colonnes implémenté avec KioskContainer (100vh, overflow hidden)
+  - CashSessionHeader intégré avec nom du caissier et bouton fermeture
+  - Design responsive : 2 colonnes desktop, 1 colonne mobile (< 768px)
+  - Adaptation hauteur : 100vh avec calc(100vh - 50px) pour éliminer le scroll
+  - Tests unitaires complets pour le nouveau layout
+evidence:
+  - frontend/src/pages/CashRegister/Sale.tsx
+  - frontend/src/components/business/CashSessionHeader.tsx
+  - frontend/src/pages/CashRegister/__tests__/Sale.test.tsx
+mustTests:
+  - AC1: Layout 2 colonnes avec KioskContainer et MainLayout flex
+  - AC2: CashSessionHeader intégré (remplace header principal)
+  - AC3: Adaptation hauteur (100vh, calc(100vh - 50px), overflow hidden)
+  - AC4: Responsive design (media query mobile, colonnes empilées)
+qualityAttributes:
+  - usability: Interface Kiosk optimisée pour caisse, navigation intuitive
+  - performance: Layout 100vh sans scroll, transitions fluides
+  - maintainability: Code structuré avec Styled Components, tests complets
+  - accessibility: Focus visible, navigation clavier, ARIA labels
+status: APPROVED
+

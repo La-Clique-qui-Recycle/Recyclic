@@ -13,6 +13,15 @@ import {
 import { computeLineAmount, formatLineAmount } from '../../utils/lineAmount';
 import { createAZERTYHandler } from '../../utils/azertyKeyboard';
 
+// Removed TwoColumnLayout - numpad is now in parent Sale.tsx
+
+const WizardContainer = styled.div`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
 const ModeSelector = styled.div`
   display: flex;
   gap: 0.75rem;
@@ -86,7 +95,11 @@ const ModeButton = styled.button<{ $active?: boolean }>`
 `;
 
 const ModeContent = styled.div`
-  min-height: auto;
+  min-height: 0; /* IMPORTANT pour flexbox */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* EMPÊCHE le débordement */
 `;
 
 const ModeTitle = styled.h3`
@@ -95,41 +108,34 @@ const ModeTitle = styled.h3`
   font-size: 1.1rem;
 `;
 
-const NumpadContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  max-width: 300px;
-  margin: 0.75rem 0;
+const StepContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 `;
 
-const NumpadButton = styled.button`
-  padding: 0.75rem;
-  min-height: 44px;
-  border: 2px solid #ddd;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1.1rem;
-  font-weight: bold;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #2c5530;
-    background: #f0f8f0;
-  }
+const StepTitle = styled.h3`
+  margin: 0 0 1rem 0;
+  color: #2c5530;
+  font-size: 1.2rem;
+  text-align: center;
 `;
 
 const DisplayValue = styled.div<{ $isValid?: boolean }>`
   background: #f8f9fa;
   border: 2px solid ${props => props.$isValid === false ? '#dc3545' : '#ddd'};
   border-radius: 8px;
-  padding: 0.75rem;
-  font-size: 1.5rem;
+  padding: 1rem;
+  font-size: 2rem;
   font-weight: bold;
   text-align: center;
   margin: 0.5rem 0;
   transition: border-color 0.2s;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const ErrorMessage = styled.div`
@@ -148,6 +154,37 @@ const HelpMessage = styled.div`
   min-height: 1rem;
 `;
 
+const InfoSection = styled.div`
+  background: #f8f9fa;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  flex: 1;
+`;
+
+const ValidateButton = styled.button`
+  padding: 1rem 2rem;
+  background: #2c5530;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 1.1rem;
+  transition: background 0.2s;
+  margin-top: auto;
+
+  &:hover {
+    background: #1e3d21;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 export interface SaleItemData {
   category: string;
   subcategory?: string;
@@ -157,105 +194,46 @@ export interface SaleItemData {
   total: number;
 }
 
+export interface NumpadCallbacks {
+  quantityValue: string;
+  quantityError: string;
+  priceValue: string;
+  priceError: string;
+  weightValue: string;
+  weightError: string;
+  setQuantityValue: (value: string) => void;
+  setQuantityError: (error: string) => void;
+  setPriceValue: (value: string) => void;
+  setPriceError: (error: string) => void;
+  setWeightValue: (value: string) => void;
+  setWeightError: (error: string) => void;
+  setMode: (mode: 'quantity' | 'price' | 'weight' | 'idle') => void;
+}
+
 export interface SaleWizardProps {
   onItemComplete: (item: SaleItemData) => void;
+  numpadCallbacks: NumpadCallbacks;
+  currentMode: 'quantity' | 'price' | 'weight' | 'idle';
 }
 
 type WizardStep = 'category' | 'subcategory' | 'quantity' | 'weight' | 'price';
 
-export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
+export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCallbacks, currentMode }) => {
   const { getCategoryById, activeCategories } = useCategoryStore();
 
   const [currentStep, setCurrentStep] = useState<WizardStep>('category');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
-  const [quantity, setQuantity] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
-  const [price, setPrice] = useState<string>('');
   const [weightError, setWeightError] = useState<string>('');
-  const [priceError, setPriceError] = useState<string>('');
-  const [quantityError, setQuantityError] = useState<string>('');
 
-  // Gestionnaire d'événements clavier pour support AZERTY
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignorer si on est dans un input ou textarea
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+  // Use numpad state from parent - now properly separated
+  const quantity = numpadCallbacks.quantityValue;
+  const quantityError = numpadCallbacks.quantityError;
+  const price = numpadCallbacks.priceValue;
+  const priceError = numpadCallbacks.priceError;
 
-      const key = event.key;
-      
-      // Gérer les touches AZERTY pour les étapes numériques
-      if (currentStep === 'quantity' || currentStep === 'weight' || currentStep === 'price') {
-        if (/^[0-9]$/.test(key) || ['&', 'é', '"', "'", '(', '-', 'è', '_', 'ç', 'à'].includes(key)) {
-          event.preventDefault();
-          
-          if (currentStep === 'quantity') {
-            const newValue = quantity + (key === '&' ? '1' : 
-                                        key === 'é' ? '2' : 
-                                        key === '"' ? '3' : 
-                                        key === "'" ? '4' : 
-                                        key === '(' ? '5' : 
-                                        key === '-' ? '6' : 
-                                        key === 'è' ? '7' : 
-                                        key === '_' ? '8' : 
-                                        key === 'ç' ? '9' : 
-                                        key === 'à' ? '0' : key);
-            if (/^\d*$/.test(newValue) && parseInt(newValue || '0', 10) <= 9999) {
-              setQuantity(newValue);
-              validateQuantity(newValue);
-            }
-          } else if (currentStep === 'weight') {
-            const newValue = handleAZERTYWeightKey(weight, key, event);
-            setWeight(newValue);
-            validateWeight(newValue);
-          } else if (currentStep === 'price') {
-            const newValue = price + (key === '&' ? '1' : 
-                                     key === 'é' ? '2' : 
-                                     key === '"' ? '3' : 
-                                     key === "'" ? '4' : 
-                                     key === '(' ? '5' : 
-                                     key === '-' ? '6' : 
-                                     key === 'è' ? '7' : 
-                                     key === '_' ? '8' : 
-                                     key === 'ç' ? '9' : 
-                                     key === 'à' ? '0' : key);
-            if (/^\d*\.?\d{0,2}$/.test(newValue) && parseFloat(newValue || '0') <= 9999.99) {
-              setPrice(newValue);
-              validatePrice(newValue);
-            }
-          }
-        }
-        
-        // Gérer les touches spéciales
-        if (key === 'Backspace' || key === 'Delete') {
-          event.preventDefault();
-          if (currentStep === 'quantity') {
-            setQuantity(prev => prev.slice(0, -1));
-          } else if (currentStep === 'weight') {
-            setWeight(prev => prev.slice(0, -1));
-          } else if (currentStep === 'price') {
-            setPrice(prev => prev.slice(0, -1));
-          }
-        }
-        
-        if (key === '.' || key === ',') {
-          event.preventDefault();
-          if (currentStep === 'weight') {
-            const newValue = applyDecimalPoint(weight);
-            setWeight(newValue);
-          } else if (currentStep === 'price') {
-            const newValue = price.includes('.') ? price : price + '.';
-            setPrice(newValue);
-          }
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, quantity, weight, price]);
+  // Keyboard handling removed - numpad in parent handles all input
 
 
   // Validation functions
@@ -275,29 +253,29 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
 
   const validatePrice = (value: string): boolean => {
     if (!value) {
-      setPriceError('Prix requis');
+      numpadCallbacks.setPriceError('Prix requis');
       return false;
     }
     const num = parseFloat(value);
     if (isNaN(num) || num < 0.01 || num > 9999.99) {
-      setPriceError('Prix doit être entre 0.01€ et 9999.99€');
+      numpadCallbacks.setPriceError('Prix doit être entre 0.01€ et 9999.99€');
       return false;
     }
-    setPriceError('');
+    numpadCallbacks.setPriceError('');
     return true;
   };
 
   const validateQuantity = (value: string): boolean => {
     if (!value) {
-      setQuantityError('Quantité requise');
+      numpadCallbacks.setQuantityError('Quantité requise');
       return false;
     }
     const num = parseInt(value, 10);
     if (isNaN(num) || num <= 0 || num > 9999 || !Number.isInteger(parseFloat(value))) {
-      setQuantityError('Quantité doit être un entier positif entre 1 et 9999');
+      numpadCallbacks.setQuantityError('Quantité doit être un entier positif entre 1 et 9999');
       return false;
     }
-    setQuantityError('');
+    numpadCallbacks.setQuantityError('');
     return true;
   };
 
@@ -329,49 +307,7 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
     return true;
   }, [price, selectedCategory, getCategoryById]);
 
-  // Handlers
-  const handleNumberClick = (digit: string) => {
-    if (currentStep === 'quantity') {
-      const newValue = quantity + digit;
-      if (/^\d*$/.test(newValue) && parseInt(newValue || '0', 10) <= 9999) {
-        setQuantity(newValue);
-        validateQuantity(newValue);
-      }
-    } else if (currentStep === 'weight') {
-      const newValue = applyDigit(weight, digit);
-      setWeight(newValue);
-      validateWeight(newValue);
-    } else if (currentStep === 'price') {
-      const newValue = price + digit;
-      if (/^\d*\.?\d{0,2}$/.test(newValue) && parseFloat(newValue || '0') <= 9999.99) {
-        setPrice(newValue);
-        validatePrice(newValue);
-      }
-    }
-  };
-
-  const handleDecimalClick = () => {
-    if (currentStep === 'weight') {
-      const newValue = applyDecimalPoint(weight);
-      setWeight(newValue);
-    } else if (currentStep === 'price') {
-      const newValue = price.includes('.') ? price : price + '.';
-      setPrice(newValue);
-    }
-  };
-
-  const handleClear = () => {
-    if (currentStep === 'quantity') {
-      setQuantity('');
-      setQuantityError('');
-    } else if (currentStep === 'weight') {
-      setWeight('');
-      setWeightError('');
-    } else if (currentStep === 'price') {
-      setPrice('');
-      setPriceError('');
-    }
-  };
+  // Removed handleNumberClick, handleDecimalClick, handleClear - now handled by parent numpad
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -381,9 +317,14 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
 
     if (hasChildren) {
       setCurrentStep('subcategory');
+      numpadCallbacks.setMode('idle');
     } else {
       // No children, go directly to weight
       setCurrentStep('weight');
+      // Initialize numpad for weight input
+      numpadCallbacks.setWeightValue('');
+      numpadCallbacks.setWeightError('');
+      numpadCallbacks.setMode('weight');
     }
   };
 
@@ -393,25 +334,30 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
     switch (step) {
       case 'category':
         setCurrentStep('category');
+        numpadCallbacks.setMode('idle');
         break;
       case 'subcategory':
         if (selectedCategory && activeCategories.some(cat => cat.parent_id === selectedCategory)) {
           setCurrentStep('subcategory');
+          numpadCallbacks.setMode('idle');
         }
         break;
       case 'weight':
         if (selectedCategory) {
           setCurrentStep('weight');
+          numpadCallbacks.setMode('weight');
         }
         break;
       case 'quantity':
         if (weight) {
           setCurrentStep('quantity');
+          numpadCallbacks.setMode('quantity');
         }
         break;
       case 'price':
         if (quantity) {
           setCurrentStep('price');
+          numpadCallbacks.setMode('price');
         }
         break;
     }
@@ -432,11 +378,15 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
   const handleSubcategorySelect = (subcategoryId: string) => {
     setSelectedSubcategory(subcategoryId);
     setCurrentStep('weight');
+    // Initialize numpad for weight input
+    numpadCallbacks.setWeightValue('');
+    numpadCallbacks.setWeightError('');
+    numpadCallbacks.setMode('weight');
   };
 
   const handleQuantityConfirm = () => {
     if (!isQuantityValid) return;
-    
+
     // Use subcategory if selected, otherwise use category
     const actualCategoryId = selectedSubcategory || selectedCategory;
     const category = getCategoryById(actualCategoryId);
@@ -447,6 +397,10 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
     const hasMaxPrice = category?.max_price != null && Number(category.max_price) > 0;
     if (hasMaxPrice) {
       setCurrentStep('price');
+      // Initialize numpad for price input
+      numpadCallbacks.setPriceValue('');
+      numpadCallbacks.setPriceError('');
+      numpadCallbacks.setMode('price');
       return;
     }
 
@@ -469,12 +423,20 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
 
     // Par défaut si pas de price défini, demander le prix
     setCurrentStep('price');
+    // Initialize numpad for price input
+    numpadCallbacks.setPriceValue('');
+    numpadCallbacks.setPriceError('');
+    numpadCallbacks.setMode('price');
   };
 
   const handleWeightConfirm = (totalWeight: number) => {
     // Store the total weight in state
     setWeight(totalWeight.toString());
     setCurrentStep('quantity');
+    // Initialize numpad for quantity input
+    numpadCallbacks.setQuantityValue('');
+    numpadCallbacks.setQuantityError('');
+    numpadCallbacks.setMode('quantity');
   };
 
   const handlePriceConfirm = () => {
@@ -501,12 +463,15 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
   const resetWizard = () => {
     setSelectedCategory('');
     setSelectedSubcategory('');
-    setQuantity('');
     setWeight('');
-    setPrice('');
-    setQuantityError('');
     setWeightError('');
-    setPriceError('');
+    numpadCallbacks.setQuantityValue('');
+    numpadCallbacks.setQuantityError('');
+    numpadCallbacks.setPriceValue('');
+    numpadCallbacks.setPriceError('');
+    numpadCallbacks.setWeightValue('');
+    numpadCallbacks.setWeightError('');
+    numpadCallbacks.setMode('idle');
     setCurrentStep('category');
   };
 
@@ -591,89 +556,57 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
         const lineAmount = computeLineAmount(unitPrice, quantityNum);
 
         return (
-          <ModeContent data-step="quantity">
-            <ModeTitle>Quantité</ModeTitle>
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-              {/* Colonne de gauche : Affichage et pavé numérique */}
-              <div style={{ flex: 1 }}>
-                <DisplayValue $isValid={!quantityError} data-testid="quantity-input">
-                  {quantity || '0'}
-                </DisplayValue>
-                <ErrorMessage>{quantityError}</ErrorMessage>
+          <StepContent data-step="quantity">
+            <StepTitle>Quantité</StepTitle>
+            <DisplayValue $isValid={!quantityError} data-testid="quantity-input">
+              {quantity || '0'}
+            </DisplayValue>
+            <ErrorMessage>{quantityError}</ErrorMessage>
 
-                <NumpadContainer>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, 'C'].map((item) => (
-                    <NumpadButton
-                      key={item}
-                      onClick={() => {
-                        if (item === 'C') {
-                          handleClear();
-                        } else if (item === '⌫') {
-                          // Backspace pour supprimer le dernier caractère
-                          setQuantity(prev => prev.slice(0, -1));
-                        } else {
-                          handleNumberClick(item.toString());
-                        }
-                      }}
-                      data-testid={`numpad-${item}`}
-                    >
-                      {item}
-                    </NumpadButton>
-                  ))}
-                  <NumpadButton
-                    disabled={!isQuantityValid}
-                    style={{
-                      opacity: !isQuantityValid ? 0.5 : 1,
-                      cursor: !isQuantityValid ? 'not-allowed' : 'pointer',
-                      gridColumn: 'span 3'
-                    }}
-                    data-testid="validate-quantity-button"
-                    data-isvalid={String(!!isQuantityValid)}
-                    onClick={handleQuantityConfirm}
-                  >
-                    Valider
-                  </NumpadButton>
-                </NumpadContainer>
-              </div>
+            {category?.price && !category?.max_price && quantity && isQuantityValid && (
+              <InfoSection>
+                <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                  Calcul automatique
+                </div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2c5530' }}>
+                  {formatLineAmount(unitPrice)} × {quantity} = {formatLineAmount(lineAmount)}
+                </div>
+              </InfoSection>
+            )}
 
-              {/* Colonne de droite : Calcul en temps réel */}
-              <div style={{ flex: 1, minWidth: '250px' }}>
-                {category?.price && quantity && isQuantityValid && (
-                  <div style={{ 
-                    background: '#e8f5e8', 
-                    border: '2px solid #2c5530', 
-                    borderRadius: '8px', 
-                    padding: '1rem', 
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                      Calcul automatique
-                    </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2c5530' }}>
-                      {formatLineAmount(unitPrice)} × {quantity} = {formatLineAmount(lineAmount)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </ModeContent>
+            <ValidateButton
+              disabled={!isQuantityValid}
+              onClick={handleQuantityConfirm}
+              data-testid="validate-quantity-button"
+            >
+              Valider la quantité
+            </ValidateButton>
+          </StepContent>
         );
 
       case 'weight':
         return (
           <ModeContent data-step="weight">
-            <MultipleWeightEntry onConfirm={handleWeightConfirm} />
+            <MultipleWeightEntry
+              onValidate={handleWeightConfirm}
+              currentWeight={numpadCallbacks.weightValue}
+              weightError={numpadCallbacks.weightError}
+              onClearWeight={() => {
+                numpadCallbacks.setWeightValue('');
+                numpadCallbacks.setWeightError('');
+              }}
+            />
           </ModeContent>
         );
 
       case 'price':
         return (
-          <ModeContent data-step="price">
-            <ModeTitle>Prix unitaire (€)</ModeTitle>
-            <DisplayValue $isValid={!priceError} data-testid="price-input" aria-label="Saisie du prix unitaire">
-              {price || '0'}
+          <StepContent data-step="price">
+            <StepTitle>Prix unitaire</StepTitle>
+            <DisplayValue $isValid={!priceError} data-testid="price-input">
+              {price || '0'} €
             </DisplayValue>
-            {/* Aide sur la plage autorisée si disponible */}
+
             {(() => {
               const cat = getCategoryById(selectedCategory);
               const hasMax = cat?.max_price != null && Number(cat.max_price) > 0;
@@ -682,44 +615,29 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
                 const min = Number(cat!.price).toFixed(2);
                 const max = Number(cat!.max_price).toFixed(2);
                 return (
-                  <HelpMessage aria-live="polite" data-testid="price-range-help">
-                    Prix autorisé: {min} € – {max} €
-                  </HelpMessage>
+                  <InfoSection>
+                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                      Fourchette de prix autorisée
+                    </div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2c5530' }}>
+                      {min} € – {max} €
+                    </div>
+                  </InfoSection>
                 );
               }
-              return <HelpMessage aria-live="polite" />;
+              return null;
             })()}
+
             <ErrorMessage>{priceError}</ErrorMessage>
-            <NumpadContainer>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '.'].map((item) => (
-                <NumpadButton
-                  key={item}
-                  onClick={() => {
-                    if (item === 'C') {
-                      handleClear();
-                    } else {
-                      handleNumberClick(item.toString());
-                    }
-                  }}
-                >
-                  {item}
-                </NumpadButton>
-              ))}
-              <NumpadButton
-                disabled={!isPriceValid}
-                style={{
-                  opacity: !isPriceValid ? 0.5 : 1,
-                  cursor: !isPriceValid ? 'not-allowed' : 'pointer',
-                  gridColumn: 'span 3'
-                }}
-                data-testid="add-item-button"
-                data-isvalid={String(!!isPriceValid)}
-                onClick={handlePriceConfirm}
-              >
-                Valider
-              </NumpadButton>
-            </NumpadContainer>
-          </ModeContent>
+
+            <ValidateButton
+              disabled={!isPriceValid}
+              onClick={handlePriceConfirm}
+              data-testid="add-item-button"
+            >
+              Valider le prix
+            </ValidateButton>
+          </StepContent>
         );
 
       default:
@@ -745,9 +663,8 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
   }, [selectedCategory, selectedSubcategory, quantity, weight, price, getCategoryById]);
 
   return (
-    <div>
+    <WizardContainer>
       <div>
-        <h3>Mode de saisie</h3>
         <ModeSelector>
           <ModeButton
             $active={currentStep === 'category'}
@@ -796,7 +713,7 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete }) => {
       <StagingItem data={stagingItemData} />
 
       {renderStepContent()}
-    </div>
+    </WizardContainer>
   );
 };
 

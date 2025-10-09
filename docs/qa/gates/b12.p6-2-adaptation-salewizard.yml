@@ -1,0 +1,31 @@
+storyId: STORY-B12-P6-2
+epic: Refonte Complète du Workflow de Caisse V2
+title: Adaptation du SaleWizard et Intégration du Numpad
+priority: P1
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - SaleWizard adapté au layout 2 colonnes avec TwoColumnLayout
+  - Numpad intégré dans étapes numériques (Quantité, Prix) avec configuration spécifique
+  - Logique métier préservée : workflow séquentiel, navigation non-linéaire, focus automatique, raccourcis AZERTY
+  - Contenu dynamique affiché dans colonne droite selon étape (calcul temps réel, fourchettes prix)
+  - Tests existants maintenus, nouveaux tests B19P1 pour navigation
+evidence:
+  - frontend/src/components/business/SaleWizard.tsx
+  - frontend/src/components/ui/Numpad.tsx
+  - frontend/src/components/business/SaleWizard.test.tsx
+  - frontend/src/components/business/SaleWizard.B19P1.test.tsx
+mustTests:
+  - AC1: SaleWizard adapté au layout 2 colonnes (TwoColumnLayout)
+  - AC2: Numpad intégré dans étapes numériques (Quantité, Prix)
+  - AC3: Logique métier préservée (workflow, navigation, focus, raccourcis)
+  - AC4: Contenu dynamique affiché dans colonne droite
+qualityAttributes:
+  - usability: Interface unifiée avec Numpad, navigation intuitive
+  - performance: Layout optimisé, calculs temps réel fluides
+  - maintainability: Code structuré, tests maintenus
+  - accessibility: Focus automatique, navigation clavier, support AZERTY
+status: APPROVED
+

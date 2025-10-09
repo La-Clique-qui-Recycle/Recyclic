@@ -1,92 +1,226 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import {
-  applyDigit,
-  applyDecimalPoint,
-  formatWeightDisplay,
-  handleAZERTYWeightKey,
-} from '../../utils/weightMask';
-import { createAZERTYHandler } from '../../utils/azertyKeyboard';
+
+interface WeightEntry {
+  weight: number;
+  timestamp: Date;
+}
+
+interface MultipleWeightEntryProps {
+  currentWeight: string;
+  weightError: string;
+  onClearWeight: () => void;
+  onValidate: (totalWeight: number) => void;
+}
+
+const MultipleWeightEntry: React.FC<MultipleWeightEntryProps> = ({
+  currentWeight,
+  weightError,
+  onClearWeight,
+  onValidate,
+}) => {
+  const [weights, setWeights] = useState<WeightEntry[]>([]);
+
+  // Calcul du poids total
+  const totalWeight = weights.reduce((sum, entry) => sum + entry.weight, 0);
+  const isCurrentWeightValid = currentWeight && !weightError && parseFloat(currentWeight) > 0;
+
+  // Fonction pour formater l'affichage du poids
+  const formatWeightDisplay = (weight: string | number): string => {
+    const numWeight = typeof weight === 'string' ? parseFloat(weight) : weight;
+    return numWeight.toFixed(2);
+  };
+
+  // Ajouter une pesée
+  const handleConfirmWeight = useCallback(() => {
+    if (isCurrentWeightValid) {
+      const weight = parseFloat(currentWeight);
+      const newEntry: WeightEntry = {
+        weight,
+        timestamp: new Date(),
+      };
+      setWeights(prev => [...prev, newEntry]);
+      onClearWeight();
+    }
+  }, [isCurrentWeightValid, currentWeight, onClearWeight]);
+
+  // Supprimer une pesée
+  const handleDeleteWeight = useCallback((index: number) => {
+    setWeights(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Valider le poids total (avec auto-ajout si nécessaire)
+  const handleValidate = useCallback(() => {
+    let finalWeights = [...weights];
+
+    // Auto-ajouter le poids en cours si valide
+    if (isCurrentWeightValid) {
+      const weight = parseFloat(currentWeight);
+      finalWeights.push({
+        weight,
+        timestamp: new Date(),
+      });
+    }
+
+    const finalTotal = finalWeights.reduce((sum, entry) => sum + entry.weight, 0);
+    onValidate(finalTotal);
+  }, [weights, isCurrentWeightValid, currentWeight, onValidate]);
+
+  // Raccourcis clavier - "+" pour ajouter, "Enter" pour valider
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignorer si on est dans un input ou textarea
+      if (event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // "+" pour ajouter une pesée
+      if (event.key === '+') {
+        event.preventDefault();
+        handleConfirmWeight();
+      }
+
+      // "Enter" pour valider le poids total
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        // Ne valider que s'il y a au moins une pesée OU un poids en cours
+        if (weights.length > 0 || isCurrentWeightValid) {
+          handleValidate();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleConfirmWeight, handleValidate, weights.length, isCurrentWeightValid]);
+
+  return (
+    <Container data-testid="multiple-weight-container">
+      {/* Zone scrollable des pesées */}
+      <WeightListArea>
+        <WeightListTitle>Pesées effectuées ({weights.length})</WeightListTitle>
+        {weights.length === 0 ? (
+          <EmptyMessage>Aucune pesée enregistrée</EmptyMessage>
+        ) : (
+          <WeightList>
+            {weights.map((weight, index) => (
+              <WeightItem key={index} data-testid={`weight-item-${index}`}>
+                <WeightValue>{formatWeightDisplay(weight.weight)} kg</WeightValue>
+                <DeleteButton
+                  onClick={() => handleDeleteWeight(index)}
+                  data-testid={`delete-weight-${index}`}
+                >
+                  Supprimer
+                </DeleteButton>
+              </WeightItem>
+            ))}
+          </WeightList>
+        )}
+      </WeightListArea>
+
+      {/* Footer avec les 2 blocs alignés avec le ticket */}
+      <WeightFooter>
+        {/* Bloc gauche : Poids total + Valider */}
+        <TotalSection>
+          <TotalLabel>Poids total</TotalLabel>
+          <TotalValue data-testid="total-weight">
+            {formatWeightDisplay(totalWeight)} kg
+          </TotalValue>
+          <ValidateButton
+            onClick={handleValidate}
+            disabled={weights.length === 0 && !isCurrentWeightValid}
+            data-testid="validate-total-button"
+          >
+            Valider le poids total
+          </ValidateButton>
+        </TotalSection>
+
+        {/* Bloc droit : Ajouter cette pesée */}
+        <AddSection>
+          <DisplayValue $isValid={!weightError} data-testid="weight-input">
+            {currentWeight || '0'} kg
+          </DisplayValue>
+          <ErrorMessage>{weightError}</ErrorMessage>
+          <AddButton
+            onClick={handleConfirmWeight}
+            disabled={!isCurrentWeightValid}
+            data-testid="add-weight-button"
+          >
+            + Ajouter cette pesée
+          </AddButton>
+        </AddSection>
+      </WeightFooter>
+    </Container>
+  );
+};
+
+// === STYLED COMPONENTS ===
 
 const Container = styled.div`
-  display: flex;
-  flex-direction: row;
-  gap: 0.75rem;
-  min-height: auto;
-  max-height: 450px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 0.5rem;
-    min-height: auto;
-    max-height: none;
-  }
-`;
-
-// Colonne de gauche : Liste des pesées et validation
-const LeftColumn = styled.div`
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  min-width: 280px;
-  max-width: 350px;
-  flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    min-width: 0;
-    max-width: none;
-    order: 2;
-  }
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
-const WeightListContainer = styled.div`
+const WeightListArea = styled.div`
+  flex: 1;
+  overflow-y: auto;
   background: #f8f9fa;
   border: 2px solid #ddd;
   border-radius: 6px;
-  padding: 0.5rem;
-  flex: 1;
-  max-height: 180px;
-  overflow-y: auto;
+  padding: 1rem;
+  margin: 0.5rem 1rem 0 1rem; /* Marge en bas à 0 pour tester alignement */
+  min-height: 0; /* CRITIQUE pour permettre le scroll */
+  max-height: 100%; /* Empêche de grandir au-delà du conteneur */
+`;
+
+const WeightFooter = styled.div`
+  flex-shrink: 0; /* CRITIQUE : Empêche la compression */
+  padding: 1.5rem; /* Aligné avec TicketFooter */
+  border-top: 2px solid #eee;
+  background: #f8f9fa;
+  border-radius: 0 0 8px 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
 
   @media (max-width: 768px) {
-    max-height: 140px;
-    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 `;
 
 const WeightListTitle = styled.h4`
-  margin: 0 0 0.4rem 0;
-  font-size: 0.85rem;
+  margin: 0 0 1rem 0;
   color: #2c5530;
+  font-size: 1.1rem;
+`;
 
-  @media (max-width: 768px) {
-    font-size: 0.8rem;
-    margin: 0 0 0.3rem 0;
-  }
+const WeightList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 `;
 
 const WeightItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.4rem;
   background: white;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  margin-bottom: 0.4rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.3rem;
-    margin-bottom: 0.3rem;
-  }
+  padding: 0.5rem;
 `;
 
 const WeightValue = styled.span`
-  font-weight: 500;
-  color: #333;
+  font-weight: bold;
+  color: #2c5530;
 `;
 
 const DeleteButton = styled.button`
@@ -94,92 +228,57 @@ const DeleteButton = styled.button`
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 0.2rem 0.5rem;
-  cursor: pointer;
+  padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
-  transition: background 0.2s;
-
+  cursor: pointer;
+  
   &:hover {
     background: #c82333;
   }
-
-  @media (max-width: 768px) {
-    padding: 0.15rem 0.4rem;
-    font-size: 0.75rem;
-  }
 `;
 
-const TotalContainer = styled.div`
+const EmptyMessage = styled.div`
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
+`;
+
+const TotalSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   background: #e8f5e8;
   border: 2px solid #2c5530;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.75rem;
-  text-align: center;
-
-  @media (max-width: 768px) {
-    padding: 0.5rem;
-  }
 `;
 
 const TotalLabel = styled.div`
-  font-size: 0.8rem;
-  color: #666;
-  margin-bottom: 0.2rem;
-
-  @media (max-width: 768px) {
-    font-size: 0.75rem;
-    margin-bottom: 0.15rem;
-  }
+  font-weight: bold;
+  color: #2c5530;
+  font-size: 0.9rem;
 `;
 
 const TotalValue = styled.div`
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: bold;
   color: #2c5530;
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
 `;
 
-// Colonne de droite : Saisie du poids
-const RightColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  flex: 1;
-  min-width: 280px;
-
-  @media (max-width: 768px) {
-    min-width: 0;
-    order: 1;
-  }
-`;
-
-const AddWeightSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  flex: 1;
-
-  @media (max-width: 768px) {
-    gap: 0.5rem;
-  }
-`;
-
-const AddButton = styled.button`
-  padding: 0.75rem 1.5rem;
+const ValidateButton = styled.button`
   background: #2c5530;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-weight: bold;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 1rem;
-  transition: background 0.2s;
+  transition: all 0.2s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #1e3d21;
+    transform: translateY(-1px);
   }
 
   &:disabled {
@@ -188,7 +287,7 @@ const AddButton = styled.button`
   }
 `;
 
-const NumpadSection = styled.div`
+const AddSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -196,401 +295,44 @@ const NumpadSection = styled.div`
   border: 2px solid #2c5530;
   border-radius: 6px;
   padding: 0.75rem;
-  flex: 1;
-
-  @media (max-width: 768px) {
-    padding: 0.5rem;
-    gap: 0.4rem;
-  }
 `;
 
 const DisplayValue = styled.div<{ $isValid?: boolean }>`
-  background: #f8f9fa;
-  border: 2px solid ${props => props.$isValid === false ? '#dc3545' : '#ddd'};
-  border-radius: 6px;
-  padding: 0.5rem;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: bold;
+  color: ${props => props.$isValid ? '#2c5530' : '#dc3545'};
   text-align: center;
-  transition: border-color 0.2s;
-
-  @media (max-width: 768px) {
-    padding: 0.4rem;
-    font-size: 1rem;
-  }
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
 `;
 
 const ErrorMessage = styled.div`
   color: #dc3545;
-  font-size: 0.75rem;
-  margin-top: 0.2rem;
+  font-size: 0.8rem;
   text-align: center;
-  min-height: 0.9rem;
-
-  @media (max-width: 768px) {
-    font-size: 0.7rem;
-    margin-top: 0.15rem;
-    min-height: 0.75rem;
-  }
+  min-height: 1rem;
 `;
 
-const NumpadContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  max-width: 420px; /* élargir le pavé numérique */
-  width: 100%;
-  margin: 0.5rem auto 0; /* compacter l'espace vertical */
-
-  @media (max-width: 768px) {
-    gap: 0.4rem;
-    max-width: 360px;
-  }
-`;
-
-const NumpadButton = styled.button`
-  padding: 0.55rem; /* légèrement plus compact en hauteur */
-  min-height: 42px; /* compacter la hauteur tout en restant confortable */
-  border: 2px solid #ddd;
-  background: white;
+const AddButton = styled.button`
+  background: #2c5530;
+  color: white;
+  border: none;
   border-radius: 6px;
-  cursor: pointer;
-  font-size: 1.05rem; /* lisibilité accrue avec pavé plus large */
+  padding: 0.75rem;
   font-weight: bold;
+  cursor: pointer;
   transition: all 0.2s;
 
-  &:hover {
-    border-color: #2c5530;
-    background: #f0f8f0;
-  }
-
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.5rem;
-    font-size: 1rem;
-    min-height: 40px;
-  }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-
-  @media (max-width: 768px) {
-    gap: 0.5rem;
-  }
-`;
-
-const ConfirmButton = styled.button`
-  padding: 0.6rem 1.2rem;
-  background: #2c5530;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  flex: 1;
-  font-size: 0.9rem;
-
-  &:hover {
+  &:hover:not(:disabled) {
     background: #1e3d21;
+    transform: translateY(-1px);
   }
 
   &:disabled {
-    opacity: 0.5;
+    background: #ccc;
     cursor: not-allowed;
   }
-
-  @media (max-width: 768px) {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-  }
 `;
-
-const CancelButton = styled.button`
-  padding: 0.6rem 1.2rem;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  flex: 1;
-  font-size: 0.9rem;
-
-  &:hover {
-    background: #5a6268;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-  }
-`;
-
-const EmptyMessage = styled.div`
-  text-align: center;
-  color: #6c757d;
-  font-style: italic;
-  padding: 0.75rem;
-  font-size: 0.9rem;
-
-  @media (max-width: 768px) {
-    padding: 0.5rem;
-    font-size: 0.85rem;
-  }
-`;
-
-const ValidateButton = styled.button`
-  padding: 0.75rem 1.5rem;
-  background: #2c5530;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 1rem;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #1e3d21;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
-  }
-`;
-
-export interface MultipleWeightEntryProps {
-  onConfirm: (totalWeight: number) => void;
-}
-
-export const MultipleWeightEntry: React.FC<MultipleWeightEntryProps> = ({ onConfirm }) => {
-  const [weights, setWeights] = useState<number[]>([]);
-  const [currentWeight, setCurrentWeight] = useState<string>('');
-  const [weightError, setWeightError] = useState<string>('');
-
-  const totalWeight = useMemo(() => {
-    return weights.reduce((sum, weight) => sum + weight, 0);
-  }, [weights]);
-
-  const handleValidate = () => {
-    if (totalWeight > 0) {
-      onConfirm(totalWeight);
-    }
-  };
-
-  // Gestionnaire d'événements clavier pour support AZERTY
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignorer si on est dans un input ou textarea
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      const key = event.key;
-      
-      // Gérer les touches AZERTY pour la saisie de poids
-      if (/^[0-9]$/.test(key) || ['&', 'é', '"', "'", '(', '-', 'è', '_', 'ç', 'à'].includes(key)) {
-        event.preventDefault();
-        const newValue = handleAZERTYWeightKey(currentWeight, key, event);
-        setCurrentWeight(newValue);
-        validateWeight(newValue);
-      }
-      
-      // Gérer les touches spéciales
-      if (key === 'Backspace' || key === 'Delete') {
-        event.preventDefault();
-        setCurrentWeight(prev => prev.slice(0, -1));
-      }
-      
-      if (key === '.' || key === ',') {
-        event.preventDefault();
-        const newValue = applyDecimalPoint(currentWeight);
-        setCurrentWeight(newValue);
-      }
-
-      // Support de la touche "+" pour AJOUTER le poids (comme le bouton +)
-      if (key === '+' || key === '=') {  // = car sur AZERTY, + nécessite Shift
-        event.preventDefault();
-        if (isCurrentWeightValid) {
-          handleConfirmWeight();
-        }
-      }
-
-      // Support de la touche Entrée pour VALIDER LE POIDS TOTAL et passer à l'étape suivante
-      if (key === 'Enter') {
-        event.preventDefault();
-        // Si un poids est en cours de saisie, l'ajouter d'abord
-        if (currentWeight && isCurrentWeightValid) {
-          const weight = parseFloat(currentWeight);
-          const newWeights = [...weights, weight];
-          const newTotal = newWeights.reduce((sum, w) => sum + w, 0);
-          // Valider directement le total et passer à l'étape suivante
-          onConfirm(newTotal);
-        } else if (weights.length > 0) {
-          // Pas de poids en cours, valider le total existant
-          handleValidate();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentWeight, weights, handleValidate]);
-
-  const validateWeight = (value: string): boolean => {
-    if (!value) {
-      setWeightError('Poids requis');
-      return false;
-    }
-    const num = parseFloat(value);
-    if (isNaN(num) || num <= 0 || num > 9999.99) {
-      setWeightError('Poids doit être supérieur à 0 et inférieur à 9999.99 kg');
-      return false;
-    }
-    setWeightError('');
-    return true;
-  };
-
-  const isCurrentWeightValid = useMemo(() => {
-    if (!currentWeight) return false;
-    const num = parseFloat(currentWeight);
-    return !isNaN(num) && num > 0 && num <= 9999.99;
-  }, [currentWeight]);
-
-  const handleNumberClick = (digit: string) => {
-    const newValue = applyDigit(currentWeight, digit);
-    setCurrentWeight(newValue);
-    validateWeight(newValue);
-  };
-
-  const handleDecimalClick = () => {
-    const newValue = applyDecimalPoint(currentWeight);
-    setCurrentWeight(newValue);
-  };
-
-  const handleClear = () => {
-    setCurrentWeight('');
-    setWeightError('');
-  };
-
-  const handleAddWeight = () => {
-    setCurrentWeight('');
-    setWeightError('');
-  };
-
-  const handleConfirmWeight = () => {
-    if (!isCurrentWeightValid) return;
-
-    const weight = parseFloat(currentWeight);
-    setWeights([...weights, weight]);
-    setCurrentWeight('');
-    setWeightError('');
-  };
-
-  const handleDeleteWeight = (index: number) => {
-    setWeights(weights.filter((_, i) => i !== index));
-  };
-
-  return (
-    <Container data-testid="multiple-weight-container">
-      {/* Colonne de gauche : Liste des pesées et validation */}
-      <LeftColumn>
-        <WeightListContainer>
-          <WeightListTitle>Pesées effectuées ({weights.length})</WeightListTitle>
-          {weights.length === 0 ? (
-            <EmptyMessage>Aucune pesée enregistrée</EmptyMessage>
-          ) : (
-            weights.map((weight, index) => (
-              <WeightItem key={index} data-testid={`weight-item-${index}`}>
-                <WeightValue>{formatWeightDisplay(weight.toString())} kg</WeightValue>
-                <DeleteButton
-                  onClick={() => handleDeleteWeight(index)}
-                  data-testid={`delete-weight-${index}`}
-                >
-                  Supprimer
-                </DeleteButton>
-              </WeightItem>
-            ))
-          )}
-        </WeightListContainer>
-
-        <TotalContainer>
-          <TotalLabel>Poids total</TotalLabel>
-          <TotalValue data-testid="total-weight">
-            {formatWeightDisplay(totalWeight.toString())} kg
-          </TotalValue>
-          <ValidateButton
-            onClick={handleValidate}
-            disabled={weights.length === 0}
-            data-testid="validate-total-button"
-            style={{ marginTop: '1rem' }}
-          >
-            Valider le poids total
-          </ValidateButton>
-        </TotalContainer>
-      </LeftColumn>
-
-      {/* Colonne de droite : Saisie du poids */}
-      <RightColumn>
-        <AddWeightSection>
-          <NumpadSection>
-            <h4 style={{ margin: '0 0 0.5rem 0', textAlign: 'center', color: '#2c5530', fontSize: '0.95rem' }}>
-              Saisir le poids (kg)
-            </h4>
-            <DisplayValue $isValid={!weightError} data-testid="weight-input">
-              {formatWeightDisplay(currentWeight) || '0'} kg
-            </DisplayValue>
-            <ErrorMessage>{weightError}</ErrorMessage>
-            <NumpadContainer>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '.'].map((item) => (
-                <NumpadButton
-                  key={item}
-                  onClick={() => {
-                    if (item === '⌫') {
-                      // Backspace pour supprimer le dernier caractère
-                      setCurrentWeight(prev => prev.slice(0, -1));
-                    } else if (item === '.') {
-                      handleDecimalClick();
-                    } else {
-                      handleNumberClick(item.toString());
-                    }
-                  }}
-                  data-testid={`numpad-${item}`}
-                >
-                  {item}
-                </NumpadButton>
-              ))}
-              <NumpadButton
-                onClick={handleConfirmWeight}
-                disabled={!isCurrentWeightValid}
-                data-testid="confirm-weight-button"
-                style={{
-                  gridColumn: 'span 3',
-                  opacity: !isCurrentWeightValid ? 0.5 : 1,
-                  cursor: !isCurrentWeightValid ? 'not-allowed' : 'pointer',
-                }}
-              >
-                +
-              </NumpadButton>
-            </NumpadContainer>
-          </NumpadSection>
-        </AddWeightSection>
-      </RightColumn>
-    </Container>
-  );
-};
 
 export default MultipleWeightEntry;

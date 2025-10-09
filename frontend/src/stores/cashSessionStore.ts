@@ -70,7 +70,7 @@ interface CashSessionState {
   // Sale actions
   addSaleItem: (item: Omit<SaleItem, 'id'>) => void;
   removeSaleItem: (itemId: string) => void;
-  updateSaleItem: (itemId: string, newQty: number, newPrice: number) => void;
+  updateSaleItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number) => void;
   clearCurrentSale: () => void;
   submitSale: (items: SaleItem[], finalization?: { donation: number; paymentMethod: 'cash'|'card'|'check'; cashGiven?: number; change?: number; }) => Promise<boolean>;
   
@@ -121,15 +121,16 @@ export const useCashSessionStore = create<CashSessionState>()(
           }));
         },
 
-        updateSaleItem: (itemId: string, newWeight: number, newPrice: number) => {
+        updateSaleItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number) => {
           set((state) => ({
             currentSaleItems: state.currentSaleItems.map(item =>
               item.id === itemId
                 ? {
                     ...item,
+                    quantity: newQuantity,
                     weight: newWeight,
                     price: newPrice,
-                    total: newPrice  // total = prix (pas de multiplication)
+                    total: newQuantity * newPrice  // total = quantité × prix
                   }
                 : item
             )

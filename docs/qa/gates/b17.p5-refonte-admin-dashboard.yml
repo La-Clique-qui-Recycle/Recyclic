@@ -1,0 +1,30 @@
+storyId: STORY-B17-P5
+epic: Refondation de l'Expérience Utilisateur et de l'Architecture Frontend
+title: Refonte du Tableau de Bord d'Administration
+priority: P1
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Layout grille 2 colonnes implémenté avec CSS Grid et responsive (1 colonne sur mobile)
+  - 5 cartes thématiques créées selon les spécifications UX avec titres, descriptions et liens
+  - Toutes les routes correspondent aux pages existantes dans App.jsx
+  - Design moderne avec hover effects et transitions
+  - Navigation fonctionnelle vers toutes les pages admin
+evidence:
+  - frontend/src/pages/Admin/Dashboard.tsx
+  - frontend/src/App.jsx
+  - docs/frontend-spec/spec-admin-dashboard-refactor.md
+mustTests:
+  - AC1: Layout grille 2 colonnes avec CSS Grid et responsive
+  - AC2: 5 cartes thématiques avec titres, descriptions et liens
+  - AC3: Correspondance routes Dashboard vs App.jsx
+  - AC4: Design responsive (1 colonne sur mobile)
+qualityAttributes:
+  - usability: Navigation intuitive par cartes thématiques
+  - performance: CSS Grid optimisé, transitions fluides
+  - maintainability: Code structuré avec Styled Components
+  - accessibility: Navigation clavier, focus visible
+status: APPROVED
+

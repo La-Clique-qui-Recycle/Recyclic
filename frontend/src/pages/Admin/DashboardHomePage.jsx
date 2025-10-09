@@ -1,250 +1,215 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { ChevronRight } from 'lucide-react';
-import { dashboardService } from '../../services/dashboardService';
-import { ADMIN_QUICK_ACTIONS } from '../../config/adminRoutes';
 
-const PageContainer = styled.div`
-  max-width: 1000px;
-`;
-
-const PageHeader = styled.div`
-  margin-bottom: 2rem;
-`;
-
-const PageTitle = styled.h1`
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
-  color: #1f2937;
-  font-weight: 700;
-`;
-
-const PageSubtitle = styled.p`
-  margin: 0;
-  color: #6b7280;
-  font-size: 1.1rem;
-`;
-
-const CardsGrid = styled.div`
+// Styles pour le nouveau layout en grille
+const DashboardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 `;
 
-const QuickActionCard = styled.button`
+const AdminCard = styled.div`
   background: white;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 1.5rem;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 100px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
 
   &:hover {
-    border-color: #2e7d32;
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
-
-  &:focus {
-    outline: none;
-    border-color: #2e7d32;
-    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
-  }
-`;
-
-const CardContent = styled.div`
-  flex: 1;
-`;
-
-const CardIcon = styled.div`
-  color: #2e7d32;
-  margin-bottom: 0.75rem;
 `;
 
 const CardTitle = styled.h3`
-  margin: 0 0 0.5rem 0;
-  font-size: 1.2rem;
-  color: #1f2937;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
 `;
 
 const CardDescription = styled.p`
-  margin: 0;
-  color: #6b7280;
   font-size: 0.95rem;
-  line-height: 1.4;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
 `;
 
-const CardArrow = styled.div`
-  color: #6b7280;
-  transition: color 0.2s ease;
+const LinkList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
 
-  ${QuickActionCard}:hover & {
-    color: #2e7d32;
+const LinkItem = styled.li`
+  margin: 0;
+`;
+
+const AdminLink = styled.button`
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #111827;
+  }
+
+  &:active {
+    background: #e5e7eb;
   }
 `;
 
-const StatsSection = styled.div`
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid #e5e7eb;
-`;
-
-const SectionTitle = styled.h2`
-  margin: 0 0 1rem 0;
-  font-size: 1.3rem;
-  color: #1f2937;
-  font-weight: 600;
-`;
-
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-`;
-
-const StatCard = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 1rem;
-  text-align: center;
-  border: 1px solid #e5e7eb;
-`;
-
-const StatValue = styled.div`
-  font-size: 1.8rem;
+const PageTitle = styled.h1`
+  font-size: 2rem;
   font-weight: 700;
-  color: #2e7d32;
-  margin-bottom: 0.25rem;
-`;
-
-const StatLabel = styled.div`
-  font-size: 0.9rem;
-  color: #6b7280;
-  font-weight: 500;
+  color: #111827;
+  margin: 0 0 24px 0;
 `;
 
 const DashboardHomePage = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const dashboardData = await dashboardService.getDashboardData();
-        setStats(dashboardData.stats);
-      } catch (err) {
-        console.error('Failed to load dashboard stats:', err);
-        setError('Impossible de charger les statistiques');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboardData();
-  }, []);
-
-  const handleCardClick = (path) => {
+  const handleNavigation = (path) => {
     navigate(path);
   };
 
   return (
-    <PageContainer>
-      <PageHeader>
-        <PageTitle id="dashboard-heading">Tableau de Bord</PageTitle>
-        <PageSubtitle aria-describedby="dashboard-heading">
-          Bienvenue dans l'espace d'administration de Recyclic.
-          Gérez facilement votre système depuis ce tableau de bord centralisé.
-        </PageSubtitle>
-      </PageHeader>
+    <div>
+      <PageTitle>Tableau de Bord d'Administration</PageTitle>
+      
+      <DashboardGrid>
+        {/* Colonne 1 : CONFIGURATION DU SYSTÈME */}
+        
+        {/* Carte 1 : GESTION DES ACCÈS */}
+        <AdminCard>
+          <CardTitle>GESTION DES ACCÈS</CardTitle>
+          <CardDescription>
+            Gérer les comptes utilisateurs, leurs rôles et les inscriptions en attente.
+          </CardDescription>
+          <LinkList>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/users')}>
+                Utilisateurs
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/pending')}>
+                Utilisateurs en attente
+              </AdminLink>
+            </LinkItem>
+          </LinkList>
+        </AdminCard>
 
-      <CardsGrid role="list" aria-label="Actions rapides d'administration">
-        {ADMIN_QUICK_ACTIONS.map((action) => (
-          <QuickActionCard
-            key={action.path}
-            onClick={() => handleCardClick(action.path)}
-            role="listitem"
-            aria-label={`Accéder à ${action.title}: ${action.description}`}
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleCardClick(action.path);
-              }
-            }}
-          >
-            <CardContent>
-              <CardIcon>
-                <action.icon size={32} aria-hidden="true" />
-              </CardIcon>
-              <CardTitle>{action.title}</CardTitle>
-              <CardDescription>{action.description}</CardDescription>
-            </CardContent>
-            <CardArrow>
-              <ChevronRight size={20} aria-hidden="true" />
-            </CardArrow>
-          </QuickActionCard>
-        ))}
-      </CardsGrid>
+        {/* Carte 2 : GESTION DU CATALOGUE & DES SITES */}
+        <AdminCard>
+          <CardTitle>GESTION DU CATALOGUE & DES SITES</CardTitle>
+          <CardDescription>
+            Configurer les objets (catégories, prix), les sites et les postes de caisse.
+          </CardDescription>
+          <LinkList>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/categories')}>
+                Catégories & Prix
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/sites')}>
+                Sites de collecte
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/cash-registers')}>
+                Postes de caisse
+              </AdminLink>
+            </LinkItem>
+          </LinkList>
+        </AdminCard>
 
-      <StatsSection>
-        <SectionTitle id="stats-heading">Aperçu rapide</SectionTitle>
-        {error && (
-          <div
-            role="alert"
-            aria-describedby="stats-heading"
-            style={{
-              color: '#dc2626',
-              padding: '1rem',
-              backgroundColor: '#fef2f2',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              border: '1px solid #fecaca'
-            }}
-          >
-            {error}
-          </div>
-        )}
-        <StatsGrid role="list" aria-labelledby="stats-heading" aria-live="polite">
-          <StatCard role="listitem">
-            <StatValue aria-label={`Sessions totales: ${loading ? 'Chargement en cours' : stats ? stats.totalSessions : 'Données non disponibles'}`}>
-              {loading ? '...' : stats ? stats.totalSessions : '--'}
-            </StatValue>
-            <StatLabel>Sessions totales</StatLabel>
-          </StatCard>
-          <StatCard role="listitem">
-            <StatValue aria-label={`Sessions ouvertes: ${loading ? 'Chargement en cours' : stats ? stats.openSessions : 'Données non disponibles'}`}>
-              {loading ? '...' : stats ? stats.openSessions : '--'}
-            </StatValue>
-            <StatLabel>Sessions ouvertes</StatLabel>
-          </StatCard>
-          <StatCard role="listitem">
-            <StatValue aria-label={`Chiffre d'affaires: ${loading ? 'Chargement en cours' : stats ? stats.totalSales.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : 'Données non disponibles'}`}>
-              {loading ? '...' : stats ? `${stats.totalSales.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}` : '--'}
-            </StatValue>
-            <StatLabel>Chiffre d'affaires</StatLabel>
-          </StatCard>
-          <StatCard role="listitem">
-            <StatValue aria-label={`Articles vendus: ${loading ? 'Chargement en cours' : stats ? stats.totalItems : 'Données non disponibles'}`}>
-              {loading ? '...' : stats ? stats.totalItems : '--'}
-            </StatValue>
-            <StatLabel>Articles vendus</StatLabel>
-          </StatCard>
-        </StatsGrid>
-      </StatsSection>
-    </PageContainer>
+        {/* Colonne 2 : SUPERVISION & OPÉRATIONS */}
+        
+        {/* Carte 3 : RAPPORTS & JOURNAUX */}
+        <AdminCard>
+          <CardTitle>RAPPORTS & JOURNAUX</CardTitle>
+          <CardDescription>
+            Consulter les rapports de ventes, de réception et les journaux d'activité.
+          </CardDescription>
+          <LinkList>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/reports')}>
+                Rapports Généraux
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/reception-reports')}>
+                Rapports de Réception
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/cash-sessions/1')}>
+                Détail des Sessions de Caisse
+              </AdminLink>
+            </LinkItem>
+          </LinkList>
+        </AdminCard>
+
+        {/* Carte 4 : TABLEAUX DE BORD & SANTÉ */}
+        <AdminCard>
+          <CardTitle>TABLEAUX DE BORD & SANTÉ</CardTitle>
+          <CardDescription>
+            Visualiser l'état des différents modules en temps réel.
+          </CardDescription>
+          <LinkList>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/reception-stats')}>
+                Dashboard de Réception
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/health')}>
+                Dashboard de Santé Système
+              </AdminLink>
+            </LinkItem>
+          </LinkList>
+        </AdminCard>
+
+        {/* Carte 5 : PARAMÈTRES GÉNÉRAUX */}
+        <AdminCard>
+          <CardTitle>PARAMÈTRES GÉNÉRAUX</CardTitle>
+          <CardDescription>
+            Accéder aux réglages avancés de l'application.
+          </CardDescription>
+          <LinkList>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/settings')}>
+                Paramètres
+              </AdminLink>
+            </LinkItem>
+          </LinkList>
+        </AdminCard>
+      </DashboardGrid>
+    </div>
   );
 };
 

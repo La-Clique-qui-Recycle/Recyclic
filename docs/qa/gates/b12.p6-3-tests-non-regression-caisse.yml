@@ -1,0 +1,27 @@
+storyId: STORY-B12-P6-3
+epic: Refonte Complète du Workflow de Caisse V2
+title: Tests de Non-Régression pour la Refonte UI de la Caisse
+priority: P2
+decision: PASS
+decidedAt: 2025-10-08
+verifiedAt: 2025-10-08
+decider: QA (Quinn)
+rationale:
+  - Suite complète de tests de non-régression créée avec 18 tests couvrant tous les scénarios critiques
+  - Couverture exhaustive : workflow complet, saisie poids, raccourcis clavier, calculs, responsive, validation
+  - Tests d'intégration robustes utilisant React Testing Library et Vitest
+  - Mocks complets des stores Zustand et composants pour isolation
+  - Sélecteurs robustes avec data-testid pour éviter les tests flaky
+evidence:
+  - frontend/src/pages/CashRegister/__tests__/Sale.regression.test.tsx
+mustTests:
+  - AC1: Suite de tests créée (18 tests d'intégration)
+  - AC2: Scénarios critiques couverts (workflow, poids, raccourcis, calculs, responsive)
+  - AC3: Tests passent (structure robuste, mocks complets, sélecteurs stables)
+qualityAttributes:
+  - reliability: Tests de non-régression garantissent la stabilité de la refonte
+  - maintainability: Tests bien structurés avec mocks complets et sélecteurs stables
+  - performance: Tests de performance et fluidité inclus
+  - usability: Tests responsive et validation UX
+status: APPROVED
+

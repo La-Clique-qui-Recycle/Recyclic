@@ -2,13 +2,16 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@test/test-utils';
 import { useCashSessionStore } from '../../../stores/cashSessionStore';
+import { useAuthStore } from '../../../stores/authStore';
 import { useCategoryStore } from '../../../stores/categoryStore';
 import Sale from '../Sale';
 
 // Mock the stores
 vi.mock('../../../stores/cashSessionStore');
+vi.mock('../../../stores/authStore');
 vi.mock('../../../stores/categoryStore');
 const mockUseCashSessionStore = useCashSessionStore as any;
+const mockUseAuthStore = useAuthStore as any;
 const mockUseCategoryStore = useCategoryStore as any;
 
 describe('Sale Page', () => {
@@ -101,12 +104,52 @@ describe('Sale Page', () => {
     clearError: vi.fn(),
   };
 
+  const mockAuthStore = {
+    currentUser: {
+      id: 'user-1',
+      username: 'testuser',
+      first_name: 'Test',
+      last_name: 'User',
+      role: 'user' as const,
+      status: 'approved' as const,
+      is_active: true,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z'
+    },
+    isAuthenticated: true,
+    loading: false,
+    error: null
+  };
+
   beforeEach(() => {
     mockUseCashSessionStore.mockReturnValue(mockStore);
+    mockUseAuthStore.mockReturnValue(mockAuthStore);
     mockUseCategoryStore.mockReturnValue(mockCategoryStore);
     vi.clearAllMocks();
     // Mock window.alert
     global.alert = vi.fn();
+  });
+
+  it('renders kiosk layout with CashSessionHeader', () => {
+    render(<Sale />);
+
+    // Verify CashSessionHeader is present with cashier name
+    expect(screen.getByTestId('cash-session-header')).toBeInTheDocument();
+    expect(screen.getByText('Test User')).toBeInTheDocument();
+    
+    // Verify close session button is in header
+    expect(screen.getByTestId('close-session-button')).toBeInTheDocument();
+    expect(screen.getByText('Fermer la Caisse')).toBeInTheDocument();
+  });
+
+  it('renders two-column kiosk layout with Numpad and SaleWizard', () => {
+    render(<Sale />);
+
+    // Verify Numpad is present (left column) via data-testid
+    expect(screen.getByTestId('numpad')).toBeInTheDocument();
+
+    // Verify SaleWizard is present (right column)
+    expect(screen.getByText('Mode de saisie')).toBeInTheDocument();
   });
 
   it('renders sale interface correctly', () => {
@@ -124,19 +167,16 @@ describe('Sale Page', () => {
     expect(priceButton).toBeInTheDocument();
   });
 
-  it('renders two-panel layout with wizard on left and ticket on right', () => {
+  it('renders SaleWizard and Ticket in right column', () => {
     render(<Sale />);
 
-    // Verify SaleWizard is present (left panel)
+    // Verify SaleWizard is present (right column)
     expect(screen.getByText('Mode de saisie')).toBeInTheDocument();
     expect(screen.getByText('Sélectionner la catégorie EEE')).toBeInTheDocument();
 
-    // Verify Ticket is present (right panel)
+    // Verify Ticket is present (right column)
     expect(screen.getByText('Ticket de Caisse')).toBeInTheDocument();
     expect(screen.getByText('Aucun article ajouté')).toBeInTheDocument();
-
-    // Verify Close Session button is present
-    expect(screen.getByText('Fermer la Session')).toBeInTheDocument();
   });
 
   it('updates ticket when item is added via wizard', async () => {

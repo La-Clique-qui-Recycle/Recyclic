@@ -55,6 +55,16 @@ describe('SaleWizard', () => {
       price: 12.00,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
+    },
+    {
+      id: 'CAT004',
+      name: 'Mobilier',
+      is_active: true,
+      parent_id: null,
+      price: 25.00, // Fixed price
+      max_price: 100.00, // But has max price - should not show calculation
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z'
     }
   ];
 
@@ -753,6 +763,27 @@ describe('SaleWizard', () => {
 
       // Should not show calculation
       expect(screen.queryByText(/€ ×/)).not.toBeInTheDocument();
+    });
+
+    it('does not show calculation when category has max_price even with fixed price', async () => {
+      const user = userEvent.setup();
+      render(<SaleWizard onItemComplete={mockOnItemComplete} />);
+
+      // Select category with fixed price but also max_price
+      await user.click(screen.getByText('Mobilier'));
+
+      // Navigate to quantity step
+      await waitFor(() => {
+        expect(screen.getByText('Quantité')).toBeInTheDocument();
+      });
+
+      // Enter quantity
+      const button2 = screen.getAllByRole('button').find(b => b.textContent === '2');
+      if (button2) await user.click(button2);
+
+      // Should not show calculation because max_price exists
+      expect(screen.queryByText(/€ ×/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Calcul automatique/)).not.toBeInTheDocument();
     });
   });
 

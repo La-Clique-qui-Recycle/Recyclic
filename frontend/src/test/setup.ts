@@ -47,6 +47,7 @@ vi.mock('lucide-react', () => ({
   // Ajouts nécessaires pour les composants qui utilisent Plus et X
   Plus: () => React.createElement('div', { 'data-testid': 'plus-icon' }, 'Plus'),
   X: () => React.createElement('div', { 'data-testid': 'x-icon' }, 'X'),
+  User: () => React.createElement('div', { 'data-testid': 'user-icon' }, 'User'),
   Loader2: (props: any = {}) => React.createElement('div', {
     ...(props['data-testid'] ? { 'data-testid': props['data-testid'] } : {}),
     'data-icon-name': 'Loader2'

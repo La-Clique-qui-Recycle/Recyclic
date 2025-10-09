@@ -1,15 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
+import { Edit, Trash2 } from 'lucide-react';
 import { SaleItem } from '../../stores/cashSessionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 
 const TicketContainer = styled.div`
   background: white;
   border-radius: 8px;
-  padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  max-height: 70vh;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+const TicketHeader = styled.div`
+  padding: 1.5rem 1.5rem 0 1.5rem;
+`;
+
+const TicketContent = styled.div`
+  flex: 1;
   overflow-y: auto;
+  padding: 0 1.5rem;
+`;
+
+const TicketFooter = styled.div`
+  padding: 1.5rem;
+  border-top: 2px solid #eee;
+  background: #f8f9fa;
+  border-radius: 0 0 8px 8px;
+  margin-top: auto;
 `;
 
 const TicketTitle = styled.h3`
@@ -62,19 +81,38 @@ const ItemActions = styled.div`
   gap: 0.5rem;
 `;
 
-const ActionButton = styled.button<{ $variant?: 'edit' | 'delete' }>`
-  padding: 0.25rem 0.5rem;
-  border: 1px solid ${props => props.$variant === 'delete' ? '#dc3545' : '#2c5530'};
-  background: ${props => props.$variant === 'delete' ? 'white' : '#2c5530'};
-  color: ${props => props.$variant === 'delete' ? '#dc3545' : 'white'};
+const ActionButton = styled.button`
+  padding: 4px 8px;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 11px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 
-  &:hover {
-    background: ${props => props.$variant === 'delete' ? '#dc3545' : '#234426'};
+  &.edit {
+    background: #ffc107;
+    color: #212529;
+
+    &:hover {
+      background: #e0a800;
+    }
+  }
+
+  &.delete {
+    background: #dc3545;
     color: white;
+
+    &:hover {
+      background: #c82333;
+    }
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
   }
 `;
 
@@ -188,7 +226,7 @@ const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
 interface TicketProps {
   items: SaleItem[];
   onRemoveItem: (itemId: string) => void;
-  onUpdateItem: (itemId: string, newQty: number, newPrice: number) => void;
+  onUpdateItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number) => void;
   onFinalizeSale: () => void;
   loading?: boolean;
 }
@@ -200,16 +238,31 @@ const Ticket: React.FC<TicketProps> = ({
   onFinalizeSale,
   loading = false
 }) => {
-  const { getCategoryById } = useCategoryStore();
+  const { getCategoryById, fetchCategories } = useCategoryStore();
   const [editingItem, setEditingItem] = useState<SaleItem | null>(null);
+  const [editQuantity, setEditQuantity] = useState<string>('');
   const [editWeight, setEditWeight] = useState<string>('');
   const [editPrice, setEditPrice] = useState<string>('');
+  const ticketContentRef = useRef<HTMLDivElement>(null);
+
+  // Load categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const totalAmount = items.reduce((sum, item) => sum + (item.total || 0), 0);
   const totalItems = items.length; // Nombre d'articles (lignes), pas de quantités
 
+  // Auto-scroll to bottom when new items are added
+  useEffect(() => {
+    if (ticketContentRef.current && items.length > 0) {
+      ticketContentRef.current.scrollTop = ticketContentRef.current.scrollHeight;
+    }
+  }, [items.length]);
+
   const handleEditClick = (item: SaleItem) => {
     setEditingItem(item);
+    setEditQuantity((item.quantity || 1).toString());
     setEditWeight((item.weight || 0).toString());
     setEditPrice(item.price.toString());
   };
@@ -217,13 +270,15 @@ const Ticket: React.FC<TicketProps> = ({
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingItem) {
+      const newQuantity = parseInt(editQuantity, 10);
       const newWeight = parseFloat(editWeight);
       const newPrice = parseFloat(editPrice);
 
-      if (!isNaN(newWeight) && !isNaN(newPrice) && newWeight > 0 && newPrice > 0) {
-        // Note: onUpdateItem signature devra être adapté pour accepter le poids
-        onUpdateItem(editingItem.id, newWeight, newPrice);
+      if (!isNaN(newQuantity) && !isNaN(newWeight) && !isNaN(newPrice) &&
+          newQuantity > 0 && newWeight > 0 && newPrice > 0) {
+        onUpdateItem(editingItem.id, newQuantity, newWeight, newPrice);
         setEditingItem(null);
+        setEditQuantity('');
         setEditWeight('');
         setEditPrice('');
       }
@@ -232,6 +287,7 @@ const Ticket: React.FC<TicketProps> = ({
 
   const handleEditCancel = () => {
     setEditingItem(null);
+    setEditQuantity('');
     setEditWeight('');
     setEditPrice('');
   };
@@ -239,62 +295,67 @@ const Ticket: React.FC<TicketProps> = ({
   return (
     <>
       <TicketContainer>
-        <TicketTitle>Ticket de Caisse</TicketTitle>
+        <TicketHeader>
+          <TicketTitle>Ticket de Caisse</TicketTitle>
+        </TicketHeader>
         
-        {items.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#666', margin: '2rem 0' }}>
-            Aucun article ajouté
-          </p>
-        ) : (
-          <>
-            {items.map((item) => {
-              // Get category and subcategory names
-              const category = getCategoryById(item.category);
-              const subcategory = item.subcategory ? getCategoryById(item.subcategory) : null;
-              const displayName = subcategory?.name || category?.name || item.category;
-              
+        <TicketContent ref={ticketContentRef}>
+          {items.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#666', margin: '2rem 0' }}>
+              Aucun article ajouté
+            </p>
+          ) : (
+            items.map((item) => {
+              // Get category and subcategory names - prioritize stored names, then lookup
+              const displayName = item.subcategoryName || item.categoryName ||
+                                 (item.subcategory ? getCategoryById(item.subcategory)?.name : null) ||
+                                 getCategoryById(item.category)?.name ||
+                                 item.category;
+
               return (
                 <TicketItem key={item.id}>
                   <ItemInfo>
                     <ItemCategory>{displayName}</ItemCategory>
                     <ItemDetails>
-                      {`${(item.weight || 0).toFixed(2)} kg • ${(item.price || 0).toFixed(2)} €/unité`}
+                      {`Qté: ${item.quantity || 1} • ${(item.weight || 0).toFixed(2)} kg • ${(item.price || 0).toFixed(2)} €/unité`}
                     </ItemDetails>
                   </ItemInfo>
                   <ItemTotal>{`${(item.total || 0).toFixed(2)} €`}</ItemTotal>
                   <ItemActions>
                     <ActionButton
-                      $variant="edit"
+                      className="edit"
                       onClick={() => handleEditClick(item)}
                     >
-                      Modifier
+                      <Edit size={12} />
                     </ActionButton>
                     <ActionButton
-                      $variant="delete"
+                      className="delete"
                       onClick={() => onRemoveItem(item.id)}
                     >
-                      Supprimer
+                      <Trash2 size={12} />
                     </ActionButton>
                   </ItemActions>
                 </TicketItem>
               );
-            })}
-            
-            <TotalSection>
-              <TotalRow>
-                <span>{totalItems} articles</span>
-                <span data-testid="sale-total">{`${totalAmount.toFixed(2)} €`}</span>
-              </TotalRow>
-            </TotalSection>
-            
-            <FinalizeButton
-              onClick={onFinalizeSale}
-              disabled={loading || items.length === 0}
-            >
-              {loading ? 'Finalisation...' : 'Finaliser la vente'}
-            </FinalizeButton>
-          </>
-        )}
+            })
+          )}
+        </TicketContent>
+        
+        <TicketFooter>
+          <TotalSection>
+            <TotalRow>
+              <span>{totalItems} articles</span>
+              <span data-testid="sale-total">{`${totalAmount.toFixed(2)} €`}</span>
+            </TotalRow>
+          </TotalSection>
+          
+          <FinalizeButton
+            onClick={onFinalizeSale}
+            disabled={loading || items.length === 0}
+          >
+            {loading ? 'Finalisation...' : 'Finaliser la vente'}
+          </FinalizeButton>
+        </TicketFooter>
       </TicketContainer>
 
       <EditModal $isOpen={!!editingItem} role="dialog" aria-modal="true" aria-label="Modifier l'article">
@@ -305,8 +366,27 @@ const Ticket: React.FC<TicketProps> = ({
               <Label>Catégorie</Label>
               <Input
                 type="text"
-                value={editingItem?.category || ''}
+                value={
+                  editingItem ? (
+                    editingItem.subcategoryName || editingItem.categoryName ||
+                    (editingItem.subcategory ? getCategoryById(editingItem.subcategory)?.name : null) ||
+                    getCategoryById(editingItem.category)?.name ||
+                    editingItem.category
+                  ) : ''
+                }
                 disabled
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label>Quantité</Label>
+              <Input
+                type="number"
+                step="1"
+                value={editQuantity}
+                onChange={(e) => setEditQuantity(e.target.value)}
+                min="1"
+                max="9999"
+                required
               />
             </FormGroup>
             <FormGroup>
@@ -322,7 +402,7 @@ const Ticket: React.FC<TicketProps> = ({
               />
             </FormGroup>
             <FormGroup>
-              <Label>Prix unitaire (édition)</Label>
+              <Label>Prix unitaire</Label>
               <Input
                 type="number"
                 step="0.01"
