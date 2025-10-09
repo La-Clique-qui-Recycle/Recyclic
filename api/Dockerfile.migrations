@@ -1,5 +1,5 @@
 # Dockerfile.migrations - Image dédiée pour les migrations Alembic
-FROM recyclic-api:latest
+FROM python:3.11-slim
 
 # Switch to root to modify files
 USER root
