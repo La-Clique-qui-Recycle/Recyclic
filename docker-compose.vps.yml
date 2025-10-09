@@ -9,6 +9,11 @@ networks:
 
 services:
   api:
+    environment:
+      - ALLOWED_HOSTS=recyclic.jarvos.eu,localhost,127.0.0.1
+      - CORS_ALLOW_ORIGINS=https://recyclic.jarvos.eu
+      - BACKEND_CORS_ORIGINS=https://recyclic.jarvos.eu
+      - FRONTEND_URL=https://recyclic.jarvos.eu
     networks:
       - traefik-public
       - recyclic-network
