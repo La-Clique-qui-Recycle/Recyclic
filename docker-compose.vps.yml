@@ -21,6 +21,7 @@ services:
       - "traefik.http.routers.recyclic-api.rule=Host(`recyclic.jarvos.eu`) && PathPrefix(`/api`)"
       - "traefik.http.routers.recyclic-api.entrypoints=websecure"
       - "traefik.http.routers.recyclic-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.recyclic-api.priority=100"
       - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api"
       - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip"
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
@@ -41,4 +42,5 @@ services:
       - "traefik.http.routers.recyclic-frontend.rule=Host(`recyclic.jarvos.eu`)"
       - "traefik.http.routers.recyclic-frontend.entrypoints=websecure"
       - "traefik.http.routers.recyclic-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.recyclic-frontend.priority=1"
       - "traefik.http.services.recyclic-frontend.loadbalancer.server.port=80"
