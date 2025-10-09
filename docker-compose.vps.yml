@@ -30,6 +30,7 @@ services:
       - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip,recyclic-api-host"
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
       - "traefik.http.services.recyclic-api.loadbalancer.passhostheader=false"
+      - "traefik.tags=touch-$(date +%s)"
 
   frontend:
     build:
