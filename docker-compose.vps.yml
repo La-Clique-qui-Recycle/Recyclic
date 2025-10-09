@@ -24,6 +24,8 @@ services:
       - "traefik.http.routers.recyclic-api.priority=100"
       - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api"
       - "traefik.http.middlewares.recyclic-api-host.headers.customrequestheaders.Host=localhost"
+      - "traefik.http.middlewares.recyclic-api-host.headers.customrequestheaders.X-Forwarded-Host=localhost"
+      - "traefik.http.middlewares.recyclic-api-host.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip,recyclic-api-host"
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
       - "traefik.http.services.recyclic-api.loadbalancer.passhostheader=false"
