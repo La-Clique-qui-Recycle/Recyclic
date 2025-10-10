@@ -391,6 +391,21 @@ export const adminService = {
       throw error;
     }
   }
+
+  /**
+   * Purge les données transactionnelles (réservé aux Super-Admins)
+   * Supprime toutes les données de ventes, réceptions et sessions de caisse
+   */
+  async purgeTransactionalData(): Promise<{ message: string; deleted_records: Record<string, number>; timestamp: string }> {
+    try {
+      const response = await axiosClient.post('/v1/admin/db/purge-transactions');
+      console.log('Purge des données transactionnelles réussie:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la purge des données transactionnelles:', error);
+      throw error;
+    }
+  }
 };
 
 export default adminService;

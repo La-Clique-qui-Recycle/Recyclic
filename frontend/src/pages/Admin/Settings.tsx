@@ -213,10 +213,115 @@ const UnauthorizedText = styled.p`
   margin: 0 0 24px 0;
 `
 
+// Styles pour les modales de purge
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+`
+
+const ModalTitle = styled.h2`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  text-align: center;
+`
+
+const ModalText = styled.p`
+  font-size: 1rem;
+  color: #374151;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+  text-align: center;
+`
+
+const ModalInput = styled.input`
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin: 16px 0;
+  box-sizing: border-box;
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+`
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+`
+
+const ModalButton = styled.button<{ variant: 'primary' | 'secondary' | 'danger' }>`
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  
+  ${props => {
+    switch (props.variant) {
+      case 'primary':
+        return `
+          background: #3b82f6;
+          color: white;
+          &:hover { background: #2563eb; }
+        `
+      case 'secondary':
+        return `
+          background: #f3f4f6;
+          color: #374151;
+          &:hover { background: #e5e7eb; }
+        `
+      case 'danger':
+        return `
+          background: #dc2626;
+          color: white;
+          &:hover { background: #b91c1c; }
+        `
+    }
+  }}
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
 const Settings: React.FC = () => {
   const currentUser = useAuthStore((state) => state.currentUser)
   const navigate = useNavigate()
   const [exportingDatabase, setExportingDatabase] = useState(false)
+  const [purgingData, setPurgingData] = useState(false)
+  const [showPurgeModal, setShowPurgeModal] = useState(false)
+  const [purgeStep, setPurgeStep] = useState(1)
+  const [confirmationText, setConfirmationText] = useState('')
 
   // Debug: Log user info
   console.log('Settings - User:', currentUser)
@@ -260,6 +365,52 @@ const Settings: React.FC = () => {
     } finally {
       setExportingDatabase(false)
     }
+  }
+
+  const handlePurgeData = () => {
+    setShowPurgeModal(true)
+    setPurgeStep(1)
+    setConfirmationText('')
+  }
+
+  const handlePurgeStep1 = () => {
+    setPurgeStep(2)
+  }
+
+  const handlePurgeStep2 = () => {
+    setPurgeStep(3)
+  }
+
+  const handlePurgeStep3 = async () => {
+    if (confirmationText !== 'Adieu la base') {
+      alert('❌ Le texte de confirmation ne correspond pas. Veuillez recopier exactement "Adieu la base".')
+      return
+    }
+
+    try {
+      setPurgingData(true)
+      const result = await adminService.purgeTransactionalData()
+      
+      alert(`✅ Purge réussie !\n\nEnregistrements supprimés :\n${Object.entries(result.deleted_records)
+        .map(([table, count]) => `• ${table}: ${count} enregistrements`)
+        .join('\n')}`)
+      
+      setShowPurgeModal(false)
+      setPurgeStep(1)
+      setConfirmationText('')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
+      alert(`❌ Erreur lors de la purge des données: ${errorMessage}`)
+      console.error('Purge data error:', err)
+    } finally {
+      setPurgingData(false)
+    }
+  }
+
+  const handleCancelPurge = () => {
+    setShowPurgeModal(false)
+    setPurgeStep(1)
+    setConfirmationText('')
   }
 
   return (
@@ -306,31 +457,103 @@ const Settings: React.FC = () => {
             </WarningBox>
           </ActionCard>
 
-          {/* Purge des données - Placeholder pour STORY-B25-P1 */}
+          {/* Purge des données transactionnelles */}
           <ActionCard>
             <ActionHeader>
               <ActionInfo>
                 <ActionTitle>Purge des données transactionnelles</ActionTitle>
                 <ActionDescription>
-                  Supprime les données transactionnelles anciennes (dépôts, ventes, sessions) selon
-                  une période de rétention définie. Cette opération est irréversible.
+                  Supprime TOUTES les données de ventes, réceptions et sessions de caisse.
+                  Cette opération est irréversible et ne doit être utilisée qu'avant la mise en production.
                 </ActionDescription>
               </ActionInfo>
               <Button
-                variant="disabled"
-                disabled
+                variant="danger"
+                onClick={handlePurgeData}
+                disabled={purgingData}
               >
-                🚧 Bientôt disponible
+                {purgingData ? '⏳ Purge en cours...' : '🗑️ Purger les données'}
               </Button>
             </ActionHeader>
-            <InfoBox>
-              <strong>ℹ️ Information :</strong> Cette fonctionnalité sera disponible dans une prochaine
-              version (Story B25-P1). Elle permettra de nettoyer automatiquement les anciennes données
-              transactionnelles pour optimiser les performances.
-            </InfoBox>
+            <WarningBox style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca', color: '#dc2626' }}>
+              <strong>⚠️ DANGER :</strong> Cette action supprimera définitivement toutes les données transactionnelles.
+              Elle ne doit être utilisée qu'une seule fois avant le lancement officiel de l'application.
+            </WarningBox>
           </ActionCard>
         </ActionGroup>
       </Section>
+
+      {/* Modales de confirmation pour la purge */}
+      {showPurgeModal && (
+        <ModalOverlay>
+          <ModalContent>
+            {purgeStep === 1 && (
+              <>
+                <ModalTitle>⚠️ Confirmation de purge</ModalTitle>
+                <ModalText>
+                  Êtes-vous sûr de vouloir supprimer toutes les données de ventes et de réceptions ? 
+                  Cette action est irréversible.
+                </ModalText>
+                <ModalButtons>
+                  <ModalButton variant="secondary" onClick={handleCancelPurge}>
+                    Annuler
+                  </ModalButton>
+                  <ModalButton variant="danger" onClick={handlePurgeStep1}>
+                    Oui, je suis sûr
+                  </ModalButton>
+                </ModalButtons>
+              </>
+            )}
+
+            {purgeStep === 2 && (
+              <>
+                <ModalTitle>🚨 Dernière chance</ModalTitle>
+                <ModalText>
+                  Vraiment sûr(e) ? Toutes les transactions seront définitivement perdues.
+                </ModalText>
+                <ModalButtons>
+                  <ModalButton variant="secondary" onClick={handleCancelPurge}>
+                    Annuler
+                  </ModalButton>
+                  <ModalButton variant="danger" onClick={handlePurgeStep2}>
+                    Oui, je confirme
+                  </ModalButton>
+                </ModalButtons>
+              </>
+            )}
+
+            {purgeStep === 3 && (
+              <>
+                <ModalTitle>🔐 Confirmation finale</ModalTitle>
+                <ModalText>
+                  Pour confirmer, veuillez recopier exactement la phrase suivante :
+                  <br />
+                  <strong style={{ color: '#dc2626', fontSize: '1.2rem' }}>"Adieu la base"</strong>
+                </ModalText>
+                <ModalInput
+                  type="text"
+                  value={confirmationText}
+                  onChange={(e) => setConfirmationText(e.target.value)}
+                  placeholder="Recopiez la phrase ici..."
+                  disabled={purgingData}
+                />
+                <ModalButtons>
+                  <ModalButton variant="secondary" onClick={handleCancelPurge} disabled={purgingData}>
+                    Annuler
+                  </ModalButton>
+                  <ModalButton 
+                    variant="danger" 
+                    onClick={handlePurgeStep3}
+                    disabled={purgingData || confirmationText !== 'Adieu la base'}
+                  >
+                    {purgingData ? '⏳ Suppression...' : '🗑️ Supprimer définitivement'}
+                  </ModalButton>
+                </ModalButtons>
+              </>
+            )}
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </SettingsContainer>
   )
 }
