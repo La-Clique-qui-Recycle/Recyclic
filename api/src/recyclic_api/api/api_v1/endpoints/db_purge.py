@@ -47,34 +47,39 @@ async def purge_transactional_data(
     try:
         logger.warning(f"Database purge requested by user {current_user.id} ({current_user.username})")
         
-        # Début de la transaction
-        db.begin()
-        
         # Ordre de suppression pour respecter les contraintes de clés étrangères
+        # Les tables enfants doivent être supprimées avant les tables parents
         tables_to_purge = [
-            "sale_items",      # Lignes de vente (dépendent de sales)
-            "sales",           # Ventes (dépendent de cash_sessions)
-            "reception_lines",  # Lignes de réception (dépendent de reception_tickets)
+            "sale_items",        # Lignes de vente (dépendent de sales)
+            "sales",             # Ventes (dépendent de cash_sessions)
+            "reception_lines",   # Lignes de réception (dépendent de reception_tickets)
             "reception_tickets", # Tickets de réception
-            "cash_sessions"    # Sessions de caisse
+            "cash_sessions"      # Sessions de caisse
         ]
         
         deleted_counts = {}
         
-        for table in tables_to_purge:
-            # Compter les enregistrements avant suppression
-            count_query = text(f"SELECT COUNT(*) FROM {table}")
-            count_result = db.execute(count_query).scalar()
+        # Utiliser une transaction SQLAlchemy appropriée
+        try:
+            for table in tables_to_purge:
+                # Compter les enregistrements avant suppression
+                count_query = text(f"SELECT COUNT(*) FROM {table}")
+                count_result = db.execute(count_query).scalar()
+                
+                # Supprimer tous les enregistrements
+                delete_query = text(f"DELETE FROM {table}")
+                db.execute(delete_query)
+                
+                deleted_counts[table] = count_result
+                logger.info(f"Deleted {count_result} records from {table}")
             
-            # Supprimer tous les enregistrements
-            delete_query = text(f"DELETE FROM {table}")
-            db.execute(delete_query)
+            # Valider la transaction
+            db.commit()
             
-            deleted_counts[table] = count_result
-            logger.info(f"Deleted {count_result} records from {table}")
-        
-        # Valider la transaction
-        db.commit()
+        except Exception as e:
+            # Rollback en cas d'erreur
+            db.rollback()
+            raise e
         
         logger.warning(f"Database purge completed by user {current_user.id}. Records deleted: {deleted_counts}")
         
