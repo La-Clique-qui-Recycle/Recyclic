@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { cashSessionService } from '../services/cashSessionService';
+import axiosClient from '../api/axiosClient';
 
 export interface CashSession {
   id: string;
@@ -177,33 +178,10 @@ export const useCashSessionStore = create<CashSessionState>()(
 
             console.log('[submitSale] Preparing sale:', saleData);
 
-            // Get token from localStorage for authentication
-            const token = localStorage.getItem('token');
-            if (!token) {
-              throw new Error('Non authentifié');
-            }
-
-            // Call API to create sale with authentication
-            console.log('[submitSale] Sending POST to /api/v1/sales/');
-            const response = await fetch('/api/v1/sales/', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify(extendedPayload)
-            });
-
-            console.log('[submitSale] Response status:', response.status);
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => null);
-              console.error('[submitSale] API error:', errorData);
-              throw new Error(errorData?.detail || 'Erreur lors de l\'enregistrement de la vente');
-            }
-
-            const responseData = await response.json();
-            console.log('[submitSale] Sale created successfully:', responseData);
+            // Call API to create sale using axiosClient (handles auth automatically)
+            console.log('[submitSale] Sending POST to /sales/');
+            const response = await axiosClient.post('/sales/', extendedPayload);
+            console.log('[submitSale] Sale created successfully:', response.data);
 
             // Clear current sale on success
             set({

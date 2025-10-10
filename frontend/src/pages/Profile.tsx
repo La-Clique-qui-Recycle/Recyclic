@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useAuthStore } from '../stores/authStore';
-import { getAuthHeader } from '../services/authService';
+import axiosClient from '../api/axiosClient';
 
 const Container = styled.div`
   max-width: 720px;
@@ -66,35 +66,18 @@ export default function Profile(): JSX.Element {
   const [error, setError] = React.useState<string | null>(null);
   const [pwdError, setPwdError] = React.useState<string | null>(null);
 
-  const API_BASE = (import.meta as any).env.VITE_API_URL;
-
   const handleSaveInfo = async () => {
     setSavingInfo(true);
     setMessage(null);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/users/me`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify({ first_name: firstName, last_name: lastName, username, email }),
+      const response = await axiosClient.put('/users/me', {
+        first_name: firstName,
+        last_name: lastName,
+        username,
+        email
       });
-      if (!res.ok) {
-        if (res.status === 401) throw new Error('Session expirée, reconnectez-vous');
-        try {
-          const data = await res.json();
-          const detail = Array.isArray(data?.detail) ? data.detail : [];
-          const emailErr = detail.find((d: any) => Array.isArray(d?.loc) && d.loc.includes('email'));
-          const usernameErr = detail.find((d: any) => Array.isArray(d?.loc) && d.loc.includes('username'));
-          if (emailErr) throw new Error('Email invalide');
-          if (usernameErr) throw new Error('Identifiant invalide');
-        } catch (_) {}
-        throw new Error('Erreur lors de la mise à jour du profil');
-      }
-      const updated = await res.json();
-      setCurrentUser(updated);
+      setCurrentUser(response.data);
       setMessage('Informations mises à jour');
     } catch (e: any) {
       setError(e?.message || 'Erreur lors de la mise à jour');
@@ -114,31 +97,10 @@ export default function Profile(): JSX.Element {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/users/me/password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify({ new_password: newPassword, confirm_password: confirmPassword }),
+      await axiosClient.put('/users/me/password', {
+        new_password: newPassword,
+        confirm_password: confirmPassword
       });
-      if (!res.ok) {
-        try {
-          const data = await res.json();
-          const detail = Array.isArray(data?.detail) ? data.detail : [];
-          const confirmErr = detail.find((d: any) => Array.isArray(d?.loc) && d.loc.includes('confirm_password'));
-          if (confirmErr) {
-            throw new Error('Les mots de passe ne correspondent pas.');
-          }
-          const pwdStrengthErr = detail.find((d: any) => Array.isArray(d?.loc) && d.loc.includes('new_password'));
-          if (pwdStrengthErr) {
-            throw new Error('Mot de passe trop faible: 8+ car., majuscule, minuscule, chiffre, spécial');
-          }
-          throw new Error('Erreur lors de la mise à jour du mot de passe');
-        } catch (_) {
-          throw new Error('Erreur lors de la mise à jour du mot de passe');
-        }
-      }
       setMessage('Mot de passe mis à jour');
       setNewPassword('');
       setConfirmPassword('');

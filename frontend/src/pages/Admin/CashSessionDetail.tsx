@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import { ArrowLeft, Calendar, User, DollarSign, Package, Clock } from 'lucide-react'
+import axiosClient from '../../api/axiosClient'
 
 // Types pour les données de la session
 interface SaleDetail {
@@ -289,21 +290,9 @@ const CashSessionDetail: React.FC = () => {
       try {
         setLoading(true)
         setError(null)
-        
-        // TODO: Remplacer par l'appel API réel
-        const response = await fetch(`/api/v1/cash-sessions/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-        })
-        
-        if (!response.ok) {
-          throw new Error(`Erreur ${response.status}: ${response.statusText}`)
-        }
-        
-        const data = await response.json()
-        setSession(data)
+
+        const response = await axiosClient.get(`/cash-sessions/${id}`)
+        setSession(response.data)
       } catch (err) {
         console.error('Erreur lors du chargement de la session:', err)
         setError(err instanceof Error ? err.message : 'Erreur inconnue')

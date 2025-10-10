@@ -11,6 +11,7 @@ import {
   UsersApi,
   AdminApi
 } from '../generated';
+import axiosClient from '../api/axiosClient';
 
 // Types locaux pour contourner les problèmes d'export
 export interface UserRoleUpdate {
@@ -265,18 +266,8 @@ export const adminService = {
    */
   async triggerResetPassword(userId: string): Promise<AdminResponse> {
     try {
-      const response = await fetch(`/api/v1/admin/users/${userId}/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
+      const response = await axiosClient.post(`/admin/users/${userId}/reset-password`);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors du déclenchement de la réinitialisation du mot de passe:', error);
       throw error;
