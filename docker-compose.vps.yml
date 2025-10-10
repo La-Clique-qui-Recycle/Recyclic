@@ -32,7 +32,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: "https://recyclic.jarvos.eu/api"
+        VITE_API_URL: "https://recyclic.jarvos.eu"
     environment:
       - HOST=0.0.0.0
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
