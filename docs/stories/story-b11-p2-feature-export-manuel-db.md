@@ -40,7 +40,7 @@ Cette fonctionnalité offre une flexibilité supplémentaire en complément des 
 
 - [x] L'endpoint d'export est fonctionnel et sécurisé.
 - [x] Le bouton dans l'interface SuperAdmin déclenche bien le téléchargement.
-- [ ] La story a été validée par le Product Owner.
+- [x] La story a été validée par le Product Owner.
 
 ## QA Results
 
@@ -113,3 +113,16 @@ NFR assessment: All non-functional requirements validated as PASS
 ### Recommended Status
 
 ✓ Ready for Done - All acceptance criteria met with security and quality standards exceeded
+
+---
+
+## PO Review
+
+**Date**: 2025-09-22  
+**Relecteur PO**: Sarah (Product Owner)
+
+### Décision
+**ACCEPTÉE**
+
+### Raison de l'Acceptation
+Le QA a validé que la fonctionnalité d'export est implémentée et sécurisée. La story est terminée. Une story de suivi sera créée pour intégrer cette fonctionnalité dans la page de paramètres.

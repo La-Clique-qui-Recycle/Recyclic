@@ -29,6 +29,7 @@ const AdminCategories = lazy(() => import('./pages/Admin/Categories.tsx'));
 const ReceptionDashboard = lazy(() => import('./pages/Admin/ReceptionDashboard.tsx'));
 const ReceptionReports = lazy(() => import('./pages/Admin/ReceptionReports.tsx'));
 const CashSessionDetail = lazy(() => import('./pages/Admin/CashSessionDetail.tsx'));
+const AdminSettings = lazy(() => import('./pages/Admin/Settings.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -142,7 +143,7 @@ function App() {
               <Route path="sites" element={<AdminSites />} />
               <Route path="categories" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminCategories /></ProtectedRoute>} />
               <Route path="health" element={<HealthDashboard />} />
-              <Route path="settings" element={<AdminDashboard />} />
+              <Route path="settings" element={<ProtectedRoute requiredRoles={['super-admin']}><AdminSettings /></ProtectedRoute>} />
             </Route>
             </Routes>
           </Suspense>

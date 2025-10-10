@@ -1,4 +1,4 @@
-import { Users, Monitor, MapPin, Home, BarChart3, TrendingUp, Tags } from 'lucide-react';
+import { Users, Monitor, MapPin, Home, BarChart3, TrendingUp, Tags, Settings } from 'lucide-react';
 
 /**
  * Configuration centralisée des routes d'administration
@@ -67,6 +67,13 @@ export const ADMIN_NAVIGATION_ITEMS = [
     label: 'Catégories',
     icon: Tags,
     description: 'Gestion des catégories de produits',
+    superAdminOnly: true
+  },
+  {
+    path: ADMIN_ROUTES.SETTINGS,
+    label: 'Paramètres',
+    icon: Settings,
+    description: 'Configuration et outils de maintenance',
     superAdminOnly: true
   }
 ];
