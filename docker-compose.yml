@@ -114,7 +114,7 @@ services:
     build:
       context: ./frontend
       args:
-        REACT_APP_API_URL: ""
+        VITE_API_URL: ""
     image: recyclic-frontend:${FRONTEND_IMAGE_TAG:-latest}
     ports:
       - "4444:80"
