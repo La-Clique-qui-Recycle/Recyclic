@@ -21,19 +21,12 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL;
+import axiosClient from '../api/axiosClient';
 
 export async function login(request: LoginRequest): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-  if (!response.ok) {
-    const message = await response.text().catch(() => 'Erreur de connexion');
-    throw new Error(message || 'Identifiants invalides');
-  }
-  const data = (await response.json()) as LoginResponse;
+  // axiosClient gère la baseURL et l'intercepteur ajoute le token
+  const response = await axiosClient.post('/auth/login', request);
+  const data = response.data as LoginResponse;
   localStorage.setItem('token', data.access_token);
   return data;
 }
