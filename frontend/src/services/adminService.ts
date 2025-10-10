@@ -390,7 +390,7 @@ export const adminService = {
       console.error('Erreur lors de l\'export de la base de données:', error);
       throw error;
     }
-  }
+  },
 
   /**
    * Purge les données transactionnelles (réservé aux Super-Admins)
