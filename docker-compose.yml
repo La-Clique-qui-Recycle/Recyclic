@@ -113,8 +113,6 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        VITE_API_URL: ""
     image: recyclic-frontend:${FRONTEND_IMAGE_TAG:-latest}
     ports:
       - "4444:80"
