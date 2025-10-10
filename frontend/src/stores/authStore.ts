@@ -141,7 +141,7 @@ export const useAuthStore = create<AuthState>()(
         forgotPassword: async (email: string) => {
           set({ loading: true, error: null });
           try {
-            const response = await axiosClient.post('/api/v1/auth/forgot-password', { email });
+            const response = await axiosClient.post('/v1/auth/forgot-password', { email });
 
             set({
               loading: false,
@@ -160,7 +160,7 @@ export const useAuthStore = create<AuthState>()(
         resetPassword: async (token: string, newPassword: string) => {
           set({ loading: true, error: null });
           try {
-            const response = await axiosClient.post('/api/v1/auth/reset-password', {
+            const response = await axiosClient.post('/v1/auth/reset-password', {
               token,
               new_password: newPassword
             });

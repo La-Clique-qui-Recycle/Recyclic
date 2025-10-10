@@ -44,27 +44,27 @@ export interface UpdateTicketLineRequest {
 
 class ReceptionService {
   async openPoste(): Promise<Poste> {
-    const response = await api.post('/api/v1/reception/postes/open');
+    const response = await api.post('/v1/reception/postes/open');
     return response.data;
   }
 
   async closePoste(posteId: string): Promise<void> {
-    await api.post(`/api/v1/reception/postes/${posteId}/close`);
+    await api.post(`/v1/reception/postes/${posteId}/close`);
   }
 
   async createTicket(posteId: string): Promise<Ticket> {
-    const response = await api.post('/api/v1/reception/tickets', {
+    const response = await api.post('/v1/reception/tickets', {
       poste_id: posteId
     });
     return response.data;
   }
 
   async closeTicket(ticketId: string): Promise<void> {
-    await api.post(`/api/v1/reception/tickets/${ticketId}/close`);
+    await api.post(`/v1/reception/tickets/${ticketId}/close`);
   }
 
   async addLineToTicket(ticketId: string, line: CreateTicketLineRequest): Promise<TicketLine> {
-    const response = await api.post('/api/v1/reception/lignes', {
+    const response = await api.post('/v1/reception/lignes', {
       ticket_id: ticketId,
       category_id: line.category_id,
       poids_kg: line.weight,
@@ -87,7 +87,7 @@ class ReceptionService {
   }
 
   async updateTicketLine(ticketId: string, lineId: string, line: UpdateTicketLineRequest): Promise<TicketLine> {
-    const response = await api.put(`/api/v1/reception/lignes/${lineId}`, {
+    const response = await api.put(`/v1/reception/lignes/${lineId}`, {
       category_id: line.category_id,
       poids_kg: line.weight,
       destination: line.destination,
@@ -109,21 +109,21 @@ class ReceptionService {
   }
 
   async deleteTicketLine(ticketId: string, lineId: string): Promise<void> {
-    await api.delete(`/api/v1/reception/lignes/${lineId}`);
+    await api.delete(`/v1/reception/lignes/${lineId}`);
   }
 
   async getTicket(ticketId: string): Promise<Ticket> {
-    const response = await api.get(`/api/v1/reception/tickets/${ticketId}`);
+    const response = await api.get(`/v1/reception/tickets/${ticketId}`);
     return response.data;
   }
 
   async getPoste(posteId: string): Promise<Poste> {
-    const response = await api.get(`/api/v1/reception/postes/${posteId}`);
+    const response = await api.get(`/v1/reception/postes/${posteId}`);
     return response.data;
   }
 
   async getCategories(): Promise<Array<{id: string, label: string, slug: string}>> {
-    const response = await api.get('/api/v1/reception/categories');
+    const response = await api.get('/v1/reception/categories');
     return response.data;
   }
 }

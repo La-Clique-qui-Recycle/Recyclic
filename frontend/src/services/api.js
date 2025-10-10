@@ -8,7 +8,7 @@ export const getHealth = async () => {
 
 // Users
 export const getUsers = async () => {
-  const response = await api.get('/api/v1/users');
+  const response = await api.get('/v1/users');
   return response.data;
 };
 
@@ -18,13 +18,13 @@ export const getUser = async (id) => {
 };
 
 export const createUser = async (userData) => {
-  const response = await api.post('/api/v1/users', userData);
+  const response = await api.post('/v1/users', userData);
   return response.data;
 };
 
 // Sites
 export const getSites = async (params = {}) => {
-  const response = await api.get('/api/v1/sites', { params });
+  const response = await api.get('/v1/sites', { params });
   return response.data;
 };
 
@@ -34,30 +34,30 @@ export const getSite = async (id) => {
 };
 
 export const createSite = async (siteData) => {
-  const response = await api.post('/api/v1/sites', siteData);
+  const response = await api.post('/v1/sites', siteData);
   return response.data;
 };
 
 export const updateSite = async (id, siteData) => {
-  const response = await api.patch(`/api/v1/sites/${id}`, siteData);
+  const response = await api.patch(`/v1/sites/${id}`, siteData);
   return response.data;
 };
 
 export const deleteSite = async (id) => {
-  await api.delete(`/api/v1/sites/${id}`);
+  await api.delete(`/v1/sites/${id}`);
 };
 
 // Check site dependencies before deletion
 export const getSiteDependencies = async (id) => {
   try {
     // Check cash registers using this site
-    const cashRegistersResponse = await api.get('/api/v1/cash-registers', {
+    const cashRegistersResponse = await api.get('/v1/cash-registers', {
       params: { site_id: id }
     });
     const cashRegisters = cashRegistersResponse.data;
 
     // Check cash sessions using this site
-    const cashSessionsResponse = await api.get('/api/v1/cash-sessions', {
+    const cashSessionsResponse = await api.get('/v1/cash-sessions', {
       params: { site_id: id }
     });
     const cashSessions = cashSessionsResponse.data;
@@ -81,7 +81,7 @@ export const getSiteDependencies = async (id) => {
 
 // Deposits
 export const getDeposits = async () => {
-  const response = await api.get('/api/v1/deposits');
+  const response = await api.get('/v1/deposits');
   return response.data;
 };
 
@@ -91,13 +91,13 @@ export const getDeposit = async (id) => {
 };
 
 export const createDeposit = async (depositData) => {
-  const response = await api.post('/api/v1/deposits', depositData);
+  const response = await api.post('/v1/deposits', depositData);
   return response.data;
 };
 
 // Sales
 export const getSales = async () => {
-  const response = await api.get('/api/v1/sales');
+  const response = await api.get('/v1/sales');
   return response.data;
 };
 
@@ -107,13 +107,13 @@ export const getSale = async (id) => {
 };
 
 export const createSale = async (saleData) => {
-  const response = await api.post('/api/v1/sales', saleData);
+  const response = await api.post('/v1/sales', saleData);
   return response.data;
 };
 
 // Cash Sessions
 export const getCashSessions = async () => {
-  const response = await api.get('/api/v1/cash-sessions');
+  const response = await api.get('/v1/cash-sessions');
   return response.data;
 };
 
@@ -123,13 +123,13 @@ export const getCashSession = async (id) => {
 };
 
 export const createCashSession = async (sessionData) => {
-  const response = await api.post('/api/v1/cash-sessions', sessionData);
+  const response = await api.post('/v1/cash-sessions', sessionData);
   return response.data;
 };
 
 // Cash Registers (Postes de caisse)
 export const getCashRegisters = async (params = {}) => {
-  const response = await api.get('/api/v1/cash-registers', { params });
+  const response = await api.get('/v1/cash-registers', { params });
   return response.data;
 };
 
@@ -139,30 +139,30 @@ export const getCashRegister = async (id) => {
 };
 
 export const createCashRegister = async (data) => {
-  const response = await api.post('/api/v1/cash-registers', data);
+  const response = await api.post('/v1/cash-registers', data);
   return response.data;
 };
 
 export const updateCashRegister = async (id, data) => {
-  const response = await api.patch(`/api/v1/cash-registers/${id}`,
+  const response = await api.patch(`/v1/cash-registers/${id}`,
     data
   );
   return response.data;
 };
 
 export const deleteCashRegister = async (id) => {
-  await api.delete(`/api/v1/cash-registers/${id}`);
+  await api.delete(`/v1/cash-registers/${id}`);
 };
 
 // Link Telegram Account
 export const linkTelegramAccount = async (linkData) => {
-  const response = await api.post('/api/v1/users/link-telegram', linkData);
+  const response = await api.post('/v1/users/link-telegram', linkData);
   return response.data;
 };
 
 // Reception Tickets
 export const getReceptionTickets = async (page = 1, perPage = 10) => {
-  const response = await api.get('/api/v1/reception/tickets', {
+  const response = await api.get('/v1/reception/tickets', {
     params: { page, per_page: perPage }
   });
   return response.data;
@@ -179,7 +179,7 @@ export const getReceptionSummary = async (startDate, endDate) => {
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
 
-  const response = await api.get('/api/v1/stats/reception/summary', { params });
+  const response = await api.get('/v1/stats/reception/summary', { params });
   return response.data;
 };
 
@@ -188,7 +188,7 @@ export const getReceptionByCategory = async (startDate, endDate) => {
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
 
-  const response = await api.get('/api/v1/stats/reception/by-category', { params });
+  const response = await api.get('/v1/stats/reception/by-category', { params });
   return response.data;
 };
 
@@ -199,7 +199,7 @@ export const getReceptionLignes = async (page = 1, perPage = 50, startDate, endD
   if (endDate) params.end_date = endDate;
   if (categoryId) params.category_id = categoryId;
 
-  const response = await api.get('/api/v1/reception/lignes', { params });
+  const response = await api.get('/v1/reception/lignes', { params });
   return response.data;
 };
 
@@ -209,7 +209,7 @@ export const exportReceptionLignesCSV = async (startDate, endDate, categoryId) =
   if (endDate) params.end_date = endDate;
   if (categoryId) params.category_id = categoryId;
 
-  const response = await api.get('/api/v1/reception/lignes/export-csv', {
+  const response = await api.get('/v1/reception/lignes/export-csv', {
     params,
     responseType: 'blob'
   });
@@ -234,7 +234,7 @@ export const exportReceptionLignesCSV = async (startDate, endDate, categoryId) =
 
 // Reception Categories
 export const getReceptionCategories = async () => {
-  const response = await api.get('/api/v1/reception/categories');
+  const response = await api.get('/v1/reception/categories');
   return response.data;
 };
 

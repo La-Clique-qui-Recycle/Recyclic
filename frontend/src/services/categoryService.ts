@@ -36,7 +36,7 @@ class CategoryService {
    */
   async getCategories(isActive?: boolean): Promise<Category[]> {
     const params = isActive !== undefined ? { is_active: isActive } : {};
-    const response = await api.get('/api/v1/categories/', { params });
+    const response = await api.get('/v1/categories/', { params });
     return response.data;
   }
 
@@ -44,7 +44,7 @@ class CategoryService {
    * Get a single category by ID
    */
   async getCategoryById(id: string): Promise<Category> {
-    const response = await api.get(`/api/v1/categories/${id}`);
+    const response = await api.get(`/v1/categories/${id}`);
     return response.data;
   }
 
@@ -52,7 +52,7 @@ class CategoryService {
    * Create a new category
    */
   async createCategory(data: CategoryCreate): Promise<Category> {
-    const response = await api.post('/api/v1/categories/', data);
+    const response = await api.post('/v1/categories/', data);
     return response.data;
   }
 
@@ -60,7 +60,7 @@ class CategoryService {
    * Update an existing category
    */
   async updateCategory(id: string, data: CategoryUpdate): Promise<Category> {
-    const response = await api.put(`/api/v1/categories/${id}`, data);
+    const response = await api.put(`/v1/categories/${id}`, data);
     return response.data;
   }
 
@@ -68,7 +68,7 @@ class CategoryService {
    * Soft delete a category (sets is_active to false)
    */
   async deleteCategory(id: string): Promise<Category> {
-    const response = await api.delete(`/api/v1/categories/${id}`);
+    const response = await api.delete(`/v1/categories/${id}`);
     return response.data;
   }
 
@@ -76,7 +76,7 @@ class CategoryService {
    * Hard delete category (permanent, only if no children)
    */
   async hardDeleteCategory(id: string): Promise<void> {
-    await api.delete(`/api/v1/categories/${id}/hard`);
+    await api.delete(`/v1/categories/${id}/hard`);
   }
 
   /**
@@ -90,7 +90,7 @@ class CategoryService {
    * Get direct children of a category
    */
   async getCategoryChildren(id: string): Promise<Category[]> {
-    const response = await api.get(`/api/v1/categories/${id}/children`);
+    const response = await api.get(`/v1/categories/${id}/children`);
     return response.data;
   }
 
@@ -99,7 +99,7 @@ class CategoryService {
    * Downloads a PDF file with all categories
    */
   async exportToPdf(): Promise<void> {
-    const response = await api.get('/api/v1/categories/actions/export', {
+    const response = await api.get('/v1/categories/actions/export', {
       params: { format: 'pdf' },
       responseType: 'blob'
     });
@@ -119,7 +119,7 @@ class CategoryService {
    * Downloads an Excel file with all categories
    */
   async exportToExcel(): Promise<void> {
-    const response = await api.get('/api/v1/categories/actions/export', {
+    const response = await api.get('/v1/categories/actions/export', {
       params: { format: 'xls' },
       responseType: 'blob'
     });
@@ -138,7 +138,7 @@ class CategoryService {
    * Export categories to CSV format (re-importable)
    */
   async exportToCsv(): Promise<void> {
-    const response = await api.get('/api/v1/categories/actions/export', {
+    const response = await api.get('/v1/categories/actions/export', {
       params: { format: 'csv' },
       responseType: 'blob'
     });
@@ -157,7 +157,7 @@ class CategoryService {
    * Download CSV template for categories import
    */
   async downloadImportTemplate(): Promise<void> {
-    const response = await api.get('/api/v1/categories/import/template', { responseType: 'blob' });
+    const response = await api.get('/v1/categories/import/template', { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -174,7 +174,7 @@ class CategoryService {
   async importAnalyze(file: File): Promise<{ session_id: string | null; summary: any; sample: any[]; errors: string[]; }> {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post('/api/v1/categories/import/analyze', formData, {
+    const response = await api.post('/v1/categories/import/analyze', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
@@ -184,7 +184,7 @@ class CategoryService {
    * Execute categories import from analyzed session
    */
   async importExecute(sessionId: string): Promise<{ imported: number; updated: number; errors: string[]; }> {
-    const response = await api.post('/api/v1/categories/import/execute', { session_id: sessionId });
+    const response = await api.post('/v1/categories/import/execute', { session_id: sessionId });
     return response.data;
   }
 }
