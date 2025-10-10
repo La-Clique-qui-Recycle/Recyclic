@@ -7,8 +7,7 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
 import { adminService } from '../../services/adminService'
-import { useAuth } from '../../hooks/useAuth'
-import { UserRole } from '../../generated'
+import { useAuthStore } from '../../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 
 const SettingsContainer = styled.div`
@@ -215,20 +214,16 @@ const UnauthorizedText = styled.p`
 `
 
 const Settings: React.FC = () => {
-  const { user } = useAuth()
+  const currentUser = useAuthStore((state) => state.currentUser)
   const navigate = useNavigate()
   const [exportingDatabase, setExportingDatabase] = useState(false)
 
   // Debug: Log user info
-  console.log('Settings - User:', user)
-  console.log('Settings - User role:', user?.role)
-  console.log('Settings - Expected role (enum):', UserRole.SUPER_ADMIN)
-  console.log('Settings - Role comparison (enum):', user?.role === UserRole.SUPER_ADMIN)
-  console.log('Settings - Role comparison (string):', user?.role === 'super-admin')
+  console.log('Settings - User:', currentUser)
+  console.log('Settings - User role:', currentUser?.role)
 
   // Vérifier si l'utilisateur est Super-Admin
-  // Utiliser la comparaison de string directe car user.role est string littéral
-  if (!user || user.role !== 'super-admin') {
+  if (!currentUser || currentUser.role !== 'super-admin') {
     return (
       <SettingsContainer>
         <UnauthorizedContainer>
@@ -238,7 +233,7 @@ const Settings: React.FC = () => {
             Seuls les Super-Administrateurs peuvent accéder à cette page.
             <br />
             <small style={{ color: '#9ca3af' }}>
-              (Votre rôle actuel: {user?.role || 'non connecté'})
+              (Votre rôle actuel: {currentUser?.role || 'non connecté'})
             </small>
           </UnauthorizedText>
           <Button variant="primary" onClick={() => navigate('/admin')}>
