@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { AuthApi, LoginRequest, LoginResponse, AuthUser } from '../generated/api';
-import axios from 'axios';
+import axiosClient from '../api/axiosClient';
 
 export interface User {
   id: string;
@@ -141,8 +141,7 @@ export const useAuthStore = create<AuthState>()(
         forgotPassword: async (email: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
-            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`, { email });
+            const response = await axiosClient.post('/api/v1/auth/forgot-password', { email });
 
             set({
               loading: false,
@@ -161,8 +160,7 @@ export const useAuthStore = create<AuthState>()(
         resetPassword: async (token: string, newPassword: string) => {
           set({ loading: true, error: null });
           try {
-            const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
-            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/reset-password`, {
+            const response = await axiosClient.post('/api/v1/auth/reset-password', {
               token,
               new_password: newPassword
             });

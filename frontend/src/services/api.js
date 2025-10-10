@@ -1,48 +1,4 @@
-import axios from 'axios';
-
-// Configuration pour utiliser le proxy Vite en développement
-// En développement, VITE_API_URL n'est pas définie, donc on utilise une chaîne vide
-// pour que les requêtes passent par le proxy Vite configuré dans vite.config.js
-// En production (Docker), REACT_APP_API_URL est définie dans docker-compose.yml
-const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor to add JWT token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor to handle authentication errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // Token expired, invalid, or insufficient permissions
-      localStorage.removeItem('token');
-      // Mettre à jour le store d'authentification
-      if (window.useAuthStore) {
-        window.useAuthStore.getState().logout();
-      }
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+import api from '../api/axiosClient';
 
 // Health check
 export const getHealth = async () => {
