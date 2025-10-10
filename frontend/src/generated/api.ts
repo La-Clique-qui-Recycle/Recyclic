@@ -4,66 +4,7 @@
  * Généré le: 2025-09-23T22:02:10.983Z
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import {
-  UserResponse,
-  UserCreate,
-  UserUpdate,
-  UserRoleUpdate,
-  UserStatusUpdate,
-  ApiResponse,
-  PaginatedResponse,
-  ApiError
-} from './types';
-
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-const API_BASE_URL = import.meta.env.REACT_APP_API_URL || import.meta.env.VITE_API_URL || '';
-
-const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor pour ajouter l'auth si nécessaire
-apiClient.interceptors.request.use(
-  (config) => {
-    // Récupérer le token d'authentification depuis localStorage
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor pour gérer les erreurs
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // Token expired, invalid, or insufficient permissions
-      localStorage.removeItem('token');
-      // Mettre à jour le store d'authentification
-      if (window.useAuthStore) {
-        window.useAuthStore.getState().logout();
-      }
-      window.location.href = '/login';
-    }
-    if (error.response?.data) {
-      return Promise.reject(error.response.data);
-    }
-    return Promise.reject(error);
-  }
-);
+import apiClient from '../api/axiosClient';
 
 // ============================================================================
 // API CLASSES
