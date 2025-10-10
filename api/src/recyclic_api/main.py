@@ -6,6 +6,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import logging
 import time
 import os
+import re
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -92,9 +93,14 @@ app.add_middleware(
 )
 
 # Add trusted host middleware
+# On lit la variable d'environnement ALLOWED_HOSTS
+raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,api,testserver")
+# On la transforme en une liste propre (en séparant par virgule ou espace)
+allowed_hosts = [h.strip() for h in re.split(r"[\s,]+", raw_hosts) if h.strip()]
+
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "api", "127.0.0.1", "testserver"]
+    allowed_hosts=allowed_hosts
 )
 
 # Add request timing middleware
