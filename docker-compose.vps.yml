@@ -24,8 +24,6 @@ services:
       - "traefik.http.routers.recyclic-api.entrypoints=websecure"
       - "traefik.http.routers.recyclic-api.tls.certresolver=myresolver"
       - "traefik.http.routers.recyclic-api.priority=100"
-      - "traefik.http.middlewares.recyclic-api-strip.stripprefix.prefixes=/api"
-      - "traefik.http.routers.recyclic-api.middlewares=recyclic-api-strip"
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
       - "traefik.http.services.recyclic-api.loadbalancer.passhostheader=true"
       - "traefik.tags=touch-$(date +%s)"
