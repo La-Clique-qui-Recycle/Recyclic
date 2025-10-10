@@ -179,8 +179,8 @@ export const useCashSessionStore = create<CashSessionState>()(
             console.log('[submitSale] Preparing sale:', saleData);
 
             // Call API to create sale using axiosClient (handles auth automatically)
-            console.log('[submitSale] Sending POST to /sales/');
-            const response = await axiosClient.post('/sales/', extendedPayload);
+            console.log('[submitSale] Sending POST to /api/v1/sales/');
+            const response = await axiosClient.post('/v1/sales/', extendedPayload);
             console.log('[submitSale] Sale created successfully:', response.data);
 
             // Clear current sale on success

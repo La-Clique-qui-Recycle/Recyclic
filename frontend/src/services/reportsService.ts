@@ -16,7 +16,7 @@ export interface CashSessionReportList {
 export const reportsService = {
   async listCashSessionReports(): Promise<CashSessionReportList> {
     const response = await ApiClient.client.get<CashSessionReportList>(
-      '/api/v1/admin/reports/cash-sessions',
+      '/v1/admin/reports/cash-sessions',
       { headers: getAuthHeader() }
     );
     return response.data;
@@ -24,7 +24,7 @@ export const reportsService = {
 
   async downloadCashSessionReport(filename: string): Promise<Blob> {
     const response = await ApiClient.client.get<Blob>(
-      `/api/v1/admin/reports/cash-sessions/${filename}`,
+      `/v1/admin/reports/cash-sessions/${filename}`,
       {
         headers: getAuthHeader(),
         responseType: 'blob',

@@ -209,7 +209,7 @@ const parseDashboardPayload = (payload: any): DashboardAggregate => {
 export const dashboardService = {
   async listSites(): Promise<SiteOption[]> {
     try {
-      const response = await ApiClient.client.get('/api/v1/admin/sites')
+      const response = await ApiClient.client.get('/v1/admin/sites')
       return Array.isArray(response.data?.sites) ? response.data.sites : []
     } catch (error: any) {
       console.warn('Failed to load sites:', error?.message)
