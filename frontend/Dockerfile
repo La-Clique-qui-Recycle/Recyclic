@@ -15,7 +15,7 @@ ARG REACT_APP_API_URL
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 # Construire l'application pour la production
-RUN npm run build
+RUN echo "----> Building with API URL: $REACT_APP_API_URL" && npm run build
 
 # Étape 2: Servir l'application avec Nginx
 FROM nginx:stable-alpine
