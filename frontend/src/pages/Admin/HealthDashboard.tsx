@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { healthService, SystemHealth, Anomaly, Recommendation } from '../../services/healthService'
+import { adminService } from '../../services/adminService'
+import { useAuth } from '../../hooks/useAuth'
+import { UserRole } from '../../generated'
 
 const HealthDashboardContainer = styled.div`
   padding: 24px;
@@ -316,12 +319,28 @@ const RefreshButton = styled(Button)`
   gap: 8px;
 `
 
+const WarningBox = styled.div`
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: #92400e;
+
+  strong {
+    color: #78350f;
+  }
+`
+
 const HealthDashboard: React.FC = () => {
+  const { user } = useAuth()
   const [healthData, setHealthData] = useState<SystemHealth | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [testingNotifications, setTestingNotifications] = useState(false)
+  const [exportingDatabase, setExportingDatabase] = useState(false)
 
   const loadHealthData = useCallback(async () => {
     try {
@@ -346,6 +365,24 @@ const HealthDashboard: React.FC = () => {
       alert(`Erreur lors de l'envoi de la notification de test: ${err instanceof Error ? err.message : 'Erreur inconnue'}`)
     } finally {
       setTestingNotifications(false)
+    }
+  }
+
+  const handleExportDatabase = async () => {
+    if (!confirm('⚠️ Voulez-vous vraiment exporter la base de données ? Cette opération peut prendre plusieurs minutes.')) {
+      return
+    }
+
+    try {
+      setExportingDatabase(true)
+      await adminService.exportDatabase()
+      alert('✅ Export de la base de données réussi ! Le fichier a été téléchargé.')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
+      alert(`❌ Erreur lors de l'export de la base de données: ${errorMessage}`)
+      console.error('Export database error:', err)
+    } finally {
+      setExportingDatabase(false)
     }
   }
 
@@ -554,6 +591,23 @@ const HealthDashboard: React.FC = () => {
         <SectionTitle>⚙️ Statut du Scheduler</SectionTitle>
         {renderSchedulerStatus(scheduler_status)}
       </Section>
+
+      {user?.role === UserRole.SUPER_ADMIN && (
+        <Section>
+          <SectionTitle>🗄️ Maintenance de la Base de Données</SectionTitle>
+          <WarningBox>
+            <strong>⚠️ Attention :</strong> L'export de la base de données peut prendre plusieurs minutes
+            et consommer des ressources système importantes. Cette opération est réservée aux Super-Admins.
+          </WarningBox>
+          <Button
+            variant="secondary"
+            onClick={handleExportDatabase}
+            disabled={exportingDatabase}
+          >
+            {exportingDatabase ? '⏳ Export en cours...' : '💾 Exporter la base de données'}
+          </Button>
+        </Section>
+      )}
 
     </HealthDashboardContainer>
   )

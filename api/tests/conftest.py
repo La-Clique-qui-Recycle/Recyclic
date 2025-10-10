@@ -145,6 +145,37 @@ def admin_client(db_session: Session) -> Generator[TestClient, None, None]:
     yield client
 
 @pytest.fixture(scope="function")
+def super_admin_client(db_session: Session) -> Generator[TestClient, None, None]:
+    """
+    Fixture pour un client de test avec les droits de super-administrateur.
+    Crée un utilisateur super-admin, génère un token JWT et configure le client.
+    """
+    # Création de l'utilisateur super-admin
+    super_admin_username = f"superadmin_{uuid.uuid4().hex}@test.com"
+    super_admin_password = "superadmin_password"
+    hashed_password = hash_password(super_admin_password)
+
+    super_admin_user = User(
+        username=super_admin_username,
+        hashed_password=hashed_password,
+        role=UserRole.SUPER_ADMIN,
+        status=UserStatus.ACTIVE,
+        telegram_id=888888888  # integer comme attendu par les tests
+    )
+    db_session.add(super_admin_user)
+    db_session.commit()
+    db_session.refresh(super_admin_user)
+
+    # Génération du token
+    access_token = create_access_token(data={"sub": str(super_admin_user.id)})
+
+    # Configuration du client de test
+    client = TestClient(app)
+    client.headers["Authorization"] = f"Bearer {access_token}"
+
+    yield client
+
+@pytest.fixture(scope="function")
 def async_client():
     """Fixture pour le client de test asynchrone FastAPI."""
     return AsyncClient(app=app, base_url="http://testserver")

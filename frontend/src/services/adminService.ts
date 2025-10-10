@@ -345,6 +345,51 @@ export const adminService = {
       console.error('Erreur lors de la récupération de l\'historique utilisateur:', error);
       throw error;
     }
+  },
+
+  /**
+   * Exporte la base de données (réservé aux Super-Admins)
+   * Télécharge un fichier SQL de backup de la base de données
+   */
+  async exportDatabase(): Promise<void> {
+    try {
+      // Utiliser axiosClient directement car c'est un téléchargement de fichier
+      const response = await axiosClient.post('/admin/db/export', {}, {
+        responseType: 'blob', // Important pour recevoir un fichier binaire
+        timeout: 300000, // 5 minutes timeout (export peut être long)
+      });
+
+      // Créer un blob à partir de la réponse
+      const blob = new Blob([response.data], { type: 'application/sql' });
+
+      // Extraire le nom du fichier depuis les headers
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'recyclic_db_export.sql';
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Créer un lien temporaire et déclencher le téléchargement
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+
+      // Nettoyage
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log(`Export de base de données téléchargé: ${filename}`);
+    } catch (error) {
+      console.error('Erreur lors de l\'export de la base de données:', error);
+      throw error;
+    }
   }
 };
 
