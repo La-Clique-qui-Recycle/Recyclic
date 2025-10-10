@@ -6,7 +6,7 @@ import axios from 'axios';
 const axiosClient = axios.create({
     // La baseURL est lue UNE SEULE FOIS ici, depuis la variable d'environnement.
     // C'est la seule source de vérité pour l'URL de l'API.
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: 'https://recyclic.jarvos.eu/api',
 });
 
 // 2. Intercepteur pour ajouter le token d'authentification
