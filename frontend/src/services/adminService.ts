@@ -354,7 +354,7 @@ export const adminService = {
   async exportDatabase(): Promise<void> {
     try {
       // Utiliser axiosClient directement car c'est un téléchargement de fichier
-      const response = await axiosClient.post('/admin/db/export', {}, {
+      const response = await axiosClient.post('/v1/admin/db/export', {}, {
         responseType: 'blob', // Important pour recevoir un fichier binaire
         timeout: 300000, // 5 minutes timeout (export peut être long)
       });
