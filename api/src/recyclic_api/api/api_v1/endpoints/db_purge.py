@@ -32,8 +32,8 @@ async def purge_transactional_data(
     Tables affectées (dans cet ordre pour respecter les contraintes de clés étrangères) :
     - sale_items (lignes de vente)
     - sales (ventes)
-    - reception_lines (lignes de réception)
-    - reception_tickets (tickets de réception)
+    - ligne_depot (lignes de dépôt)
+    - ticket_depot (tickets de dépôt)
     - cash_sessions (sessions de caisse)
     
     Tables préservées :
@@ -52,8 +52,8 @@ async def purge_transactional_data(
         tables_to_purge = [
             "sale_items",        # Lignes de vente (dépendent de sales)
             "sales",             # Ventes (dépendent de cash_sessions)
-            "reception_lines",   # Lignes de réception (dépendent de reception_tickets)
-            "reception_tickets", # Tickets de réception
+            "ligne_depot",       # Lignes de dépôt (dépendent de ticket_depot)
+            "ticket_depot",      # Tickets de dépôt
             "cash_sessions"      # Sessions de caisse
         ]
         
