@@ -11,11 +11,11 @@ RUN npm install
 COPY . .
 
 # Définir les arguments de build pour les variables d'environnement
-ARG REACT_APP_API_URL
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 # Construire l'application pour la production
-RUN echo "----> Building with API URL: $REACT_APP_API_URL" && npm run build
+RUN echo "----> Building with API URL: $VITE_API_URL" && npm run build
 
 # Étape 2: Servir l'application avec Nginx
 FROM nginx:stable-alpine
@@ -24,7 +24,7 @@ FROM nginx:stable-alpine
 RUN apk add --no-cache curl
 
 # Copier les fichiers de build de l'étape précédente
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/build /usr/share/nginx/html
 
 # Copier la configuration Nginx personnalisée
 COPY nginx.conf /etc/nginx/conf.d/default.conf

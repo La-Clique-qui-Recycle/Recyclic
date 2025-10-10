@@ -66,7 +66,7 @@ export default function Profile(): JSX.Element {
   const [error, setError] = React.useState<string | null>(null);
   const [pwdError, setPwdError] = React.useState<string | null>(null);
 
-  const API_BASE = (import.meta as any).env.REACT_APP_API_URL ?? (import.meta as any).env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+  const API_BASE = (import.meta as any).env.VITE_API_URL;
 
   const handleSaveInfo = async () => {
     setSavingInfo(true);
