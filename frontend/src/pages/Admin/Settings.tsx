@@ -219,8 +219,16 @@ const Settings: React.FC = () => {
   const navigate = useNavigate()
   const [exportingDatabase, setExportingDatabase] = useState(false)
 
+  // Debug: Log user info
+  console.log('Settings - User:', user)
+  console.log('Settings - User role:', user?.role)
+  console.log('Settings - Expected role (enum):', UserRole.SUPER_ADMIN)
+  console.log('Settings - Role comparison (enum):', user?.role === UserRole.SUPER_ADMIN)
+  console.log('Settings - Role comparison (string):', user?.role === 'super-admin')
+
   // Vérifier si l'utilisateur est Super-Admin
-  if (!user || user.role !== UserRole.SUPER_ADMIN) {
+  // Utiliser la comparaison de string directe car user.role est string littéral
+  if (!user || user.role !== 'super-admin') {
     return (
       <SettingsContainer>
         <UnauthorizedContainer>
@@ -228,6 +236,10 @@ const Settings: React.FC = () => {
           <UnauthorizedTitle>Accès Restreint</UnauthorizedTitle>
           <UnauthorizedText>
             Seuls les Super-Administrateurs peuvent accéder à cette page.
+            <br />
+            <small style={{ color: '#9ca3af' }}>
+              (Votre rôle actuel: {user?.role || 'non connecté'})
+            </small>
           </UnauthorizedText>
           <Button variant="primary" onClick={() => navigate('/admin')}>
             Retour au tableau de bord
