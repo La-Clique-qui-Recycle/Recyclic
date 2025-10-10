@@ -23,6 +23,10 @@ FROM nginx:stable-alpine
 # Installer curl pour le healthcheck
 RUN apk add --no-cache curl
 
+# AJOUTE CETTE LIGNE - C'est la commande "Terre Brûlée"
+# Elle efface tout le contenu par défaut de NGINX avant la copie.
+RUN rm -rf /usr/share/nginx/html/*
+
 # Copier les fichiers de build de l'étape précédente
 COPY --from=builder /app/dist /usr/share/nginx/html
 
