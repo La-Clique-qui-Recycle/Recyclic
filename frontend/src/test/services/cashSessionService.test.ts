@@ -29,7 +29,7 @@ describe('cashSessionService', () => {
       
       const result = await cashSessionService.closeSessionWithAmounts('session-123', 75.0, 'Test comment')
       
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/cash-sessions/session-123/close', {
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/cash-sessions/session-123/close', {
         actual_amount: 75.0,
         variance_comment: 'Test comment'
       })
@@ -55,7 +55,7 @@ describe('cashSessionService', () => {
       
       await cashSessionService.closeSessionWithAmounts('session-123', 75.0)
       
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/cash-sessions/session-123/close', {
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/cash-sessions/session-123/close', {
         actual_amount: 75.0,
         variance_comment: undefined
       })

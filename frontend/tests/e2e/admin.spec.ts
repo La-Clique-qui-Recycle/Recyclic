@@ -60,7 +60,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Admin peut voir la liste des utilisateurs', async ({ page }) => {
     // Mock de la réponse API
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -106,7 +106,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Admin peut modifier le rôle d\'un utilisateur', async ({ page }) => {
     // Mock des réponses API
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -127,7 +127,7 @@ test.describe('Interface d\'Administration E2E', () => {
       });
     });
 
-    await page.route(`${API_BASE_URL}/api/v1/admin/users/user-1/role`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users/user-1/role`, async route => {
       if (route.request().method() === 'PUT') {
         await route.fulfill({
           status: 200,
@@ -166,7 +166,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Admin peut filtrer les utilisateurs par rôle', async ({ page }) => {
     // Mock de la réponse API avec filtres
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       const url = new URL(route.request().url());
       const role = url.searchParams.get('role');
       
@@ -240,7 +240,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Gestion des erreurs API', async ({ page }) => {
     // Mock d'une erreur API
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
@@ -274,7 +274,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Pagination fonctionne correctement', async ({ page }) => {
     // Mock d'une réponse avec pagination
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       const url = new URL(route.request().url());
       const skip = parseInt(url.searchParams.get('skip') || '0');
       const limit = parseInt(url.searchParams.get('limit') || '20');
@@ -312,7 +312,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Recherche d\'utilisateurs fonctionne', async ({ page }) => {
     // Mock de la réponse API avec recherche
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       const url = new URL(route.request().url());
       const search = url.searchParams.get('search');
 
@@ -377,7 +377,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Modale d\'édition de profil sécurisée - workflow complet', async ({ page }) => {
     // Mock des réponses API
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -386,7 +386,7 @@ test.describe('Interface d\'Administration E2E', () => {
     });
 
     // Mock pour la mise à jour d'utilisateur
-    await page.route(`${API_BASE_URL}/api/v1/users/${TEST_EDIT_USER.id}`, async route => {
+    await page.route(`${API_BASE_URL}/v1/users/${TEST_EDIT_USER.id}`, async route => {
       if (route.request().method() === 'PUT') {
         await route.fulfill({
           status: 200,
@@ -402,7 +402,7 @@ test.describe('Interface d\'Administration E2E', () => {
     });
 
     // Mock pour la mise à jour de rôle
-    await page.route(`${API_BASE_URL}/api/v1/admin/users/${TEST_EDIT_USER.id}/role`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users/${TEST_EDIT_USER.id}/role`, async route => {
       if (route.request().method() === 'PUT') {
         await route.fulfill({
           status: 200,
@@ -468,7 +468,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Modale d\'édition de profil - validation des champs', async ({ page }) => {
     // Mock des réponses API
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -509,7 +509,7 @@ test.describe('Interface d\'Administration E2E', () => {
 
   test('Modale d\'édition de profil - annulation fonctionne', async ({ page }) => {
     // Mock des réponses API
-    await page.route(`${API_BASE_URL}/api/v1/admin/users*`, async route => {
+    await page.route(`${API_BASE_URL}/v1/admin/users*`, async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

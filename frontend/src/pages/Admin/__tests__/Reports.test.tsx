@@ -28,13 +28,13 @@ const mockReports = {
       filename: 'cash_session_1.csv',
       size_bytes: 2048,
       modified_at: '2025-09-20T10:15:00Z',
-      download_url: '/api/v1/admin/reports/cash-sessions/cash_session_1.csv?token=abc',
+      download_url: '/v1/admin/reports/cash-sessions/cash_session_1.csv?token=abc',
     },
     {
       filename: 'cash_session_2.csv',
       size_bytes: 8192,
       modified_at: '2025-09-20T12:45:00Z',
-      download_url: '/api/v1/admin/reports/cash-sessions/cash_session_2.csv?token=xyz',
+      download_url: '/v1/admin/reports/cash-sessions/cash_session_2.csv?token=xyz',
     },
   ],
 };
@@ -114,7 +114,7 @@ describe('AdminReports page', () => {
     fireEvent.click(downloadButton);
 
     await waitFor(() => {
-      expect(reportsService.downloadCashSessionReport).toHaveBeenCalledWith('/api/v1/admin/reports/cash-sessions/cash_session_1.csv?token=abc');
+      expect(reportsService.downloadCashSessionReport).toHaveBeenCalledWith('/v1/admin/reports/cash-sessions/cash_session_1.csv?token=abc');
     });
   });
 });

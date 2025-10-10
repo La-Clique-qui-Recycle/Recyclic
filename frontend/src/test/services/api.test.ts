@@ -43,8 +43,8 @@ describe('API Service', () => {
 
       const result = await HealthApi.checkapiv1healthget()
 
-      // Le client généré appelle /api/v1/health/
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/health/')
+      // Le client généré appelle /v1/health/
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/health/')
       expect(result).toEqual(mockResponse)
     })
   })
@@ -57,7 +57,7 @@ describe('API Service', () => {
       const result = await UsersApi.usersapiv1usersget()
 
       // Le générateur ajoute ? quand aucun param
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/users/?')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/users/?')
       expect(result).toEqual(mockUsers)
     })
 
@@ -67,7 +67,7 @@ describe('API Service', () => {
 
       const result = await UsersApi.userapiv1usersuseridget(1)
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/users/1')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/users/1')
       expect(result).toEqual(mockUser)
     })
 
@@ -78,7 +78,7 @@ describe('API Service', () => {
 
       const result = await UsersApi.userapiv1userspost(userData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/users/', userData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/users/', userData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -90,7 +90,7 @@ describe('API Service', () => {
 
       const result = await SitesApi.sitesapiv1sitesget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sites/?')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/sites/?')
       expect(result).toEqual(mockSites)
     })
 
@@ -100,7 +100,7 @@ describe('API Service', () => {
 
       const result = await SitesApi.siteapiv1sitessiteidget(1)
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sites/1')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/sites/1')
       expect(result).toEqual(mockSite)
     })
 
@@ -111,7 +111,7 @@ describe('API Service', () => {
 
       const result = await SitesApi.siteapiv1sitespost(siteData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/sites/', siteData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/sites/', siteData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -123,7 +123,7 @@ describe('API Service', () => {
 
       const result = await DepositsApi.depositsapiv1depositsget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/deposits/?')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/deposits/?')
       expect(result).toEqual(mockDeposits)
     })
 
@@ -133,7 +133,7 @@ describe('API Service', () => {
 
       const result = await DepositsApi.depositapiv1depositsdepositidget(1)
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/deposits/1')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/deposits/1')
       expect(result).toEqual(mockDeposit)
     })
 
@@ -144,7 +144,7 @@ describe('API Service', () => {
 
       const result = await DepositsApi.depositapiv1depositspost(depositData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/deposits/', depositData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/deposits/', depositData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -156,7 +156,7 @@ describe('API Service', () => {
 
       const result = await SalesApi.salesapiv1salesget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sales/?')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/sales/?')
       expect(result).toEqual(mockSales)
     })
 
@@ -166,7 +166,7 @@ describe('API Service', () => {
 
       const result = await SalesApi.saleapiv1salessaleidget(1)
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/sales/1')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/sales/1')
       expect(result).toEqual(mockSale)
     })
 
@@ -177,7 +177,7 @@ describe('API Service', () => {
 
       const result = await SalesApi.saleapiv1salespost(saleData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/sales/', saleData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/sales/', saleData)
       expect(result).toEqual(mockResponse)
     })
   })
@@ -189,7 +189,7 @@ describe('API Service', () => {
 
       const result = await CashSessionsApi.cashsessionsapiv1cashsessionsget()
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/cash-sessions/?')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/cash-sessions/?')
       expect(result).toEqual(mockSessions)
     })
 
@@ -199,7 +199,7 @@ describe('API Service', () => {
 
       const result = await CashSessionsApi.cashsessionapiv1cashsessionssessionidget(1)
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v1/cash-sessions/1')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/v1/cash-sessions/1')
       expect(result).toEqual(mockSession)
     })
 
@@ -210,7 +210,7 @@ describe('API Service', () => {
 
       const result = await CashSessionsApi.cashsessionapiv1cashsessionspost(sessionData)
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/cash-sessions/', sessionData)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/v1/cash-sessions/', sessionData)
       expect(result).toEqual(mockResponse)
     })
   })

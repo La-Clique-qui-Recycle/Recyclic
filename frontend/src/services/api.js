@@ -13,7 +13,7 @@ export const getUsers = async () => {
 };
 
 export const getUser = async (id) => {
-  const response = await api.get(`/api/v1/users/${id}`);
+  const response = await api.get(`/v1/users/${id}`);
   return response.data;
 };
 
@@ -29,7 +29,7 @@ export const getSites = async (params = {}) => {
 };
 
 export const getSite = async (id) => {
-  const response = await api.get(`/api/v1/sites/${id}`);
+  const response = await api.get(`/v1/sites/${id}`);
   return response.data;
 };
 
@@ -86,7 +86,7 @@ export const getDeposits = async () => {
 };
 
 export const getDeposit = async (id) => {
-  const response = await api.get(`/api/v1/deposits/${id}`);
+  const response = await api.get(`/v1/deposits/${id}`);
   return response.data;
 };
 
@@ -102,7 +102,7 @@ export const getSales = async () => {
 };
 
 export const getSale = async (id) => {
-  const response = await api.get(`/api/v1/sales/${id}`);
+  const response = await api.get(`/v1/sales/${id}`);
   return response.data;
 };
 
@@ -118,7 +118,7 @@ export const getCashSessions = async () => {
 };
 
 export const getCashSession = async (id) => {
-  const response = await api.get(`/api/v1/cash-sessions/${id}`);
+  const response = await api.get(`/v1/cash-sessions/${id}`);
   return response.data;
 };
 
@@ -134,7 +134,7 @@ export const getCashRegisters = async (params = {}) => {
 };
 
 export const getCashRegister = async (id) => {
-  const response = await api.get(`/api/v1/cash-registers/${id}`);
+  const response = await api.get(`/v1/cash-registers/${id}`);
   return response.data;
 };
 
@@ -169,7 +169,7 @@ export const getReceptionTickets = async (page = 1, perPage = 10) => {
 };
 
 export const getReceptionTicketDetail = async (ticketId) => {
-  const response = await api.get(`/api/v1/reception/tickets/${ticketId}`);
+  const response = await api.get(`/v1/reception/tickets/${ticketId}`);
   return response.data;
 };
 

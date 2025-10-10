@@ -110,7 +110,7 @@ describe('dashboardService', () => {
 
       const result = await dashboardService.getDashboardData()
 
-      expect(mockClient.get).toHaveBeenCalledWith('/api/v1/admin/dashboard/stats', { headers: { Authorization: 'Bearer mock-token' } })
+      expect(mockClient.get).toHaveBeenCalledWith('/v1/admin/dashboard/stats', { headers: { Authorization: 'Bearer mock-token' } })
       expect(result).toEqual({
         stats: {
           totalSessions: 2,
@@ -170,7 +170,7 @@ describe('dashboardService', () => {
 
       const result = await dashboardService.listSites()
 
-      expect(mockClient.get).toHaveBeenCalledWith('/api/v1/admin/sites')
+      expect(mockClient.get).toHaveBeenCalledWith('/v1/admin/sites')
       expect(result).toEqual(mockSites)
     })
 
