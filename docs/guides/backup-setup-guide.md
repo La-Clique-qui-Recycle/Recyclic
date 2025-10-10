@@ -389,3 +389,4 @@ rsync -avz backup_user@old-server:/backups/recyclic/ backup_user@new-server:/bac
 ---
 
 **🎉 Félicitations !** Votre système de sauvegarde automatisée Recyclic est maintenant opérationnel et sécurisé.
+

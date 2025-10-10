@@ -70,3 +70,4 @@ fi
 rm -f "$CRON_JOB_FILE"
 
 log "Configuration terminée. Vérifiez les logs dans $PROJECT_ROOT/logs/backup_cron.log"
+

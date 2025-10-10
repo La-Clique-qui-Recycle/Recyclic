@@ -222,3 +222,4 @@ trap 'error "Test interrompu par une erreur"' ERR
 
 # Exécution
 main "$@"
+

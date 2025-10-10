@@ -356,3 +356,4 @@ docker-compose up -d
 - [Documentation PostgreSQL pg_restore](https://www.postgresql.org/docs/current/app-pgrestore.html)
 - [Guide de sauvegarde Recyclic](../architecture/architecture.md#sauvegarde)
 - [Procédure de déploiement](../guides/deploiement-vps.md)
+
