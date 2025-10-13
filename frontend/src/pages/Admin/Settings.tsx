@@ -4,7 +4,7 @@
  * Contient les outils de gestion de la base de données
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { adminService } from '../../services/adminService'
 import { useAuthStore } from '../../stores/authStore'
@@ -314,6 +314,51 @@ const ModalButton = styled.button<{ variant: 'primary' | 'secondary' | 'danger' 
   }
 `
 
+// Styles pour les paramètres de session
+const FormGroup = styled.div`
+  margin-bottom: 20px;
+`
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+`
+
+const Input = styled.input`
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  &:disabled {
+    background-color: #f9fafb;
+    color: #6b7280;
+  }
+`
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 8px;
+`
+
+const SuccessMessage = styled.div`
+  color: #059669;
+  font-size: 0.875rem;
+  margin-top: 8px;
+`
+
 const Settings: React.FC = () => {
   const currentUser = useAuthStore((state) => state.currentUser)
   const navigate = useNavigate()
@@ -322,6 +367,33 @@ const Settings: React.FC = () => {
   const [showPurgeModal, setShowPurgeModal] = useState(false)
   const [purgeStep, setPurgeStep] = useState(1)
   const [confirmationText, setConfirmationText] = useState('')
+  
+  // États pour les paramètres de session
+  const [sessionSettings, setSessionSettings] = useState({ token_expiration_minutes: 480 })
+  const [loadingSessionSettings, setLoadingSessionSettings] = useState(false)
+  const [savingSessionSettings, setSavingSessionSettings] = useState(false)
+  const [sessionSettingsError, setSessionSettingsError] = useState<string | null>(null)
+
+  // Charger les paramètres de session au montage du composant
+  useEffect(() => {
+    const loadSessionSettings = async () => {
+      try {
+        setLoadingSessionSettings(true)
+        setSessionSettingsError(null)
+        const settings = await adminService.getSessionSettings()
+        setSessionSettings(settings)
+      } catch (error) {
+        console.error('Erreur lors du chargement des paramètres de session:', error)
+        setSessionSettingsError('Erreur lors du chargement des paramètres')
+      } finally {
+        setLoadingSessionSettings(false)
+      }
+    }
+
+    if (currentUser?.role === 'super-admin') {
+      loadSessionSettings()
+    }
+  }, [currentUser])
 
   // Debug: Log user info
   console.log('Settings - User:', currentUser)
@@ -413,6 +485,56 @@ const Settings: React.FC = () => {
     setConfirmationText('')
   }
 
+  // Fonctions pour les paramètres de session
+  const handleSessionSettingsChange = (field: string, value: number) => {
+    // Validation côté client
+    if (value < 1) {
+      setSessionSettingsError('La durée doit être d\'au moins 1 minute')
+      return
+    }
+    if (value > 10080) {
+      setSessionSettingsError('La durée ne peut pas dépasser 7 jours (10080 minutes)')
+      return
+    }
+    
+    setSessionSettingsError(null)
+    setSessionSettings(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleSaveSessionSettings = async () => {
+    try {
+      setSavingSessionSettings(true)
+      setSessionSettingsError(null)
+      
+      // Validation finale avant envoi
+      if (sessionSettings.token_expiration_minutes < 1 || sessionSettings.token_expiration_minutes > 10080) {
+        setSessionSettingsError('Valeur invalide. La durée doit être entre 1 et 10080 minutes.')
+        return
+      }
+      
+      await adminService.updateSessionSettings(sessionSettings.token_expiration_minutes)
+      alert('✅ Paramètres de session sauvegardés avec succès !')
+    } catch (error: any) {
+      console.error('Erreur lors de la sauvegarde des paramètres de session:', error)
+      
+      // Gestion d'erreur plus spécifique
+      if (error.response?.status === 400) {
+        setSessionSettingsError(error.response.data.detail || 'Données invalides')
+      } else if (error.response?.status === 403) {
+        setSessionSettingsError('Accès refusé. Seuls les Super-Administrateurs peuvent modifier ces paramètres.')
+      } else if (error.response?.status === 401) {
+        setSessionSettingsError('Session expirée. Veuillez vous reconnecter.')
+      } else {
+        setSessionSettingsError('Erreur lors de la sauvegarde des paramètres')
+      }
+    } finally {
+      setSavingSessionSettings(false)
+    }
+  }
+
   return (
     <SettingsContainer>
       <PageHeader>
@@ -479,6 +601,81 @@ const Settings: React.FC = () => {
               <strong>⚠️ DANGER :</strong> Cette action supprimera définitivement toutes les données transactionnelles.
               Elle ne doit être utilisée qu'une seule fois avant le lancement officiel de l'application.
             </WarningBox>
+          </ActionCard>
+        </ActionGroup>
+      </Section>
+
+      {/* Section Sécurité */}
+      <Section>
+        <SectionHeader>
+          <SectionTitle>
+            🔒 Sécurité
+          </SectionTitle>
+          <SectionDescription>
+            Configuration des paramètres de sécurité et d'authentification du système.
+          </SectionDescription>
+        </SectionHeader>
+
+        <ActionGroup>
+          {/* Paramètres de session */}
+          <ActionCard>
+            <ActionHeader>
+              <ActionInfo>
+                <ActionTitle>Durée de session</ActionTitle>
+                <ActionDescription>
+                  Configurez la durée d'expiration des tokens d'authentification. 
+                  Une durée plus longue améliore l'expérience utilisateur mais réduit la sécurité.
+                </ActionDescription>
+              </ActionInfo>
+            </ActionHeader>
+            
+            {loadingSessionSettings ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                ⏳ Chargement des paramètres...
+              </div>
+            ) : (
+              <div>
+                <FormGroup>
+                  <Label htmlFor="token-expiration">
+                    Durée de la session (en minutes)
+                  </Label>
+                  <Input
+                    id="token-expiration"
+                    type="number"
+                    min="1"
+                    max="10080"
+                    value={sessionSettings.token_expiration_minutes}
+                    onChange={(e) => handleSessionSettingsChange('token_expiration_minutes', parseInt(e.target.value) || 480)}
+                    disabled={savingSessionSettings}
+                    placeholder="480"
+                  />
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                    Valeur recommandée : 480 minutes (8 heures) pour une utilisation en boutique
+                  </div>
+                </FormGroup>
+
+                {sessionSettingsError && (
+                  <ErrorMessage>
+                    ❌ {sessionSettingsError}
+                  </ErrorMessage>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                  <Button
+                    variant="primary"
+                    onClick={handleSaveSessionSettings}
+                    disabled={savingSessionSettings}
+                  >
+                    {savingSessionSettings ? '⏳ Sauvegarde...' : '💾 Enregistrer'}
+                  </Button>
+                </div>
+
+                <InfoBox style={{ marginTop: '16px' }}>
+                  <strong>ℹ️ Information :</strong> Les nouveaux tokens créés après la sauvegarde 
+                  utiliseront cette durée d'expiration. Les tokens existants conservent leur durée d'origine.
+                </InfoBox>
+              </div>
+            )}
           </ActionCard>
         </ActionGroup>
       </Section>

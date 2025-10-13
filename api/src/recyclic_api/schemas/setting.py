@@ -25,3 +25,13 @@ class SettingResponse(SettingBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SessionSettingsResponse(BaseModel):
+    """Schema for session settings response."""
+    token_expiration_minutes: int
+
+
+class SessionSettingsUpdate(BaseModel):
+    """Schema for updating session settings."""
+    token_expiration_minutes: int
