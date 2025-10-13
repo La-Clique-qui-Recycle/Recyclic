@@ -23,12 +23,12 @@ Cette fonctionnalité est une opération de maintenance critique et dangereuse, 
 
 -   Un nouvel endpoint API `POST /api/v1/admin/db/purge-transactions` est créé.
 -   Cet endpoint est protégé et accessible **uniquement** par les utilisateurs ayant le rôle `SUPER_ADMIN`.
--   La logique de cet endpoint exécute une suppression (`TRUNCATE` ou `DELETE`) des données des tables suivantes (et de toutes les tables liées) :
-    -   `sales`
-    -   `sale_items`
-    -   `cash_sessions`
-    -   `reception_tickets`
-    -   `reception_lines`
+-   La logique de cet endpoint exécute une suppression (`DELETE`) des données des tables suivantes (et de toutes les tables liées) :
+    -   `sale_items` (lignes de vente)
+    -   `sales` (ventes)
+    -   `ligne_depot` (lignes de dépôt)
+    -   `ticket_depot` (tickets de dépôt)
+    -   `cash_sessions` (sessions de caisse)
 -   La logique **NE DOIT PAS** toucher aux tables de configuration : `users`, `sites`, `categories`, `cash_registers`.
 -   L'opération complète doit être effectuée dans une seule transaction de base de données.
 
@@ -128,12 +128,14 @@ Claude Sonnet 4 (James - Full Stack Developer)
 
 ### Completion Notes List
 - ✅ Endpoint backend créé avec protection SUPER_ADMIN stricte
-- ✅ Suppression sécurisée des tables transactionnelles (sales, sale_items, cash_sessions, reception_tickets, reception_lines)
+- ✅ Suppression sécurisée des tables transactionnelles (sales, sale_items, cash_sessions, ticket_depot, ligne_depot)
 - ✅ Préservation des tables de configuration (users, sites, categories, cash_registers)
 - ✅ Workflow de confirmation en 3 étapes implémenté
 - ✅ Interface utilisateur avec modales de confirmation
 - ✅ Tests unitaires complets pour la sécurité et le fonctionnement
 - ✅ Gestion des erreurs et rollback en cas d'échec
+- ✅ Correction des noms de tables (ticket_depot, ligne_depot au lieu de reception_tickets, reception_lines)
+- ✅ Correction de la gestion des transactions SQLAlchemy
 
 ### File List
 - `api/src/recyclic_api/api/api_v1/endpoints/db_purge.py` - Endpoint de purge
@@ -147,6 +149,22 @@ Claude Sonnet 4 (James - Full Stack Developer)
 - 2025-01-27: Implémentation complète de la fonctionnalité de purge sécurisée
 - 2025-01-27: Ajout des tests de sécurité et de fonctionnement
 - 2025-01-27: Interface utilisateur avec workflow de confirmation en 3 étapes
+- 2025-01-27: Correction des noms de tables (ticket_depot, ligne_depot)
+- 2025-01-27: Correction de la gestion des transactions SQLAlchemy
+- 2025-01-27: Correction de l'ordre de suppression des tables
 
 ### Status
 Ready for Review
+
+---
+
+## PO Review
+
+**Date**: 2025-09-22  
+**Relecteur PO**: Sarah (Product Owner)
+
+### Décision
+**ACCEPTÉE**
+
+### Raison de l'Acceptation
+La fonctionnalité critique de purge a été implémentée avec les garde-fous de sécurité demandés. La story est terminée.

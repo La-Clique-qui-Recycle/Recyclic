@@ -22,7 +22,7 @@ Les fonctionnalités d'export et de purge de la base de données ont été déve
 1.  Une nouvelle page frontend est créée à l'URL `/admin/settings`.
 2.  Un lien "Paramètres" est ajouté au menu de navigation de l'administration pour accéder à cette page.
 3.  L'accès à cette page est protégé et réservé aux utilisateurs ayant le rôle `SUPER_ADMIN`.
-4.  Sur cette page, une section "Base de Données" est créée.
+4.  Sur cette nouvelle page, une section "Base de Données" est créée.
 5.  Cette section contient :
     -   Le bouton "Exporter la base de données" (développé dans la story `STORY-B11-P2`).
     -   Le bouton "Purger les données transactionnelles" (qui sera développé dans la story `STORY-B25-P1`).
@@ -36,7 +36,20 @@ Les fonctionnalités d'export et de purge de la base de données ont été déve
 - [x] La page `/admin/settings` est créée et accessible.
 - [x] L'accès est bien restreint aux SuperAdmins.
 - [x] Les boutons d'export et de purge sont présents sur la page.
-- [ ] La story a été validée par le Product Owner.
+- [x] La story a été validée par le Product Owner.
+
+---
+
+## PO Review
+
+**Date**: 2025-09-22  
+**Relecteur PO**: Sarah (Product Owner)
+
+### Décision
+**ACCEPTÉE**
+
+### Raison de l'Acceptation
+La page de paramètres a été créée et intègre correctement les fonctionnalités de gestion de la base de données. La story est terminée.
 
 ## QA Results
 
