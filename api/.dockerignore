@@ -1,0 +1,22 @@
+# Ignorer les environnements virtuels Python
+.venv/
+virtualenv/
+env/
+
+# Ignorer les caches Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignorer les caches d'outils de test
+.pytest_cache/
+.coverage
+
+# Ignorer les bases de données de test locales
+*.db
+*.db-journal
+
+# Ignorer les fichiers de configuration locaux
+.env
+.env.*
+!env.example

@@ -1,7 +1,7 @@
 /**
  * Types générés automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-23T22:02:10.977Z
+ * Généré le: 2025-10-14T01:57:52.554Z
  */
 
 // ============================================================================
@@ -37,6 +37,7 @@ export enum UserRole {
   SUPER_ADMIN = 'super-admin',
   ADMIN = 'admin',
   MANAGER = 'manager',
+  CASHIER = 'cashier',
   USER = 'user'
 }
 export enum UserStatus {

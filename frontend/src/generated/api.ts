@@ -1,11 +1,23 @@
 /**
  * Client API généré automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-09-23T22:02:10.983Z
+ * Généré le: 2025-10-14T01:57:52.560Z
  */
 
+import type { AxiosResponse } from 'axios';
 import apiClient from '../api/axiosClient';
+import {
+  UserResponse,
+  UserCreate,
+  UserUpdate,
+  UserRoleUpdate,
+  UserStatusUpdate,
+  ApiResponse,
+  PaginatedResponse,
+  ApiError
+} from './types';
 
+// Utilise l'instance centralisée axiosClient
 // ============================================================================
 // API CLASSES
 // ============================================================================
@@ -454,7 +466,7 @@ export class AdminApi {
    * Get Dashboard Stats
    */
   static async dashboardstatsapiv1admindashboarddashboardstatsget(params?: any): Promise<DashboardStatsResponse> {
-    const response: AxiosResponse<DashboardStatsResponse> = await apiClient.get(`/v1/admin/dashboard/stats?${new URLSearchParams(params).toString()}`);
+    const response: AxiosResponse<DashboardStatsResponse> = await apiClient.get(`/v1/admin/dashboard/dashboard/stats?${new URLSearchParams(params).toString()}`);
     return response.data;
   }
 }

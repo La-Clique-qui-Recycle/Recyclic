@@ -93,15 +93,20 @@ app.add_middleware(
 )
 
 # Add trusted host middleware
-# On lit la variable d'environnement ALLOWED_HOSTS
-raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,api,testserver")
-# On la transforme en une liste propre (en séparant par virgule ou espace)
-allowed_hosts = [h.strip() for h in re.split(r"[\s,]+", raw_hosts) if h.strip()]
-
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=allowed_hosts
-)
+# En développement local, autoriser tous les hôtes pour éviter les erreurs "Invalid host header"
+if settings.ENVIRONMENT in ("development", "dev", "local"):
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["*"]
+    )
+else:
+    # Sinon, lire la variable d'environnement ALLOWED_HOSTS (valeurs séparées par virgules ou espaces)
+    raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,api,testserver")
+    allowed_hosts = [h.strip() for h in re.split(r"[\s,]+", raw_hosts) if h.strip()]
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=allowed_hosts
+    )
 
 # Add request timing middleware
 @app.middleware("http")

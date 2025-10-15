@@ -3,7 +3,7 @@
 **ID:** EPIC-B30
 **Titre:** Clean Slate V2 - Standardiser et Fiabiliser le Déploiement Frontend
 **Thème:** Dette Technique & Infrastructure
-**Statut:** Proposé
+**Statut:** Terminé
 
 ---
 
@@ -32,8 +32,8 @@ Cet épique a pour but de refactoriser entièrement l'architecture de build et d
 
 ## Critères de Succès de l'Épique
 
-- Le projet peut être déployé de manière fiable en local, en staging et en production avec des commandes claires et distinctes.
-- Il n'y a plus d'erreurs de type "Mixed Content" ou de `404` liés à la configuration.
-- L'environnement de développement local est de nouveau pleinement fonctionnel.
-- La maintenance et l'ajout de nouveaux environnements sont simplifiés.
-- La documentation est complète et à jour.
+- [x] Le projet peut être déployé de manière fiable en local, en staging et en production avec des commandes claires et distinctes.
+- [x] Il n'y a plus d'erreurs de type "Mixed Content" ou de `404` liés à la configuration.
+- [x] L'environnement de développement local est de nouveau pleinement fonctionnel.
+- [x] La maintenance et l'ajout de nouveaux environnements sont simplifiés.
+- [x] La documentation est complète et à jour.

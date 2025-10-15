@@ -1,0 +1,9 @@
+schema: 1
+story: 'b30.p2'
+gate: PASS
+status_reason: 'Guide de déploiement unifié complet et bien structuré avec toutes les sections requises.'
+reviewer: 'Quinn'
+updated: '2025-10-13T00:00:00Z'
+top_issues: []
+waiver: { active: false }
+

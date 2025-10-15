@@ -1,5 +1,6 @@
 services:
   postgres:
+    profiles: ["dev"]
     image: postgres:15
     environment:
       POSTGRES_DB: recyclic
@@ -18,6 +19,7 @@ services:
       - recyclic-network
 
   redis:
+    profiles: ["dev"]
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -30,13 +32,22 @@ services:
       - recyclic-network
 
   api:
+    profiles: ["dev"]
     build: ./api
     image: recyclic-api:${API_IMAGE_TAG:-latest}
+    # CRITICAL (B18-P0): --proxy-headers is mandatory for production/staging to prevent Mixed Content errors
+    # This command ensures Uvicorn correctly handles X-Forwarded-* headers from Traefik
+    command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*"
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
       REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY}
-      ENVIRONMENT: development
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      HOST: 0.0.0.0
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:4444}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:4444}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
       # Variables pour Alembic migrations
       POSTGRES_HOST: postgres
       POSTGRES_USER: recyclic
@@ -44,7 +55,7 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DB: recyclic
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,6 +71,7 @@ services:
       - recyclic-network
 
   bot:
+    profiles: ["dev"]
     build: ./bot
     image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     environment:
@@ -67,9 +79,9 @@ services:
       REDIS_URL: redis://redis:6379
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       API_BASE_URL: http://api:8000
-      FRONTEND_URL: ${FRONTEND_URL}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
       ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
-      ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS}
+      ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,7 +107,7 @@ services:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
       REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY}
-      ENVIRONMENT: development
+      ENVIRONMENT: ${ENVIRONMENT:-development}
       # Variables pour Alembic migrations
       POSTGRES_HOST: postgres
       POSTGRES_USER: recyclic
@@ -110,82 +122,141 @@ services:
     networks:
       - recyclic-network
 
-  frontend:
+  # # Service dédié pour les tests avec volumes pour développement rapide
+  # api-tests:
+  #   build:
+  #     context: ./api
+  #     dockerfile: Dockerfile.tests
+  #   image: recyclic-api-tests:${API_TESTS_IMAGE_TAG:-latest}
+  #   environment:
+  #     TESTING: "true"
+  #     ENVIRONMENT: "test"
+  #     DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+  #     TEST_DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+  #     REDIS_URL: redis://redis:6379
+  #     SECRET_KEY: ${SECRET_KEY}
+  #   volumes:
+  #     # Volumes pour éviter les rebuilds lors du développement
+  #     - ./api/src:/app/src:ro
+  #     - ./api/tests:/app/tests:ro
+  #     - ./api/migrations:/app/migrations
+  #     - ./api/alembic.ini:/app/alembic.ini:ro
+  #     - ./api/pytest.ini:/app/pytest.ini:ro
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   command: bash -lc "python generate_openapi.py && alembic upgrade head && python -m pytest -v --tb=short"
+  #   networks:
+  #     - recyclic-network
+
+  # # Service dédié pour les tests du bot
+  # bot-tests:
+  #   build:
+  #     context: ./bot
+  #     dockerfile: Dockerfile.tests
+  #   image: recyclic-bot-tests:${BOT_TESTS_IMAGE_TAG:-latest}
+  #   environment:
+  #     TESTING: "true"
+  #     ENVIRONMENT: "test"
+  #     DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
+  #     REDIS_URL: redis://redis:6379
+  #     TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+  #     API_BASE_URL: http://api:8000
+  #     FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
+  #     ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
+  #     ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS:-true}
+  #   volumes:
+  #     # Volumes pour éviter les rebuilds lors du développement
+  #     - ./bot/src:/app/src:ro
+  #     - ./bot/tests:/app/tests:ro
+  #     - ./bot/pytest.ini:/app/pytest.ini:ro
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     api:
+  #       condition: service_healthy
+  #   networks:
+  #     - recyclic-network
+
+  # ============================================================
+  # FRONTEND SERVICES - PROFILE-BASED CONFIGURATION
+  # ============================================================
+
+  # DEV: Frontend with hot-reload for local development
+  frontend-dev:
+    profiles: ["dev"]
     build:
       context: ./frontend
-    image: recyclic-frontend:${FRONTEND_IMAGE_TAG:-latest}
+      dockerfile: Dockerfile.dev
+    image: recyclic-frontend-dev:${FRONTEND_IMAGE_TAG:-latest}
+    environment:
+      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
     ports:
-      - "4444:80"
-    depends_on:
-      - api
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - recyclic-network
-
-  # Service dédié pour les tests avec volumes pour développement rapide
-  api-tests:
-    build:
-      context: ./api
-      dockerfile: Dockerfile.tests
-    image: recyclic-api-tests:${API_TESTS_IMAGE_TAG:-latest}
-    environment:
-      TESTING: "true"
-      ENVIRONMENT: "test"
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
-      TEST_DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
-      REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY}
+      - "4444:5173"
     volumes:
-      # Volumes pour éviter les rebuilds lors du développement
-      - ./api/src:/app/src:ro
-      - ./api/tests:/app/tests:ro
-      - ./api/migrations:/app/migrations
-      - ./api/alembic.ini:/app/alembic.ini:ro
-      - ./api/pytest.ini:/app/pytest.ini:ro
+      # Mount source code for hot-reloading
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/vite.config.ts:/app/vite.config.ts
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: bash -lc "python generate_openapi.py && alembic upgrade head && python -m pytest -v --tb=short"
-    networks:
-      - recyclic-network
-
-  # Service dédié pour les tests du bot
-  bot-tests:
-    build:
-      context: ./bot
-      dockerfile: Dockerfile.tests
-    image: recyclic-bot-tests:${BOT_TESTS_IMAGE_TAG:-latest}
-    environment:
-      TESTING: "true"
-      ENVIRONMENT: "test"
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic_test
-      REDIS_URL: redis://redis:6379
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      API_BASE_URL: http://api:8000
-      FRONTEND_URL: ${FRONTEND_URL}
-      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
-      ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS}
-    volumes:
-      # Volumes pour éviter les rebuilds lors du développement
-      - ./bot/src:/app/src:ro
-      - ./bot/tests:/app/tests:ro
-      - ./bot/pytest.ini:/app/pytest.ini:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
       api:
         condition: service_healthy
     networks:
       - recyclic-network
+
+  # STAGING: Frontend with Traefik labels for staging environment
+  frontend-staging:
+    profiles: ["staging"]
+    build:
+      context: ./frontend
+      args:
+        APP_ENV: staging
+    image: recyclic-frontend-staging:${FRONTEND_IMAGE_TAG:-latest}
+    environment:
+      HOST: 0.0.0.0
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - traefik-public
+      - recyclic-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.recyclic-frontend-staging.rule=Host(`devrecyclic.jarvos.eu`) && !PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-frontend-staging.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-frontend-staging.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-frontend-staging.priority=1"
+      - "traefik.http.services.recyclic-frontend-staging.loadbalancer.server.port=80"
+
+  # PROD: Frontend with Traefik labels for production environment
+  frontend-prod:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      args:
+        APP_ENV: production
+    image: recyclic-frontend-prod:${FRONTEND_IMAGE_TAG:-latest}
+    environment:
+      HOST: 0.0.0.0
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - traefik-public
+      - recyclic-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.recyclic-frontend-prod.rule=Host(`recyclic.jarvos.eu`) && !PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-frontend-prod.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-frontend-prod.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-frontend-prod.priority=1"
+      - "traefik.http.services.recyclic-frontend-prod.loadbalancer.server.port=80"
 
 volumes:
   postgres_data:
@@ -193,3 +264,6 @@ volumes:
 networks:
   recyclic-network:
     driver: bridge
+  # External network for Traefik (production/staging only)
+  traefik-public:
+    external: true

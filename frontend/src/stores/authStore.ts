@@ -57,24 +57,34 @@ export const useAuthStore = create<AuthState>()(
         login: async (username: string, password: string) => {
           set({ loading: true, error: null });
           try {
-            const loginData: LoginRequest = { username, password };
-            const response: LoginResponse = await AuthApi.apiv1authloginpost(loginData);
+            // Essai JSON → si 400 persiste (Invalid host header déjà corrigé côté API), essayer form-encoded
+            let response;
+            try {
+              const loginData = { username, password };
+              response = await axiosClient.post('/v1/auth/login', loginData);
+            } catch (e: any) {
+              // Basculer en x-www-form-urlencoded
+              const formData = new URLSearchParams();
+              formData.append('username', username);
+              formData.append('password', password);
+              response = await axiosClient.post('/v1/auth/login', formData, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+            }
             
             // Stocker le token JWT
-            localStorage.setItem('token', response.access_token);
+            localStorage.setItem('token', response.data.access_token);
             
             // Convertir AuthUser en User
             const user: User = {
-              id: response.user.id,
-              telegram_id: response.user.telegram_id,
-              username: response.user.username,
-              first_name: response.user.first_name,
-              last_name: response.user.last_name,
-              role: response.user.role as User['role'],
-              status: response.user.status as User['status'],
-              is_active: response.user.is_active,
-              created_at: response.user.created_at || new Date().toISOString(),
-              updated_at: response.user.updated_at || new Date().toISOString()
+              id: response.data.user.id,
+              telegram_id: response.data.user.telegram_id,
+              username: response.data.user.username,
+              first_name: response.data.user.first_name,
+              last_name: response.data.user.last_name,
+              role: response.data.user.role as User['role'],
+              status: response.data.user.status as User['status'],
+              is_active: response.data.user.is_active,
+              created_at: response.data.user.created_at || new Date().toISOString(),
+              updated_at: response.data.user.updated_at || new Date().toISOString()
             };
             
             set({ 

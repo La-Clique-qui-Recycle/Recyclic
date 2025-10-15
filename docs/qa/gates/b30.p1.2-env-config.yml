@@ -1,0 +1,39 @@
+status: PASS
+story: docs/stories/story-b30-p1.2-env-config.md
+checks:
+  - id: env-files-present
+    desc: frontend/.env.development, .env.staging, .env.production existent et contiennent VITE_API_URL
+    result: pass
+  - id: dockerfile-app-env
+    desc: frontend/Dockerfile utilise ARG APP_ENV et copie .env.${APP_ENV} avant le build
+    result: pass
+  - id: dockerignore-present
+    desc: frontend/.dockerignore présent (ignore node_modules, .git, .env.local, coverage, dist)
+    result: pass
+build_examples:
+  - docker build -f frontend/Dockerfile --build-arg APP_ENV=development .
+  - docker build -f frontend/Dockerfile --build-arg APP_ENV=staging .
+  - docker build -f frontend/Dockerfile --build-arg APP_ENV=production .
+artifacts:
+  - frontend/.env.development
+  - frontend/.env.staging
+  - frontend/.env.production
+  - frontend/Dockerfile
+  - frontend/.dockerignore
+schema: 1
+story: 'b30.p1.2'
+gate: CONCERNS
+status_reason: 'Dockerfile correctement configuré (APP_ENV + copie .env.$APP_ENV) mais les fichiers .env.* manquent dans frontend/.'
+reviewer: 'Quinn'
+updated: '2025-10-13T00:00:00Z'
+top_issues:
+  - id: 'ENV-001'
+    severity: medium
+    finding: 'Absence de frontend/.env.development, .env.staging, .env.production avec VITE_API_URL.'
+    suggested_action: 'Ajouter les fichiers .env.* avec VITE_API_URL appropriées et valider un build.'
+  - id: 'BUILD-INFO-001'
+    severity: low
+    finding: 'Documenter la commande de build: docker build --build-arg APP_ENV=staging .' 
+    suggested_action: 'Ajouter un encart dans la story ou README pour les builds multi-env.'
+waiver: { active: false }
+

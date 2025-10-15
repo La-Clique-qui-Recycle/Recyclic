@@ -1,0 +1,9 @@
+schema: 1
+story: 'b30.p1.3'
+gate: PASS
+status_reason: 'Docker-compose unifié avec profiles correctement implémenté, anciens fichiers supprimés, directive --proxy-headers préservée.'
+reviewer: 'Quinn'
+updated: '2025-10-13T00:00:00Z'
+top_issues: []
+waiver: { active: false }
+

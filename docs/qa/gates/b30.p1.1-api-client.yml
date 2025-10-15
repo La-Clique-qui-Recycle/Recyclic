@@ -1,0 +1,33 @@
+status: PASS
+story: docs/stories/story-b30-p1.1-api-client.md
+checks:
+  - id: openapi-servers-removed
+    desc: api/openapi.json ne contient pas de section "servers"
+    result: pass
+  - id: axios-client-centralized
+    desc: frontend/src/api/axiosClient.ts centralisé et utilisé par le client généré
+    result: pass
+  - id: no-direct-axios
+    desc: Aucun import direct d'axios dans frontend/src hors tests
+    result: pass
+  - id: vite-api-url
+    desc: VITE_API_URL documentée dans env.example
+    result: pass
+artifacts:
+  - frontend/src/api/axiosClient.ts
+  - frontend/src/generated/api.ts
+  - frontend/scripts/generate-api.cjs
+  - env.example
+schema: 1
+story: 'b30.p1.1'
+gate: PASS
+status_reason: 'Client API centralisé via axiosClient et baseURL unique; aucun appel direct axios résiduel détecté.'
+reviewer: 'Quinn'
+updated: '2025-10-13T00:00:00Z'
+top_issues:
+  - id: 'DOC-001'
+    severity: low
+    finding: 'Note utilisateur pour exécuter npm run codegen non incluse dans la story.'
+    suggested_action: 'Ajouter une notification claire pour lancer la régénération du client API après merge.'
+waiver: { active: false }
+
