@@ -19,6 +19,8 @@ from recyclic_api.services.scheduler_service import get_scheduler_service
 from recyclic_api.utils.rate_limit import limiter
 from recyclic_api.core.database import engine
 from recyclic_api.models import Base
+from recyclic_api.core.database import SessionLocal
+from recyclic_api.initial_data import init_super_admin_if_configured
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +56,18 @@ async def lifespan(app: FastAPI):
             logger.info("✅ openapi.json généré avec succès")
         except Exception as e:
             logger.warning(f"Could not generate openapi.json: {e}")
+
+    # Initialisation applicative (création super-admin si configuré)
+    try:
+        db = SessionLocal()
+        init_super_admin_if_configured(db)
+    except Exception as e:
+        logger.error(f"Startup initialization error: {e}")
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
 
     try:
         yield
