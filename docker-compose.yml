@@ -216,7 +216,6 @@ services:
       # Mount source code for hot-reloading
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
-      - ./frontend/vite.config.ts:/app/vite.config.ts
     depends_on:
       api:
         condition: service_healthy
