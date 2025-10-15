@@ -1,6 +1,5 @@
 services:
-  postgres:
-    profiles: ["dev"]
+    profiles: ["dev", "staging", "prod"]
     image: postgres:15
     environment:
       POSTGRES_DB: recyclic
@@ -19,7 +18,7 @@ services:
       - recyclic-network
 
   redis:
-    profiles: ["dev"]
+    profiles: ["dev", "staging", "prod"]
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -32,7 +31,7 @@ services:
       - recyclic-network
 
   api:
-    profiles: ["dev"]
+    profiles: ["dev", "staging", "prod"]
     build: ./api
     image: recyclic-api:${API_IMAGE_TAG:-latest}
     # CRITICAL (B18-P0): --proxy-headers is mandatory for production/staging to prevent Mixed Content errors
@@ -71,7 +70,7 @@ services:
       - recyclic-network
 
   bot:
-    profiles: ["dev"]
+    profiles: ["dev", "staging", "prod"]
     build: ./bot
     image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     environment:
