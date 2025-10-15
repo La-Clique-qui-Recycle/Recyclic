@@ -214,7 +214,7 @@ services:
     build:
       context: ./frontend
       args:
-        APP_ENV: staging
+        VITE_API_URL: ${VITE_API_URL_STAGING}
     image: recyclic-frontend-staging:${FRONTEND_IMAGE_TAG:-latest}
     environment:
       HOST: 0.0.0.0
@@ -239,7 +239,7 @@ services:
     build:
       context: ./frontend
       args:
-        APP_ENV: production
+        VITE_API_URL: ${VITE_API_URL_PROD}
     image: recyclic-frontend-prod:${FRONTEND_IMAGE_TAG:-latest}
     environment:
       HOST: 0.0.0.0

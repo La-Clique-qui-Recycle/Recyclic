@@ -10,15 +10,12 @@ RUN npm install
 # Copier le reste du code source
 COPY . .
 
-# Sélection d'environnement de build (dev|staging|production)
-ARG APP_ENV=production
-ENV APP_ENV=$APP_ENV
-
-# Copier le bon fichier d'environnement avant le build
-RUN cp .env.$APP_ENV .env || (echo "Fichier .env.$APP_ENV introuvable" && exit 1)
+# Définir les arguments de build pour les variables d'environnement
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 # Construire l'application pour la production
-RUN echo "----> Building with APP_ENV: $APP_ENV" && npm run build
+RUN echo "----> Building with API URL: $VITE_API_URL" && npm run build
 
 # Étape 2: Servir l'application avec Nginx
 FROM nginx:stable-alpine
