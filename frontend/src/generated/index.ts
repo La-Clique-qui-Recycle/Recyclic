@@ -1,7 +1,7 @@
 /**
  * Point d'entrée pour les types et l'API générés
  * Source: ../api/openapi.json
- * Généré le: 2025-10-14T01:57:52.561Z
+ * Généré le: 2025-10-15T12:52:29.511Z
  */
 
 // Export des types

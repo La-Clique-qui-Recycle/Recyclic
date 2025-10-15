@@ -1,7 +1,7 @@
 /**
  * Client API généré automatiquement à partir de la spécification OpenAPI
  * Source: ../api/openapi.json
- * Généré le: 2025-10-14T01:57:52.560Z
+ * Généré le: 2025-10-15T12:52:29.510Z
  */
 
 import type { AxiosResponse } from 'axios';

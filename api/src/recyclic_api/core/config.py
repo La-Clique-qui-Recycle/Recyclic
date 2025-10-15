@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # API
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/v1"
     PROJECT_NAME: str = "Recyclic API"
     
     # Telegram
