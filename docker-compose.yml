@@ -1,4 +1,5 @@
 services:
+  postgres:
     profiles: ["dev", "staging", "prod"]
     image: postgres:15
     environment:
