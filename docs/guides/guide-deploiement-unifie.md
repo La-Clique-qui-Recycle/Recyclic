@@ -175,8 +175,8 @@ TTL: 300
 
 4. **Déployer**
    ```bash
-   # Construire et démarrer les services
-   docker compose --profile staging up -d --build
+   # Construire et démarrer les services en utilisant le fichier d'environnement de staging
+   docker compose --env-file .env.staging --profile staging up -d --build
    
    # Vérifier le déploiement
    docker compose ps
@@ -257,8 +257,8 @@ TTL: 300
 
 4. **Déployer en production**
    ```bash
-   # Construire et démarrer les services
-   docker compose --profile prod up -d --build
+   # Construire et démarrer les services en utilisant le fichier d'environnement de production
+   docker compose --env-file .env.production --profile prod up -d --build
    
    # Vérifier le déploiement
    docker compose ps
