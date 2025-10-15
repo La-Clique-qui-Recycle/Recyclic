@@ -62,7 +62,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,14 +74,17 @@ services:
       # Exposer l'API à Traefik pour les environnements de staging et de production
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
+      - "traefik.http.middlewares.recyclic-api-stripprefix.stripprefix.prefixes=/api"
       # Routeur pour la production
       - "traefik.http.routers.recyclic-api-prod.rule=Host(`recyclic.jarvos.eu`) && PathPrefix(`/api`)"
       - "traefik.http.routers.recyclic-api-prod.entrypoints=websecure"
       - "traefik.http.routers.recyclic-api-prod.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-api-prod.middlewares=recyclic-api-stripprefix@docker"
       # Routeur pour le staging
       - "traefik.http.routers.recyclic-api-staging.rule=Host(`devrecyclic.jarvos.eu`) && PathPrefix(`/api`)"
       - "traefik.http.routers.recyclic-api-staging.entrypoints=websecure"
       - "traefik.http.routers.recyclic-api-staging.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-api-staging.middlewares=recyclic-api-stripprefix@docker"
       # Service commun
       - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
 
