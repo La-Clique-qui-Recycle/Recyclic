@@ -27,24 +27,27 @@ def init_super_admin_if_configured(db: Session) -> None:
 
     Idempotent: If user already exists or variables are not set, does nothing.
     """
-    email = _get_env("FIRST_SUPER_ADMIN_EMAIL")
+    username_env = _get_env("FIRST_SUPER_ADMIN_USERNAME")
     password = _get_env("FIRST_SUPER_ADMIN_PASSWORD")
 
-    if not email or not password:
+    # Determine username (username is mandatory; no email fallback)
+    username = username_env
+
+    if not username or not password:
         # Not configured; nothing to do
         logger.info("Super-admin bootstrap not configured (missing env vars). Skipping.")
         return
 
-    # Check if a user with this username (email used as username) already exists
-    existing = db.execute(select(User).where(User.username == email)).scalar_one_or_none()
+    # Check if a user with this username already exists
+    existing = db.execute(select(User).where(User.username == username)).scalar_one_or_none()
     if existing is not None:
         logger.info("Super-admin already exists. Skipping creation.")
         return
 
     # Create the super admin user
     new_user = User(
-        username=email,
-        email=email,
+        username=username,
+        email=None,
         hashed_password=hash_password(password),
         role=UserRole.SUPER_ADMIN,
         status=UserStatus.ACTIVE,
@@ -53,6 +56,6 @@ def init_super_admin_if_configured(db: Session) -> None:
 
     db.add(new_user)
     db.commit()
-    logger.info("Super-admin user created from environment configuration: %s", email)
+    logger.info("Super-admin user created from environment configuration: %s", username)
 
 
