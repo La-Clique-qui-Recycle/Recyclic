@@ -1,6 +1,6 @@
 # Guide de Déploiement Recyclic V2
 
-**Version:** 2.0
+**Version:** 2.1
 **Date:** 2025-10-16
 **Architecture:** Stacks Docker Indépendantes
 **Public:** Développeurs et équipe technique
@@ -53,12 +53,30 @@ docker compose --profile dev up -d --build
 ### Variables Essentielles (.env)
 
 ```bash
+# Database
+POSTGRES_USER=recyclic
+POSTGRES_DB=recyclic
+POSTGRES_PORT=5432
+POSTGRES_HOST=postgres
 POSTGRES_PASSWORD=votre_mot_de_passe
+
+# Security
 SECRET_KEY=votre_cle_secrete_longue
+
+# Telegram Bot
 TELEGRAM_BOT_TOKEN=votre_token_bot
 ADMIN_TELEGRAM_IDS=votre_telegram_id
+
+# Frontend
 FRONTEND_URL=http://localhost:4444
 VITE_API_URL=/api
+
+# API Configuration
+API_V1_STR=/v1
+ROOT_PATH=
+
+# Application Environment
+ENVIRONMENT=development
 ```
 
 ### Commandes Courantes
@@ -98,7 +116,7 @@ git clone <repository-url>
 cd recyclic
 
 # 3. Créer .env.staging depuis le template
-cp .env.staging.template .env.staging
+cp env.staging.example .env.staging
 nano .env.staging
 
 # 4. Validation pré-déploiement (OBLIGATOIRE)
@@ -108,7 +126,7 @@ bash scripts/pre-deployment-check.sh staging
 bash scripts/backup-database.sh staging
 
 # 6. Déployer la stack staging
-docker compose -p recyclic-staging -f docker-compose.staging.yml up -d --build
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build
 
 # 7. Valider Traefik
 bash scripts/validate-traefik.sh staging
@@ -120,12 +138,33 @@ curl https://devrecyclic.jarvos.eu/api/health
 ### Variables Critiques (.env.staging)
 
 ```bash
+# Database (utiliser les mêmes valeurs pour conserver les données existantes)
+POSTGRES_USER=recyclic
+POSTGRES_DB=recyclic
+POSTGRES_PORT=5432
+POSTGRES_HOST=postgres
 POSTGRES_PASSWORD=mot_de_passe_staging_fort
+
+# Security
 SECRET_KEY=cle_secrete_staging_longue
+
+# Telegram Bot
 TELEGRAM_BOT_TOKEN=token_bot_staging
+ADMIN_TELEGRAM_IDS=vos_ids_admin
+
+# Frontend
 FRONTEND_URL=https://devrecyclic.jarvos.eu
 VITE_API_URL_STAGING=/api
+
+# API Configuration
+API_V1_STR=/v1
+ROOT_PATH=
 ENVIRONMENT=staging
+
+# CORS Settings - localhost est automatiquement ajouté pour les healthchecks
+ALLOWED_HOSTS=devrecyclic.jarvos.eu
+CORS_ALLOW_ORIGINS=https://devrecyclic.jarvos.eu
+BACKEND_CORS_ORIGINS=https://devrecyclic.jarvos.eu
 ```
 
 ---
@@ -151,7 +190,7 @@ bash scripts/backup-database.sh prod
 docker compose --profile prod down --remove-orphans
 
 # Phase 3 : Déploiement de la nouvelle stack
-docker compose -p recyclic-prod -f docker-compose.prod.yml up -d --build
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production up -d --build
 
 # Phase 4 : Validation
 watch -n 5 'docker compose -p recyclic-prod -f docker-compose.prod.yml ps'
@@ -165,14 +204,89 @@ curl -I https://recyclic.jarvos.eu
 ### Variables Critiques (.env.production)
 
 ```bash
+# Database (⚠️ IMPORTANT: utiliser les MÊMES valeurs qu'avant pour préserver les données)
+POSTGRES_USER=recyclic
+POSTGRES_DB=recyclic
+POSTGRES_PORT=5432
+POSTGRES_HOST=postgres
 POSTGRES_PASSWORD=mot_de_passe_production_TRES_fort
+
+# Security
 SECRET_KEY=cle_secrete_production_TRES_longue_et_aleatoire
+
+# Telegram Bot
 TELEGRAM_BOT_TOKEN=token_bot_production
+ADMIN_TELEGRAM_IDS=vos_ids_admin
+
+# Frontend
 FRONTEND_URL=https://recyclic.jarvos.eu
 VITE_API_URL_PROD=/api
+
+# API Configuration
+API_V1_STR=/v1
+ROOT_PATH=
 ENVIRONMENT=production
+
+# CORS Settings - localhost est automatiquement ajouté pour les healthchecks
+ALLOWED_HOSTS=recyclic.jarvos.eu
+CORS_ALLOW_ORIGINS=https://recyclic.jarvos.eu
+BACKEND_CORS_ORIGINS=https://recyclic.jarvos.eu
+
+# Email Service (Brevo)
 BREVO_API_KEY=cle_api_brevo_production
-EMAIL_FROM_ADDRESS=noreply@recyclic.fr
+BREVO_WEBHOOK_SECRET=webhook_secret_production
+EMAIL_FROM_NAME=Recyclic
+EMAIL_FROM_ADDRESS=noreply@recyclic.jarvos.eu
+```
+
+---
+
+## 🔄 Migrations de Base de Données
+
+### Migrations Automatiques
+
+Les migrations Alembic s'exécutent **automatiquement** au démarrage de chaque stack via le service `api-migrations` :
+
+```yaml
+# Service dédié dans docker-compose.staging.yml et docker-compose.prod.yml
+api-migrations:
+  container_name: recyclic-staging-migrations
+  command: alembic upgrade head  # S'exécute automatiquement
+  restart: "no"  # Container one-shot
+```
+
+**Comportement :**
+- ✅ Container démarre après postgres/redis
+- ✅ Exécute `alembic upgrade head`
+- ✅ Applique uniquement les migrations manquantes
+- ✅ S'arrête une fois terminé (restart: "no")
+- ✅ L'API démarre ensuite avec le schéma à jour
+
+### Vérifier les Migrations
+
+```bash
+# Voir les logs de migration
+docker logs recyclic-staging-migrations
+docker logs recyclic-prod-migrations
+
+# Vérifier l'état actuel de la base
+docker exec recyclic-prod-postgres psql -U recyclic -d recyclic -c "SELECT * FROM alembic_version;"
+```
+
+### Image Migrations Optimisée
+
+L'image `recyclic-api-migrations` utilise un fichier `requirements-migrations.txt` minimal :
+- ✅ **5 dépendances** au lieu de 25+
+- ✅ Build 3x plus rapide
+- ✅ Image 60% plus légère
+
+```txt
+# api/requirements-migrations.txt
+alembic==1.12.1
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+pydantic==2.5.0
+pydantic-settings==2.1.0
 ```
 
 ---
@@ -187,12 +301,12 @@ docker compose --profile dev up -d
 docker compose --profile dev down
 
 # STAGING
-docker compose -p recyclic-staging -f docker-compose.staging.yml up -d
-docker compose -p recyclic-staging -f docker-compose.staging.yml down
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging up -d
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging down
 
 # PRODUCTION
-docker compose -p recyclic-prod -f docker-compose.prod.yml up -d
-docker compose -p recyclic-prod -f docker-compose.prod.yml down
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production up -d
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production down
 ```
 
 ### Mise à Jour du Code
@@ -202,7 +316,7 @@ docker compose -p recyclic-prod -f docker-compose.prod.yml down
 git pull origin main
 
 # 2. STAGING : Déployer
-docker compose -p recyclic-staging -f docker-compose.staging.yml up -d --build
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build
 
 # 3. PRODUCTION : Suivre le runbook complet
 # Voir: docs/runbooks/deployment-independent-stacks.md
@@ -212,12 +326,12 @@ docker compose -p recyclic-staging -f docker-compose.staging.yml up -d --build
 
 ```bash
 # STAGING
-docker compose -p recyclic-staging -f docker-compose.staging.yml logs -f
-docker compose -p recyclic-staging -f docker-compose.staging.yml logs -f api
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging logs -f
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging logs -f api
 
 # PRODUCTION
-docker compose -p recyclic-prod -f docker-compose.prod.yml logs -f
-docker compose -p recyclic-prod -f docker-compose.prod.yml logs -f api
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production logs -f
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production logs -f api
 ```
 
 ### Backup de la Base de Données
@@ -322,6 +436,63 @@ docker inspect <container-id> | grep traefik
 
 ---
 
+## ⚙️ Configuration Technique Importante
+
+### ALLOWED_HOSTS et Healthchecks
+
+Le middleware `TrustedHostMiddleware` de FastAPI valide les requêtes par leur header `Host`.
+
+**Comportement automatique** (implémenté dans `api/src/recyclic_api/main.py`) :
+- En **développement** : tous les hosts sont autorisés (`allowed_hosts=["*"]`)
+- En **staging/prod** : `ALLOWED_HOSTS` est lu depuis `.env`
+- **`localhost` et `127.0.0.1` sont TOUJOURS ajoutés automatiquement** pour les healthchecks Docker
+
+```python
+# Code automatique dans main.py
+for internal_host in ["localhost", "127.0.0.1"]:
+    if internal_host not in allowed_hosts:
+        allowed_hosts.append(internal_host)
+```
+
+**Donc dans `.env.staging` ou `.env.production`, vous pouvez simplement mettre :**
+
+```bash
+ALLOWED_HOSTS=recyclic.jarvos.eu
+# localhost est ajouté automatiquement, pas besoin de le mettre !
+```
+
+### Structure des Volumes Docker Compose
+
+Avec l'option `-p` (project name), Docker Compose préfixe automatiquement les volumes :
+
+| Déclaration | Nom réel créé | Commande |
+|-------------|---------------|----------|
+| `staging_postgres_data` | `recyclic-staging_staging_postgres_data` | `-p recyclic-staging` |
+| `prod_postgres_data` | `recyclic-prod_prod_postgres_data` | `-p recyclic-prod` |
+| `postgres_data` (dev) | `recyclic_postgres_data` | par défaut |
+
+**Conséquence pratique :**
+- Isolation totale entre environnements
+- Pas de conflit de noms
+- Pour voir les volumes : `docker volume ls | grep recyclic`
+
+### Restauration de Base de Données
+
+**Méthode recommandée : Dump SQL**
+
+```bash
+# Créer un dump
+docker exec recyclic-prod-postgres pg_dump -U recyclic -d recyclic > backup.sql
+
+# Restaurer dans une nouvelle base
+docker cp backup.sql recyclic-prod-postgres:/tmp/restore.sql
+docker exec recyclic-prod-postgres psql -U recyclic -d recyclic -f /tmp/restore.sql
+```
+
+⚠️ **Ne PAS copier directement les volumes PostgreSQL** entre environnements différents, risque de corruption (identifiants système différents).
+
+---
+
 ## 🔄 Migration depuis l'Ancienne Architecture
 
 Si vous utilisez encore l'ancienne architecture avec profiles (`--profile staging`, `--profile prod`), consultez le runbook pour la procédure de migration sécurisée.
@@ -340,5 +511,6 @@ Si vous utilisez encore l'ancienne architecture avec profiles (`--profile stagin
 ---
 
 **Dernière mise à jour** : 2025-10-16
-**Version du guide** : 2.0
+**Version du guide** : 2.1
 **Architecture** : Stacks Indépendantes (Epic B31)
+**Nouveautés v2.1** : Migrations automatiques, ALLOWED_HOSTS auto-config, requirements-migrations optimisés

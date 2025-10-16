@@ -1,8 +1,9 @@
 # Guide de Déploiement - Stacks Indépendantes (Production & Staging)
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2025-10-16
 **Story:** STORY-B31-P1
+**Mise à jour:** Migrations automatiques, ALLOWED_HOSTS, env files
 
 ---
 
@@ -29,8 +30,8 @@ Recyclic/
 ├── .env                        # Dev
 ├── .env.production             # Production (à créer)
 ├── .env.staging                # Staging (à créer)
-├── .env.production.template    # Template pour production
-└── .env.staging.template       # Template pour staging
+├── env.production.example      # Template pour production
+└── env.staging.example         # Template pour staging
 ```
 
 ---
@@ -70,28 +71,64 @@ docker network ls | grep traefik-public
 cd /opt/recyclic  # Ou le chemin de votre projet
 
 # Copier le template
-cp .env.production.template .env.production
+cp env.production.example .env.production
 
 # Éditer avec les vraies valeurs
 nano .env.production
 ```
 
 **Variables CRITIQUES à configurer :**
-- `POSTGRES_PASSWORD` : Mot de passe fort et unique
-- `SECRET_KEY` : Clé secrète pour JWT (longue et aléatoire)
-- `TELEGRAM_BOT_TOKEN` : Token du bot de production
-- `BREVO_API_KEY` : Clé API Brevo pour les emails
-- `CASH_SESSION_REPORT_RECIPIENT` : Email de l'équipe finance
+
+```bash
+# Database (⚠️ IMPORTANT: utiliser les MÊMES valeurs qu'avant pour préserver les données)
+POSTGRES_USER=recyclic
+POSTGRES_DB=recyclic
+POSTGRES_PORT=5432
+POSTGRES_HOST=postgres
+POSTGRES_PASSWORD=mot_de_passe_TRES_fort
+
+# Security
+SECRET_KEY=cle_secrete_TRES_longue_et_aleatoire
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=token_bot_production
+ADMIN_TELEGRAM_IDS=vos_ids_admin
+
+# Frontend
+FRONTEND_URL=https://recyclic.jarvos.eu
+VITE_API_URL_PROD=/api
+
+# API Configuration
+API_V1_STR=/v1
+ROOT_PATH=
+ENVIRONMENT=production
+
+# CORS Settings - localhost est automatiquement ajouté pour les healthchecks
+ALLOWED_HOSTS=recyclic.jarvos.eu
+CORS_ALLOW_ORIGINS=https://recyclic.jarvos.eu
+BACKEND_CORS_ORIGINS=https://recyclic.jarvos.eu
+
+# Email Service (Brevo)
+BREVO_API_KEY=cle_api_brevo_production
+BREVO_WEBHOOK_SECRET=webhook_secret_production
+EMAIL_FROM_NAME=Recyclic
+EMAIL_FROM_ADDRESS=noreply@recyclic.jarvos.eu
+
+# Cash session reports
+CASH_SESSION_REPORT_RECIPIENT=finance@example.com
+```
 
 ### 2. Créer `.env.staging`
 
 ```bash
 # Copier le template
-cp .env.staging.template .env.staging
+cp env.staging.example .env.staging
 
 # Éditer avec les valeurs de staging
 nano .env.staging
 ```
+
+**Variables similaires à production mais avec des valeurs de staging** (voir section précédente pour la liste complète)
 
 ---
 
@@ -155,10 +192,10 @@ docker volume ls | grep recyclic
 git pull origin main
 
 # 2. Construire et démarrer la stack de production
-docker compose -p recyclic-prod -f docker-compose.prod.yml up -d --build
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production up -d --build
 
 # 3. Surveiller les logs pendant le démarrage
-docker compose -p recyclic-prod -f docker-compose.prod.yml logs -f
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production logs -f
 
 # Attendre que tous les services soient "healthy"
 # Vous devriez voir :
@@ -171,12 +208,16 @@ docker compose -p recyclic-prod -f docker-compose.prod.yml logs -f
 ### Phase 4 : Vérification de Production
 
 ```bash
-# 1. Vérifier l'état des conteneurs
-docker compose -p recyclic-prod -f docker-compose.prod.yml ps
+# 1. Vérifier les logs de migration
+docker logs recyclic-prod-migrations
+# ✅ Doit afficher "Running upgrade ... -> ..." pour chaque migration appliquée
 
-# 2. Attendre que tous les healthchecks passent (jusqu'à 2 minutes)
+# 2. Vérifier l'état des conteneurs
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production ps
+
+# 3. Attendre que tous les healthchecks passent (jusqu'à 2 minutes)
 # Surveiller jusqu'à ce que tous les services soient "healthy"
-watch -n 5 'docker compose -p recyclic-prod -f docker-compose.prod.yml ps'
+watch -n 5 'docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production ps'
 
 # 3. Exécuter le script de validation Traefik
 bash scripts/validate-traefik.sh prod
@@ -195,13 +236,13 @@ docker compose -p recyclic-prod -f docker-compose.prod.yml logs frontend | grep 
 
 ```bash
 # 1. Démarrer la stack de staging (APRÈS production)
-docker compose -p recyclic-staging -f docker-compose.staging.yml up -d --build
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build
 
 # 2. Surveiller les logs
-docker compose -p recyclic-staging -f docker-compose.staging.yml logs -f
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging logs -f
 
 # 3. Vérifier l'état
-docker compose -p recyclic-staging -f docker-compose.staging.yml ps
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging ps
 
 # 4. Tester le endpoint de santé
 curl https://devrecyclic.jarvos.eu/api/health
@@ -284,10 +325,10 @@ bash scripts/validate-traefik.sh staging
 
 ```bash
 # Production
-docker compose -p recyclic-prod -f docker-compose.prod.yml up -d
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production up -d
 
 # Staging
-docker compose -p recyclic-staging -f docker-compose.staging.yml up -d
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging up -d
 
 # Dev (local)
 docker compose --profile dev up -d
@@ -297,10 +338,10 @@ docker compose --profile dev up -d
 
 ```bash
 # Production
-docker compose -p recyclic-prod -f docker-compose.prod.yml down
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production down
 
 # Staging
-docker compose -p recyclic-staging -f docker-compose.staging.yml down
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging down
 
 # Dev (local)
 docker compose --profile dev down
@@ -310,23 +351,23 @@ docker compose --profile dev down
 
 ```bash
 # Production - API seulement
-docker compose -p recyclic-prod -f docker-compose.prod.yml restart api
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production restart api
 
 # Staging - Frontend seulement
-docker compose -p recyclic-staging -f docker-compose.staging.yml restart frontend
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging restart frontend
 ```
 
 ### Voir les Logs
 
 ```bash
 # Production - Tous les services
-docker compose -p recyclic-prod -f docker-compose.prod.yml logs -f
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production logs -f
 
 # Production - API seulement
-docker compose -p recyclic-prod -f docker-compose.prod.yml logs -f api
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production logs -f api
 
 # Staging - Dernières 100 lignes
-docker compose -p recyclic-staging -f docker-compose.staging.yml logs --tail=100
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging logs --tail=100
 ```
 
 ### Rebuild et Mise à Jour
@@ -335,35 +376,136 @@ docker compose -p recyclic-staging -f docker-compose.staging.yml logs --tail=100
 # Production - Pull Git + Rebuild + Restart
 cd /opt/recyclic
 git pull origin main
-docker compose -p recyclic-prod -f docker-compose.prod.yml up -d --build
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production up -d --build
 
 # Staging - Rebuild sans pull
-docker compose -p recyclic-staging -f docker-compose.staging.yml up -d --build
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build
 ```
 
 ---
 
 ## Gestion des Migrations Alembic
 
-### Production
+### ✅ Migrations Automatiques
 
-```bash
-# Appliquer les migrations
-docker compose -p recyclic-prod -f docker-compose.prod.yml run --rm api-migrations alembic upgrade head
+Les migrations s'exécutent **automatiquement** au démarrage via le service `api-migrations` :
 
-# Vérifier la version actuelle
-docker compose -p recyclic-prod -f docker-compose.prod.yml run --rm api-migrations alembic current
+```yaml
+api-migrations:
+  container_name: recyclic-prod-migrations
+  command: alembic upgrade head  # Automatique au démarrage
+  restart: "no"  # Container one-shot
 ```
 
-### Staging
+**Comportement :**
+- ✅ Démarre après postgres/redis (depends_on avec healthcheck)
+- ✅ Exécute `alembic upgrade head`
+- ✅ Applique uniquement les migrations manquantes
+- ✅ S'arrête une fois terminé
+- ✅ L'API démarre ensuite avec le schéma à jour
+
+### Vérifier les Migrations
 
 ```bash
-# Appliquer les migrations
-docker compose -p recyclic-staging -f docker-compose.staging.yml run --rm api-migrations alembic upgrade head
+# Production - Voir les logs de migration
+docker logs recyclic-prod-migrations
 
-# Vérifier la version actuelle
-docker compose -p recyclic-staging -f docker-compose.staging.yml run --rm api-migrations alembic current
+# Staging - Voir les logs de migration
+docker logs recyclic-staging-migrations
+
+# Vérifier la version actuelle de la base
+docker exec recyclic-prod-postgres psql -U recyclic -d recyclic -c "SELECT * FROM alembic_version;"
 ```
+
+### Migrations Manuelles (si nécessaire)
+
+```bash
+# Production - Appliquer manuellement
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production run --rm api-migrations alembic upgrade head
+
+# Staging - Appliquer manuellement
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging run --rm api-migrations alembic upgrade head
+```
+
+---
+
+## Restauration de Base de Données
+
+### ⚠️ Méthode Recommandée : Dump SQL
+
+**Ne JAMAIS copier directement les volumes PostgreSQL entre environnements** (risque de corruption).
+
+### Créer un Backup
+
+```bash
+# Production
+docker exec recyclic-prod-postgres pg_dump -U recyclic -d recyclic > backup_prod_$(date +%Y%m%d_%H%M%S).sql
+
+# Staging
+docker exec recyclic-staging-postgres pg_dump -U recyclic -d recyclic > backup_staging_$(date +%Y%m%d_%H%M%S).sql
+```
+
+### Restaurer un Backup
+
+```bash
+# 1. Copier le dump dans le container
+docker cp backup_prod_20251016_202929.sql recyclic-prod-postgres:/tmp/restore.sql
+
+# 2. Restaurer (attention: écrase les données existantes!)
+docker exec recyclic-prod-postgres psql -U recyclic -d recyclic -f /tmp/restore.sql
+
+# 3. Redémarrer l'API pour recharger
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production restart api
+```
+
+### Migration de Données (Ancien → Nouveau Stack)
+
+Si vous migrez depuis l'ancienne architecture avec profiles vers la nouvelle :
+
+```bash
+# 1. Arrêter l'ancien stack
+docker compose --profile prod down
+
+# 2. Créer un dump de l'ancienne base
+docker run --rm \
+  -v recyclic_postgres_data:/data:ro \
+  postgres:15 \
+  sh -c 'pg_dump -U recyclic -d recyclic' > backup_ancien_stack.sql
+
+# 3. Démarrer le nouveau stack (avec volume vide)
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+# 4. Attendre que postgres soit prêt (30 secondes)
+sleep 30
+
+# 5. Restaurer le dump
+docker cp backup_ancien_stack.sql recyclic-prod-postgres:/tmp/restore.sql
+docker exec recyclic-prod-postgres psql -U recyclic -d recyclic -f /tmp/restore.sql
+
+# 6. Redémarrer le stack
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production restart
+```
+
+### Gestion des Volumes
+
+```bash
+# Lister tous les volumes Recyclic
+docker volume ls | grep recyclic
+
+# Inspecter un volume
+docker volume inspect recyclic-prod_prod_postgres_data
+
+# Supprimer un volume (⚠️ DANGER - Perte de données!)
+docker volume rm recyclic-staging_staging_postgres_data
+```
+
+**Nommage des volumes avec `-p` (project name) :**
+
+| Déclaration dans docker-compose | Nom réel créé |
+|--------------------------------|---------------|
+| `prod_postgres_data` | `recyclic-prod_prod_postgres_data` |
+| `staging_postgres_data` | `recyclic-staging_staging_postgres_data` |
+| `postgres_data` (dev) | `recyclic_postgres_data` |
 
 ---
 
@@ -386,20 +528,20 @@ docker network ls | grep recyclic
 
 ```bash
 # Production - Shell dans l'API
-docker compose -p recyclic-prod -f docker-compose.prod.yml exec api bash
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production exec api bash
 
 # Staging - Shell dans PostgreSQL
-docker compose -p recyclic-staging -f docker-compose.staging.yml exec postgres psql -U recyclic
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging exec postgres psql -U recyclic
 ```
 
 ### Inspecter la Configuration
 
 ```bash
 # Production - Voir la configuration résolue
-docker compose -p recyclic-prod -f docker-compose.prod.yml config
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production config
 
 # Staging - Voir la configuration résolue
-docker compose -p recyclic-staging -f docker-compose.staging.yml config
+docker compose -p recyclic-staging -f docker-compose.staging.yml --env-file .env.staging config
 ```
 
 ---
@@ -452,9 +594,9 @@ docker compose -p recyclic-prod -f docker-compose.prod.yml up -d
 
 ```bash
 # 1. Arrêter la nouvelle stack
-docker compose -p recyclic-prod -f docker-compose.prod.yml down
+docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production down
 
-# 2. Restaurer l'ancienne configuration
+# 2. Restaurer l'ancienne configuration (si migration depuis ancien système)
 cp docker-compose.yml.backup docker-compose.yml
 cp .env.production.backup .env.production
 
@@ -493,7 +635,7 @@ docker compose --profile prod exec -T postgres psql -U recyclic -d recyclic < ba
 En cas de problème critique :
 
 1. **Rollback immédiat** (voir section ci-dessus)
-2. **Capture des logs** : `docker compose -p recyclic-prod -f docker-compose.prod.yml logs > incident_logs.txt`
+2. **Capture des logs** : `docker compose -p recyclic-prod -f docker-compose.prod.yml --env-file .env.production logs > incident_logs.txt`
 3. **Notification** : Contacter l'équipe DevOps
 4. **Documentation** : Logger l'incident dans le debug log du projet
 
