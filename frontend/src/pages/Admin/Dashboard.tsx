@@ -173,18 +173,13 @@ const AdminDashboard: React.FC = () => {
           </CardDescription>
           <LinkList>
             <LinkItem>
-              <AdminLink onClick={() => handleNavigation('/admin/reports')}>
-                Rapports Généraux
+              <AdminLink onClick={() => handleNavigation('/admin/session-manager')}>
+                Gestionnaire de Sessions
               </AdminLink>
             </LinkItem>
             <LinkItem>
               <AdminLink onClick={() => handleNavigation('/admin/reception-reports')}>
                 Rapports de Réception
-              </AdminLink>
-            </LinkItem>
-            <LinkItem>
-              <AdminLink onClick={handleNavigateToLatestCashSession}>
-                Détail des Sessions de Caisse
               </AdminLink>
             </LinkItem>
           </LinkList>

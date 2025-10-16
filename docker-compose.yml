@@ -1,6 +1,6 @@
 services:
   postgres:
-    profiles: ["dev", "staging", "prod"]
+    profiles: ["dev"]
     image: postgres:15
     environment:
       POSTGRES_DB: recyclic
@@ -19,7 +19,7 @@ services:
       - recyclic-network
 
   redis:
-    profiles: ["dev", "staging", "prod"]
+    profiles: ["dev"]
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -32,12 +32,10 @@ services:
       - recyclic-network
 
   api:
-    profiles: ["dev", "staging", "prod"]
+    profiles: ["dev"]
     build: ./api
     image: recyclic-api:${API_IMAGE_TAG:-latest}
-    # CRITICAL (B18-P0): --proxy-headers is mandatory for production/staging to prevent Mixed Content errors
-    # This command ensures Uvicorn correctly handles X-Forwarded-* headers from Traefik
-    command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*"
+    command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
       REDIS_URL: redis://redis:6379
@@ -71,27 +69,9 @@ services:
       start_period: 30s
     networks:
       - recyclic-network
-      - traefik-public
-    labels:
-      # Exposer l'API à Traefik pour les environnements de staging et de production
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
-      - "traefik.http.middlewares.recyclic-api-stripprefix.stripprefix.prefixes=/api"
-      # Routeur pour la production
-      - "traefik.http.routers.recyclic-api-prod.rule=Host(`recyclic.jarvos.eu`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.recyclic-api-prod.entrypoints=websecure"
-      - "traefik.http.routers.recyclic-api-prod.tls.certresolver=myresolver"
-      - "traefik.http.routers.recyclic-api-prod.middlewares=recyclic-api-stripprefix@docker"
-      # Routeur pour le staging
-      - "traefik.http.routers.recyclic-api-staging.rule=Host(`devrecyclic.jarvos.eu`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.recyclic-api-staging.entrypoints=websecure"
-      - "traefik.http.routers.recyclic-api-staging.tls.certresolver=myresolver"
-      - "traefik.http.routers.recyclic-api-staging.middlewares=recyclic-api-stripprefix@docker"
-      # Service commun
-      - "traefik.http.services.recyclic-api.loadbalancer.server.port=8000"
 
   bot:
-    profiles: ["dev", "staging", "prod"]
+    profiles: ["dev"]
     build: ./bot
     image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     environment:
@@ -205,11 +185,11 @@ services:
   #     - recyclic-network
 
   # ============================================================
-  # FRONTEND SERVICES - PROFILE-BASED CONFIGURATION
+  # FRONTEND SERVICES - DEV ONLY
   # ============================================================
 
   # DEV: Frontend with hot-reload for local development
-  frontend-dev:
+  frontend:
     profiles: ["dev"]
     build:
       context: ./frontend
@@ -229,62 +209,9 @@ services:
     networks:
       - recyclic-network
 
-  # STAGING: Frontend with Traefik labels for staging environment
-  frontend-staging:
-    profiles: ["staging"]
-    build:
-      context: ./frontend
-      args:
-        VITE_API_URL: ${VITE_API_URL_STAGING}
-    image: recyclic-frontend-staging:${FRONTEND_IMAGE_TAG:-latest}
-    environment:
-      HOST: 0.0.0.0
-    depends_on:
-      api:
-        condition: service_healthy
-    networks:
-      - traefik-public
-      - recyclic-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.recyclic-frontend-staging.rule=Host(`devrecyclic.jarvos.eu`) && !PathPrefix(`/api`)"
-      - "traefik.http.routers.recyclic-frontend-staging.entrypoints=websecure"
-      - "traefik.http.routers.recyclic-frontend-staging.tls.certresolver=myresolver"
-      - "traefik.http.routers.recyclic-frontend-staging.priority=1"
-      - "traefik.http.services.recyclic-frontend-staging.loadbalancer.server.port=80"
-
-  # PROD: Frontend with Traefik labels for production environment
-  frontend-prod:
-    profiles: ["prod"]
-    build:
-      context: ./frontend
-      args:
-        VITE_API_URL: ${VITE_API_URL_PROD}
-    image: recyclic-frontend-prod:${FRONTEND_IMAGE_TAG:-latest}
-    environment:
-      HOST: 0.0.0.0
-    depends_on:
-      api:
-        condition: service_healthy
-    networks:
-      - traefik-public
-      - recyclic-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.recyclic-frontend-prod.rule=Host(`recyclic.jarvos.eu`) && !PathPrefix(`/api`)"
-      - "traefik.http.routers.recyclic-frontend-prod.entrypoints=websecure"
-      - "traefik.http.routers.recyclic-frontend-prod.tls.certresolver=myresolver"
-      - "traefik.http.routers.recyclic-frontend-prod.priority=1"
-      - "traefik.http.services.recyclic-frontend-prod.loadbalancer.server.port=80"
-
 volumes:
   postgres_data:
 
 networks:
   recyclic-network:
     driver: bridge
-  # External network for Traefik (production/staging only)
-  traefik-public:
-    external: true

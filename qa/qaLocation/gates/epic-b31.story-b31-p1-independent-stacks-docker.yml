@@ -1,0 +1,46 @@
+gate_id: "epic-b31.story-b31-p1-independent-stacks-docker"
+story_id: "story-b31-p1"
+epic: "EPIC-B31-INDEPENDENT-STACKS"
+title: "Refactorisation Docker pour Stacks Indépendantes"
+reviewer: "Quinn (Test Architect & Quality Advisor)"
+review_date: "2025-10-16"
+gate_decision: "READY FOR REVIEW"
+implementation_status: "DONE"
+tests_status: "N/A"
+
+summary: |
+  Les fichiers docker-compose distincts (dev/prod/staging) sont fournis et validés par
+  `docker compose config`. Les risques restent élevés côté déploiement: isolement réseaux,
+  labels Traefik, gestion des secrets, manipulation des volumes et procédure de bascule.
+  Un passage en PASS est conditionné à une répétition contrôlée sur la stack staging avec
+  vérifications runtime.
+
+validations:
+  - "docker-compose.yml simplifié pour dev"
+  - "docker-compose.prod.yml avec env_file=.env.production et volumes uniques"
+  - "docker-compose.staging.yml avec env_file=.env.staging et volumes uniques"
+  - "Validation via docker compose config pour les 3 fichiers"
+
+risks:
+  - risk: "Traefik routing"
+    description: "Règles Host/EntryPoints/Middlewares potentiellement incorrectes"
+    severity: "high"
+  - risk: "Volumes DB"
+    description: "Erreurs de mapping ou suppression accidentelle de données"
+    severity: "high"
+  - risk: "Secrets/env"
+    description: "Variables manquantes ou divergentes entre envs"
+    severity: "medium"
+  - risk: "Réseaux"
+    description: "Collisions de noms et fuite inter-stack"
+    severity: "medium"
+
+recommendations:
+  - "Activer et vérifier healthchecks pour tous les services"
+  - "Valider Traefik via inspection des routers/services et tests Host headers"
+  - "Sauvegarder Postgres (pg_dump) avant toute bascule et documenter rollback"
+  - "Utiliser des noms de projet explicites (-p recyclic-prod / recyclic-staging)"
+
+technical_notes:
+  - "Prévoir un runbook de bascule avec fenêtres de maintenance et critères de succès"
+

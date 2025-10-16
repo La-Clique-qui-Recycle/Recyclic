@@ -1,0 +1,14 @@
+category: Feature
+risk_level: Medium
+areas:
+  - performance
+  - security
+  - data-accuracy
+mitigations:
+  - tests_permissions_negative
+  - tests_kpis_aggregation
+  - filters_combined_pagination
+metrics:
+  latency_p50_ms: 500
+  dataset: synthetic_small
+

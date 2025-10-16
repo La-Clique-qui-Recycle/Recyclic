@@ -1,8 +1,27 @@
-# Guide de Déploiement Unifié - Recyclic
+# ⚠️ GUIDE OBSOLÈTE - Guide de Déploiement Unifié - Recyclic
 
-**Version:** 1.1  
-**Date:** 2025-10-15  
-**Auteur:** Équipe de Développement Recyclic  
+> **🚨 ATTENTION : CE GUIDE EST OBSOLÈTE DEPUIS LE 2025-10-16**
+>
+> **Nouvelle architecture en place :** Stacks Docker Indépendantes (Epic B31)
+>
+> **Veuillez utiliser les nouveaux guides :**
+> - 👨‍💻 **Développeurs** : [Guide de Déploiement V2](./guide-deploiement-v2.md) - Guide simplifié
+> - 👨‍🔧 **DevOps/Ops** : [Deployment Independent Stacks](../runbooks/deployment-independent-stacks.md) - Runbook complet
+>
+> **Ce qui a changé :**
+> - ❌ Plus de profiles Docker (`--profile staging`, `--profile prod`)
+> - ✅ Fichiers docker-compose séparés par environnement
+> - ✅ Isolation complète des stacks (volumes, réseaux, projets)
+> - ✅ Scripts de validation automatisés
+>
+> **Ce guide est conservé pour référence historique uniquement.**
+
+---
+
+**Version:** 1.1 (OBSOLÈTE)
+**Date:** 2025-10-15
+**Auteur:** Équipe de Développement Recyclic
+**Statut:** ⚠️ REMPLACÉ PAR GUIDE V2
 
 ---
 

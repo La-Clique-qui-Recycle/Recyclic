@@ -1,0 +1,162 @@
+# Production Stack Configuration
+# Usage: docker compose -p recyclic-prod -f docker-compose.prod.yml up -d --build
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: recyclic
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - prod_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recyclic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-prod-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-prod-network
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    image: recyclic-api:${API_IMAGE_TAG:-latest}
+    # CRITICAL (B18-P0): --proxy-headers is mandatory for production to prevent Mixed Content errors
+    # This command ensures Uvicorn correctly handles X-Forwarded-* headers from Traefik
+    command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*"
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      REDIS_URL: redis://redis:6379
+      # Variables pour Alembic migrations
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: recyclic
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - recyclic-prod-network
+      - traefik-public
+    labels:
+      # Exposer l'API à Traefik pour la production
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.middlewares.recyclic-api-prod-stripprefix.stripprefix.prefixes=/api"
+      # Routeur pour la production
+      - "traefik.http.routers.recyclic-api-prod.rule=Host(`recyclic.jarvos.eu`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-api-prod.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-api-prod.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-api-prod.middlewares=recyclic-api-prod-stripprefix@docker"
+      - "traefik.http.services.recyclic-api-prod.loadbalancer.server.port=8000"
+    restart: unless-stopped
+
+  bot:
+    build: ./bot
+    image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      REDIS_URL: redis://redis:6379
+      API_BASE_URL: http://api:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - recyclic-prod-network
+    restart: unless-stopped
+
+  # Service dédié pour les migrations Alembic
+  api-migrations:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.migrations
+    image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      REDIS_URL: redis://redis:6379
+      # Variables pour Alembic migrations
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: recyclic
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - recyclic-prod-network
+
+  # PROD: Frontend with Traefik labels for production environment
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL_PROD:-/api}
+    image: recyclic-frontend-prod:${FRONTEND_IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    environment:
+      HOST: 0.0.0.0
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - traefik-public
+      - recyclic-prod-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.recyclic-frontend-prod.rule=Host(`recyclic.jarvos.eu`) && !PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-frontend-prod.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-frontend-prod.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-frontend-prod.priority=1"
+      - "traefik.http.services.recyclic-frontend-prod.loadbalancer.server.port=80"
+    restart: unless-stopped
+
+volumes:
+  prod_postgres_data:
+
+networks:
+  recyclic-prod-network:
+    driver: bridge
+  # External network for Traefik
+  traefik-public:
+    external: true
