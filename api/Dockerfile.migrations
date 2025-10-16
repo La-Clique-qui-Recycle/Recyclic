@@ -6,11 +6,11 @@ WORKDIR /app
 # Copier uniquement ce qui est nécessaire pour Alembic
 COPY alembic.ini .
 COPY migrations ./migrations
-COPY requirements.txt .
+COPY requirements-migrations.txt .
 COPY src ./src
 
 # Installer les dépendances minimales
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-migrations.txt
 
 # Configurer PYTHONPATH pour que recyclic_api soit trouvé
 ENV PYTHONPATH=/app/src

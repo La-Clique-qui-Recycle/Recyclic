@@ -116,8 +116,12 @@ if settings.ENVIRONMENT in ("development", "dev", "local"):
     )
 else:
     # Sinon, lire la variable d'environnement ALLOWED_HOSTS (valeurs séparées par virgules ou espaces)
-    raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,api,testserver")
+    raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
     allowed_hosts = [h.strip() for h in re.split(r"[\s,]+", raw_hosts) if h.strip()]
+    # Toujours ajouter localhost et 127.0.0.1 pour les healthchecks Docker internes
+    for internal_host in ["localhost", "127.0.0.1"]:
+        if internal_host not in allowed_hosts:
+            allowed_hosts.append(internal_host)
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=allowed_hosts
