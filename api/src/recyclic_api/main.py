@@ -90,6 +90,7 @@ app = FastAPI(
     version="1.0.0",
     description="API pour la plateforme Recyclic - Gestion de recyclage intelligente",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    root_path=settings.ROOT_PATH,
     lifespan=lifespan
 )
 
@@ -175,4 +176,3 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

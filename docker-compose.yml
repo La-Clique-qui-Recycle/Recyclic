@@ -49,6 +49,7 @@ services:
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:4444}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
       API_V1_STR: ${API_V1_STR:-/v1}
+      ROOT_PATH: ${ROOT_PATH:-}
       # Variables pour Alembic migrations
       POSTGRES_HOST: postgres
       POSTGRES_USER: recyclic
@@ -128,6 +129,7 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       API_V1_STR: ${API_V1_STR:-/v1}
+      ROOT_PATH: ${ROOT_PATH:-}
       # Variables pour Alembic migrations
       POSTGRES_HOST: postgres
       POSTGRES_USER: recyclic
