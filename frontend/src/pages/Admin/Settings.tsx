@@ -368,6 +368,12 @@ const Settings: React.FC = () => {
   const [purgeStep, setPurgeStep] = useState(1)
   const [confirmationText, setConfirmationText] = useState('')
   
+  // États pour l'import de base de données
+  const [importingDatabase, setImportingDatabase] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [importConfirmationText, setImportConfirmationText] = useState('')
+  
   // États pour les paramètres de session
   const [sessionSettings, setSessionSettings] = useState({ token_expiration_minutes: 480 })
   const [loadingSessionSettings, setLoadingSessionSettings] = useState(false)
@@ -485,6 +491,68 @@ const Settings: React.FC = () => {
     setConfirmationText('')
   }
 
+  // Fonctions pour l'import de base de données
+  const handleImportDatabase = () => {
+    setShowImportModal(true)
+    setSelectedFile(null)
+    setImportConfirmationText('')
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Vérifier que c'est un fichier SQL
+      if (!file.name.toLowerCase().endsWith('.sql')) {
+        alert('❌ Veuillez sélectionner un fichier SQL (.sql)')
+        return
+      }
+      setSelectedFile(file)
+    }
+  }
+
+  const handleImportStep1 = () => {
+    if (!selectedFile) {
+      alert('❌ Veuillez sélectionner un fichier SQL')
+      return
+    }
+    // Passer à l'étape de confirmation
+  }
+
+  const handleImportStep2 = async () => {
+    if (importConfirmationText !== 'RESTAURER') {
+      alert('❌ Le texte de confirmation ne correspond pas. Veuillez recopier exactement "RESTAURER".')
+      return
+    }
+
+    if (!selectedFile) {
+      alert('❌ Aucun fichier sélectionné')
+      return
+    }
+
+    try {
+      setImportingDatabase(true)
+      const result = await adminService.importDatabase(selectedFile)
+      
+      alert(`✅ Import réussi !\n\nFichier importé: ${result.imported_file}\nSauvegarde créée: ${result.backup_created}\n\n⚠️ La base de données a été remplacée par le contenu du fichier.`)
+      
+      setShowImportModal(false)
+      setSelectedFile(null)
+      setImportConfirmationText('')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
+      alert(`❌ Erreur lors de l'import de la base de données: ${errorMessage}`)
+      console.error('Import database error:', err)
+    } finally {
+      setImportingDatabase(false)
+    }
+  }
+
+  const handleCancelImport = () => {
+    setShowImportModal(false)
+    setSelectedFile(null)
+    setImportConfirmationText('')
+  }
+
   // Fonctions pour les paramètres de session
   const handleSessionSettingsChange = (field: string, value: number) => {
     // Validation côté client
@@ -576,6 +644,30 @@ const Settings: React.FC = () => {
             <WarningBox>
               <strong>⚠️ Attention :</strong> L'export peut prendre plusieurs minutes selon la taille
               de la base de données et consommer des ressources système importantes.
+            </WarningBox>
+          </ActionCard>
+
+          {/* Import de la base de données */}
+          <ActionCard>
+            <ActionHeader>
+              <ActionInfo>
+                <ActionTitle>Import de sauvegarde</ActionTitle>
+                <ActionDescription>
+                  Importe un fichier SQL de sauvegarde et remplace la base de données existante.
+                  Une sauvegarde automatique est créée avant l'import.
+                </ActionDescription>
+              </ActionInfo>
+              <Button
+                variant="danger"
+                onClick={handleImportDatabase}
+                disabled={importingDatabase}
+              >
+                {importingDatabase ? '⏳ Import en cours...' : '📥 Importer une sauvegarde'}
+              </Button>
+            </ActionHeader>
+            <WarningBox style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca', color: '#dc2626' }}>
+              <strong>⚠️ DANGER :</strong> Cette action remplace complètement la base de données existante.
+              Une sauvegarde automatique est créée avant l'import, mais cette opération est irréversible.
             </WarningBox>
           </ActionCard>
 
@@ -748,6 +840,85 @@ const Settings: React.FC = () => {
                 </ModalButtons>
               </>
             )}
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Modale d'import de base de données */}
+      {showImportModal && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalTitle>📥 Import de sauvegarde</ModalTitle>
+            <ModalText>
+              Sélectionnez un fichier SQL de sauvegarde à importer. Cette action remplacera
+              complètement la base de données existante.
+            </ModalText>
+            
+            <div style={{ margin: '20px 0' }}>
+              <input
+                type="file"
+                accept=".sql"
+                onChange={handleFileSelect}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px dashed #d1d5db',
+                  borderRadius: '8px',
+                  backgroundColor: '#f9fafb',
+                  cursor: 'pointer'
+                }}
+                disabled={importingDatabase}
+              />
+              {selectedFile && (
+                <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#dbeafe', borderRadius: '6px' }}>
+                  <strong>Fichier sélectionné :</strong> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              )}
+            </div>
+
+            <ModalText style={{ color: '#dc2626', fontWeight: 'bold' }}>
+              ⚠️ ATTENTION : Cette opération est irréversible et remplacera toutes les données existantes.
+            </ModalText>
+
+            <ModalButtons>
+              <ModalButton variant="secondary" onClick={handleCancelImport} disabled={importingDatabase}>
+                Annuler
+              </ModalButton>
+              <ModalButton 
+                variant="danger" 
+                onClick={handleImportStep2}
+                disabled={importingDatabase || !selectedFile}
+              >
+                {importingDatabase ? '⏳ Import en cours...' : '📥 Importer'}
+              </ModalButton>
+            </ModalButtons>
+
+            <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '6px', fontSize: '0.875rem' }}>
+              <strong>Confirmation requise :</strong> Pour confirmer, veuillez recopier exactement le mot suivant :
+              <br />
+              <strong style={{ color: '#dc2626', fontSize: '1.2rem' }}>"RESTAURER"</strong>
+            </div>
+            
+            <ModalInput
+              type="text"
+              value={importConfirmationText}
+              onChange={(e) => setImportConfirmationText(e.target.value)}
+              placeholder="Recopiez 'RESTAURER' ici..."
+              disabled={importingDatabase}
+            />
+            
+            <ModalButtons>
+              <ModalButton variant="secondary" onClick={handleCancelImport} disabled={importingDatabase}>
+                Annuler
+              </ModalButton>
+              <ModalButton 
+                variant="danger" 
+                onClick={handleImportStep2}
+                disabled={importingDatabase || !selectedFile || importConfirmationText !== 'RESTAURER'}
+              >
+                {importingDatabase ? '⏳ Import en cours...' : '🗄️ Remplacer la base de données'}
+              </ModalButton>
+            </ModalButtons>
           </ModalContent>
         </ModalOverlay>
       )}

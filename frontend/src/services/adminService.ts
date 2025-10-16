@@ -431,6 +431,31 @@ export const adminService = {
       console.error('Erreur lors de la mise à jour des paramètres de session:', error);
       throw error;
     }
+  },
+
+  /**
+   * Importe une sauvegarde de base de données (réservé aux Super-Admins)
+   * Remplace la base de données existante par le contenu du fichier SQL
+   */
+  async importDatabase(file: File): Promise<{ message: string; imported_file: string; backup_created: string; backup_path: string; timestamp: string }> {
+    try {
+      // Créer un FormData pour l'upload de fichier
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axiosClient.post('/v1/admin/db/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 600000, // 10 minutes timeout (import peut être long)
+      });
+
+      console.log('Import de base de données réussi:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'import de la base de données:', error);
+      throw error;
+    }
   }
 };
 
