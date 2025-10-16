@@ -108,6 +108,7 @@ services:
       context: ./api
       dockerfile: Dockerfile.migrations
     image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
+    command: alembic upgrade head
     env_file:
       - .env.production
     environment:
@@ -120,6 +121,7 @@ services:
         condition: service_healthy
     networks:
       - recyclic-prod-network
+    restart: "no"
 
   # PROD: Frontend with Traefik labels for production environment
   frontend:

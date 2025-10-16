@@ -99,10 +99,12 @@ services:
 
   # Service dédié pour les migrations Alembic avec configuration Docker optimisée
   api-migrations:
+    profiles: ["dev"]
     build:
       context: ./api
       dockerfile: Dockerfile.migrations
     image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
+    command: alembic upgrade head
     environment:
       DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
       REDIS_URL: redis://redis:6379
@@ -123,6 +125,7 @@ services:
         condition: service_healthy
     networks:
       - recyclic-network
+    restart: "no"
 
   # # Service dédié pour les tests avec volumes pour développement rapide
   # api-tests:
