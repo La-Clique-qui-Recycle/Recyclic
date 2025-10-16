@@ -21,8 +21,8 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Insert default token expiration setting (480 minutes = 8 hours)
     op.execute("""
-        INSERT INTO settings (key, value) 
-        VALUES ('token_expiration_minutes', '480') 
+        INSERT INTO settings (id, key, value)
+        VALUES (gen_random_uuid(), 'token_expiration_minutes', '480')
         ON CONFLICT (key) DO NOTHING
     """)
 
