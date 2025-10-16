@@ -4,7 +4,7 @@
  * Contient les outils de gestion de la base de données
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { adminService } from '../../services/adminService'
 import { useAuthStore } from '../../stores/authStore'
@@ -314,6 +314,51 @@ const ModalButton = styled.button<{ variant: 'primary' | 'secondary' | 'danger' 
   }
 `
 
+// Styles pour les paramètres de session
+const FormGroup = styled.div`
+  margin-bottom: 20px;
+`
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+`
+
+const Input = styled.input`
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  &:disabled {
+    background-color: #f9fafb;
+    color: #6b7280;
+  }
+`
+
+const ErrorMessage = styled.div`
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 8px;
+`
+
+const SuccessMessage = styled.div`
+  color: #059669;
+  font-size: 0.875rem;
+  margin-top: 8px;
+`
+
 const Settings: React.FC = () => {
   const currentUser = useAuthStore((state) => state.currentUser)
   const navigate = useNavigate()
@@ -322,6 +367,39 @@ const Settings: React.FC = () => {
   const [showPurgeModal, setShowPurgeModal] = useState(false)
   const [purgeStep, setPurgeStep] = useState(1)
   const [confirmationText, setConfirmationText] = useState('')
+  
+  // États pour l'import de base de données
+  const [importingDatabase, setImportingDatabase] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [importConfirmationText, setImportConfirmationText] = useState('')
+  
+  // États pour les paramètres de session
+  const [sessionSettings, setSessionSettings] = useState({ token_expiration_minutes: 480 })
+  const [loadingSessionSettings, setLoadingSessionSettings] = useState(false)
+  const [savingSessionSettings, setSavingSessionSettings] = useState(false)
+  const [sessionSettingsError, setSessionSettingsError] = useState<string | null>(null)
+
+  // Charger les paramètres de session au montage du composant
+  useEffect(() => {
+    const loadSessionSettings = async () => {
+      try {
+        setLoadingSessionSettings(true)
+        setSessionSettingsError(null)
+        const settings = await adminService.getSessionSettings()
+        setSessionSettings(settings)
+      } catch (error) {
+        console.error('Erreur lors du chargement des paramètres de session:', error)
+        setSessionSettingsError('Erreur lors du chargement des paramètres')
+      } finally {
+        setLoadingSessionSettings(false)
+      }
+    }
+
+    if (currentUser?.role === 'super-admin') {
+      loadSessionSettings()
+    }
+  }, [currentUser])
 
   // Debug: Log user info
   console.log('Settings - User:', currentUser)
@@ -413,6 +491,118 @@ const Settings: React.FC = () => {
     setConfirmationText('')
   }
 
+  // Fonctions pour l'import de base de données
+  const handleImportDatabase = () => {
+    setShowImportModal(true)
+    setSelectedFile(null)
+    setImportConfirmationText('')
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Vérifier que c'est un fichier SQL
+      if (!file.name.toLowerCase().endsWith('.sql')) {
+        alert('❌ Veuillez sélectionner un fichier SQL (.sql)')
+        return
+      }
+      setSelectedFile(file)
+    }
+  }
+
+  const handleImportStep1 = () => {
+    if (!selectedFile) {
+      alert('❌ Veuillez sélectionner un fichier SQL')
+      return
+    }
+    // Passer à l'étape de confirmation
+  }
+
+  const handleImportStep2 = async () => {
+    if (importConfirmationText !== 'RESTAURER') {
+      alert('❌ Le texte de confirmation ne correspond pas. Veuillez recopier exactement "RESTAURER".')
+      return
+    }
+
+    if (!selectedFile) {
+      alert('❌ Aucun fichier sélectionné')
+      return
+    }
+
+    try {
+      setImportingDatabase(true)
+      const result = await adminService.importDatabase(selectedFile)
+      
+      alert(`✅ Import réussi !\n\nFichier importé: ${result.imported_file}\nSauvegarde créée: ${result.backup_created}\n\n⚠️ La base de données a été remplacée par le contenu du fichier.`)
+      
+      setShowImportModal(false)
+      setSelectedFile(null)
+      setImportConfirmationText('')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
+      alert(`❌ Erreur lors de l'import de la base de données: ${errorMessage}`)
+      console.error('Import database error:', err)
+    } finally {
+      setImportingDatabase(false)
+    }
+  }
+
+  const handleCancelImport = () => {
+    setShowImportModal(false)
+    setSelectedFile(null)
+    setImportConfirmationText('')
+  }
+
+  // Fonctions pour les paramètres de session
+  const handleSessionSettingsChange = (field: string, value: number) => {
+    // Validation côté client
+    if (value < 1) {
+      setSessionSettingsError('La durée doit être d\'au moins 1 minute')
+      return
+    }
+    if (value > 10080) {
+      setSessionSettingsError('La durée ne peut pas dépasser 7 jours (10080 minutes)')
+      return
+    }
+    
+    setSessionSettingsError(null)
+    setSessionSettings(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleSaveSessionSettings = async () => {
+    try {
+      setSavingSessionSettings(true)
+      setSessionSettingsError(null)
+      
+      // Validation finale avant envoi
+      if (sessionSettings.token_expiration_minutes < 1 || sessionSettings.token_expiration_minutes > 10080) {
+        setSessionSettingsError('Valeur invalide. La durée doit être entre 1 et 10080 minutes.')
+        return
+      }
+      
+      await adminService.updateSessionSettings(sessionSettings.token_expiration_minutes)
+      alert('✅ Paramètres de session sauvegardés avec succès !')
+    } catch (error: any) {
+      console.error('Erreur lors de la sauvegarde des paramètres de session:', error)
+      
+      // Gestion d'erreur plus spécifique
+      if (error.response?.status === 400) {
+        setSessionSettingsError(error.response.data.detail || 'Données invalides')
+      } else if (error.response?.status === 403) {
+        setSessionSettingsError('Accès refusé. Seuls les Super-Administrateurs peuvent modifier ces paramètres.')
+      } else if (error.response?.status === 401) {
+        setSessionSettingsError('Session expirée. Veuillez vous reconnecter.')
+      } else {
+        setSessionSettingsError('Erreur lors de la sauvegarde des paramètres')
+      }
+    } finally {
+      setSavingSessionSettings(false)
+    }
+  }
+
   return (
     <SettingsContainer>
       <PageHeader>
@@ -457,6 +647,32 @@ const Settings: React.FC = () => {
             </WarningBox>
           </ActionCard>
 
+          {/* Import de la base de données */}
+          <ActionCard>
+            <ActionHeader>
+              <ActionInfo>
+                <ActionTitle>Import de sauvegarde</ActionTitle>
+                <ActionDescription>
+                  Importe un fichier SQL de sauvegarde et remplace la base de données existante.
+                  Une sauvegarde automatique est créée avant l'import.
+                </ActionDescription>
+              </ActionInfo>
+              <Button
+                variant="danger"
+                onClick={handleImportDatabase}
+                disabled={true}
+                style={{ opacity: 0.6, cursor: 'not-allowed' }}
+              >
+                🚧 Fonctionnalité en développement
+              </Button>
+            </ActionHeader>
+            <WarningBox style={{ backgroundColor: '#fef3cd', borderColor: '#fde68a', color: '#92400e' }}>
+              <strong>🚧 FONCTIONNALITÉ EN DÉVELOPPEMENT :</strong> L'import de sauvegarde est temporairement désactivé 
+              en raison de problèmes techniques avec les fichiers de sauvegarde PostgreSQL. 
+              Cette fonctionnalité sera bientôt disponible.
+            </WarningBox>
+          </ActionCard>
+
           {/* Purge des données transactionnelles */}
           <ActionCard>
             <ActionHeader>
@@ -479,6 +695,81 @@ const Settings: React.FC = () => {
               <strong>⚠️ DANGER :</strong> Cette action supprimera définitivement toutes les données transactionnelles.
               Elle ne doit être utilisée qu'une seule fois avant le lancement officiel de l'application.
             </WarningBox>
+          </ActionCard>
+        </ActionGroup>
+      </Section>
+
+      {/* Section Sécurité */}
+      <Section>
+        <SectionHeader>
+          <SectionTitle>
+            🔒 Sécurité
+          </SectionTitle>
+          <SectionDescription>
+            Configuration des paramètres de sécurité et d'authentification du système.
+          </SectionDescription>
+        </SectionHeader>
+
+        <ActionGroup>
+          {/* Paramètres de session */}
+          <ActionCard>
+            <ActionHeader>
+              <ActionInfo>
+                <ActionTitle>Durée de session</ActionTitle>
+                <ActionDescription>
+                  Configurez la durée d'expiration des tokens d'authentification. 
+                  Une durée plus longue améliore l'expérience utilisateur mais réduit la sécurité.
+                </ActionDescription>
+              </ActionInfo>
+            </ActionHeader>
+            
+            {loadingSessionSettings ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                ⏳ Chargement des paramètres...
+              </div>
+            ) : (
+              <div>
+                <FormGroup>
+                  <Label htmlFor="token-expiration">
+                    Durée de la session (en minutes)
+                  </Label>
+                  <Input
+                    id="token-expiration"
+                    type="number"
+                    min="1"
+                    max="10080"
+                    value={sessionSettings.token_expiration_minutes}
+                    onChange={(e) => handleSessionSettingsChange('token_expiration_minutes', parseInt(e.target.value) || 480)}
+                    disabled={savingSessionSettings}
+                    placeholder="480"
+                  />
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                    Valeur recommandée : 480 minutes (8 heures) pour une utilisation en boutique
+                  </div>
+                </FormGroup>
+
+                {sessionSettingsError && (
+                  <ErrorMessage>
+                    ❌ {sessionSettingsError}
+                  </ErrorMessage>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                  <Button
+                    variant="primary"
+                    onClick={handleSaveSessionSettings}
+                    disabled={savingSessionSettings}
+                  >
+                    {savingSessionSettings ? '⏳ Sauvegarde...' : '💾 Enregistrer'}
+                  </Button>
+                </div>
+
+                <InfoBox style={{ marginTop: '16px' }}>
+                  <strong>ℹ️ Information :</strong> Les nouveaux tokens créés après la sauvegarde 
+                  utiliseront cette durée d'expiration. Les tokens existants conservent leur durée d'origine.
+                </InfoBox>
+              </div>
+            )}
           </ActionCard>
         </ActionGroup>
       </Section>
@@ -551,6 +842,85 @@ const Settings: React.FC = () => {
                 </ModalButtons>
               </>
             )}
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Modale d'import de base de données */}
+      {showImportModal && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalTitle>📥 Import de sauvegarde</ModalTitle>
+            <ModalText>
+              Sélectionnez un fichier SQL de sauvegarde à importer. Cette action remplacera
+              complètement la base de données existante.
+            </ModalText>
+            
+            <div style={{ margin: '20px 0' }}>
+              <input
+                type="file"
+                accept=".sql"
+                onChange={handleFileSelect}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px dashed #d1d5db',
+                  borderRadius: '8px',
+                  backgroundColor: '#f9fafb',
+                  cursor: 'pointer'
+                }}
+                disabled={importingDatabase}
+              />
+              {selectedFile && (
+                <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#dbeafe', borderRadius: '6px' }}>
+                  <strong>Fichier sélectionné :</strong> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              )}
+            </div>
+
+            <ModalText style={{ color: '#dc2626', fontWeight: 'bold' }}>
+              ⚠️ ATTENTION : Cette opération est irréversible et remplacera toutes les données existantes.
+            </ModalText>
+
+            <ModalButtons>
+              <ModalButton variant="secondary" onClick={handleCancelImport} disabled={importingDatabase}>
+                Annuler
+              </ModalButton>
+              <ModalButton 
+                variant="danger" 
+                onClick={handleImportStep2}
+                disabled={importingDatabase || !selectedFile}
+              >
+                {importingDatabase ? '⏳ Import en cours...' : '📥 Importer'}
+              </ModalButton>
+            </ModalButtons>
+
+            <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '6px', fontSize: '0.875rem' }}>
+              <strong>Confirmation requise :</strong> Pour confirmer, veuillez recopier exactement le mot suivant :
+              <br />
+              <strong style={{ color: '#dc2626', fontSize: '1.2rem' }}>"RESTAURER"</strong>
+            </div>
+            
+            <ModalInput
+              type="text"
+              value={importConfirmationText}
+              onChange={(e) => setImportConfirmationText(e.target.value)}
+              placeholder="Recopiez 'RESTAURER' ici..."
+              disabled={importingDatabase}
+            />
+            
+            <ModalButtons>
+              <ModalButton variant="secondary" onClick={handleCancelImport} disabled={importingDatabase}>
+                Annuler
+              </ModalButton>
+              <ModalButton 
+                variant="danger" 
+                onClick={handleImportStep2}
+                disabled={importingDatabase || !selectedFile || importConfirmationText !== 'RESTAURER'}
+              >
+                {importingDatabase ? '⏳ Import en cours...' : '🗄️ Remplacer la base de données'}
+              </ModalButton>
+            </ModalButtons>
           </ModalContent>
         </ModalOverlay>
       )}

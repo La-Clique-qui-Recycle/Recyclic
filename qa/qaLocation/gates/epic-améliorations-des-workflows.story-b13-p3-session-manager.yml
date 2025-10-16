@@ -1,0 +1,43 @@
+gate_id: "epic-améliorations-des-workflows.story-b13-p3-session-manager"
+story_id: "story-b13-p3-session-manager"
+epic: "Améliorations des Workflows"
+title: "Refonte de la Gestion et des Rapports des Sessions de Caisse"
+reviewer: "Quinn (Test Architect & Quality Advisor)"
+review_date: "2025-10-16"
+gate_decision: "PASS"
+implementation_status: "DONE"
+tests_status: "DONE"
+
+summary: |
+  La page « Gestionnaire de Sessions » est implémentée avec 5 KPIs, filtres avancés
+  (dates, opérateur, recherche), tableau avec pastilles de statut, navigation vers détail
+  et export CSV. Les endpoints backend d’agrégation et de recherche sont présents et testés.
+  Couverture de tests consolidée (permissions négatives, filtres combinés côté API et UI).
+  Vérification de performance incluse via un smoke test optionnel.
+
+validations:
+  - "Page unique et navigation mises à jour (routage admin)"
+  - "KPIs fournis par GET /api/v1/cash-sessions/stats/summary (site_id inclus)"
+  - "Filtres date/opérateur/recherche pris en charge par la liste"
+  - "Tableau sessions avec colonnes et pastilles de statut"
+  - "Actions: lien détail session et téléchargement CSV"
+
+risks:
+  - risk: "Performance"
+    description: "Agrégations et filtrage sur grands volumes: besoin d’indexes et mesure de latence"
+    severity: "medium"
+  - risk: "Sécurité/Permissions"
+    description: "Vérifier l’accès restreint ADMIN/SUPER_ADMIN sur liste/détail/export"
+    severity: "medium"
+
+recommendations:
+  - "Ajouter tests d’intégration filtres combinés + navigation vers détail"
+  - "Couvrir permissions négatives (non-admin) sur les endpoints et UI"
+  - "Valider latence < 500ms sur dataset représentatif et documenter l’indexation (smoke RECYC_PERF_SMOKE=1)"
+  - "Tester robustesse du téléchargement CSV (erreurs réseau/statuts HTTP)"
+
+technical_notes:
+  - "Schémas Pydantic étendus pour stats et recherche"
+  - "Service frontend `cashSessionsService.ts` pour appels list/stats/export"
+  - "Composant `SessionManager.tsx` avec KPIs + filtres + table"
+

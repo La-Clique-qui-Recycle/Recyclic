@@ -1,0 +1,17 @@
+decision: PASS
+story: STORY-B32-P1-ENV-SUPERADMIN
+slug: story-b32-p1-env-superadmin
+epic: epic-maintenance-et-dette-technique
+rationale:
+  - Env vars ajoutées dans env.example
+  - Hook de démarrage exécute l'init super-admin
+  - Idempotence vérifiée par tests
+  - Sécurité: mot de passe haché
+checks:
+  env_vars_present: true
+  startup_hook_present: true
+  idempotent: true
+  password_hashed: true
+notes:
+  - Aucun effet si variables absentes
+  - Rôle SUPER_ADMIN appliqué

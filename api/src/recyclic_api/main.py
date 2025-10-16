@@ -19,6 +19,8 @@ from recyclic_api.services.scheduler_service import get_scheduler_service
 from recyclic_api.utils.rate_limit import limiter
 from recyclic_api.core.database import engine
 from recyclic_api.models import Base
+from recyclic_api.core.database import SessionLocal
+from recyclic_api.initial_data import init_super_admin_if_configured
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -55,6 +57,18 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Could not generate openapi.json: {e}")
 
+    # Initialisation applicative (création super-admin si configuré)
+    try:
+        db = SessionLocal()
+        init_super_admin_if_configured(db)
+    except Exception as e:
+        logger.error(f"Startup initialization error: {e}")
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
     try:
         yield
     finally:
@@ -76,6 +90,7 @@ app = FastAPI(
     version="1.0.0",
     description="API pour la plateforme Recyclic - Gestion de recyclage intelligente",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    root_path=settings.ROOT_PATH,
     lifespan=lifespan
 )
 
@@ -93,15 +108,24 @@ app.add_middleware(
 )
 
 # Add trusted host middleware
-# On lit la variable d'environnement ALLOWED_HOSTS
-raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,api,testserver")
-# On la transforme en une liste propre (en séparant par virgule ou espace)
-allowed_hosts = [h.strip() for h in re.split(r"[\s,]+", raw_hosts) if h.strip()]
-
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=allowed_hosts
-)
+# En développement local, autoriser tous les hôtes pour éviter les erreurs "Invalid host header"
+if settings.ENVIRONMENT in ("development", "dev", "local"):
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["*"]
+    )
+else:
+    # Sinon, lire la variable d'environnement ALLOWED_HOSTS (valeurs séparées par virgules ou espaces)
+    raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+    allowed_hosts = [h.strip() for h in re.split(r"[\s,]+", raw_hosts) if h.strip()]
+    # Toujours ajouter localhost et 127.0.0.1 pour les healthchecks Docker internes
+    for internal_host in ["localhost", "127.0.0.1"]:
+        if internal_host not in allowed_hosts:
+            allowed_hosts.append(internal_host)
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=allowed_hosts
+    )
 
 # Add request timing middleware
 @app.middleware("http")
@@ -156,4 +180,3 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

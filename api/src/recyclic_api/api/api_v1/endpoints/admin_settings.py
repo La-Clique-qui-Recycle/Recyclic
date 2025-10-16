@@ -8,7 +8,9 @@ from recyclic_api.core.auth import require_role_strict
 from recyclic_api.core.database import get_db
 from recyclic_api.models.user import User, UserRole
 from recyclic_api.schemas.admin_settings import AlertThresholds, AlertThresholdsResponse, AlertThresholdsUpdate
+from recyclic_api.schemas.setting import SessionSettingsResponse, SessionSettingsUpdate
 from recyclic_api.services.admin_settings_service import AdminSettingsService
+from recyclic_api.services.session_settings_service import SessionSettingsService
 from recyclic_api.utils.rate_limit import conditional_rate_limit
 
 router = APIRouter(tags=["admin", "settings"])
@@ -72,3 +74,57 @@ def put_alert_thresholds(
     )
     payload_response = AlertThresholdsResponse(thresholds=new_thresholds, site_id=payload.site_id)
     return payload_response.model_dump(by_alias=True)
+
+
+@conditional_rate_limit("20/minute")
+@router.get("/session", response_model=SessionSettingsResponse)
+def get_session_settings(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.SUPER_ADMIN])),
+) -> SessionSettingsResponse:
+    """Récupère les paramètres de session (durée d'expiration des tokens)."""
+    service = SessionSettingsService(db)
+    settings = service.get_session_settings()
+    
+    log_admin_access(
+        str(current_user.id),
+        current_user.username or "Unknown",
+        "/admin/settings/session",
+        success=True,
+    )
+    
+    return settings
+
+
+@conditional_rate_limit("10/minute")
+@router.put("/session", response_model=SessionSettingsResponse)
+def update_session_settings(
+    request: Request,
+    payload: SessionSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.SUPER_ADMIN])),
+) -> SessionSettingsResponse:
+    """Met à jour les paramètres de session (durée d'expiration des tokens)."""
+    service = SessionSettingsService(db)
+    
+    try:
+        settings = service.update_session_settings(payload)
+    except ValueError as exc:
+        log_admin_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            "/admin/settings/session",
+            success=False,
+            error_message=str(exc),
+        )
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    
+    log_admin_access(
+        str(current_user.id),
+        current_user.username or "Unknown",
+        "/admin/settings/session",
+        success=True,
+    )
+    
+    return settings

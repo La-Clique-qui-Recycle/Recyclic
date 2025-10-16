@@ -73,6 +73,8 @@ class CashSessionResponse(CashSessionBase):
     closed_at: Optional[datetime] = Field(None, description="Date et heure de fermeture")
     total_sales: Optional[float] = Field(None, description="Total des ventes")
     total_items: Optional[int] = Field(None, description="Nombre total d'articles vendus")
+    number_of_sales: Optional[int] = Field(None, description="Nombre de ventes effectuées")
+    total_donations: Optional[float] = Field(None, description="Total des dons collectés")
     closing_amount: Optional[float] = Field(None, description="Montant théorique calculé à la fermeture")
     actual_amount: Optional[float] = Field(None, description="Montant physique compté à la fermeture")
     variance: Optional[float] = Field(None, description="Écart entre théorique et physique")
@@ -123,6 +125,7 @@ class CashSessionFilters(BaseModel):
     register_id: Optional[str] = Field(None, description="Filtrer par registre")
     date_from: Optional[datetime] = Field(None, description="Date de début")
     date_to: Optional[datetime] = Field(None, description="Date de fin")
+    search: Optional[str] = Field(None, description="Recherche textuelle (nom opérateur ou ID de session)")
 
 
 class CashSessionStats(BaseModel):
@@ -132,6 +135,9 @@ class CashSessionStats(BaseModel):
     closed_sessions: int = Field(..., description="Nombre de sessions fermées")
     total_sales: float = Field(..., description="Total des ventes")
     total_items: int = Field(..., description="Total des articles vendus")
+    number_of_sales: int = Field(..., description="Nombre total de ventes")
+    total_donations: float = Field(..., description="Total des dons sur la période")
+    total_weight_sold: float = Field(..., description="Poids total vendu (kg)")
     average_session_duration: Optional[float] = Field(None, description="Durée moyenne des sessions en heures")
 
 
@@ -145,6 +151,7 @@ class SaleDetail(BaseModel):
     payment_method: Optional[str] = Field(None, description="Méthode de paiement")
     created_at: datetime = Field(..., description="Date et heure de la vente")
     operator_id: Optional[str] = Field(None, description="ID de l'opérateur")
+    operator_name: Optional[str] = Field(None, description="Nom de l'opérateur")
     
     @field_validator('id', 'operator_id', mode='before')
     @classmethod

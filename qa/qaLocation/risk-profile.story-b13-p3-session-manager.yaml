@@ -1,0 +1,70 @@
+risk_profile_id: "risk-profile.story-b13-p3-session-manager"
+story_id: "story-b13-p3-session-manager"
+epic: "Améliorations des Workflows"
+reviewer: "Quinn (Test Architect & Quality Advisor)"
+review_date: "2025-10-16"
+
+risks:
+  - id: PERF-AGG-001
+    name: Agrégations lourdes sur grands volumes
+    probability: high
+    impact: medium
+    score: 0.7
+    indicators:
+      - p95 > 500ms sur liste filtrée
+      - scans séquentiels fréquents
+    mitigations:
+      - Indexes sur (date_opened), (operator_id), (site_id)
+      - Analyses EXPLAIN/ANALYZE et caches ciblés
+    owners: [backend]
+    status: open
+
+  - id: SEC-AUTHZ-002
+    name: Contrôles permissions insuffisants (liste/détail/export)
+    probability: medium
+    impact: high
+    score: 0.6
+    indicators:
+      - endpoints accessibles hors ADMIN
+      - liens UI visibles pour non-admin
+    mitigations:
+      - Tests négatifs API + guards UI
+      - Revue des dépendances d’authz
+    owners: [backend, frontend]
+    status: open
+
+  - id: CSV-ROB-003
+    name: Robustesse export CSV (erreurs réseau/encodage)
+    probability: medium
+    impact: medium
+    score: 0.5
+    indicators:
+      - téléchargements interrompus
+      - entêtes/encodage incorrects
+    mitigations:
+      - Retries côté UI
+      - Validation d’entêtes et types
+    owners: [frontend]
+    status: open
+
+  - id: UX-PAG-004
+    name: Absence de pagination/virtualisation sur grands jeux
+    probability: medium
+    impact: medium
+    score: 0.45
+    indicators:
+      - lenteur de rendu
+      - mémoire élevée navigateur
+    mitigations:
+      - Pagination/virtualisation table
+      - Limites page côté API
+    owners: [frontend]
+    status: open
+
+recommendations:
+  - "Valider p95 < 500ms (liste filtrée) avec dataset représentatif"
+  - "Confirmer guards authz sur routes API/UI + tests négatifs"
+  - "Tester résilience CSV (réessais, erreurs HTTP)"
+  - "Introduire pagination/virtualisation si > 500 lignes"
+
+

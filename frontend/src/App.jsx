@@ -25,6 +25,7 @@ const AdminReports = lazy(() => import('./pages/Admin/Reports.tsx'));
 const HealthDashboard = lazy(() => import('./pages/Admin/HealthDashboard.tsx'));
 const AdminCashRegisters = lazy(() => import('./pages/Admin/CashRegisters.tsx'));
 const AdminSites = lazy(() => import('./pages/Admin/Sites.tsx'));
+const SessionManager = lazy(() => import('./pages/Admin/SessionManager.tsx'));
 const AdminCategories = lazy(() => import('./pages/Admin/Categories.tsx'));
 const ReceptionDashboard = lazy(() => import('./pages/Admin/ReceptionDashboard.tsx'));
 const ReceptionReports = lazy(() => import('./pages/Admin/ReceptionReports.tsx'));
@@ -138,7 +139,7 @@ function App() {
               <Route path="reception-reports" element={<ReceptionReports />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="pending" element={<PendingUsers />} />
-              <Route path="reports" element={<AdminReports />} />
+              <Route path="session-manager" element={<SessionManager />} />
               <Route path="cash-registers" element={<AdminCashRegisters />} />
               <Route path="sites" element={<AdminSites />} />
               <Route path="categories" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminCategories /></ProtectedRoute>} />

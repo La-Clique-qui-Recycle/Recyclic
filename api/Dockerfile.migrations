@@ -6,10 +6,14 @@ WORKDIR /app
 # Copier uniquement ce qui est nécessaire pour Alembic
 COPY alembic.ini .
 COPY migrations ./migrations
-COPY requirements.txt .
+COPY requirements-migrations.txt .
+COPY src ./src
 
 # Installer les dépendances minimales
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-migrations.txt
+
+# Configurer PYTHONPATH pour que recyclic_api soit trouvé
+ENV PYTHONPATH=/app/src
 
 # Modifier la configuration Alembic pour pointer vers le service postgres Docker
 RUN sed -i 's|sqlalchemy.url = .*|sqlalchemy.url = postgresql://recyclic:postgres@postgres:5432/recyclic|' alembic.ini

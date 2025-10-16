@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, func
+from sqlalchemy import and_, or_, desc, func, cast, String
 from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime, timedelta, timezone
 
@@ -7,6 +7,8 @@ from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.models.cash_register import CashRegister
 from uuid import UUID
 from recyclic_api.models.user import User
+from recyclic_api.models.sale import Sale
+from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.schemas.cash_session import CashSessionFilters
 
 
@@ -145,13 +147,43 @@ class CashSessionService:
         if filters.date_to:
             query = query.filter(CashSession.opened_at <= filters.date_to)
         
+        # Recherche textuelle (nom opérateur ou ID session)
+        if getattr(filters, 'search', None):
+            search_value = f"%{filters.search.strip()}%"
+            # Join sur User pour rechercher par nom d'opérateur
+            query = (
+                query
+                .join(User, User.id == CashSession.operator_id)
+                .filter(
+                    or_(
+                        func.lower(User.username).like(func.lower(search_value)),
+                        cast(CashSession.id, String).ilike(search_value)
+                    )
+                )
+            )
+
         # Compter le total
         total = query.count()
         
         # Appliquer la pagination et l'ordre
         sessions = query.order_by(desc(CashSession.opened_at)).offset(filters.skip).limit(filters.limit).all()
         
-        return sessions, total
+        # Enrichir chaque session avec les calculs supplémentaires
+        enriched_sessions = []
+        for session in sessions:
+            # Calculer le nombre de ventes et total des dons pour cette session
+            sales_count = self.db.query(Sale).filter(Sale.cash_session_id == session.id).count()
+            donations_sum = self.db.query(func.sum(Sale.donation)).filter(
+                Sale.cash_session_id == session.id,
+                Sale.donation.isnot(None)
+            ).scalar() or 0.0
+            
+            # Ajouter les attributs calculés à la session
+            session.number_of_sales = sales_count
+            session.total_donations = float(donations_sum)
+            enriched_sessions.append(session)
+        
+        return enriched_sessions, total
     
     def update_session(self, session_id: str, update_data: Dict[str, Any]) -> Optional[CashSession]:
         """Met à jour une session de caisse."""
@@ -222,7 +254,7 @@ class CashSessionService:
     def get_session_stats(self, date_from: Optional[datetime] = None,
                          date_to: Optional[datetime] = None,
                          site_id: Optional[str] = None) -> Dict[str, Any]:
-        """Récupère les statistiques des sessions."""
+        """Récupère les statistiques des sessions et agrégations KPI."""
         query = self.db.query(CashSession)
         
         if site_id:
@@ -240,17 +272,49 @@ class CashSessionService:
         open_sessions = query.filter(CashSession.status == CashSessionStatus.OPEN).count()
         closed_sessions = query.filter(CashSession.status == CashSessionStatus.CLOSED).count()
         
-        # Totaux des ventes
-        total_sales_result = query.filter(CashSession.status == CashSessionStatus.CLOSED).with_entities(
-            func.sum(CashSession.total_sales)
+        # Totaux des ventes (depuis CashSession pour compatibilité)
+        total_sales_result = (
+            query
+            .filter(CashSession.status == CashSessionStatus.CLOSED)
+            .with_entities(func.sum(CashSession.total_sales))
         ).scalar()
-        total_sales = total_sales_result or 0.0
+        total_sales = float(total_sales_result or 0.0)
         
         # Total des articles
-        total_items_result = query.filter(CashSession.status == CashSessionStatus.CLOSED).with_entities(
-            func.sum(CashSession.total_items)
+        total_items_result = (
+            query
+            .filter(CashSession.status == CashSessionStatus.CLOSED)
+            .with_entities(func.sum(CashSession.total_items))
         ).scalar()
-        total_items = total_items_result or 0
+        total_items = int(total_items_result or 0)
+
+        # Récupérer l'ensemble des IDs de sessions filtrées
+        session_ids_subq = query.with_entities(CashSession.id).subquery()
+
+        # Nombre de ventes (COUNT sur Sale)
+        number_of_sales_result = (
+            self.db.query(func.count(Sale.id))
+            .filter(Sale.cash_session_id.in_(self.db.query(session_ids_subq.c.id)))
+            .scalar()
+        )
+        number_of_sales = int(number_of_sales_result or 0)
+
+        # Total des dons (SUM sur Sale.donation)
+        total_donations_result = (
+            self.db.query(func.sum(Sale.donation))
+            .filter(Sale.cash_session_id.in_(self.db.query(session_ids_subq.c.id)))
+            .scalar()
+        )
+        total_donations = float(total_donations_result or 0.0)
+
+        # Poids total vendu (SUM sur SaleItem.weight)
+        total_weight_result = (
+            self.db.query(func.sum(SaleItem.weight))
+            .join(Sale, SaleItem.sale_id == Sale.id)
+            .filter(Sale.cash_session_id.in_(self.db.query(session_ids_subq.c.id)))
+            .scalar()
+        )
+        total_weight_sold = float(total_weight_result or 0.0)
         
         # Durée moyenne des sessions fermées
         closed_sessions_with_duration = query.filter(
@@ -275,7 +339,10 @@ class CashSessionService:
             "closed_sessions": closed_sessions,
             "total_sales": total_sales,
             "total_items": total_items,
-            "average_session_duration": average_duration
+            "number_of_sales": number_of_sales,
+            "total_donations": total_donations,
+            "total_weight_sold": total_weight_sold,
+            "average_session_duration": average_duration,
         }
     
     def get_operator_sessions(self, operator_id: str, limit: int = 10) -> List[CashSession]:

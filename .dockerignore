@@ -1,0 +1,32 @@
+# Fichiers et dossiers à ignorer globalement par Docker
+
+# Environnements virtuels Python
+**/.venv
+**/venv
+**/virtualenv
+
+# Caches Python
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+
+# Caches d'outils de test
+**/.pytest_cache
+**/.coverage
+
+# Dépendances Node.js
+**/node_modules
+
+# Dossiers de build
+**/dist
+**/build
+
+# Fichiers de log
+*.log
+logs/
+*.log.*
+
+# Fichiers de configuration locaux
+.env
+.env.*
+!.env.example

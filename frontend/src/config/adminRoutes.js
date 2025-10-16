@@ -11,7 +11,7 @@ export const ADMIN_ROUTES = {
   CASH_REGISTERS: '/admin/cash-registers',
   SITES: '/admin/sites',
   CATEGORIES: '/admin/categories',
-  REPORTS: '/admin/reports',
+  SESSION_MANAGER: '/admin/session-manager',
   RECEPTION_STATS: '/admin/reception-stats',
   RECEPTION_REPORTS: '/admin/reception-reports',
   HEALTH: '/admin/health',
@@ -27,10 +27,10 @@ export const ADMIN_NAVIGATION_ITEMS = [
     description: 'Vue d\'ensemble du système'
   },
   {
-    path: ADMIN_ROUTES.REPORTS,
-    label: 'Journal de Caisse',
+    path: ADMIN_ROUTES.SESSION_MANAGER,
+    label: 'Gestionnaire de Sessions',
     icon: BarChart3,
-    description: 'Rapports de caisse et exports'
+    description: 'Lister, filtrer et analyser les sessions de caisse'
   },
   {
     path: ADMIN_ROUTES.RECEPTION_STATS,
@@ -104,7 +104,7 @@ export const ADMIN_QUICK_ACTIONS = [
     title: 'Rapports détaillés',
     description: 'Accéder aux rapports complets et statistiques',
     icon: BarChart3,
-    path: ADMIN_ROUTES.REPORTS,
+    path: ADMIN_ROUTES.SESSION_MANAGER,
     color: '#dc2626'
   }
 ];

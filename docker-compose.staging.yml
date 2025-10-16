@@ -1,0 +1,162 @@
+# Staging Stack Configuration
+# Usage: docker compose -p recyclic-staging -f docker-compose.staging.yml up -d --build
+
+services:
+  postgres:
+    container_name: recyclic-staging-postgres
+    image: postgres:15
+    env_file:
+      - .env.staging
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recyclic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-staging-network
+    restart: unless-stopped
+
+  redis:
+    container_name: recyclic-staging-redis
+    image: redis:7-alpine
+    env_file:
+      - .env.staging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recyclic-staging-network
+    restart: unless-stopped
+
+  api:
+    container_name: recyclic-staging-api
+    build: ./api
+    image: recyclic-api:${API_IMAGE_TAG:-latest}
+    # CRITICAL (B18-P0): --proxy-headers is mandatory for staging to prevent Mixed Content errors
+    # This command ensures Uvicorn correctly handles X-Forwarded-* headers from Traefik
+    command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*"
+    env_file:
+      - .env.staging
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - recyclic-staging-network
+      - traefik-public
+    labels:
+      # Exposer l'API à Traefik pour le staging
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.middlewares.recyclic-api-staging-stripprefix.stripprefix.prefixes=/api"
+      # Routeur pour le staging
+      - "traefik.http.routers.recyclic-api-staging.rule=Host(`devrecyclic.jarvos.eu`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-api-staging.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-api-staging.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-api-staging.middlewares=recyclic-api-staging-stripprefix@docker"
+      - "traefik.http.services.recyclic-api-staging.loadbalancer.server.port=8000"
+    restart: unless-stopped
+
+  bot:
+    container_name: recyclic-staging-bot
+    build: ./bot
+    image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
+    env_file:
+      - .env.staging
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      API_BASE_URL: http://api:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - recyclic-staging-network
+    restart: unless-stopped
+
+  # Service dédié pour les migrations Alembic
+  api-migrations:
+    container_name: recyclic-staging-migrations
+    build:
+      context: ./api
+      dockerfile: Dockerfile.migrations
+    image: recyclic-api-migrations:${API_MIGRATIONS_IMAGE_TAG:-latest}
+    command: alembic upgrade head
+    env_file:
+      - .env.staging
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - recyclic-staging-network
+    restart: "no"
+
+  # STAGING: Frontend with Traefik labels for staging environment
+  frontend:
+    container_name: recyclic-staging-frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL_STAGING:-/api}
+    image: recyclic-frontend-staging:${FRONTEND_IMAGE_TAG:-latest}
+    env_file:
+      - .env.staging
+    environment:
+      HOST: 0.0.0.0
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - traefik-public
+      - recyclic-staging-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.recyclic-frontend-staging.rule=Host(`devrecyclic.jarvos.eu`) && !PathPrefix(`/api`)"
+      - "traefik.http.routers.recyclic-frontend-staging.entrypoints=websecure"
+      - "traefik.http.routers.recyclic-frontend-staging.tls.certresolver=myresolver"
+      - "traefik.http.routers.recyclic-frontend-staging.priority=1"
+      - "traefik.http.services.recyclic-frontend-staging.loadbalancer.server.port=80"
+    restart: unless-stopped
+
+volumes:
+  staging_postgres_data:
+
+networks:
+  recyclic-staging-network:
+    driver: bridge
+  # External network for Traefik
+  traefik-public:
+    external: true

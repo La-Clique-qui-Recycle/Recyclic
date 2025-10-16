@@ -20,8 +20,9 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://api:8000',
-        changeOrigin: true,
+        changeOrigin: false,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
         // Configuration explicite pour les requêtes POST et autres méthodes
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {

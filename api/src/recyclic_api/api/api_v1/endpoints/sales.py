@@ -33,6 +33,7 @@ async def get_sale(sale_id: str, db: Session = Depends(get_db)):
     sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
+    
     return sale
 
 @router.post("/", response_model=SaleResponse)

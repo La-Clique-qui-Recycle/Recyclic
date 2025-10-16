@@ -1,0 +1,70 @@
+# Story 4.7: Refactoriser le déploiement Docker (Prod & Staging indépendants)
+**Status:** Draft  
+**Epic:** Epic 4 – Exports & Synchronisation Cloud
+
+## Story Statement
+As a DevOps maintainer,  
+I want the project to provide independent Docker Compose stacks for production and staging (each with their own services and environment variables),  
+so that we can run both environments simultaneously on the same VPS and keep the local dev workflow untouched.
+
+## Acceptance Criteria
+1. Deux configurations Compose distinctes sont disponibles (`prod`, `staging`), chacune avec :  
+   - ses propres services (`api`, `frontend`, `bot`, `postgres`, `redis`, `api-migrations`),  
+   - ses volumes/réseaux isolés,  
+   - des noms de projet Compose différents (permettant `docker compose -p ...` ou équivalent).  
+2. Chaque stack charge automatiquement son fichier d’environnement (`.env.production`, `.env.staging`) sans nécessiter `--env-file` manuel.  
+3. Les migrations Alembic sont exécutées automatiquement lors de chaque `docker compose up` grâce au service `api-migrations` dans les profils `prod` et `staging`.  
+4. Les labels Traefik existent pour les deux stacks (`recyclic.jarvos.eu` pour prod, `devrecyclic.jarvos.eu` pour staging) et utilisent le bon réseau externe ; le profil `dev` local reste inchangé.  
+5. La documentation de déploiement (`docs/guides/guide-deploiement-unifie.md` ou équivalent) décrit les nouvelles commandes/chemins pour : clonage des deux repos sur le VPS, lancement, mise à jour, rollback.  
+6. Les pipelines locaux (profil `dev`) continuent de fonctionner sans modification de commande (`docker compose --profile dev up -d`).
+
+## Dev Notes
+
+### Références Architecturales Clés
+1. **COMMENCER PAR** : `docs/architecture/architecture.md` – sections *10. Standards…* et *11. Infrastructure*, notamment les ports et le proxy Traefik.  
+2. `docs/guides/guide-deploiement-unifie.md` – décrit les attentes actuelles de déploiement ; devra être mis à jour.  
+3. `docker-compose.yml` actuel – base pour le profil `dev`; sert de référence pour aligner les nouveaux fichiers.
+
+### Contexte / Observations
+- Aujourd’hui, un seul `docker-compose.yml` gère `dev/staging/prod` via des profils, mais tous les services partagent le même project name → impossible de faire tourner staging et prod simultanément.  
+- Les fichiers `.env` spécifiques (staging/prod) ne sont pas chargés automatiquement.  
+- Le service `api-migrations` existe mais n’est pas garanti dans les profils `staging`/`prod`.  
+- La doc de déploiement devra être alignée avec la nouvelle structure (deux repos/chemins distincts sur le VPS).
+
+### Technical Notes
+- Utiliser `docker compose` v2 (présent sur le VPS).  
+- Les nouveaux fichiers pourront être :  
+  - `docker-compose.prod.yml` + `docker-compose.staging.yml` (ou overrides),  
+  - ou des dossiers `deploy/prod/docker-compose.yml`, `deploy/staging/docker-compose.yml`.  
+- Penser à désactiver les dépendances inutiles (ex. `frontend-dev`) dans ces nouveaux fichiers.  
+- Prévoir des volumes nommés différents (`prod_postgres_data`, `staging_postgres_data`, etc.).
+
+### Technical Constraints
+- Garder les profils `dev` existants pour le local (ne rien casser dans le workflow actuel).  
+- Aucune dépendance à des outils externes (scripts shell simples si besoin).  
+- Garantir que les commandes standard (build, logs, migrations) fonctionnent identiquement sur les deux stacks.
+
+## Tasks / Subtasks
+1. **Créer/Adapter les fichiers Compose** (AC1, AC2, AC3)  
+   - Introduire des Compose files dédiés (prod/staging) avec services, volumes, réseaux isolés.  
+   - Fixer `env_file` ou `env_file` par service pour charger `.env.production`/`.env.staging`.  
+   - S’assurer que le service `api-migrations` est exécuté à chaque `up`.
+2. **Configurer Traefik & réseaux** (AC4)  
+   - Vérifier/ajouter les labels Traefik pour les deux domaines.  
+   - Garantir que seul le réseau Traefik externe est partagé (prod et staging peuvent partager le même réseau Traefik, mais pas leurs réseaux internes).  
+   - S’assurer que les ports exposés ne se chevauchent pas.
+3. **Documentation** (AC5)  
+   - Mettre à jour `docs/guides/guide-deploiement-unifie.md` (et autres docs si nécessaire) avec :  
+     * structure recommandée (deux dossiers sur le VPS),  
+     * commandes de déploiement (pull, build, migrations auto, restart),  
+     * surveillance et rollback.
+4. **Validation & Tests** (AC6)  
+   - Tester localement : `docker compose --profile dev up -d` (aucune régression).  
+   - Lancer `docker compose -p recyclic-staging -f docker-compose.yml -f docker-compose.staging.yml up -d` (ou équivalent) pour vérifier que la stack staging démarre (y compris migrations).  
+   - Vérifier que les logiques `api/health`, `frontend` répondent sur les bons domaines/ports en environnement simulé.
+
+## Project Structure Notes
+- Les nouveaux fichiers Compose peuvent être placés à la racine (`docker-compose.prod.yml`, `docker-compose.staging.yml`) ou dans `deploy/`.  
+- Respecter la convention actuelle pour les env files (`.env`, `.env.production`, `.env.staging`).  
+- Aucun changement requis dans la structure de `frontend/`, `api/`, etc., sauf pour les instructions de build si nécessaire.
+

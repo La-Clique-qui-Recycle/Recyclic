@@ -244,6 +244,7 @@ async def get_cash_sessions(
     site_id: Optional[str] = Query(None, description="Filtrer par ID de site"),
     date_from: Optional[datetime] = Query(None, description="Date de début (ISO 8601)"),
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
+    search: Optional[str] = Query(None, description="Recherche textuelle (nom opérateur ou ID de session)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
@@ -256,7 +257,8 @@ async def get_cash_sessions(
         operator_id=operator_id,
         site_id=site_id,
         date_from=date_from,
-        date_to=date_to
+        date_to=date_to,
+        search=search,
     )
     
     sessions, total = service.get_sessions_with_filters(filters)
@@ -683,18 +685,19 @@ async def close_cash_session(
 
 @router.get("/stats/summary", response_model=CashSessionStats)
 async def get_cash_session_stats(
-    date_from: Optional[datetime] = Query(None),
-    date_to: Optional[datetime] = Query(None),
+    date_from: Optional[datetime] = Query(None, description="Date de début (ISO 8601)"),
+    date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
+    site_id: Optional[str] = Query(None, description="Filtrer par ID de site"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """
-    Récupère les statistiques des sessions de caisse.
+    Récupère les statistiques des sessions de caisse (KPIs agrégés).
     
     Seuls les administrateurs peuvent voir les statistiques.
     """
     service = CashSessionService(db)
     
-    stats = service.get_session_stats(date_from, date_to)
+    stats = service.get_session_stats(date_from=date_from, date_to=date_to, site_id=site_id)
     
     return CashSessionStats(**stats)

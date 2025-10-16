@@ -5,7 +5,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/v1/health/": {
+    "/v1/": {
       "get": {
         "tags": [
           "health"
@@ -25,7 +25,7 @@
         }
       }
     },
-    "/api/v1/users/": {
+    "/v1/users/": {
       "get": {
         "tags": [
           "users"
@@ -123,7 +123,7 @@
         }
       }
     },
-    "/api/v1/users/{user_id}": {
+    "/v1/users/{user_id}": {
       "get": {
         "tags": [
           "users"
@@ -256,7 +256,7 @@
         }
       }
     },
-    "/api/v1/users/{user_id}/status": {
+    "/v1/users/{user_id}/status": {
       "put": {
         "tags": [
           "users"
@@ -309,7 +309,7 @@
         }
       }
     },
-    "/api/v1/sites/": {
+    "/v1/sites/": {
       "get": {
         "tags": [
           "sites"
@@ -407,7 +407,7 @@
         }
       }
     },
-    "/api/v1/sites/{site_id}": {
+    "/v1/sites/{site_id}": {
       "get": {
         "tags": [
           "sites"
@@ -450,7 +450,7 @@
         }
       }
     },
-    "/api/v1/deposits/": {
+    "/v1/deposits/": {
       "get": {
         "tags": [
           "deposits"
@@ -548,7 +548,7 @@
         }
       }
     },
-    "/api/v1/deposits/{deposit_id}": {
+    "/v1/deposits/{deposit_id}": {
       "get": {
         "tags": [
           "deposits"
@@ -660,7 +660,7 @@
         }
       }
     },
-    "/api/v1/deposits/from-bot": {
+    "/v1/deposits/from-bot": {
       "post": {
         "tags": [
           "deposits"
@@ -720,7 +720,7 @@
         }
       }
     },
-    "/api/v1/deposits/{deposit_id}/classify": {
+    "/v1/deposits/{deposit_id}/classify": {
       "post": {
         "tags": [
           "deposits"
@@ -780,7 +780,7 @@
         }
       }
     },
-    "/api/v1/deposits/metrics/validation-performance": {
+    "/v1/deposits/metrics/validation-performance": {
       "get": {
         "tags": [
           "deposits"
@@ -803,7 +803,7 @@
         }
       }
     },
-    "/api/v1/sales/": {
+    "/v1/sales/": {
       "get": {
         "tags": [
           "sales"
@@ -905,7 +905,7 @@
         }
       }
     },
-    "/api/v1/sales/{sale_id}": {
+    "/v1/sales/{sale_id}": {
       "get": {
         "tags": [
           "sales"
@@ -948,7 +948,7 @@
         }
       }
     },
-    "/api/v1/cash-sessions/": {
+    "/v1/cash-sessions/": {
       "post": {
         "tags": [
           "cash-sessions",
@@ -1210,7 +1210,7 @@
         }
       }
     },
-    "/api/v1/cash-sessions/current": {
+    "/v1/cash-sessions/current": {
       "get": {
         "tags": [
           "cash-sessions"
@@ -1245,7 +1245,7 @@
         ]
       }
     },
-    "/api/v1/cash-sessions/{session_id}": {
+    "/v1/cash-sessions/{session_id}": {
       "get": {
         "tags": [
           "cash-sessions"
@@ -1349,7 +1349,7 @@
         }
       }
     },
-    "/api/v1/cash-sessions/{session_id}/close": {
+    "/v1/cash-sessions/{session_id}/close": {
       "post": {
         "tags": [
           "cash-sessions",
@@ -1449,7 +1449,7 @@
         }
       }
     },
-    "/api/v1/cash-sessions/stats/summary": {
+    "/v1/cash-sessions/stats/summary": {
       "get": {
         "tags": [
           "cash-sessions"
@@ -1522,7 +1522,7 @@
         }
       }
     },
-    "/api/v1/admin/users": {
+    "/v1/admin/users": {
       "get": {
         "tags": [
           "admin",
@@ -1629,7 +1629,7 @@
         }
       }
     },
-    "/api/v1/admin/users/{user_id}/role": {
+    "/v1/admin/users/{user_id}/role": {
       "put": {
         "tags": [
           "admin",
@@ -1688,7 +1688,7 @@
         }
       }
     },
-    "/api/v1/admin/users/pending": {
+    "/v1/admin/users/pending": {
       "get": {
         "tags": [
           "admin",
@@ -1720,7 +1720,7 @@
         ]
       }
     },
-    "/api/v1/admin/users/{user_id}/approve": {
+    "/v1/admin/users/{user_id}/approve": {
       "post": {
         "tags": [
           "admin",
@@ -1783,7 +1783,7 @@
         }
       }
     },
-    "/api/v1/admin/users/{user_id}/reject": {
+    "/v1/admin/users/{user_id}/reject": {
       "post": {
         "tags": [
           "admin",
@@ -1846,7 +1846,7 @@
         }
       }
     },
-    "/api/v1/admin/users/{user_id}/status": {
+    "/v1/admin/users/{user_id}/status": {
       "put": {
         "tags": [
           "admin",
@@ -1905,7 +1905,7 @@
         }
       }
     },
-    "/api/v1/admin/users/{user_id}": {
+    "/v1/admin/users/{user_id}": {
       "put": {
         "tags": [
           "admin",
@@ -1964,7 +1964,7 @@
         }
       }
     },
-    "/api/v1/admin/users/{user_id}/history": {
+    "/v1/admin/users/{user_id}/history": {
       "get": {
         "tags": [
           "admin",
@@ -2096,7 +2096,7 @@
         }
       }
     },
-    "/api/v1/admin/health-test": {
+    "/v1/admin/health-test": {
       "get": {
         "tags": [
           "admin",
@@ -2117,7 +2117,7 @@
         }
       }
     },
-    "/api/v1/admin/health": {
+    "/v1/admin/health": {
       "get": {
         "tags": [
           "admin",
@@ -2143,7 +2143,7 @@
         ]
       }
     },
-    "/api/v1/admin/health/anomalies": {
+    "/v1/admin/health/anomalies": {
       "get": {
         "tags": [
           "admin",
@@ -2169,7 +2169,7 @@
         ]
       }
     },
-    "/api/v1/admin/health/test-notifications": {
+    "/v1/admin/health/test-notifications": {
       "post": {
         "tags": [
           "admin",
@@ -2195,7 +2195,7 @@
         ]
       }
     },
-    "/api/v1/admin/health/scheduler": {
+    "/v1/admin/health/scheduler": {
       "get": {
         "tags": [
           "admin",
@@ -2221,7 +2221,7 @@
         ]
       }
     },
-    "/api/v1/monitoring/test-email": {
+    "/v1/monitoring/test-email": {
       "post": {
         "tags": [
           "monitoring"
@@ -2261,7 +2261,7 @@
         }
       }
     },
-    "/api/v1/monitoring/email/metrics": {
+    "/v1/monitoring/email/metrics": {
       "get": {
         "tags": [
           "monitoring"
@@ -2307,7 +2307,7 @@
         }
       }
     },
-    "/api/v1/monitoring/email/metrics/prometheus": {
+    "/v1/monitoring/email/metrics/prometheus": {
       "get": {
         "tags": [
           "monitoring"
@@ -2327,7 +2327,7 @@
         }
       }
     },
-    "/api/v1/monitoring/email/metrics/reset": {
+    "/v1/monitoring/email/metrics/reset": {
       "post": {
         "tags": [
           "monitoring"
@@ -2347,7 +2347,7 @@
         }
       }
     },
-    "/api/v1/monitoring/classification/performance": {
+    "/v1/monitoring/classification/performance": {
       "get": {
         "tags": [
           "monitoring"
@@ -2396,7 +2396,7 @@
         }
       }
     },
-    "/api/v1/monitoring/classification/performance/export": {
+    "/v1/monitoring/classification/performance/export": {
       "post": {
         "tags": [
           "monitoring"
@@ -2442,7 +2442,7 @@
         }
       }
     },
-    "/api/v1/monitoring/classification/health": {
+    "/v1/monitoring/classification/health": {
       "get": {
         "tags": [
           "monitoring"
@@ -2462,7 +2462,7 @@
         }
       }
     },
-    "/api/v1/monitoring/classification/cache/stats": {
+    "/v1/monitoring/classification/cache/stats": {
       "get": {
         "tags": [
           "monitoring"
@@ -2482,7 +2482,7 @@
         }
       }
     },
-    "/api/v1/monitoring/classification/cache/clear": {
+    "/v1/monitoring/classification/cache/clear": {
       "post": {
         "tags": [
           "monitoring"
@@ -2502,7 +2502,7 @@
         }
       }
     },
-    "/api/v1/monitoring/classification/cache/export": {
+    "/v1/monitoring/classification/cache/export": {
       "post": {
         "tags": [
           "monitoring"
@@ -2522,7 +2522,7 @@
         }
       }
     },
-    "/api/v1/monitoring/auth/metrics": {
+    "/v1/monitoring/auth/metrics": {
       "get": {
         "tags": [
           "monitoring"
@@ -2568,7 +2568,7 @@
         }
       }
     },
-    "/api/v1/monitoring/auth/metrics/prometheus": {
+    "/v1/monitoring/auth/metrics/prometheus": {
       "get": {
         "tags": [
           "monitoring"
@@ -2588,7 +2588,7 @@
         }
       }
     },
-    "/api/v1/monitoring/auth/metrics/reset": {
+    "/v1/monitoring/auth/metrics/reset": {
       "post": {
         "tags": [
           "monitoring"
@@ -2608,7 +2608,7 @@
         }
       }
     },
-    "/api/v1/auth/login": {
+    "/v1/auth/login": {
       "post": {
         "tags": [
           "auth",
@@ -2651,7 +2651,7 @@
         }
       }
     },
-    "/api/v1/auth/signup": {
+    "/v1/auth/signup": {
       "post": {
         "tags": [
           "auth",
@@ -2694,7 +2694,7 @@
         }
       }
     },
-    "/api/v1/auth/forgot-password": {
+    "/v1/auth/forgot-password": {
       "post": {
         "tags": [
           "auth",
@@ -2737,7 +2737,7 @@
         }
       }
     },
-    "/api/v1/auth/reset-password": {
+    "/v1/auth/reset-password": {
       "post": {
         "tags": [
           "auth",
@@ -2780,7 +2780,7 @@
         }
       }
     },
-    "/api/v1/email/webhook": {
+    "/v1/email/webhook": {
       "post": {
         "tags": [
           "email"
@@ -2828,7 +2828,7 @@
         }
       }
     },
-    "/api/v1/email/status/{email_address}": {
+    "/v1/email/status/{email_address}": {
       "get": {
         "tags": [
           "email"
@@ -2887,7 +2887,7 @@
         }
       }
     },
-    "/api/v1/email/events/{email_address}": {
+    "/v1/email/events/{email_address}": {
       "get": {
         "tags": [
           "email"
@@ -2942,7 +2942,7 @@
         }
       }
     },
-    "/api/v1/email/health": {
+    "/v1/email/health": {
       "get": {
         "tags": [
           "email"
@@ -2962,7 +2962,7 @@
         }
       }
     },
-    "/api/v1/admin/reports/cash-sessions": {
+    "/v1/admin/reports/cash-sessions": {
       "get": {
         "tags": [
           "admin",
@@ -2990,7 +2990,7 @@
         ]
       }
     },
-    "/api/v1/admin/reports/cash-sessions/{filename}": {
+    "/v1/admin/reports/cash-sessions/{filename}": {
       "get": {
         "tags": [
           "admin",
@@ -3043,7 +3043,7 @@
         }
       }
     },
-    "/api/v1/admin/settings/settings/alert-thresholds": {
+    "/v1/admin/settings/settings/alert-thresholds": {
       "get": {
         "tags": [
           "admin",
@@ -3147,7 +3147,7 @@
         }
       }
     },
-    "/api/v1/admin/dashboard/dashboard/stats": {
+    "/v1/admin/dashboard/dashboard/stats": {
       "get": {
         "tags": [
           "admin",

@@ -1,0 +1,18 @@
+decision: PASS
+story: STORY-B31-P1
+slug: story-b31-p1-harmonisation-chemins-api
+epic: epic-b30
+rationale:
+  - API_V1_STR basculé sur /v1 (ok)
+  - Proxy Vite rewrite /api → '' (ok)
+  - Client généré utilise /v1 (ok)
+  - .env.development présent (VITE_API_URL=/api)
+  - Healthcheck compose confirmé en /v1/health/
+checks:
+  api_v1_str_is_v1: true
+  vite_proxy_rewrite_present: true
+  client_paths_v1: true
+  env_development_committed: true
+  docker_healthcheck_v1_confirmed: true
+actions_to_pass:
+  - Aucune (toutes les conditions remplies)

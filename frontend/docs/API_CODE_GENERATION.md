@@ -1,3 +1,17 @@
+## Codegen API (Frontend)
+
+Après toute modification d'`openapi.json` ou intégration du client, exécuter:
+
+```bash
+npm run codegen
+```
+
+Prérequis:
+- `VITE_API_URL` défini dans `.env` ou `.env.local` (ex: `http://localhost:8000`).
+- Le client généré importe l'instance centralisée `src/api/axiosClient` et ne crée pas d'instance axios propre.
+
+Sortie:
+- Types et client dans `src/generated/`.
 # Génération de Code API - Guide Technique
 
 ## Vue d'Ensemble

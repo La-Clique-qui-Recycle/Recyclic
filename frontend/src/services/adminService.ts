@@ -43,9 +43,7 @@ export type { UserStatusUpdate, UserUpdate };
 
 // Helper pour convertir UserResponse en AdminUser
 function convertToAdminUser(user: UserResponse): AdminUser {
-  const { hashed_password, ...rest } = user;
   return {
-    ...rest,
     id: user.id,
     telegram_id: typeof user.telegram_id === 'string' ? parseInt(user.telegram_id) : user.telegram_id,
     username: user.username,
@@ -57,7 +55,7 @@ function convertToAdminUser(user: UserResponse): AdminUser {
     email: undefined, // Pas encore implémenté dans l'API
     role: user.role as UserRole,
     status: user.status as UserStatus,
-    is_active: user.is_active,
+    is_active: user.is_active ?? false,
     site_id: user.site_id,
     created_at: user.created_at,
     updated_at: user.updated_at
@@ -403,6 +401,59 @@ export const adminService = {
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la purge des données transactionnelles:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Récupère les paramètres de session (durée d'expiration des tokens)
+   */
+  async getSessionSettings(): Promise<{ token_expiration_minutes: number }> {
+    try {
+      const response = await axiosClient.get('/v1/admin/settings/session');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des paramètres de session:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Met à jour les paramètres de session (durée d'expiration des tokens)
+   */
+  async updateSessionSettings(tokenExpirationMinutes: number): Promise<{ token_expiration_minutes: number }> {
+    try {
+      const response = await axiosClient.put('/v1/admin/settings/session', {
+        token_expiration_minutes: tokenExpirationMinutes
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des paramètres de session:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Importe une sauvegarde de base de données (réservé aux Super-Admins)
+   * Remplace la base de données existante par le contenu du fichier SQL
+   */
+  async importDatabase(file: File): Promise<{ message: string; imported_file: string; backup_created: string; backup_path: string; timestamp: string }> {
+    try {
+      // Créer un FormData pour l'upload de fichier
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axiosClient.post('/v1/admin/db/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 600000, // 10 minutes timeout (import peut être long)
+      });
+
+      console.log('Import de base de données réussi:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'import de la base de données:', error);
       throw error;
     }
   }

@@ -20,6 +20,7 @@ from .endpoints import (
     settings_router as settings,
     db_export_router as db_export,
     db_purge_router as db_purge,
+    db_import_router as db_import,
 )
 
 api_router = APIRouter()
@@ -45,5 +46,6 @@ api_router.include_router(categories, prefix="/categories", tags=["categories"])
 api_router.include_router(settings, prefix="/settings", tags=["settings"])
 api_router.include_router(db_export, prefix="/admin", tags=["admin"])
 api_router.include_router(db_purge, prefix="/admin", tags=["admin"])
+api_router.include_router(db_import, prefix="/admin", tags=["admin"])
 
 

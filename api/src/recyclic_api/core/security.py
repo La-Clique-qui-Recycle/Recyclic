@@ -19,8 +19,10 @@ from typing import List, Tuple, Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 from .config import settings
+from ..models.setting import Setting
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -71,13 +73,46 @@ def validate_password_strength(password: str) -> Tuple[bool, List[str]]:
     return len(errors) == 0, errors
 
 
+def get_token_expiration_minutes() -> int:
+    """
+    Récupère la durée d'expiration des tokens depuis la base de données.
+    Retourne 480 minutes (8 heures) par défaut si la valeur n'est pas trouvée.
+    """
+    try:
+        from ..core.database import get_db
+        db = next(get_db())
+        setting = db.query(Setting).filter(Setting.key == "token_expiration_minutes").first()
+        if setting:
+            value = int(setting.value)
+            # Validation de la valeur pour éviter les valeurs aberrantes
+            if 1 <= value <= 10080:  # Entre 1 minute et 7 jours
+                return value
+            else:
+                # Log l'erreur mais utilise la valeur par défaut
+                import logging
+                logging.warning(f"Token expiration value {value} is out of range (1-10080), using default 480")
+    except (ValueError, TypeError) as e:
+        # Log l'erreur de conversion
+        import logging
+        logging.warning(f"Invalid token expiration value: {e}, using default 480")
+    except Exception as e:
+        # Log l'erreur de base de données
+        import logging
+        logging.warning(f"Database error retrieving token expiration: {e}, using default 480")
+    
+    # Valeur par défaut : 480 minutes (8 heures)
+    return 480
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Crée un token JWT d'accès"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        # Récupérer la durée d'expiration depuis la base de données
+        expiration_minutes = get_token_expiration_minutes()
+        expire = datetime.now(timezone.utc) + timedelta(minutes=expiration_minutes)
     
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)

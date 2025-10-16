@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # API
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/v1"
+    ROOT_PATH: str = ""
     PROJECT_NAME: str = "Recyclic API"
     
     # Telegram
@@ -61,7 +62,6 @@ if os.getenv("TESTING") == "true":
         settings.DATABASE_URL = settings.TEST_DATABASE_URL
     # In tests, always use a fixed bot token to ensure deterministic behavior
     settings.TELEGRAM_BOT_TOKEN = "test_bot_token_123"
-
 
 
 
