@@ -3,10 +3,13 @@
 
 services:
   postgres:
+    container_name: recyclic-prod-postgres
     image: postgres:15
+    env_file:
+      - .env.production
     environment:
-      POSTGRES_DB: recyclic
-      POSTGRES_USER: recyclic
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - prod_postgres_data:/var/lib/postgresql/data
@@ -20,7 +23,10 @@ services:
     restart: unless-stopped
 
   redis:
+    container_name: recyclic-prod-redis
     image: redis:7-alpine
+    env_file:
+      - .env.production
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -31,6 +37,7 @@ services:
     restart: unless-stopped
 
   api:
+    container_name: recyclic-prod-api
     build: ./api
     image: recyclic-api:${API_IMAGE_TAG:-latest}
     # CRITICAL (B18-P0): --proxy-headers is mandatory for production to prevent Mixed Content errors
@@ -39,14 +46,8 @@ services:
     env_file:
       - .env.production
     environment:
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
-      # Variables pour Alembic migrations
-      POSTGRES_HOST: postgres
-      POSTGRES_USER: recyclic
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: recyclic
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,12 +76,13 @@ services:
     restart: unless-stopped
 
   bot:
+    container_name: recyclic-prod-bot
     build: ./bot
     image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     env_file:
       - .env.production
     environment:
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       API_BASE_URL: http://api:8000
     depends_on:
@@ -101,6 +103,7 @@ services:
 
   # Service dédié pour les migrations Alembic
   api-migrations:
+    container_name: recyclic-prod-migrations
     build:
       context: ./api
       dockerfile: Dockerfile.migrations
@@ -108,14 +111,8 @@ services:
     env_file:
       - .env.production
     environment:
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
-      # Variables pour Alembic migrations
-      POSTGRES_HOST: postgres
-      POSTGRES_USER: recyclic
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: recyclic
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,6 +123,7 @@ services:
 
   # PROD: Frontend with Traefik labels for production environment
   frontend:
+    container_name: recyclic-prod-frontend
     build:
       context: ./frontend
       args:
