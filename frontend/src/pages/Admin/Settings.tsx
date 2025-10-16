@@ -660,14 +660,16 @@ const Settings: React.FC = () => {
               <Button
                 variant="danger"
                 onClick={handleImportDatabase}
-                disabled={importingDatabase}
+                disabled={true}
+                style={{ opacity: 0.6, cursor: 'not-allowed' }}
               >
-                {importingDatabase ? '⏳ Import en cours...' : '📥 Importer une sauvegarde'}
+                🚧 Fonctionnalité en développement
               </Button>
             </ActionHeader>
-            <WarningBox style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca', color: '#dc2626' }}>
-              <strong>⚠️ DANGER :</strong> Cette action remplace complètement la base de données existante.
-              Une sauvegarde automatique est créée avant l'import, mais cette opération est irréversible.
+            <WarningBox style={{ backgroundColor: '#fef3cd', borderColor: '#fde68a', color: '#92400e' }}>
+              <strong>🚧 FONCTIONNALITÉ EN DÉVELOPPEMENT :</strong> L'import de sauvegarde est temporairement désactivé 
+              en raison de problèmes techniques avec les fichiers de sauvegarde PostgreSQL. 
+              Cette fonctionnalité sera bientôt disponible.
             </WarningBox>
           </ActionCard>
 

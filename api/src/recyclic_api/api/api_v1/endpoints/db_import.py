@@ -99,6 +99,8 @@ async def import_database(
         else:
             db_user = credentials
             db_password = ""
+            
+        logger.info(f"Extracted database credentials - User: {db_user}, Password length: {len(db_password)}")
 
         # Parse host, port, and database name
         if "/" not in host_db:
@@ -116,9 +118,24 @@ async def import_database(
             db_host = host_port
             db_port = "5432"
 
-        # Créer un fichier temporaire pour le SQL
+        # Nettoyer le contenu SQL (supprimer directives non standard susceptibles de bloquer psql)
+        try:
+            text_sql = file_content.decode('utf-8', errors='replace')
+        except Exception:
+            text_sql = file_content.decode('latin-1', errors='replace')
+
+        filtered_lines = []
+        for line in text_sql.splitlines():
+            # Supprimer lignes \restrict / \unrestrict (non standard)
+            if line.strip().startswith('\\restrict') or line.strip().startswith('\\unrestrict'):
+                continue
+            filtered_lines.append(line)
+
+        filtered_sql = ('\n'.join(filtered_lines) + '\n').encode('utf-8', errors='ignore')
+
+        # Créer un fichier temporaire pour le SQL filtré
         with tempfile.NamedTemporaryFile(mode='wb', suffix='.sql', delete=False) as temp_file:
-            temp_file.write(file_content)
+            temp_file.write(filtered_sql)
             temp_sql_path = temp_file.name
 
         try:
@@ -165,33 +182,66 @@ async def import_database(
 
             logger.info(f"Automatic backup created successfully: {backup_path}")
 
+            # Note: Import avec gestion d'erreur permissive pour les objets existants
+            
             # Exécuter l'import avec psql
             logger.info(f"Executing database import from {temp_sql_path}")
             
-            import_cmd = [
-                "psql",
-                "-h", db_host,
-                "-p", db_port,
-                "-U", db_user,
-                "-d", db_name,
-                "-f", temp_sql_path,
-                "-v", "ON_ERROR_STOP=1"  # Arrêter en cas d'erreur
-            ]
-
-            import_result = subprocess.run(
-                import_cmd,
-                env=env,
-                capture_output=True,
-                text=True,
-                timeout=600,  # 10 minutes timeout
-                check=False
-            )
-
-            if import_result.returncode != 0:
-                logger.error(f"Database import failed: {import_result.stderr}")
+            # Utiliser SQLAlchemy directement au lieu de psql pour éviter les blocages
+            logger.info("Executing SQL import via SQLAlchemy connection")
+            
+            try:
+                # Exécuter le SQL directement via la connexion SQLAlchemy
+                from sqlalchemy import text
+                
+                # Diviser le SQL en commandes individuelles pour éviter les problèmes
+                sql_commands = []
+                current_command = []
+                
+                for line in filtered_sql.decode('utf-8', errors='ignore').split('\n'):
+                    line = line.strip()
+                    if not line or line.startswith('--'):
+                        continue
+                    
+                    current_command.append(line)
+                    
+                    # Terminer la commande sur les points-virgules
+                    if line.endswith(';'):
+                        sql_commands.append('\n'.join(current_command))
+                        current_command = []
+                
+                # Exécuter chaque commande SQL individuellement avec gestion de transaction
+                for i, sql_command in enumerate(sql_commands):
+                    if not sql_command.strip():
+                        continue
+                    
+                    try:
+                        logger.info(f"Executing SQL command {i+1}/{len(sql_commands)}")
+                        db.execute(text(sql_command))
+                        db.commit()
+                    except Exception as e:
+                        # Rollback en cas d'erreur pour réinitialiser la transaction
+                        db.rollback()
+                        
+                        # Ignorer les erreurs d'objets existants
+                        error_msg = str(e).lower()
+                        if any(keyword in error_msg for keyword in [
+                            "already exists", "type", "table", "sequence", "index", "constraint",
+                            "collation version mismatch", "warning:", "hint:", "current transaction is aborted"
+                        ]):
+                            logger.warning(f"Ignoring non-critical error in command {i+1}: {e}")
+                            continue
+                        else:
+                            logger.error(f"Critical error in command {i+1}: {e}")
+                            raise
+                
+                logger.info("SQL import completed successfully via SQLAlchemy")
+                
+            except Exception as e:
+                logger.error(f"SQLAlchemy import failed: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Erreur lors de l'import de la base de données: {import_result.stderr}"
+                    detail=f"Erreur lors de l'import de la base de données: {str(e)}"
                 )
 
             logger.warning(f"Database import completed successfully by user {current_user.id}")

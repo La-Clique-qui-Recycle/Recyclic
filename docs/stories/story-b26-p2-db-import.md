@@ -156,3 +156,111 @@ NFR assessment: qa.qaLocation/assessments/b26.p2-nfr-20250127.md
 ### Recommended Status
 
 **✓ Ready for Done** - Toutes les exigences sont satisfaites avec une qualité exceptionnelle. Aucune action corrective requise.
+
+---
+
+## 🚨 PROBLÈMES TECHNIQUES RENCONTRÉS - 16/10/2025
+
+### Résumé des Problèmes
+
+**Statut actuel** : La fonctionnalité d'import est implémentée mais **NON FONCTIONNELLE** en production à cause de problèmes techniques majeurs.
+
+### Problème Principal : Erreur 500 Internal Server Error
+
+L'endpoint `/v1/admin/db/import` retourne systématiquement une erreur 500 lors de l'import de fichiers SQL réels, même après de multiples tentatives de correction.
+
+### Historique des Tentatives de Correction
+
+#### 1. **Problème initial** - 16/10/2025 20:43
+- **Erreur** : `ERROR: type "cashsessionstatus" already exists`
+- **Cause** : Le fichier SQL contient des commandes `CREATE TYPE` pour des types existants
+- **Tentative** : Ajout d'options `psql` permissives (`ON_ERROR_STOP=0`, `--quiet`)
+
+#### 2. **Problème persistant** - 16/10/2025 20:47
+- **Erreur** : Même erreur malgré les options permissives
+- **Cause** : La logique de détection d'erreur ne fonctionne pas correctement
+- **Tentative** : Amélioration de la logique de filtrage des erreurs
+
+#### 3. **Problème de blocage** - 16/10/2025 21:07
+- **Erreur** : Import bloqué indéfiniment (2+ minutes pour 53KB)
+- **Cause** : `psql` demande un mot de passe ou se bloque
+- **Tentative** : Ajout d'options `psql` (`-X`, `-w`, `--single-transaction`, `--echo-errors`)
+
+#### 4. **Problème de transaction** - 16/10/2025 21:37
+- **Erreur** : `(psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block`
+- **Cause** : Une erreur dans une commande SQL aborte toute la transaction
+- **Tentative** : Remplacement de `psql` par exécution SQLAlchemy directe avec `rollback()` après chaque erreur
+
+#### 5. **Problème de commande COPY** - 16/10/2025 21:41
+- **Erreur** : `(psycopg2.ProgrammingError) can't execute COPY FROM: use the copy_from() method instead`
+- **Cause** : Les commandes `COPY` ne peuvent pas être exécutées via SQLAlchemy `execute()`
+- **Statut** : **BLOQUÉ** - Cette erreur nécessite une approche complètement différente
+
+### Analyse Technique
+
+#### Fichier SQL Problématique
+Le fichier `prod_database_dump_20251016_202929.sql` contient :
+- Des commandes `CREATE TYPE` pour des types existants
+- Des commandes `COPY` qui ne peuvent pas être exécutées via SQLAlchemy
+- Des commandes `\restrict` et `\unrestrict` qui ne sont pas du SQL standard
+- Des warnings de collation PostgreSQL
+
+#### Limitations Techniques Identifiées
+
+1. **SQLAlchemy ne peut pas exécuter toutes les commandes PostgreSQL** :
+   - Les commandes `COPY` nécessitent `copy_from()` ou `copy_to()`
+   - Les commandes `\restrict` et `\unrestrict` ne sont pas du SQL standard
+   - Les commandes `CREATE TYPE` avec des types existants causent des erreurs
+
+2. **Gestion des transactions complexe** :
+   - Une erreur dans une commande aborte toute la transaction
+   - Le `rollback()` ne suffit pas à réinitialiser l'état de la session
+   - Les commandes suivantes échouent avec "transaction aborted"
+
+3. **Incompatibilité avec les fichiers de sauvegarde PostgreSQL** :
+   - Les fichiers `pg_dump` contiennent des commandes spécifiques à PostgreSQL
+   - Ces commandes ne peuvent pas être exécutées via SQLAlchemy standard
+   - Nécessite une approche hybride (SQLAlchemy + `psql`)
+
+### Solutions Tentées (Toutes Échouées)
+
+1. **Options `psql` permissives** : `ON_ERROR_STOP=0`, `--quiet`, `--single-transaction`
+2. **Filtrage des erreurs** : Détection et ignore des erreurs non-critiques
+3. **Exécution SQLAlchemy directe** : Remplacement complet de `psql`
+4. **Gestion des transactions** : `rollback()` après chaque erreur
+5. **Filtrage du contenu SQL** : Suppression des lignes `\restrict` et `\unrestrict`
+
+### Recommandations pour la Résolution
+
+#### Option 1 : Retour à `psql` avec gestion d'erreur robuste
+- Utiliser `psql` avec des options très permissives
+- Implémenter une logique de détection d'erreur très sophistiquée
+- Gérer les différents types d'erreurs PostgreSQL
+
+#### Option 2 : Approche hybride
+- Utiliser `psql` pour les commandes complexes (`COPY`, `CREATE TYPE`)
+- Utiliser SQLAlchemy pour les commandes standard
+- Parser le fichier SQL pour séparer les types de commandes
+
+#### Option 3 : Utilisation de `pg_restore`
+- Remplacer `psql` par `pg_restore` qui est plus adapté aux fichiers de sauvegarde
+- `pg_restore` gère mieux les conflits d'objets existants
+- Options `--clean` et `--if-exists` pour gérer les objets existants
+
+### Impact sur la Story
+
+**Statut actuel** : **BLOQUÉ** - La fonctionnalité n'est pas utilisable en production
+**Priorité** : **CRITIQUE** - Fonctionnalité essentielle pour la maintenance
+**Effort estimé** : **2-3 jours** pour implémenter une solution robuste
+
+### Décision Temporaire
+
+**Désactivation de la fonctionnalité** : Le bouton d'import sera désactivé dans l'interface avec un message indiquant que la fonctionnalité est en cours de développement.
+
+### Prochaines Étapes
+
+1. **Analyse approfondie** des fichiers de sauvegarde PostgreSQL
+2. **Recherche** des meilleures pratiques pour l'import de bases de données
+3. **Implémentation** d'une solution robuste (probablement `pg_restore`)
+4. **Tests** avec différents types de fichiers de sauvegarde
+5. **Réactivation** de la fonctionnalité une fois la solution validée
