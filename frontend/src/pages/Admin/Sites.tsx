@@ -141,7 +141,15 @@ export default function Sites() {
       setLoading(true);
       setError(null);
       const data = await getSites();
-      setItems(data);
+      // Fallback: ensure data is an array to prevent .map() crashes
+      const normalizedItems = Array.isArray(data)
+        ? data
+        : Array.isArray((data as any)?.data)
+          ? (data as any).data
+          : Array.isArray((data as any)?.results)
+            ? (data as any).results
+            : [];
+      setItems(normalizedItems as Site[]);
     } catch (e: any) {
       console.error('Erreur lors du chargement des sites:', e);
       let errorMessage = 'Erreur de chargement des sites';
@@ -154,13 +162,14 @@ export default function Sites() {
         errorMessage = 'Service de gestion des sites temporairement indisponible.';
       } else if (e?.response?.status >= 500) {
         errorMessage = 'Erreur serveur. Veuillez réessayer dans quelques instants.';
-      } else if (e?.code === 'NETWORK_ERROR' || !navigator.onLine) {
+      } else if (e?.code === 'ERR_NETWORK' || e?.code === 'NETWORK_ERROR' || !navigator.onLine) {
         errorMessage = 'Problème de connexion réseau. Vérifiez votre connexion internet.';
       } else if (e?.message) {
         errorMessage = e.message;
       }
 
       setError(errorMessage);
+      setItems([]); // Prevent crash by ensuring items is always an array
     } finally {
       setLoading(false);
     }
@@ -265,7 +274,7 @@ export default function Sites() {
         errorMessage = 'Ce site ne peut pas être supprimé car il est utilisé par d\'autres éléments du système.';
       } else if (e?.response?.status >= 500) {
         errorMessage = 'Erreur serveur lors de la suppression. Veuillez réessayer.';
-      } else if (e?.code === 'NETWORK_ERROR' || !navigator.onLine) {
+      } else if (e?.code === 'ERR_NETWORK' || e?.code === 'NETWORK_ERROR' || !navigator.onLine) {
         errorMessage = 'Problème de connexion réseau. Veuillez vérifier votre connexion internet.';
       } else if (e?.response?.data?.detail) {
         errorMessage = e.response.data.detail;

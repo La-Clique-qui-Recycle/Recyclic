@@ -1,6 +1,7 @@
 ﻿import React from 'react'
 import styled from 'styled-components'
 import { useNavigate } from 'react-router-dom'
+import axiosClient from '../../api/axiosClient'
 import PageLayout, { PageTitle } from '../../components/layout/PageLayout'
 
 // Styles pour le nouveau layout en grille
@@ -90,6 +91,26 @@ const AdminDashboard: React.FC = () => {
     navigate(path)
   }
 
+  const handleNavigateToLatestCashSession = async () => {
+    try {
+      const response = await axiosClient.get('/v1/cash-sessions/')
+      const sessions = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data?.data)
+          ? response.data.data
+          : []
+
+      if (sessions.length > 0 && sessions[0]?.id) {
+        navigate(`/admin/cash-sessions/${sessions[0].id}`)
+      } else {
+        navigate('/admin/reports')
+      }
+    } catch (error) {
+      console.error('Impossible de récupérer les sessions de caisse:', error)
+      navigate('/admin/reports')
+    }
+  }
+
   return (
     <PageLayout isAdminMode={true}>
       <PageTitle>Tableau de Bord d'Administration</PageTitle>
@@ -162,7 +183,7 @@ const AdminDashboard: React.FC = () => {
               </AdminLink>
             </LinkItem>
             <LinkItem>
-              <AdminLink onClick={() => handleNavigation('/admin/cash-sessions/1')}>
+              <AdminLink onClick={handleNavigateToLatestCashSession}>
                 Détail des Sessions de Caisse
               </AdminLink>
             </LinkItem>
@@ -209,7 +230,6 @@ const AdminDashboard: React.FC = () => {
 }
 
 export default AdminDashboard
-
 
 
 

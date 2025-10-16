@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import axiosClient from '../../api/axiosClient';
 
 // Styles pour le nouveau layout en grille
 const DashboardGrid = styled.div`
@@ -95,6 +96,26 @@ const DashboardHomePage = () => {
     navigate(path);
   };
 
+  const handleNavigateToLatestCashSession = async () => {
+    try {
+      const response = await axiosClient.get('/v1/cash-sessions/');
+      const sessions = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data?.data)
+          ? response.data.data
+          : [];
+
+      if (sessions.length > 0 && sessions[0]?.id) {
+        navigate(`/admin/cash-sessions/${sessions[0].id}`);
+      } else {
+        navigate('/admin/reports');
+      }
+    } catch (error) {
+      console.error('Impossible de récupérer les sessions de caisse:', error);
+      navigate('/admin/reports');
+    }
+  };
+
   return (
     <div>
       <PageTitle>Tableau de Bord d'Administration</PageTitle>
@@ -167,7 +188,7 @@ const DashboardHomePage = () => {
               </AdminLink>
             </LinkItem>
             <LinkItem>
-              <AdminLink onClick={() => handleNavigation('/admin/cash-sessions/1')}>
+              <AdminLink onClick={handleNavigateToLatestCashSession}>
                 Détail des Sessions de Caisse
               </AdminLink>
             </LinkItem>

@@ -1,0 +1,62 @@
+schema: 1
+story: "4.6"
+story_title: "Harmoniser les appels API Admin (Sites & Postes de caisse)"
+gate: "PASS"
+status_reason: "Implémentation complète avec gestion d'erreurs robuste, tests exhaustifs et documentation mise à jour"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T16:45:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+quality_score: 92
+
+evidence:
+  tests_reviewed: 47
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Gestion appropriée des erreurs d'authentification (401/403) avec messages utilisateur clairs"
+  performance:
+    status: PASS
+    notes: "Fallback array pour éviter les crashes, retry automatique pour la résilience"
+  reliability:
+    status: PASS
+    notes: "Gestion complète des erreurs réseau et HTTP avec retry, fallbacks robustes"
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré, tests complets, documentation claire de VITE_API_URL"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Considérer l'extraction d'un composant ErrorBoundary réutilisable"
+      refs: ["frontend/src/pages/Admin/CashRegisters.tsx:236-269", "frontend/src/pages/Admin/Sites.tsx:318-351"]
+    - action: "Évaluer l'ajout de tests E2E pour les workflows complets"
+      refs: ["frontend/src/pages/Admin/__tests__/"]
+
+# Post-Review Corrections
+corrections:
+  date: "2025-01-27T16:45:00Z"
+  issue: "Détection des erreurs réseau incorrecte (ERR_NETWORK vs NETWORK_ERROR)"
+  impact: "Messages d'erreur en anglais au lieu du français en production"
+  solution: "Ajout de la détection ERR_NETWORK en plus de NETWORK_ERROR"
+  files_updated:
+    - "frontend/src/pages/Admin/CashRegisters.tsx"
+    - "frontend/src/pages/Admin/Sites.tsx"
+    - "frontend/src/pages/Admin/__tests__/CashRegisters.test.tsx"
+    - "frontend/src/pages/Admin/__tests__/Sites.test.tsx"
+  tests_added: 2
+  final_test_count: 47

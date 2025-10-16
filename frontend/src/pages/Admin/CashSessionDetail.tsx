@@ -291,7 +291,7 @@ const CashSessionDetail: React.FC = () => {
         setLoading(true)
         setError(null)
 
-        const response = await axiosClient.get(`/cash-sessions/${id}`)
+        const response = await axiosClient.get(`/v1/cash-sessions/${id}`)
         setSession(response.data)
       } catch (err) {
         console.error('Erreur lors du chargement de la session:', err)

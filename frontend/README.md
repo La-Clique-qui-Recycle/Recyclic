@@ -110,9 +110,50 @@ src/
 
 ### Variables d'Environnement
 
+#### VITE_API_URL - Configuration de l'API Backend
+
+La variable `VITE_API_URL` définit l'URL de base pour les appels API. **IMPORTANT** : Utilisez toujours un chemin relatif `/api` pour garantir la compatibilité entre les environnements.
+
+**Configuration recommandée :**
+
 ```bash
-REACT_APP_API_URL=http://localhost:4433/api/v1
+# .env.development (développement local avec Docker Compose)
+VITE_API_URL=/api
+
+# .env.production (production avec Traefik)
+VITE_API_URL=/api
 ```
+
+**⚠️ Important :**
+- **Ne jamais utiliser** d'URL absolue comme `http://api:8000` dans le frontend
+- Le proxy Vite (développement) et Traefik (production) redirigent automatiquement `/api` vers le backend
+- Les changements de variables d'environnement nécessitent un rebuild :
+
+```bash
+# Avec Docker Compose
+docker compose down
+docker compose up -d --build
+
+# En local
+npm run dev
+```
+
+#### Configuration du Proxy Vite
+
+Le fichier `vite.config.js` configure automatiquement le proxy pour rediriger `/api` vers le backend :
+
+```javascript
+server: {
+  proxy: {
+    '/api': {
+      target: 'http://api:8000',
+      changeOrigin: true,
+    }
+  }
+}
+```
+
+Cette configuration permet au frontend d'appeler `/api/v1/sites` qui sera automatiquement redirigé vers `http://api:8000/v1/sites` en développement.
 
 ### Scripts Disponibles
 

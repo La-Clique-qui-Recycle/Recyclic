@@ -24,7 +24,7 @@ export const createUser = async (userData) => {
 
 // Sites
 export const getSites = async (params = {}) => {
-  const response = await api.get('/v1/sites', { params });
+  const response = await api.get('/v1/sites/', { params });
   return response.data;
 };
 
@@ -51,13 +51,13 @@ export const deleteSite = async (id) => {
 export const getSiteDependencies = async (id) => {
   try {
     // Check cash registers using this site
-    const cashRegistersResponse = await api.get('/v1/cash-registers', {
+    const cashRegistersResponse = await api.get('/v1/cash-registers/', {
       params: { site_id: id }
     });
     const cashRegisters = cashRegistersResponse.data;
 
     // Check cash sessions using this site
-    const cashSessionsResponse = await api.get('/v1/cash-sessions', {
+    const cashSessionsResponse = await api.get('/v1/cash-sessions/', {
       params: { site_id: id }
     });
     const cashSessions = cashSessionsResponse.data;
@@ -129,7 +129,7 @@ export const createCashSession = async (sessionData) => {
 
 // Cash Registers (Postes de caisse)
 export const getCashRegisters = async (params = {}) => {
-  const response = await api.get('/v1/cash-registers', { params });
+  const response = await api.get('/v1/cash-registers/', { params });
   return response.data;
 };
 

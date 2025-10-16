@@ -111,7 +111,7 @@ describe('Sites Page', () => {
       renderWithProviders(<Sites />);
 
       expect(screen.getByRole('heading', { name: /sites/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /crÃ©er/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /créer/i })).toBeInTheDocument();
     });
 
     it('should show loading state initially', () => {
@@ -121,7 +121,8 @@ describe('Sites Page', () => {
       expect(screen.getByText('Chargement...')).toBeInTheDocument();
     });
 
-    it('should load and display sites table', async () => {
+    it('should load and display sites table'
+      vi.mocked(getSites).mockResolvedValue(mockSites);, async () => {
       renderWithProviders(<Sites />);
 
       await waitFor(() => {
@@ -147,6 +148,19 @@ describe('Sites Page', () => {
       expect(screen.getByText('Site Remote')).toBeInTheDocument();
     });
 
+    it('should support API responses wrapped in data property', async () => {
+      vi.mocked(getSites).mockResolvedValue({ data: mockSites } as any);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Site Principal')).toBeInTheDocument();
+      expect(screen.getByText('Paris')).toBeInTheDocument();
+    });
+
     it('should handle empty site list', async () => {
       vi.mocked(getSites).mockResolvedValue([]);
       renderWithProviders(<Sites />);
@@ -161,7 +175,7 @@ describe('Sites Page', () => {
 
       // Should show empty state
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
-      expect(screen.getByText('Aucun site configurÃ©')).toBeInTheDocument();
+      expect(screen.getByText('Aucun site configuré')).toBeInTheDocument();
     });
   });
 
@@ -189,6 +203,129 @@ describe('Sites Page', () => {
       });
     });
 
+    it('should handle non-array response gracefully with fallback', async () => {
+      // Simulate malformed API response
+      vi.mocked(getSites).mockResolvedValue(null as any);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument();
+      });
+
+      // Should not crash and show empty state
+      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+      expect(screen.getByText('Aucun site configuré')).toBeInTheDocument();
+    });
+
+    it('should display error with retry button on network error', async () => {
+      const networkError = {
+        code: 'NETWORK_ERROR',
+        message: 'Network Error',
+      };
+      vi.mocked(getSites).mockRejectedValue(networkError);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByText('Problème de connexion réseau. Vérifiez votre connexion internet.')
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('retry-button')).toBeInTheDocument();
+    });
+
+    it('should display error with retry button on ERR_NETWORK error', async () => {
+      const networkError = {
+        code: 'ERR_NETWORK',
+        message: 'Network Error',
+      };
+      vi.mocked(getSites).mockRejectedValue(networkError);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByText('Problème de connexion réseau. Vérifiez votre connexion internet.')
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('retry-button')).toBeInTheDocument();
+    });
+
+    it('should display error on 401 unauthorized', async () => {
+      const error = { response: { status: 401 } };
+      vi.mocked(getSites).mockRejectedValue(error);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Session expirée. Veuillez vous reconnecter.')).toBeInTheDocument();
+    });
+
+    it('should display error on 403 forbidden', async () => {
+      const error = { response: { status: 403 } };
+      vi.mocked(getSites).mockRejectedValue(error);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByText("Vous n'avez pas les permissions nécessaires pour accéder aux sites.")
+      ).toBeInTheDocument();
+    });
+
+    it('should display error on 500 server error', async () => {
+      const error = { response: { status: 500 } };
+      vi.mocked(getSites).mockRejectedValue(error);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByText('Erreur serveur. Veuillez réessayer dans quelques instants.')
+      ).toBeInTheDocument();
+    });
+
+    it('should retry loading when retry button is clicked', async () => {
+      const error = { response: { status: 500 } };
+      vi.mocked(getSites)
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(mockSites);
+
+      renderWithProviders(<Sites />);
+
+      // Wait for error to display
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+      });
+
+      // Click retry button
+      const retryButton = screen.getByTestId('retry-button');
+      await act(async () => {
+        await userEvent.click(retryButton);
+      });
+
+      // Should successfully load data on retry
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Site Principal')).toBeInTheDocument();
+    });
+
     it('should clear error when reload succeeds', async () => {
       const errorMessage = 'Network error';
       vi.mocked(getSites).mockRejectedValueOnce(new Error(errorMessage));
@@ -203,7 +340,7 @@ describe('Sites Page', () => {
       vi.mocked(getSites).mockResolvedValue(mockSites);
 
       // Trigger reload by opening and closing form
-      const createButton = screen.getByRole('button', { name: /crÃ©er un nouveau site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -232,7 +369,7 @@ describe('Sites Page', () => {
         expect(screen.getByRole('table')).toBeInTheDocument();
       });
 
-      const createButton = screen.getByRole('button', { name: /crÃ©er un nouveau site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -251,7 +388,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /crÃ©er un nouveau site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -282,7 +419,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /crÃ©er un nouveau site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -494,7 +631,7 @@ describe('Sites Page', () => {
       expect(screen.getByText('123 Rue de la Paix')).toBeInTheDocument();
       expect(screen.getByText('Paris')).toBeInTheDocument();
       expect(screen.getByText('75001')).toBeInTheDocument();
-      // "France" apparaÃ®t sur plusieurs lignes, on vÃ©rifie qu'au moins une occurrence existe
+      // "France" apparaît sur plusieurs lignes, on vérifie qu'au moins une occurrence existe
       expect(screen.getAllByText('France').length).toBeGreaterThanOrEqual(1);
 
       // Check active status
@@ -541,7 +678,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /crÃ©er un nouveau site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -565,7 +702,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form
-      const createButton = screen.getByRole('button', { name: /crÃ©er un nouveau site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -615,7 +752,7 @@ describe('Sites Page', () => {
       });
 
       // Open create form (should not have editing data)
-      const createButton = screen.getByRole('button', { name: /crÃ©er un nouveau site/i });
+      const createButton = screen.getByRole('button', { name: /créer un nouveau site/i });
       await act(async () => {
         await userEvent.click(createButton);
       });
@@ -720,3 +857,18 @@ describe('Sites Page', () => {
     });
   });
 });
+
+
+    it('should support API responses wrapped in data property', async () => {
+      vi.mocked(getSites).mockResolvedValue({ data: mockSites } as any);
+
+      renderWithProviders(<Sites />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Site Principal')).toBeInTheDocument();
+      expect(screen.getByText('Paris')).toBeInTheDocument();
+    });
+

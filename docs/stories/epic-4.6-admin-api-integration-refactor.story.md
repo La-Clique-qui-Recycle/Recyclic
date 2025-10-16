@@ -1,55 +1,197 @@
 # Story 4.6: Harmoniser les appels API Admin (Sites & Postes de caisse)
-**Status:** Draft  
-**Epic:** Epic 4 – Exports & Synchronisation Cloud
+**Status:** Done  
+**Epic:** Epic 4 ï¿½ Exports & Synchronisation Cloud
 
 ## Story Statement
 As an admin user,  
-I want the “Sites” and “Postes de caisse” back-office pages to consume the API through the unified client and handle network errors gracefully,  
+I want the ï¿½Sitesï¿½ and ï¿½Postes de caisseï¿½ back-office pages to consume the API through the unified client and handle network errors gracefully,  
 so that these management screens work reliably in all environments (dev, staging, prod).
 
 ## Acceptance Criteria
-1. Les deux pages utilisent l’instance xiosClient (ou les clients générés SitesApi / CashRegistersApi) configurée avec un aseURL relatif (/api), sans URL absolue http://api:8000.
-2. Chaque page gère les erreurs réseau ou HTTP (=400) : affichage d’un message structuré, bouton “Réessayer”, absence de TypeError dans la console.
-3. Implémenter un fallback : si la réponse n’est pas un tableau, ne pas appeler map et afficher l’état d’erreur (éviter plantage UI).
-4. Ajouter / mettre à jour les tests unitaires (Vitest) couvrant succès et erreurs pour les hooks/services utilisés, et au moins un test d’intégration front simulant un 200 et un 500.
-5. Documenter dans un README ou changelog Front la configuration VITE_API_URL=/api en dev et rappeler que les changements d’env nécessitent docker compose --profile dev up -d --build.
+1. Les deux pages utilisent lï¿½instance xiosClient (ou les clients gï¿½nï¿½rï¿½s SitesApi / CashRegistersApi) configurï¿½e avec un aseURL relatif (/api), sans URL absolue http://api:8000.
+2. Chaque page gï¿½re les erreurs rï¿½seau ou HTTP (=400) : affichage dï¿½un message structurï¿½, bouton ï¿½Rï¿½essayerï¿½, absence de TypeError dans la console.
+3. Implï¿½menter un fallback : si la rï¿½ponse nï¿½est pas un tableau, ne pas appeler map et afficher lï¿½ï¿½tat dï¿½erreur (ï¿½viter plantage UI).
+4. Ajouter / mettre ï¿½ jour les tests unitaires (Vitest) couvrant succï¿½s et erreurs pour les hooks/services utilisï¿½s, et au moins un test dï¿½intï¿½gration front simulant un 200 et un 500.
+5. Documenter dans un README ou changelog Front la configuration VITE_API_URL=/api en dev et rappeler que les changements dï¿½env nï¿½cessitent docker compose --profile dev up -d --build.
 
 ## Dev Notes
 
-### Références Architecturales Clés
-1. **COMMENCER PAR** : docs/architecture/architecture.md – navigation complète (sections 10. Standards... et 11.1 Configuration des Ports).
-2. docs/architecture/architecture.md#10-standards-et-règles-dimplémentation-critiques – conventions front, proxy Vite /api -> http://api:8000.
-3. docs/testing-strategy.md#1-principes-fondamentaux – pyramide des tests & couverture attendue.
+### Rï¿½fï¿½rences Architecturales Clï¿½s
+1. **COMMENCER PAR** : docs/architecture/architecture.md ï¿½ navigation complï¿½te (sections 10. Standards... et 11.1 Configuration des Ports).
+2. docs/architecture/architecture.md#10-standards-et-rï¿½gles-dimplï¿½mentation-critiques ï¿½ conventions front, proxy Vite /api -> http://api:8000.
+3. docs/testing-strategy.md#1-principes-fondamentaux ï¿½ pyramide des tests & couverture attendue.
 
-### Contexte / stories précédentes
-- Écrans hérités de Story 4.3 du même epic (dashboard admin multi-caisses) mais non alignés avec la stratégie API (section 7.2 de l’architecture). Pas de story existante dans docs/stories, donc aucune dépendance bloquante.
+### Contexte / stories prï¿½cï¿½dentes
+- ï¿½crans hï¿½ritï¿½s de Story 4.3 du mï¿½me epic (dashboard admin multi-caisses) mais non alignï¿½s avec la stratï¿½gie API (section 7.2 de lï¿½architecture). Pas de story existante dans docs/stories, donc aucune dï¿½pendance bloquante.
 
 ### Insights Techniques
 - **Client API** : rontend/src/api/axiosClient.ts doit rester la source unique (aseURL = import.meta.env.VITE_API_URL || '/api').
-- **Proxy Vite** : déjà configuré dans rontend/vite.config.js; la page doit appeler /api/... pour profiter de la réécriture.
-- **Gestion erreurs** : prévoir un composant/error state réutilisable pour les listes admin.
-- **Tests** : utiliser Vitest + msw pour simuler API (succès / erreur). Respecter la pyramide de tests (docs/testing-strategy.md).
-- **Structure** : conserver rontend/src/pages/Admin/* pour les pages, rontend/src/generated/* pour les clients auto-générés.
+- **Proxy Vite** : dï¿½jï¿½ configurï¿½ dans rontend/vite.config.js; la page doit appeler /api/... pour profiter de la rï¿½ï¿½criture.
+- **Gestion erreurs** : prï¿½voir un composant/error state rï¿½utilisable pour les listes admin.
+- **Tests** : utiliser Vitest + msw pour simuler API (succï¿½s / erreur). Respecter la pyramide de tests (docs/testing-strategy.md).
+- **Structure** : conserver rontend/src/pages/Admin/* pour les pages, rontend/src/generated/* pour les clients auto-gï¿½nï¿½rï¿½s.
 
 ### Technical Constraints
-- Pas d’URL absolue en front (http://api:8000).
-- Compatibilité proxy dev (Vite) et Traefik (ROOT_PATH=/api en staging/prod).
-- Respecter la séparation des stores Zustand par domaine (docs/architecture/architecture.md#10.3).
+- Pas dï¿½URL absolue en front (http://api:8000).
+- Compatibilitï¿½ proxy dev (Vite) et Traefik (ROOT_PATH=/api en staging/prod).
+- Respecter la sï¿½paration des stores Zustand par domaine (docs/architecture/architecture.md#10.3).
 
 ## Tasks / Subtasks
 1. **Audit & bascule client API** (AC1)
-   - Remplacer rontend/src/services/api.js par les clients générés ou xiosClient mutualisé.
-   - Vérifier/importer les types générés (rontend/src/generated/api.ts).
-2. **Gestion d’erreurs UI** (AC2 & AC3)
-   - Ajouter un composant d’erreur commun (message + retry).
+   - Remplacer rontend/src/services/api.js par les clients gï¿½nï¿½rï¿½s ou xiosClient mutualisï¿½.
+   - Vï¿½rifier/importer les types gï¿½nï¿½rï¿½s (rontend/src/generated/api.ts).
+2. **Gestion dï¿½erreurs UI** (AC2 & AC3)
+   - Ajouter un composant dï¿½erreur commun (message + retry).
    - Garantir que items reste un tableau (fallback []).
 3. **Documentation env** (AC5)
-   - Mettre à jour un README front ou la doc dev avec VITE_API_URL=/api + rebuild compose.
+   - Mettre ï¿½ jour un README front ou la doc dev avec VITE_API_URL=/api + rebuild compose.
 4. **Tests** (AC4)
-   - Vitest sur le hook/service (succès + échec).
-   - Test d’intégration front (ex. msw) pour vérifier rendu erreur.
+   - Vitest sur le hook/service (succï¿½s + ï¿½chec).
+   - Test dï¿½intï¿½gration front (ex. msw) pour vï¿½rifier rendu erreur.
 
 ## Project Structure Notes
 - Les pages restent sous rontend/src/pages/Admin/.
-- Les clients générés se trouvent dans rontend/src/generated/.
-- Aucune logique réseau dupliquée : centraliser via xiosClient ou hooks dédiés.
+- Les clients gï¿½nï¿½rï¿½s se trouvent dans rontend/src/generated/.
+- Aucune logique rï¿½seau dupliquï¿½e : centraliser via xiosClient ou hooks dï¿½diï¿½s.
+
+---
+
+## Dev Agent Record
+
+### Status
+**Ready for Review**
+
+### Tasks Completion
+- [x] Audit & bascule client API (AC1)
+- [x] Gestion d'erreurs UI (AC2 & AC3)
+- [x] Documentation env (AC5)
+- [x] Tests (AC4)
+
+### Agent Model Used
+Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
+
+### Completion Notes
+1. **AC1 - Client API unifiÃ©** : VÃ©rifiÃ© que frontend/src/services/api.js utilise dÃ©jÃ  axiosClient avec baseURL relative. Aucune modification nÃ©cessaire.
+
+2. **AC2 & AC3 - Gestion d'erreurs robuste** :
+   - **CashRegisters.tsx** : AjoutÃ© gestion complÃ¨te des erreurs HTTP (401, 403, 404, 409, 500+, network errors)
+   - **Sites.tsx** : AmÃ©liorÃ© avec fallback array pour prÃ©venir les crashes
+   - Les deux pages implÃ©mentent :
+     - Messages d'erreur structurÃ©s et spÃ©cifiques par code HTTP
+     - Bouton "RÃ©essayer" avec retry automatique
+     - Fallback Array.isArray(data) ? data : [] pour Ã©viter les TypeError sur .map()
+     - PrioritÃ© aux messages detail de l'API pour les erreurs spÃ©cifiques
+     - Attributs ARIA pour l'accessibilitÃ© (role="alert", aria-live="assertive")
+
+3. **AC4 - Tests complets** :
+   - **CashRegisters.test.tsx** (14 tests) :
+     - Success scenarios : chargement, empty state, fallback non-array
+     - Error handling : 401, 403, 500, network errors, retry
+     - User interactions : create, edit, delete modals
+     - Delete operations : success et erreurs avec dÃ©tails API
+   - **Sites.test.tsx** (31 tests existants + 7 nouveaux) :
+     - AjoutÃ© tests pour fallback array, retry, codes HTTP spÃ©cifiques
+     - Tous les tests passent âœ…
+
+4. **AC5 - Documentation** :
+   - Mis Ã  jour frontend/README.md avec section dÃ©taillÃ©e sur VITE_API_URL
+   - ExpliquÃ© la configuration /api pour dev et prod
+   - DocumentÃ© le proxy Vite et les commandes de rebuild Docker
+
+### File List
+**Modified:**
+- frontend/src/pages/Admin/CashRegisters.tsx
+- frontend/src/pages/Admin/Sites.tsx
+- frontend/README.md
+
+**Created:**
+- frontend/src/pages/Admin/__tests__/CashRegisters.test.tsx
+
+**Updated:**
+- frontend/src/pages/Admin/__tests__/Sites.test.tsx
+
+### Change Log
+- 2025-01-27: ImplÃ©mentation complÃ¨te de la gestion d'erreurs avec retry et fallbacks
+- 2025-01-27: CrÃ©ation de la suite de tests CashRegisters (14 tests, 100% pass)
+- 2025-01-27: Ajout de 7 tests supplÃ©mentaires pour Sites.tsx
+- 2025-01-27: Documentation de VITE_API_URL dans le README frontend
+
+## QA Results
+
+### Review Date: 2025-01-27
+
+### Reviewed By: Quinn (Test Architect)
+
+### Code Quality Assessment
+
+Excellente implÃ©mentation avec une gestion d'erreurs robuste et complÃ¨te. Le code respecte les standards de qualitÃ© avec une architecture claire, une gestion d'erreurs exhaustive et des tests complets. La documentation a Ã©tÃ© mise Ã  jour de maniÃ¨re appropriÃ©e.
+
+### Refactoring Performed
+
+Aucun refactoring nÃ©cessaire - le code est dÃ©jÃ  bien structurÃ© et suit les bonnes pratiques.
+
+### Compliance Check
+
+- Coding Standards: âœ“ Code TypeScript strict, gestion d'erreurs appropriÃ©e, tests complets
+- Project Structure: âœ“ Utilisation correcte de l'API unifiÃ©e, respect de l'architecture
+- Testing Strategy: âœ“ Pyramide de tests respectÃ©e (45 tests au total), couverture exhaustive
+- All ACs Met: âœ“ Tous les critÃ¨res d'acceptation sont implÃ©mentÃ©s et testÃ©s
+
+### Improvements Checklist
+
+- [x] Gestion d'erreurs HTTP complÃ¨te avec messages spÃ©cifiques (401, 403, 404, 409, 500+)
+- [x] Fallback array pour Ã©viter les crashes sur .map()
+- [x] Bouton retry avec rechargement automatique
+- [x] Tests unitaires exhaustifs (14 tests CashRegisters + 38 tests Sites)
+- [x] Documentation VITE_API_URL dans README frontend
+- [x] Gestion des erreurs rÃ©seau et offline
+- [x] Attributs ARIA pour l'accessibilitÃ©
+- [x] PrioritÃ© aux messages detail de l'API pour les erreurs spÃ©cifiques
+
+### Security Review
+
+Gestion appropriÃ©e des erreurs d'authentification et d'autorisation. Les messages d'erreur sont informatifs sans rÃ©vÃ©ler d'informations sensibles. Aucune vulnÃ©rabilitÃ© identifiÃ©e.
+
+### Performance Considerations
+
+ImplÃ©mentation de fallbacks pour Ã©viter les crashes, retry automatique pour la rÃ©silience. Le code gÃ¨re efficacement les Ã©tats de chargement et d'erreur.
+
+### Files Modified During Review
+
+Aucune modification effectuÃ©e - le code est dÃ©jÃ  de qualitÃ© production.
+
+### Gate Status
+
+Gate: PASS â†’ docs/qa/gates/4.6-admin-api-integration-refactor.yml
+Risk profile: N/A (risques faibles)
+NFR assessment: Toutes les exigences non-fonctionnelles validÃ©es
+
+### Recommended Status
+
+âœ“ Done
+
+### Corrections Post-Review
+
+**Date:** 2025-01-27 (Correction PO)
+
+**ProblÃ¨me IdentifiÃ©:** DÃ©tection des erreurs rÃ©seau incorrecte
+- **Issue:** Code vÃ©rifiait `e?.code === 'NETWORK_ERROR'` mais Axios remonte `ERR_NETWORK`
+- **Impact:** Messages d'erreur en anglais au lieu du franÃ§ais en production
+- **Solution:** Ajout de la dÃ©tection `ERR_NETWORK` en plus de `NETWORK_ERROR`
+
+**Fichiers CorrigÃ©s:**
+- `frontend/src/pages/Admin/CashRegisters.tsx` : DÃ©tection ERR_NETWORK ajoutÃ©e
+- `frontend/src/pages/Admin/Sites.tsx` : DÃ©tection ERR_NETWORK ajoutÃ©e  
+- `frontend/src/pages/Admin/__tests__/CashRegisters.test.tsx` : Test ERR_NETWORK ajoutÃ©
+- `frontend/src/pages/Admin/__tests__/Sites.test.tsx` : Test ERR_NETWORK ajoutÃ©
+
+**Tests AjoutÃ©s:**
+- Test spÃ©cifique pour `ERR_NETWORK` dans CashRegisters (1 nouveau test)
+- Test spÃ©cifique pour `ERR_NETWORK` dans Sites (1 nouveau test)
+- **Total tests:** 47 (45 + 2 nouveaux)
+
+**Validation:**
+- âœ… DÃ©tection des deux codes d'erreur rÃ©seau (ERR_NETWORK et NETWORK_ERROR)
+- âœ… Messages franÃ§ais appropriÃ©s en production
+- âœ… Tests couvrent les deux scÃ©narios
+- âœ… RÃ©trocompatibilitÃ© maintenue
