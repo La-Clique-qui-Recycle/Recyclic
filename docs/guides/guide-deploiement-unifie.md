@@ -1,7 +1,7 @@
 # Guide de Déploiement Unifié - Recyclic
 
-**Version:** 1.0  
-**Date:** 2025-01-27  
+**Version:** 1.1  
+**Date:** 2025-10-15  
 **Auteur:** Équipe de Développement Recyclic  
 
 ---
@@ -75,6 +75,8 @@ Ce guide unifié explique comment déployer l'application Recyclic dans tous les
    
    # API
    SECRET_KEY=votre_cle_secrete
+   API_V1_STR=/v1
+   ROOT_PATH=
    
    # Bot Telegram
    TELEGRAM_BOT_TOKEN=votre_token_bot
@@ -82,14 +84,14 @@ Ce guide unifié explique comment déployer l'application Recyclic dans tous les
    
    # URLs
    FRONTEND_URL=http://localhost:4444
-   VITE_API_URL=http://localhost:8000
+   VITE_API_URL=/api
    ```
 
 ### Démarrage
 
 ```bash
-# Démarrer tous les services en mode développement
-docker compose --profile dev up -d
+# Démarrer (ou reconstruire) tous les services en mode développement
+docker compose --profile dev up -d --build
 
 # Vérifier le statut des services
 docker compose ps
@@ -163,6 +165,8 @@ TTL: 300
    
    # API
    SECRET_KEY=cle_secrete_staging
+   API_V1_STR=/v1
+   ROOT_PATH=/api
    
    # Bot Telegram
    TELEGRAM_BOT_TOKEN=token_bot_staging
@@ -170,7 +174,7 @@ TTL: 300
    
    # URLs
    FRONTEND_URL=https://devrecyclic.jarvos.eu
-   VITE_API_URL=https://devrecyclic.jarvos.eu/api
+   VITE_API_URL_STAGING=https://devrecyclic.jarvos.eu/api
    ```
 
 4. **Déployer**
@@ -241,6 +245,8 @@ TTL: 300
    
    # API (clé secrète forte)
    SECRET_KEY=cle_secrete_production_tres_forte
+   API_V1_STR=/v1
+   ROOT_PATH=/api
    
    # Bot Telegram (token de production)
    TELEGRAM_BOT_TOKEN=token_bot_production
@@ -248,7 +254,7 @@ TTL: 300
    
    # URLs
    FRONTEND_URL=https://recyclic.jarvos.eu
-   VITE_API_URL=https://recyclic.jarvos.eu/api
+   VITE_API_URL_PROD=https://recyclic.jarvos.eu/api
    
    # Email (Brevo)
    BREVO_API_KEY=cle_api_brevo_production
@@ -464,5 +470,5 @@ Pour toute question ou problème :
 
 ---
 
-**Dernière mise à jour** : 2025-01-27  
-**Version du guide** : 1.0
+**Dernière mise à jour** : 2025-10-15  
+**Version du guide** : 1.1
