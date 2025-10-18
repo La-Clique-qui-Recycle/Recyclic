@@ -82,3 +82,5 @@ def test_cash_sessions_combined_filters_list_and_kpis(admin_client, db_session: 
     assert kpi["total_sessions"] >= 1
     assert kpi["total_sales"] >= 70.0
 
+
+

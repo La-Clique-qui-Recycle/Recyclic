@@ -27,3 +27,5 @@ def test_cash_sessions_list_p95_smoke(admin_client):
     assert p95 < 500.0, f'p95 {p95:.1f}ms exceeds 500ms threshold'
 
 
+
+
