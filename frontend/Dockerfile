@@ -7,10 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copier le script de génération depuis le répertoire racine
-COPY ../scripts/generate-build-info.sh ./scripts/
-
-# Copier le reste du code source
+# Copier le reste du code source (inclut le script generate-build-info.sh)
 COPY . .
 
 # Installer git pour pouvoir exécuter les commandes git
