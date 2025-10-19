@@ -7,8 +7,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copier le reste du code source (inclut le build-info.json pré-généré)
+# Copier le reste du code source
 COPY . .
+
+# Régénérer automatiquement les informations de build
+RUN ./scripts/generate-build-info.sh
 
 # Exposer le port du serveur de développement Vite
 EXPOSE 5173
