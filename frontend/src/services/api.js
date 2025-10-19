@@ -173,6 +173,16 @@ export const getReceptionTicketDetail = async (ticketId) => {
   return response.data;
 };
 
+// Cash Session Statistics
+export const getCashSessionStats = async (dateFrom, dateTo) => {
+  const params = {};
+  if (dateFrom) params.date_from = dateFrom;
+  if (dateTo) params.date_to = dateTo;
+
+  const response = await api.get('/v1/cash-sessions/stats/summary', { params });
+  return response.data;
+};
+
 // Reception Statistics
 export const getReceptionSummary = async (startDate, endDate) => {
   const params = {};

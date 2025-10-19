@@ -131,6 +131,10 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL_PROD:-/api}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     image: recyclic-frontend-prod:${FRONTEND_IMAGE_TAG:-latest}
     env_file:
       - .env.production

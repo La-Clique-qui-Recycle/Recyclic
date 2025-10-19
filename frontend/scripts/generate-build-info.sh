@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Script pour générer les informations de build
 # Usage: ./scripts/generate-build-info.sh

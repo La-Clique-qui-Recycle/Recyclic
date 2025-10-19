@@ -191,6 +191,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+      args:
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     image: recyclic-frontend-dev:${FRONTEND_IMAGE_TAG:-latest}
     environment:
       DANGEROUSLY_DISABLE_HOST_CHECK: "true"

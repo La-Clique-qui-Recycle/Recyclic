@@ -17,8 +17,15 @@ RUN apk add --no-cache git
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-# Régénérer automatiquement les informations de build
-RUN chmod +x scripts/generate-build-info.sh && ./scripts/generate-build-info.sh
+# Args passés par l'hôte/CI pour générer build-info.json
+ARG COMMIT_SHA=unknown
+ARG BRANCH=unknown
+ARG COMMIT_DATE=unknown
+ARG BUILD_DATE=unknown
+
+# Générer build-info.json à partir des ARG (sans dépendre de git dans l'image)
+RUN mkdir -p public \
+  && node -e "const fs=require('fs');const pkg=require('./package.json');const data={version:pkg.version,commitSha:process.env.COMMIT_SHA||'unknown',commitDate:process.env.COMMIT_DATE||'unknown',buildDate:process.env.BUILD_DATE||'unknown',branch:process.env.BRANCH||'unknown'};fs.writeFileSync('public/build-info.json',JSON.stringify(data,null,2)+'\\n')"
 
 # Construire l'application pour la production
 RUN echo "----> Building with API URL: $VITE_API_URL and Commit SHA: $VITE_APP_COMMIT_SHA" && npm run build

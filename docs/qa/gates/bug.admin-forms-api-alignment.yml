@@ -76,3 +76,4 @@ impact_assessment:
     - "Validation appropriée des données"
     - "Messages d'erreur informatifs"
     - "Initialisation staging/prod possible via UI"
+
