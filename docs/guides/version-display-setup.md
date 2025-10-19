@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Le système d'affichage de version de Recyclic utilise une approche **intégrée dans les Dockerfiles** : le commit SHA est récupéré automatiquement via la commande `git rev-parse --short HEAD` pendant le build de l'image Docker.
+Le système d'affichage de version de Recyclic utilise une approche **basée sur des build args** injectés au build (COMMIT_SHA, BRANCH, COMMIT_DATE, BUILD_DATE). Les Dockerfiles génèrent `frontend/public/build-info.json` sans dépendre de git dans l'image.
 
 ## Architecture
 
@@ -30,25 +30,18 @@ Le système génère automatiquement un fichier `build-info.json` dans le réper
 
 ### 1. Dockerfile Configuration
 
-Les Dockerfiles génèrent automatiquement le fichier `build-info.json` :
+Les Dockerfiles acceptent des `ARG` et génèrent `build-info.json` via Node:
 
 ```dockerfile
-# Générer les informations de build directement
-RUN VERSION=$(node -p "require('./package.json').version") && \
-    COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown") && \
-    COMMIT_DATE=$(git log -1 --format=%ci 2>/dev/null || echo "unknown") && \
-    BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") && \
-    BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown") && \
-    mkdir -p public && \
-    cat > public/build-info.json << EOF
-{
-  "version": "$VERSION",
-  "commitSha": "$COMMIT_SHA",
-  "commitDate": "$COMMIT_DATE",
-  "buildDate": "$BUILD_DATE",
-  "branch": "$BRANCH"
-}
-EOF
+# ARG passés par l'hôte/CI
+ARG COMMIT_SHA=unknown
+ARG BRANCH=unknown
+ARG COMMIT_DATE=unknown
+ARG BUILD_DATE=unknown
+
+# Génération sans git dans l'image
+RUN mkdir -p public \
+  && node -e "const fs=require('fs');const pkg=require('./package.json');const data={version:pkg.version,commitSha:process.env.COMMIT_SHA||'unknown',commitDate:process.env.COMMIT_DATE||'unknown',buildDate:process.env.BUILD_DATE||'unknown',branch:process.env.BRANCH||'unknown'};fs.writeFileSync('public/build-info.json',JSON.stringify(data,null,2)+'\\n')"
 ```
 
 ### 2. Service Frontend
@@ -103,15 +96,31 @@ useEffect(() => {
 ## Utilisation
 
 ### Développement
+Attention: en dev, `docker-compose.yml` monte `./frontend/public:/app/public`. Cela fait foi côté conteneur.
+
+- Option A (auto via image): retirer ce volume pour que l’image serve son `build-info.json` généré par les ARG.
+- Option B (garder le volume): régénérer `frontend/public/build-info.json` côté host ou utiliser les build args.
+
+Cheat sheet (dev):
 ```bash
-# Le fichier build-info.json est généré automatiquement
+# 1) Exporter les build args côté host (dev/CI)
+source ./scripts/generate-build-args.sh
+
+# 2) Build + run frontend
 docker-compose build frontend
+docker-compose up -d frontend
+
+# (Si le volume public est conservé) Générer le fichier côté host
+./scripts/generate-build-info.sh
 docker-compose up -d frontend
 ```
 
 ### Staging/Production
 ```bash
-# Même processus pour les autres environnements
+# Exporter les build args (ou variables CI)
+source ./scripts/generate-build-args.sh
+
+# Build & run
 docker-compose -f docker-compose.staging.yml build frontend
 docker-compose -f docker-compose.staging.yml up -d frontend
 ```
@@ -125,9 +134,9 @@ L'interface d'administration affiche maintenant :
 ## Dépannage
 
 ### Le commit SHA ne s'affiche pas
-1. Vérifier que git est installé dans l'image Docker
-2. Vérifier que le répertoire est un dépôt git
-3. Vérifier l'accès au fichier `/build-info.json`
+1. En dev, vérifier le volume `./frontend/public:/app/public` (le fichier host fait foi)
+2. Vérifier que les build args (`COMMIT_SHA`, `BRANCH`, `COMMIT_DATE`, `BUILD_DATE`) sont bien exportés
+3. En cas de doute, régénérer côté host: `./scripts/generate-build-info.sh`
 
 ### Le fichier build-info.json n'est pas accessible
 1. Vérifier que le fichier est dans `frontend/public/`

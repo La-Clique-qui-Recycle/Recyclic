@@ -1,27 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { DatePicker } from '@mantine/dates';
 import { BarChart3, Package, DollarSign, Users, TrendingUp, Scale } from 'lucide-react';
-import { api } from '../services/api';
+import api, { getCashSessionStats, getReceptionSummary } from '../services/api';
 
 const DashboardContainer = styled.div`
   display: grid;
   gap: 2rem;
 `;
 
-const DateFilterContainer = styled.div`
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 2rem;
-`;
-
-const DateFilterTitle = styled.h3`
-  margin: 0 0 1rem 0;
-  color: #333;
-  font-size: 1.1rem;
-`;
 
 const StatsSection = styled.div`
   background: white;
@@ -122,20 +108,10 @@ const WelcomeText = styled.p`
 `;
 
 function Dashboard() {
-  const [dateRange, setDateRange] = useState({
-    from: new Date(new Date().setDate(new Date().getDate() - 30)), // 30 jours par défaut
-    to: new Date()
-  });
-  
   const [salesStats, setSalesStats] = useState(null);
   const [receptionStats, setReceptionStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Fonction pour formater les dates pour l'API
-  const formatDateForAPI = (date) => {
-    return date.toISOString().split('T')[0]; // Format YYYY-MM-DD
-  };
 
   // Fonction pour charger les statistiques
   const loadStats = async () => {
@@ -144,14 +120,8 @@ function Dashboard() {
     
     try {
       const [salesData, receptionData] = await Promise.all([
-        api.getCashSessionStats(
-          formatDateForAPI(dateRange.from),
-          formatDateForAPI(dateRange.to)
-        ),
-        api.getReceptionSummary(
-          formatDateForAPI(dateRange.from),
-          formatDateForAPI(dateRange.to)
-        )
+        getCashSessionStats(), // Sans paramètres de dates
+        getReceptionSummary() // Sans paramètres de dates
       ]);
       
       setSalesStats(salesData);
@@ -164,10 +134,10 @@ function Dashboard() {
     }
   };
 
-  // Charger les statistiques au montage et quand la plage de dates change
+  // Charger les statistiques au montage
   useEffect(() => {
     loadStats();
-  }, [dateRange]);
+  }, []);
 
   return (
     <DashboardContainer>
@@ -179,20 +149,6 @@ function Dashboard() {
         </WelcomeText>
       </WelcomeSection>
       
-      <DateFilterContainer>
-        <DateFilterTitle>Filtre de période</DateFilterTitle>
-        <DatePicker
-          type="range"
-          value={[dateRange.from, dateRange.to]}
-          onChange={(dates) => {
-            if (dates && dates[0] && dates[1]) {
-              setDateRange({ from: dates[0], to: dates[1] });
-            }
-          }}
-          placeholder="Sélectionnez une période"
-          clearable={false}
-        />
-      </DateFilterContainer>
 
       {error && (
         <ErrorMessage>
@@ -214,7 +170,7 @@ function Dashboard() {
                 </StatIcon>
                 <StatContent>
                   <StatValue data-testid="stat-sales-revenue">
-                    {salesStats?.total_revenue ? `${salesStats.total_revenue.toFixed(2)}€` : '0€'}
+                    {salesStats?.total_sales ? `${Number(salesStats.total_sales).toFixed(2)}€` : '0€'}
                   </StatValue>
                   <StatLabel>Chiffre d'affaires</StatLabel>
                 </StatContent>
@@ -226,7 +182,7 @@ function Dashboard() {
                 </StatIcon>
                 <StatContent>
                   <StatValue data-testid="stat-sales-donations">
-                    {salesStats?.total_donations ? `${salesStats.total_donations.toFixed(2)}€` : '0€'}
+                    {salesStats?.total_donations ? `${Number(salesStats.total_donations).toFixed(2)}€` : '0€'}
                   </StatValue>
                   <StatLabel>Total des dons</StatLabel>
                 </StatContent>
@@ -238,7 +194,7 @@ function Dashboard() {
                 </StatIcon>
                 <StatContent>
                   <StatValue data-testid="stat-sales-weight">
-                    {salesStats?.total_weight_sold ? `${salesStats.total_weight_sold.toFixed(1)} kg` : '0 kg'}
+                    {salesStats?.total_weight_sold ? `${Number(salesStats.total_weight_sold).toFixed(1)} kg` : '0 kg'}
                   </StatValue>
                   <StatLabel>Poids vendu</StatLabel>
                 </StatContent>
@@ -256,7 +212,7 @@ function Dashboard() {
                 </StatIcon>
                 <StatContent>
                   <StatValue data-testid="stat-reception-weight">
-                    {receptionStats?.total_weight ? `${receptionStats.total_weight.toFixed(1)} kg` : '0 kg'}
+                    {receptionStats?.total_weight ? `${Number(receptionStats.total_weight).toFixed(1)} kg` : '0 kg'}
                   </StatValue>
                   <StatLabel>Poids reçu</StatLabel>
                 </StatContent>
