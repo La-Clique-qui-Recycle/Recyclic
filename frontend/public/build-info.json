@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "commitSha": "8c55cc47",
-  "commitDate": "2025-10-18 14:52:16 +0200",
-  "buildDate": "2025-10-19T16:23:58Z",
-  "branch": "main"
+  "version": "1.0.1",
+  "commitSha": "cbb55d75",
+  "commitDate": "2025-10-19 18:36:44 +0200",
+  "buildDate": "2025-10-19T16:52:51Z",
+  "branch": "release/v1.0.1-stable-fixes"
 }
