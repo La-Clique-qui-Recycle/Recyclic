@@ -3,32 +3,12 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Installer git pour pouvoir exécuter les commandes git
-RUN apk add --no-cache git
-
 # Copier les fichiers de dépendances et les installer
 COPY package*.json ./
 RUN npm install
 
-# Copier le reste du code source
+# Copier le reste du code source (inclut le build-info.json pré-généré)
 COPY . .
-
-# Générer les informations de build directement
-RUN VERSION=$(node -p "require('./package.json').version") && \
-    COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown") && \
-    COMMIT_DATE=$(git log -1 --format=%ci 2>/dev/null || echo "unknown") && \
-    BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") && \
-    BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown") && \
-    mkdir -p public && \
-    cat > public/build-info.json << EOF
-{
-  "version": "$VERSION",
-  "commitSha": "$COMMIT_SHA",
-  "commitDate": "$COMMIT_DATE",
-  "buildDate": "$BUILD_DATE",
-  "branch": "$BRANCH"
-}
-EOF
 
 # Exposer le port du serveur de développement Vite
 EXPOSE 5173
