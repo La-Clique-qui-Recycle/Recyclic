@@ -1,6 +1,5 @@
 services:
   postgres:
-    profiles: ["dev"]
     image: postgres:15
     environment:
       POSTGRES_DB: recyclic
@@ -19,7 +18,6 @@ services:
       - recyclic-network
 
   redis:
-    profiles: ["dev"]
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -32,7 +30,6 @@ services:
       - recyclic-network
 
   api:
-    profiles: ["dev"]
     build: ./api
     image: recyclic-api:${API_IMAGE_TAG:-latest}
     command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --reload
@@ -71,7 +68,6 @@ services:
       - recyclic-network
 
   bot:
-    profiles: ["dev"]
     build: ./bot
     image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
     environment:
@@ -99,7 +95,6 @@ services:
 
   # Service dédié pour les migrations Alembic avec configuration Docker optimisée
   api-migrations:
-    profiles: ["dev"]
     build:
       context: ./api
       dockerfile: Dockerfile.migrations
@@ -193,7 +188,6 @@ services:
 
   # DEV: Frontend with hot-reload for local development
   frontend:
-    profiles: ["dev"]
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev

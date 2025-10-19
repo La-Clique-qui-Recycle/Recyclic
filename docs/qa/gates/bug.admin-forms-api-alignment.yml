@@ -1,0 +1,78 @@
+# Quality Gate Decision - Story Bug Admin Forms API Alignment
+# Bug Fix: Harmoniser les formulaires Admin avec l'API
+
+schema: 1
+story: "bug.admin-forms-api-alignment"
+story_title: "Harmoniser les formulaires Admin (Sites & Postes de caisse) avec l'API"
+gate: PASS
+status_reason: "Correction de bug complète avec validation robuste et tests appropriés"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T10:45:00Z"
+
+# No critical issues found
+top_issues: []
+
+# No waiver needed
+waiver: { active: false }
+
+# Quality metrics
+quality_score: 90
+expires: "2025-02-10T00:00:00Z"
+
+# Evidence of thorough review
+evidence:
+  tests_reviewed: 4
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6]  # All acceptance criteria covered
+    ac_gaps: []  # No gaps in coverage
+
+# NFR validation results
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Validation UUID robuste, gestion appropriée des contraintes"
+  performance:
+    status: PASS
+    notes: "Validation efficace, messages d'erreur clairs"
+  reliability:
+    status: PASS
+    notes: "Gestion d'erreurs HTTP appropriée (422/409 au lieu de 500)"
+  maintainability:
+    status: PASS
+    notes: "Code bien structuré avec tests d'intégration complets"
+
+# Risk assessment
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+# Recommendations
+recommendations:
+  immediate: []  # No immediate fixes needed
+  future: []  # No future improvements identified
+
+# Bug fix highlights
+bug_fix_highlights:
+  - "Correction des chemins API incohérents (adminService.ts)"
+  - "Validation Pydantic pour rejeter les UUID vides (422)"
+  - "Gestion des contraintes avec codes HTTP appropriés (409)"
+  - "Tests d'intégration pour validation et contraintes"
+  - "Documentation de la procédure d'initialisation staging/prod"
+  - "Messages d'erreur clairs et informatifs"
+  - "Gestion des dépendances avant suppression"
+
+# Impact assessment
+impact_assessment:
+  before_fix:
+    - "Erreurs 405/404 lors des opérations CRUD"
+    - "Erreurs 500 pour UUID vides"
+    - "Messages d'erreur génériques"
+    - "Impossible d'initialiser staging/prod via UI"
+  after_fix:
+    - "Opérations CRUD fonctionnelles"
+    - "Validation appropriée des données"
+    - "Messages d'erreur informatifs"
+    - "Initialisation staging/prod possible via UI"

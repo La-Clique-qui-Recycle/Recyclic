@@ -128,6 +128,7 @@ services:
     container_name: recyclic-prod-frontend
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL_PROD:-/api}
     image: recyclic-frontend-prod:${FRONTEND_IMAGE_TAG:-latest}

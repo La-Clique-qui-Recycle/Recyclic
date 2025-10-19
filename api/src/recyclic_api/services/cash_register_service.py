@@ -70,7 +70,26 @@ class CashRegisterService:
 
     # Delete
     def delete(self, *, register: CashRegister) -> None:
+        """Supprimer un poste de caisse après vérification des dépendances."""
+        self._check_dependencies(register)
         self._db.delete(register)
         self._db.commit()
+
+    def _check_dependencies(self, register: CashRegister) -> None:
+        """Vérifier les dépendances avant suppression d'un poste de caisse."""
+        from fastapi import HTTPException, status as http_status
+        from recyclic_api.models.cash_session import CashSession
+
+        # Check for cash sessions - FIXED: use register_id not cash_register_id
+        sessions_count = self._db.query(CashSession).filter(
+            CashSession.register_id == register.id
+        ).count()
+
+        if sessions_count > 0:
+            raise HTTPException(
+                status_code=http_status.HTTP_409_CONFLICT,
+                detail=f"Impossible de supprimer le poste de caisse '{register.name}'. "
+                       f"{sessions_count} session(s) de caisse y sont associées."
+            )
 
 

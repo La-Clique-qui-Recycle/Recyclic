@@ -18,7 +18,7 @@ export const getUser = async (id) => {
 };
 
 export const createUser = async (userData) => {
-  const response = await api.post('/v1/users', userData);
+  const response = await api.post('/v1/users/', userData);
   return response.data;
 };
 
@@ -34,7 +34,7 @@ export const getSite = async (id) => {
 };
 
 export const createSite = async (siteData) => {
-  const response = await api.post('/v1/sites', siteData);
+  const response = await api.post('/v1/sites/', siteData);
   return response.data;
 };
 
@@ -91,7 +91,7 @@ export const getDeposit = async (id) => {
 };
 
 export const createDeposit = async (depositData) => {
-  const response = await api.post('/v1/deposits', depositData);
+  const response = await api.post('/v1/deposits/', depositData);
   return response.data;
 };
 
@@ -107,7 +107,7 @@ export const getSale = async (id) => {
 };
 
 export const createSale = async (saleData) => {
-  const response = await api.post('/v1/sales', saleData);
+  const response = await api.post('/v1/sales/', saleData);
   return response.data;
 };
 
@@ -123,7 +123,7 @@ export const getCashSession = async (id) => {
 };
 
 export const createCashSession = async (sessionData) => {
-  const response = await api.post('/v1/cash-sessions', sessionData);
+  const response = await api.post('/v1/cash-sessions/', sessionData);
   return response.data;
 };
 
@@ -139,7 +139,7 @@ export const getCashRegister = async (id) => {
 };
 
 export const createCashRegister = async (data) => {
-  const response = await api.post('/v1/cash-registers', data);
+  const response = await api.post('/v1/cash-registers/', data);
   return response.data;
 };
 

@@ -1,8 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+// Lire la version depuis package.json
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // Exposer la version depuis package.json
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+    // Le commit SHA sera fourni par Docker via les variables d'environnement
+    'import.meta.env.VITE_APP_COMMIT_SHA': JSON.stringify(process.env.VITE_APP_COMMIT_SHA || 'dev'),
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
