@@ -18,7 +18,7 @@ ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
 # Régénérer automatiquement les informations de build
-RUN ./scripts/generate-build-info.sh
+RUN chmod +x scripts/generate-build-info.sh && ./scripts/generate-build-info.sh
 
 # Construire l'application pour la production
 RUN echo "----> Building with API URL: $VITE_API_URL and Commit SHA: $VITE_APP_COMMIT_SHA" && npm run build
