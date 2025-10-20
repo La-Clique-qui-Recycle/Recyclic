@@ -105,6 +105,7 @@ Thumbs.db
 
 # Logs
 *.log
+.build-meta.env
 
 # Gemini CLI generated
 frontend/coverage/

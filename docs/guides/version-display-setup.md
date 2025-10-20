@@ -99,41 +99,22 @@ export const getBuildInfo = async () => {
 ### Local (Développement)
 
 ```bash
-# Générer les variables de build
-export COMMIT_SHA=$(git rev-parse --short HEAD)
-export BRANCH=$(git rev-parse --abbrev-ref HEAD)
-export COMMIT_DATE=$(git log -1 --format=%ci)
-export BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-# Builder et démarrer
-docker-compose build api
-docker-compose up -d
+# Script unique: prépare les métadonnées et déploie
+./scripts/deploy-local.sh
 ```
 
 ### Staging VPS
 
 ```bash
 # Sur le VPS staging
-export COMMIT_SHA=$(git rev-parse --short HEAD)
-export BRANCH=$(git rev-parse --abbrev-ref HEAD)
-export COMMIT_DATE=$(git log -1 --format=%ci)
-export BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-docker-compose -f docker-compose.staging.yml build api
-docker-compose -f docker-compose.staging.yml up -d
+./scripts/deploy-staging.sh
 ```
 
 ### Production VPS
 
 ```bash
 # Sur le VPS production
-export COMMIT_SHA=$(git rev-parse --short HEAD)
-export BRANCH=$(git rev-parse --abbrev-ref HEAD)
-export COMMIT_DATE=$(git log -1 --format=%ci)
-export BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-docker-compose -f docker-compose.prod.yml build api
-docker-compose -f docker-compose.prod.yml up -d
+./scripts/deploy-prod.sh
 ```
 
 ## Vérification
@@ -180,9 +161,14 @@ L'interface d'administration affiche maintenant :
 3. Tester via le proxy : `curl http://localhost:4444/api/v1/health/version`
 
 ### Les variables sont "unknown"
-1. Vérifier que les build args sont passés dans docker-compose
-2. Vérifier que les variables sont exportées avant le build
+1. Vérifier que `.build-meta.env` a été généré par `prepare-build-meta.sh`
+2. Vérifier que les scripts de déploiement ont bien chargé `.build-meta.env` (option `--env-file` ou fallback)
 3. Rebuilder l'image : `docker-compose build --no-cache api`
+
+## Détails d’implémentation des scripts
+
+- `scripts/prepare-build-meta.sh` collecte `APP_VERSION` (depuis `frontend/package.json`), `COMMIT_SHA` (court), `BRANCH`, `COMMIT_DATE`, `BUILD_DATE` et écrit `.build-meta.env` au format `KEY=VALUE`.
+- `scripts/deploy-*.sh` invoquent `prepare-build-meta.sh` puis lancent `docker-compose up -d --build` en chargeant `.env` cible et `.build-meta.env`.
 
 ## Avantages de cette Solution
 
