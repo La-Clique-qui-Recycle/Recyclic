@@ -456,6 +456,69 @@ export const adminService = {
       console.error('Erreur lors de l\'import de la base de données:', error);
       throw error;
     }
+  },
+
+  /**
+   * Récupère les paramètres email (Brevo)
+   */
+  async getEmailSettings(): Promise<{
+    from_name: string;
+    from_address: string;
+    default_recipient: string | null;
+    has_api_key: boolean;
+    webhook_secret_configured: boolean;
+  }> {
+    try {
+      const response = await axiosClient.get('/v1/admin/settings/email');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des paramètres email:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Met à jour les paramètres email (Brevo)
+   */
+  async updateEmailSettings(settings: {
+    from_name?: string;
+    from_address?: string;
+    default_recipient?: string;
+  }): Promise<{
+    from_name: string;
+    from_address: string;
+    default_recipient: string | null;
+    has_api_key: boolean;
+    webhook_secret_configured: boolean;
+  }> {
+    try {
+      const response = await axiosClient.put('/v1/admin/settings/email', settings);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des paramètres email:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Envoie un email de test
+   */
+  async sendTestEmail(to_email: string): Promise<{
+    success: boolean;
+    message: string;
+    to_email: string;
+    from_email: string;
+    from_name: string;
+  }> {
+    try {
+      const response = await axiosClient.post('/v1/admin/settings/email/test', {
+        to_email
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi de l\'email de test:', error);
+      throw error;
+    }
   }
 };
 

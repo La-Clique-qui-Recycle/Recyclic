@@ -380,6 +380,29 @@ const Settings: React.FC = () => {
   const [savingSessionSettings, setSavingSessionSettings] = useState(false)
   const [sessionSettingsError, setSessionSettingsError] = useState<string | null>(null)
 
+  // États pour les paramètres email
+  const [emailSettings, setEmailSettings] = useState({
+    from_name: '',
+    from_address: '',
+    default_recipient: '',
+    has_api_key: false,
+    webhook_secret_configured: false
+  })
+  const [loadingEmailSettings, setLoadingEmailSettings] = useState(false)
+  const [savingEmailSettings, setSavingEmailSettings] = useState(false)
+  const [emailSettingsError, setEmailSettingsError] = useState<string | null>(null)
+  const [emailSettingsSuccess, setEmailSettingsSuccess] = useState<string | null>(null)
+  const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [testEmailAddress, setTestEmailAddress] = useState('')
+  const [testEmailError, setTestEmailError] = useState<string | null>(null)
+  const [testEmailSuccess, setTestEmailSuccess] = useState<string | null>(null)
+  const [emailSettingsChanged, setEmailSettingsChanged] = useState(false)
+  const [originalEmailSettings, setOriginalEmailSettings] = useState({
+    from_name: '',
+    from_address: '',
+    default_recipient: ''
+  })
+
   // Charger les paramètres de session au montage du composant
   useEffect(() => {
     const loadSessionSettings = async () => {
@@ -398,6 +421,36 @@ const Settings: React.FC = () => {
 
     if (currentUser?.role === 'super-admin') {
       loadSessionSettings()
+    }
+  }, [currentUser])
+
+  // Charger les paramètres email au montage du composant
+  useEffect(() => {
+    const loadEmailSettings = async () => {
+      try {
+        setLoadingEmailSettings(true)
+        setEmailSettingsError(null)
+        const settings = await adminService.getEmailSettings()
+        setEmailSettings(settings)
+        setOriginalEmailSettings({
+          from_name: settings.from_name,
+          from_address: settings.from_address,
+          default_recipient: settings.default_recipient || ''
+        })
+        // Définir l'email de test par défaut
+        if (settings.default_recipient) {
+          setTestEmailAddress(settings.default_recipient)
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des paramètres email:', error)
+        setEmailSettingsError('Erreur lors du chargement des paramètres email')
+      } finally {
+        setLoadingEmailSettings(false)
+      }
+    }
+
+    if (currentUser?.role === 'super-admin') {
+      loadEmailSettings()
     }
   }, [currentUser])
 
@@ -576,18 +629,18 @@ const Settings: React.FC = () => {
     try {
       setSavingSessionSettings(true)
       setSessionSettingsError(null)
-      
+
       // Validation finale avant envoi
       if (sessionSettings.token_expiration_minutes < 1 || sessionSettings.token_expiration_minutes > 10080) {
         setSessionSettingsError('Valeur invalide. La durée doit être entre 1 et 10080 minutes.')
         return
       }
-      
+
       await adminService.updateSessionSettings(sessionSettings.token_expiration_minutes)
       alert('✅ Paramètres de session sauvegardés avec succès !')
     } catch (error: any) {
       console.error('Erreur lors de la sauvegarde des paramètres de session:', error)
-      
+
       // Gestion d'erreur plus spécifique
       if (error.response?.status === 400) {
         setSessionSettingsError(error.response.data.detail || 'Données invalides')
@@ -600,6 +653,118 @@ const Settings: React.FC = () => {
       }
     } finally {
       setSavingSessionSettings(false)
+    }
+  }
+
+  // Fonctions pour les paramètres email
+  const handleEmailSettingsChange = (field: string, value: string) => {
+    setEmailSettingsError(null)
+    setEmailSettingsSuccess(null)
+
+    const newSettings = {
+      ...emailSettings,
+      [field]: value
+    }
+    setEmailSettings(newSettings)
+
+    // Vérifier si les paramètres ont changé
+    const changed =
+      newSettings.from_name !== originalEmailSettings.from_name ||
+      newSettings.from_address !== originalEmailSettings.from_address ||
+      (newSettings.default_recipient || '') !== originalEmailSettings.default_recipient
+
+    setEmailSettingsChanged(changed)
+  }
+
+  const handleSaveEmailSettings = async () => {
+    try {
+      setSavingEmailSettings(true)
+      setEmailSettingsError(null)
+      setEmailSettingsSuccess(null)
+
+      // Validation email format
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+      if (!emailSettings.from_address || !emailPattern.test(emailSettings.from_address)) {
+        setEmailSettingsError('L\'adresse email de l\'expéditeur est invalide')
+        return
+      }
+
+      if (emailSettings.default_recipient && !emailPattern.test(emailSettings.default_recipient)) {
+        setEmailSettingsError('L\'adresse email du destinataire est invalide')
+        return
+      }
+
+      if (!emailSettings.from_name || emailSettings.from_name.trim().length === 0) {
+        setEmailSettingsError('Le nom de l\'expéditeur ne peut pas être vide')
+        return
+      }
+
+      const updatedSettings = await adminService.updateEmailSettings({
+        from_name: emailSettings.from_name,
+        from_address: emailSettings.from_address,
+        default_recipient: emailSettings.default_recipient || undefined
+      })
+
+      setEmailSettings(updatedSettings)
+      setOriginalEmailSettings({
+        from_name: updatedSettings.from_name,
+        from_address: updatedSettings.from_address,
+        default_recipient: updatedSettings.default_recipient || ''
+      })
+      setEmailSettingsChanged(false)
+      setEmailSettingsSuccess('✅ Paramètres email sauvegardés avec succès !')
+
+      // Effacer le message de succès après 5 secondes
+      setTimeout(() => setEmailSettingsSuccess(null), 5000)
+    } catch (error: any) {
+      console.error('Erreur lors de la sauvegarde des paramètres email:', error)
+
+      if (error.response?.status === 400) {
+        setEmailSettingsError(error.response.data.detail || 'Données invalides')
+      } else if (error.response?.status === 403) {
+        setEmailSettingsError('Accès refusé. Seuls les Super-Administrateurs peuvent modifier ces paramètres.')
+      } else if (error.response?.status === 401) {
+        setEmailSettingsError('Session expirée. Veuillez vous reconnecter.')
+      } else {
+        setEmailSettingsError('Erreur lors de la sauvegarde des paramètres email')
+      }
+    } finally {
+      setSavingEmailSettings(false)
+    }
+  }
+
+  const handleSendTestEmail = async () => {
+    try {
+      setSendingTestEmail(true)
+      setTestEmailError(null)
+      setTestEmailSuccess(null)
+
+      // Validation
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!testEmailAddress || !emailPattern.test(testEmailAddress)) {
+        setTestEmailError('Veuillez saisir une adresse email valide')
+        return
+      }
+
+      const result = await adminService.sendTestEmail(testEmailAddress)
+
+      setTestEmailSuccess(`✅ ${result.message}`)
+
+      // Effacer le message de succès après 10 secondes
+      setTimeout(() => setTestEmailSuccess(null), 10000)
+    } catch (error: any) {
+      console.error('Erreur lors de l\'envoi de l\'email de test:', error)
+
+      if (error.response?.status === 400) {
+        setTestEmailError(error.response.data.detail || 'Configuration email invalide')
+      } else if (error.response?.status === 500) {
+        setTestEmailError('Erreur lors de l\'envoi de l\'email. Vérifiez la configuration Brevo.')
+      } else {
+        setTestEmailError('Erreur lors de l\'envoi de l\'email de test')
+      }
+    } finally {
+      setSendingTestEmail(false)
     }
   }
 
@@ -770,6 +935,234 @@ const Settings: React.FC = () => {
                 </InfoBox>
               </div>
             )}
+          </ActionCard>
+        </ActionGroup>
+      </Section>
+
+      {/* Section Email (Brevo) */}
+      <Section>
+        <SectionHeader>
+          <SectionTitle>
+            📧 Configuration Email (Brevo)
+          </SectionTitle>
+          <SectionDescription>
+            Paramètres d'envoi d'emails pour les notifications système (rapports de caisse, réinitialisation de mot de passe, etc.)
+          </SectionDescription>
+        </SectionHeader>
+
+        <ActionGroup>
+          <ActionCard>
+            <ActionHeader>
+              <ActionInfo>
+                <ActionTitle>Paramètres d'expédition</ActionTitle>
+                <ActionDescription>
+                  Configurez l'identité de l'expéditeur pour tous les emails envoyés par le système.
+                </ActionDescription>
+              </ActionInfo>
+              {/* Badge de statut */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {emailSettings.has_api_key ? (
+                  <div style={{
+                    backgroundColor: '#dcfce7',
+                    color: '#166534',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}>
+                    ✅ API configurée
+                  </div>
+                ) : (
+                  <div style={{
+                    backgroundColor: '#fee2e2',
+                    color: '#991b1b',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}>
+                    ⚠️ API manquante
+                  </div>
+                )}
+              </div>
+            </ActionHeader>
+
+            {!emailSettings.has_api_key && (
+              <WarningBox style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca', color: '#991b1b', marginBottom: '16px' }}>
+                <strong>⚠️ Configuration incomplète :</strong> La clé API Brevo n'est pas configurée.
+                Pour activer l'envoi d'emails, définissez les variables d'environnement suivantes dans le fichier <code>.env</code> :
+                <ul style={{ marginTop: '8px', marginBottom: '0' }}>
+                  <li><code>BREVO_API_KEY</code> - Clé API Brevo (obligatoire)</li>
+                  <li><code>BREVO_WEBHOOK_SECRET</code> - Secret webhook (optionnel)</li>
+                </ul>
+                Consultez le guide de configuration Brevo pour plus d'informations.
+              </WarningBox>
+            )}
+
+            {loadingEmailSettings ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                ⏳ Chargement des paramètres email...
+              </div>
+            ) : (
+              <div>
+                <FormGroup>
+                  <Label htmlFor="email-from-name">
+                    Nom de l'expéditeur <span style={{ color: '#dc2626' }}>*</span>
+                  </Label>
+                  <Input
+                    id="email-from-name"
+                    type="text"
+                    value={emailSettings.from_name}
+                    onChange={(e) => handleEmailSettingsChange('from_name', e.target.value)}
+                    disabled={savingEmailSettings}
+                    placeholder="Recyclic"
+                  />
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                    Le nom qui apparaîtra comme expéditeur des emails
+                  </div>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="email-from-address">
+                    Adresse email de l'expéditeur <span style={{ color: '#dc2626' }}>*</span>
+                  </Label>
+                  <Input
+                    id="email-from-address"
+                    type="email"
+                    value={emailSettings.from_address}
+                    onChange={(e) => handleEmailSettingsChange('from_address', e.target.value)}
+                    disabled={savingEmailSettings}
+                    placeholder="noreply@recyclic.fr"
+                  />
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                    Cette adresse doit être vérifiée dans Brevo
+                  </div>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="email-default-recipient">
+                    Email de test par défaut (optionnel)
+                  </Label>
+                  <Input
+                    id="email-default-recipient"
+                    type="email"
+                    value={emailSettings.default_recipient || ''}
+                    onChange={(e) => handleEmailSettingsChange('default_recipient', e.target.value)}
+                    disabled={savingEmailSettings}
+                    placeholder="admin@votreressourcerie.fr"
+                  />
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                    Adresse utilisée par défaut pour les tests d'envoi
+                  </div>
+                </FormGroup>
+
+                {emailSettingsError && (
+                  <ErrorMessage>
+                    ❌ {emailSettingsError}
+                  </ErrorMessage>
+                )}
+
+                {emailSettingsSuccess && (
+                  <SuccessMessage>
+                    {emailSettingsSuccess}
+                  </SuccessMessage>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                  <Button
+                    variant="primary"
+                    onClick={handleSaveEmailSettings}
+                    disabled={savingEmailSettings || !emailSettingsChanged}
+                  >
+                    {savingEmailSettings ? '⏳ Sauvegarde...' : '💾 Enregistrer'}
+                  </Button>
+                  {emailSettingsChanged && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setEmailSettings({
+                          ...emailSettings,
+                          from_name: originalEmailSettings.from_name,
+                          from_address: originalEmailSettings.from_address,
+                          default_recipient: originalEmailSettings.default_recipient
+                        })
+                        setEmailSettingsChanged(false)
+                        setEmailSettingsError(null)
+                        setEmailSettingsSuccess(null)
+                      }}
+                      disabled={savingEmailSettings}
+                    >
+                      ↩️ Annuler
+                    </Button>
+                  )}
+                </div>
+
+                <InfoBox style={{ marginTop: '16px' }}>
+                  <strong>ℹ️ Information :</strong> Les modifications n'affectent que les nouveaux emails envoyés.
+                  Les emails en cours de traitement utilisent les paramètres précédents.
+                </InfoBox>
+              </div>
+            )}
+          </ActionCard>
+
+          {/* Test d'envoi d'email */}
+          <ActionCard>
+            <ActionHeader>
+              <ActionInfo>
+                <ActionTitle>Test d'envoi d'email</ActionTitle>
+                <ActionDescription>
+                  Envoyez un email de test pour vérifier que la configuration Brevo fonctionne correctement.
+                </ActionDescription>
+              </ActionInfo>
+            </ActionHeader>
+
+            <div>
+              <FormGroup>
+                <Label htmlFor="test-email-address">
+                  Adresse email destinataire
+                </Label>
+                <Input
+                  id="test-email-address"
+                  type="email"
+                  value={testEmailAddress}
+                  onChange={(e) => {
+                    setTestEmailAddress(e.target.value)
+                    setTestEmailError(null)
+                    setTestEmailSuccess(null)
+                  }}
+                  disabled={sendingTestEmail || !emailSettings.has_api_key}
+                  placeholder="votre-email@example.com"
+                />
+              </FormGroup>
+
+              {testEmailError && (
+                <ErrorMessage>
+                  ❌ {testEmailError}
+                </ErrorMessage>
+              )}
+
+              {testEmailSuccess && (
+                <SuccessMessage>
+                  {testEmailSuccess}
+                </SuccessMessage>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                <Button
+                  variant="primary"
+                  onClick={handleSendTestEmail}
+                  disabled={sendingTestEmail || !emailSettings.has_api_key || !testEmailAddress}
+                >
+                  {sendingTestEmail ? '⏳ Envoi en cours...' : '📧 Envoyer un email de test'}
+                </Button>
+              </div>
+
+              {!emailSettings.has_api_key && (
+                <InfoBox style={{ marginTop: '16px', backgroundColor: '#fef3c7', borderColor: '#f59e0b' }}>
+                  <strong>⚠️ Test désactivé :</strong> Configurez d'abord la clé API Brevo pour activer l'envoi d'emails de test.
+                </InfoBox>
+              )}
+            </div>
           </ActionCard>
         </ActionGroup>
       </Section>

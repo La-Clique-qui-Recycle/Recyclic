@@ -35,3 +35,24 @@ class SessionSettingsResponse(BaseModel):
 class SessionSettingsUpdate(BaseModel):
     """Schema for updating session settings."""
     token_expiration_minutes: int
+
+
+class EmailSettingsResponse(BaseModel):
+    """Schema for email settings response."""
+    from_name: str
+    from_address: str
+    default_recipient: str | None = None
+    has_api_key: bool
+    webhook_secret_configured: bool
+
+
+class EmailSettingsUpdate(BaseModel):
+    """Schema for updating email settings."""
+    from_name: str | None = None
+    from_address: str | None = None
+    default_recipient: str | None = None
+
+
+class EmailTestRequest(BaseModel):
+    """Schema for email test request."""
+    to_email: str

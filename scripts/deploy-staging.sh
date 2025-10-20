@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Normaliser les fins de ligne si l'outil est présent (robustesse)
+command -v dos2unix >/dev/null 2>&1 && dos2unix "$0" >/dev/null 2>&1 || true
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-./scripts/prepare-build-meta.sh
+bash ./scripts/prepare-build-meta.sh
 
 echo "🚀 Déploiement staging avec docker-compose.staging.yml"
 

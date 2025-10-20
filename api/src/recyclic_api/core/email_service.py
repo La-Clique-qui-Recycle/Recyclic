@@ -60,28 +60,51 @@ class EmailAttachment:
     mime_type: str = 'application/octet-stream'
 
 
+class EmailServiceError(Exception):
+    """Base exception for email service errors."""
+    pass
+
+
+class EmailConfigurationError(EmailServiceError):
+    """Exception raised when email service is not properly configured."""
+    pass
+
+
 class EmailService:
     """Service for sending emails through Brevo API."""
 
-    def __init__(self):
-        """Initialize the email service with Brevo API configuration."""
-        # Validate configuration first
-        if not settings.BREVO_API_KEY:
+    def __init__(self, require_api_key: bool = True):
+        """
+        Initialize the email service with Brevo API configuration.
+
+        Args:
+            require_api_key: If True, raises ValueError if API key is not set.
+                            If False, allows initialization without API key (for config checking).
+        """
+        # Store API key status
+        self.has_api_key = bool(settings.BREVO_API_KEY)
+
+        # Validate configuration if required
+        if require_api_key and not self.has_api_key:
             raise ValueError("BREVO_API_KEY is required but not set in environment")
 
-        # Configure API client (real or patched in tests)
-        configuration = sib_api_v3_sdk.Configuration()
-        try:
-            # Some shims may not support dict-style api_key
-            if hasattr(configuration, 'api_key'):
-                configuration.api_key['api-key'] = settings.BREVO_API_KEY
-        except Exception:
-            pass
+        # Only configure API client if API key exists
+        if self.has_api_key:
+            # Configure API client (real or patched in tests)
+            configuration = sib_api_v3_sdk.Configuration()
+            try:
+                # Some shims may not support dict-style api_key
+                if hasattr(configuration, 'api_key'):
+                    configuration.api_key['api-key'] = settings.BREVO_API_KEY
+            except Exception:
+                pass
 
-        # Create API instance (will be patched to MagicMock in tests)
-        self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
-            sib_api_v3_sdk.ApiClient(configuration)
-        )
+            # Create API instance (will be patched to MagicMock in tests)
+            self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
+            )
+        else:
+            self.api_instance = None
 
     def send_email(
         self,
@@ -106,8 +129,19 @@ class EmailService:
 
         Returns:
             bool: True if email was sent successfully, False otherwise
+
+        Raises:
+            EmailConfigurationError: If Brevo API key is not configured
         """
         start_time = time.time()
+
+        # Check if API key is configured
+        if not self.has_api_key:
+            logger.error("Cannot send email: BREVO_API_KEY is not configured")
+            raise EmailConfigurationError(
+                "Le service email n'est pas configuré. "
+                "Veuillez configurer la variable d'environnement BREVO_API_KEY."
+            )
 
         try:
             # Default sender info from configuration
@@ -183,6 +217,9 @@ class EmailService:
             error_type = "api_exception"
             error_detail = str(e)
 
+            # Log the error with details
+            logger.error(f"Brevo API Exception when sending email to {to_email}: {error_detail}")
+
             # Record failure metrics
             email_metrics.record_email_send(
                 to_email=to_email,
@@ -199,6 +236,9 @@ class EmailService:
             elapsed_ms = (time.time() - start_time) * 1000
             error_type = "unexpected_error"
             error_detail = str(e)
+
+            # Log the error with details
+            logger.error(f"Unexpected error when sending email to {to_email}: {error_detail}", exc_info=True)
 
             # Record failure metrics
             email_metrics.record_email_send(

@@ -353,6 +353,7 @@ free -h
 - **Interface utilisateur** : http://localhost:4444
 - **Monitoring** : [URL du dashboard]
 - **Logs centralisés** : [URL des logs]
+- **Configuration du service email (Brevo)** : [docs/guides/brevo-account-setup.md](../guides/brevo-account-setup.md)
 
 ---
 
