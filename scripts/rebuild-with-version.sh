@@ -3,7 +3,14 @@
 
 echo "🔍 Récupération de la version depuis package.json..."
 export APP_VERSION=$(./scripts/get-version.sh)
+export COMMIT_SHA=$(git rev-parse --short HEAD)
+export BRANCH=$(git rev-parse --abbrev-ref HEAD)
+export COMMIT_DATE=$(git log -1 --format=%ci)
+export BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
 echo "📦 Version détectée: $APP_VERSION"
+echo "🔗 Commit SHA: $COMMIT_SHA"
+echo "🌿 Branche: $BRANCH"
 
 echo "🔨 Rebuild de l'API avec la version $APP_VERSION..."
 docker-compose build api
