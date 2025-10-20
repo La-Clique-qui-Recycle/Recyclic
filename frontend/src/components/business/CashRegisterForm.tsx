@@ -146,35 +146,53 @@ export default function CashRegisterForm({ register, onSuccess, onCancel }: Cash
     }
   }, [register]);
 
-  useEffect(() => {
-    const loadSites = async () => {
-      try {
-        const sitesData = await getSites();
-        setSites(sitesData);
-      } catch (err) {
-        console.error('Erreur lors du chargement des sites:', err);
+useEffect(() => {
+  const loadSites = async () => {
+    try {
+      const sitesData = await getSites();
+      setSites(sitesData);
+
+      if (!register?.id && sitesData.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          site_id: prev.site_id || sitesData[0].id,
+        }));
       }
-    };
-    loadSites();
-  }, []);
+    } catch (err) {
+      console.error('Erreur lors du chargement des sites:', err);
+      setError('Impossible de récupérer la liste des sites. Vérifiez la configuration.');
+    }
+  };
+  loadSites();
+}, [register?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    try {
-      if (register?.id) {
-        await updateCashRegister(register.id, formData);
-      } else {
-        await createCashRegister(formData);
-      }
-      onSuccess();
-    } catch (err: any) {
-      setError(err?.message || 'Une erreur est survenue');
-    } finally {
-      setLoading(false);
+  if (!formData.site_id) {
+    setLoading(false);
+    setError('Veuillez sélectionner un site pour ce poste de caisse.');
+    return;
+  }
+
+  try {
+    if (register?.id) {
+      await updateCashRegister(register.id, formData);
+    } else {
+      await createCashRegister(formData);
     }
+    onSuccess();
+  } catch (err: any) {
+    const message =
+      err?.response?.data?.detail ||
+      err?.message ||
+      'Une erreur est survenue lors de l’enregistrement.';
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

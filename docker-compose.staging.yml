@@ -38,7 +38,14 @@ services:
 
   api:
     container_name: recyclic-staging-api
-    build: ./api
+    build:
+      context: ./api
+      args:
+        APP_VERSION: ${APP_VERSION:-$(./scripts/get-version.sh)}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     image: recyclic-api:${API_IMAGE_TAG:-latest}
     # CRITICAL (B18-P0): --proxy-headers is mandatory for staging to prevent Mixed Content errors
     # This command ensures Uvicorn correctly handles X-Forwarded-* headers from Traefik
@@ -128,8 +135,13 @@ services:
     container_name: recyclic-staging-frontend
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL_STAGING:-/api}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     image: recyclic-frontend-staging:${FRONTEND_IMAGE_TAG:-latest}
     env_file:
       - .env.staging

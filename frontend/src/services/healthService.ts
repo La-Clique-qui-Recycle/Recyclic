@@ -67,7 +67,7 @@ class HealthService {
    */
   async getSystemHealth(): Promise<SystemHealth> {
     try {
-      const response = await api.get('/admin/health')
+      const response = await api.get('/v1/admin/health')
       return response.data
     } catch (error) {
       console.error('Erreur lors de la récupération des métriques de santé:', error)
@@ -80,7 +80,7 @@ class HealthService {
    */
   async getAnomalies(): Promise<AnomalySummary> {
     try {
-      const response = await api.get('/admin/health/anomalies')
+      const response = await api.get('/v1/admin/health/anomalies')
       return response.data
     } catch (error) {
       console.error('Erreur lors de la récupération des anomalies:', error)
@@ -93,7 +93,7 @@ class HealthService {
    */
   async getSchedulerStatus(): Promise<SchedulerStatus> {
     try {
-      const response = await api.get('/admin/health/scheduler')
+      const response = await api.get('/v1/admin/health/scheduler')
       return response.data.scheduler
     } catch (error) {
       console.error('Erreur lors de la récupération du statut du scheduler:', error)
@@ -106,7 +106,7 @@ class HealthService {
    */
   async sendTestNotification(): Promise<{ status: string; message: string }> {
     try {
-      const response = await api.post('/admin/health/test-notifications')
+      const response = await api.post('/v1/admin/health/test-notifications')
       return response.data
     } catch (error) {
       console.error('Erreur lors de l\'envoi de la notification de test:', error)

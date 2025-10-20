@@ -98,7 +98,8 @@ class AnomalyDetectionService:
             'summary': {
                 'total_anomalies': sum(len(v) for v in anomalies.values() if isinstance(v, list)),
                 'critical_anomalies': len([a for a in anomalies.values() if isinstance(a, list) and a])
-            }
+            },
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
         # Mettre en cache le résultat

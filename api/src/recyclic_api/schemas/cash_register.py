@@ -12,7 +12,14 @@ class CashRegisterBase(BaseModel):
 
     @field_validator('site_id', mode='before')
     @classmethod
-    def _uuid_to_str(cls, v):
+    def _validate_site_id(cls, v):
+        """Validate site_id: reject empty strings, convert UUID to str."""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:  # Empty string after stripping
+                raise ValueError("site_id ne peut pas être une chaîne vide")
         if hasattr(v, '__str__'):
             return str(v)
         return v
@@ -34,7 +41,14 @@ class CashRegisterUpdate(BaseModel):
 
     @field_validator("site_id", mode="before")
     @classmethod
-    def _uuid_to_str(cls, v):
+    def _validate_site_id(cls, v):
+        """Validate site_id: reject empty strings, convert UUID to str."""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:  # Empty string after stripping
+                raise ValueError("site_id ne peut pas être une chaîne vide")
         if hasattr(v, "__str__"):
             return str(v)
         return v

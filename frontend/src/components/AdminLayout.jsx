@@ -3,6 +3,7 @@ import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Recycle, Home, Calculator, Receipt, Users, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { getVersionDisplay } from '../services/buildInfo';
 
 const LayoutContainer = styled.div`
   display: flex;
@@ -30,16 +31,32 @@ const Nav = styled.nav`
 
 const Logo = styled.div`
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+`;
+
+const LogoMain = styled.div`
+  display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 1.5rem;
   font-weight: bold;
 `;
 
+const LogoVersion = styled.div`
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: monospace;
+  margin-left: 1.75rem;
+`;
+
 const NavLinks = styled.div`
   display: flex;
   gap: 2rem;
+  align-items: center;
 `;
+
 
 const NavLink = styled(Link)`
   display: flex;
@@ -78,11 +95,17 @@ const AdminLayout = () => {
   const currentUser = useAuthStore((s) => s.currentUser);
   const logout = useAuthStore((s) => s.logout);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [versionDisplay, setVersionDisplay] = useState('Version: 1.0.0');
 
   const onLogout = () => {
     logout();
     navigate('/login');
   };
+
+  // Charger les informations de version
+  useEffect(() => {
+    getVersionDisplay().then(setVersionDisplay);
+  }, []);
 
   // Fermer le menu quand on clique ailleurs
   useEffect(() => {
@@ -123,8 +146,13 @@ const AdminLayout = () => {
       <HeaderContainer>
         <Nav>
           <Logo>
-            <Recycle size={24} />
-            Recyclic
+            <LogoMain>
+              <Recycle size={24} />
+              Recyclic
+            </LogoMain>
+            <LogoVersion>
+              {versionDisplay}
+            </LogoVersion>
           </Logo>
           <NavLinks>
             {navItems.map(({ path, label, icon: Icon }) => (

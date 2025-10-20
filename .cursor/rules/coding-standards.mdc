@@ -54,19 +54,6 @@ description: Standards de codage et bonnes pratiques pour le projet Recyclic
 - **Strangler Fig Pattern** : Remplacement progressif du code legacy
 - **Feature Flags** : Protection pour les refactorings majeurs
 
-## Documentation Requirements
-
-### Code Documentation
-- **Docstrings** : Toutes les fonctions publiques
-- **Type Hints** : Obligatoires en Python
-- **JSDoc** : Fonctions complexes en JavaScript/TypeScript
-- **README** : Mise à jour pour chaque nouvelle fonctionnalité
-
-### Architecture Decisions
-- **ADR** : Documenter les décisions architecturales importantes
-- **Code Comments** : Expliquer le "pourquoi", pas le "quoi"
-- **API Documentation** : OpenAPI/Swagger maintenu à jour
-
 ## Code Review Guidelines
 
 ### Checklist Obligatoire

@@ -167,14 +167,20 @@ export const useCashSessionStore = create<CashSessionState>()(
               total_amount: items.reduce((sum, item) => sum + item.total, 0)
             };
 
-            // Étendre le payload pour inclure finalisation (don, paiement, espèces, monnaie)
+            // Map payment method from UI values to backend enum values
+            const paymentMethodMap: Record<string, string> = {
+              'cash': 'espèces',
+              'card': 'carte bancaire',
+              'check': 'chèque'
+            };
+
+            // Étendre le payload pour inclure finalisation (don, paiement)
+            // Note: cash_given et change sont des champs UI-only, pas stockés en DB
             const extendedPayload = {
               ...saleData,
               donation: finalization?.donation ?? 0,
-              payment_method: finalization?.paymentMethod ?? 'cash',
-              cash_given: finalization?.paymentMethod === 'cash' ? (finalization?.cashGiven ?? null) : null,
-              change: finalization?.paymentMethod === 'cash' ? (finalization?.change ?? null) : null,
-            } as any;
+              payment_method: paymentMethodMap[finalization?.paymentMethod ?? 'cash'] ?? 'espèces',
+            };
 
             console.log('[submitSale] Preparing sale:', saleData);
 

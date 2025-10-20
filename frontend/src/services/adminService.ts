@@ -264,7 +264,7 @@ export const adminService = {
    */
   async triggerResetPassword(userId: string): Promise<AdminResponse> {
     try {
-      const response = await axiosClient.post(`/admin/users/${userId}/reset-password`);
+      const response = await axiosClient.post(`/v1/admin/users/${userId}/reset-password`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors du déclenchement de la réinitialisation du mot de passe:', error);

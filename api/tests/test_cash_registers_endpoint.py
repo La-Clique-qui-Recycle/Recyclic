@@ -237,5 +237,116 @@ class TestCashRegistersEndpoint:
         """Test de récupération d'un poste de caisse inexistant."""
         fake_id = uuid4()
         response = admin_client.get(f"/api/v1/cash-registers/{fake_id}")
-        
+
         assert response.status_code == 404
+
+    def test_create_cash_register_with_empty_site_id_fails(self, admin_client: TestClient):
+        """Test que la création avec un site_id vide échoue avec 422."""
+        register_data = {
+            "name": "Test Register",
+            "location": "Test Location",
+            "site_id": "",  # Empty string should be rejected
+            "is_active": True
+        }
+
+        response = admin_client.post("/api/v1/cash-registers/", json=register_data)
+
+        assert response.status_code == 422
+        data = response.json()
+        assert "detail" in data
+
+    def test_create_cash_register_with_whitespace_site_id_fails(self, admin_client: TestClient):
+        """Test que la création avec un site_id contenant uniquement des espaces échoue."""
+        register_data = {
+            "name": "Test Register",
+            "location": "Test Location",
+            "site_id": "   ",  # Whitespace only should be rejected
+            "is_active": True
+        }
+
+        response = admin_client.post("/api/v1/cash-registers/", json=register_data)
+
+        assert response.status_code == 422
+
+    def test_delete_cash_register_with_sessions_fails_409(self, admin_client: TestClient, db_session: Session):
+        """Test que la suppression d'un poste avec des sessions échoue avec 409."""
+        from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+        from recyclic_api.core.security import hash_password
+
+        # Créer un site et un poste
+        site = Site(
+            id=uuid4(),
+            name="Site Test",
+            address="123 Rue Test",
+            is_active=True
+        )
+        register = CashRegister(
+            id=uuid4(),
+            name="Poste avec sessions",
+            location="Test",
+            site_id=site.id,
+            is_active=True
+        )
+
+        # Créer un opérateur
+        operator = User(
+            id=uuid4(),
+            username="operator@test.com",
+            hashed_password=hash_password("password"),
+            role=UserRole.USER,
+            is_active=True
+        )
+
+        db_session.add(site)
+        db_session.add(register)
+        db_session.add(operator)
+        db_session.commit()
+
+        # Créer une session de caisse liée au poste
+        session = CashSession(
+            id=uuid4(),
+            operator_id=operator.id,
+            register_id=register.id,  # FIXED: correct field name
+            initial_amount=100.0,
+            current_amount=100.0,
+            status=CashSessionStatus.OPEN
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        # Tenter de supprimer le poste (devrait échouer avec 409)
+        response = admin_client.delete(f"/api/v1/cash-registers/{register.id}")
+
+        assert response.status_code == 409
+        data = response.json()
+        assert "detail" in data
+        assert "session" in data["detail"].lower()
+
+    def test_delete_site_with_cash_registers_fails_409(self, admin_client: TestClient, db_session: Session):
+        """Test que la suppression d'un site avec des postes de caisse échoue avec 409."""
+        # Créer un site et un poste
+        site = Site(
+            id=uuid4(),
+            name="Site avec postes",
+            address="123 Rue Test",
+            is_active=True
+        )
+        register = CashRegister(
+            id=uuid4(),
+            name="Poste de caisse",
+            location="Test",
+            site_id=site.id,
+            is_active=True
+        )
+
+        db_session.add(site)
+        db_session.add(register)
+        db_session.commit()
+
+        # Tenter de supprimer le site (devrait échouer avec 409)
+        response = admin_client.delete(f"/api/v1/sites/{site.id}")
+
+        assert response.status_code == 409
+        data = response.json()
+        assert "detail" in data
+        assert "poste" in data["detail"].lower()
