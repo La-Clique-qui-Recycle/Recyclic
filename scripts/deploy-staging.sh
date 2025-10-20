@@ -20,9 +20,11 @@ fi
 
 # Vérifier le support de --env-file (utiliser -- pour éviter l'option grep)
 if $COMPOSE_CMD --help 2>/dev/null | grep -q -- "--env-file"; then
-  # Arrêter la stack existante sans supprimer les volumes
-  $COMPOSE_CMD -f docker-compose.staging.yml --env-file .env.staging --env-file .build-meta.env down || true
-  exec $COMPOSE_CMD -f docker-compose.staging.yml --env-file .env.staging --env-file .build-meta.env up -d --build
+  # Arrêter la stack existante (projet explicite)
+  $COMPOSE_CMD -f docker-compose.staging.yml -p recyclic-staging --env-file .env.staging --env-file .build-meta.env down || true
+  # Nettoyage ciblé si des conteneurs résiduels existent encore
+  docker rm -f recyclic-staging-postgres recyclic-staging-redis 2>/dev/null || true
+  exec $COMPOSE_CMD -f docker-compose.staging.yml -p recyclic-staging --env-file .env.staging --env-file .build-meta.env up -d --build --remove-orphans
 else
   echo "❌ La commande '$COMPOSE_CMD' ne supporte pas --env-file. Merci d'installer docker compose v2 (recommandé)." >&2
   echo "   Commande alternative manuelle (si .env.staging renommé temporairement en .env) :" >&2

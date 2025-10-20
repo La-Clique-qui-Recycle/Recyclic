@@ -18,9 +18,10 @@ else
 fi
 
 if $COMPOSE_CMD --help 2>/dev/null | grep -q -- "--env-file"; then
-  # Arrêter la stack existante sans supprimer les volumes
-  $COMPOSE_CMD --env-file .env --env-file .build-meta.env down || true
-  exec $COMPOSE_CMD --env-file .env --env-file .build-meta.env up -d --build
+  # Arrêter la stack existante (projet explicite)
+  $COMPOSE_CMD -p recyclic-local --env-file .env --env-file .build-meta.env down || true
+  docker rm -f recyclic-local-postgres recyclic-local-redis 2>/dev/null || true
+  exec $COMPOSE_CMD -p recyclic-local --env-file .env --env-file .build-meta.env up -d --build --remove-orphans
 else
   echo "❌ La commande '$COMPOSE_CMD' ne supporte pas --env-file. Merci d'installer docker compose v2 (recommandé)." >&2
   echo "   Alternative: renommer temporairement .env et sourcer .build-meta.env avant up." >&2
