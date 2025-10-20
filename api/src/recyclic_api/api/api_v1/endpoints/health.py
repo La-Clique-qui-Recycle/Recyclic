@@ -4,6 +4,8 @@ from sqlalchemy import text
 from recyclic_api.core.database import get_db
 from recyclic_api.core.redis import get_redis
 import time
+import os
+import json
 
 router = APIRouter()
 
@@ -32,3 +34,19 @@ async def health_check(db: Session = Depends(get_db)):
             "error": str(e),
             "timestamp": time.time()
         }
+
+@router.get("/version")
+async def get_version():
+    """Version endpoint - returns build information"""
+    
+    # Lire la version depuis les variables d'environnement (passées via build args)
+    version = os.getenv("APP_VERSION", "1.0.0")
+    
+    return {
+        "version": version,
+        "commitSha": os.getenv("COMMIT_SHA", "unknown"),
+        "branch": os.getenv("BRANCH", "unknown"),
+        "commitDate": os.getenv("COMMIT_DATE", "unknown"),
+        "buildDate": os.getenv("BUILD_DATE", "unknown"),
+        "environment": os.getenv("ENVIRONMENT", "development")
+    }

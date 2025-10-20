@@ -30,7 +30,14 @@ services:
       - recyclic-network
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      args:
+        APP_VERSION: ${APP_VERSION:-$(./scripts/get-version.sh)}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     image: recyclic-api:${API_IMAGE_TAG:-latest}
     command: uvicorn recyclic_api.main:app --host 0.0.0.0 --port 8000 --reload
     environment:

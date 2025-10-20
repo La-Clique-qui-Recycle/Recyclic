@@ -16,6 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY generate_openapi.py .
 
+# La version sera passée via build args
+
 # Copy tests
 COPY tests/ ./tests/
 
@@ -30,8 +32,19 @@ COPY migrations/ ./migrations/
 # Copy pytest configuration
 COPY pytest.ini .
 
+# Build arguments for version information
+ARG APP_VERSION=1.0.0
+ARG COMMIT_SHA=unknown
+ARG BRANCH=unknown
+ARG COMMIT_DATE=unknown
+ARG BUILD_DATE=unknown
 
-
+# Set environment variables from build args
+ENV APP_VERSION=$APP_VERSION
+ENV COMMIT_SHA=$COMMIT_SHA
+ENV BRANCH=$BRANCH
+ENV COMMIT_DATE=$COMMIT_DATE
+ENV BUILD_DATE=$BUILD_DATE
 
 # Add src to Python path
 ENV PYTHONPATH=/app/src

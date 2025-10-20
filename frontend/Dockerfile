@@ -7,26 +7,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copier le reste du code source (inclut le script generate-build-info.sh)
+# Copier le reste du code source
 COPY . .
-
-# Installer git pour pouvoir exécuter les commandes git
-RUN apk add --no-cache git
 
 # Définir les arguments de build pour les variables d'environnement
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-# Arguments de build pour les informations Git
-ARG COMMIT_SHA=unknown
-ARG BRANCH=unknown
-ARG COMMIT_DATE=unknown
-
-# Générer build-info.json automatiquement avec le script
-RUN chmod +x scripts/generate-build-info.sh && COMMIT_SHA="$COMMIT_SHA" BRANCH="$BRANCH" COMMIT_DATE="$COMMIT_DATE" ./scripts/generate-build-info.sh
-
 # Construire l'application pour la production
-RUN echo "----> Building with API URL: $VITE_API_URL and Commit SHA: $VITE_APP_COMMIT_SHA" && npm run build
+RUN echo "----> Building with API URL: $VITE_API_URL" && npm run build
 
 # Étape 2: Servir l'application avec Nginx
 FROM nginx:stable-alpine

@@ -4,136 +4,218 @@
 
 Ce guide explique la solution **100% automatique** pour l'affichage de la version et du commit SHA dans l'interface d'administration de Recyclic.
 
-## Architecture
+## Architecture - Solution Endpoint /version
 
-L'affichage de version utilise un fichier `build-info.json` généré automatiquement qui contient :
-- Version de l'application (depuis `package.json`)
-- Commit SHA (court)
-- Branche Git
-- Date de commit
-- Date de build
+### Principe
+- **Backend** : Expose un endpoint `/v1/health/version` avec les informations de build
+- **Frontend** : Lit l'endpoint via proxy `/api/v1/health/version`
+- **Build-time** : Les informations sont injectées dans l'image backend via `--build-arg`
+- **Runtime** : Aucun fichier généré, aucune dépendance aux hooks Git
 
-## Solution Automatique Complète
+### Avantages
+✅ **Automatique** : Fonctionne en local, staging, production  
+✅ **Robuste** : Source unique de vérité (backend)  
+✅ **Standard** : Approche recommandée par l'industrie  
+✅ **Sans fichiers** : Aucun fichier généré à committer  
+✅ **Sans hooks** : Pas de dépendance aux hooks Git locaux  
+✅ **Sans .env** : Pas de modification des fichiers d'environnement  
 
-### 🏠 **Local (Développement) - 100% Automatique**
+## Implémentation
 
-**Aucune commande manuelle nécessaire !**
+### 1. Backend - Endpoint /version
 
-1. **Hooks Git** : Mise à jour automatique du `.env` à chaque action Git
-   - `post-commit` : Après chaque commit
-   - `post-checkout` : Après chaque changement de branche
-   - `post-merge` : Après chaque merge
+**Fichier** : `api/src/recyclic_api/api/api_v1/endpoints/health.py`
 
-2. **Workflow** : 
-   ```bash
-   git commit -m "message"  # Le hook met à jour .env automatiquement
-   docker-compose up -d frontend  # C'est tout !
-   ```
+```python
+@router.get("/version")
+async def get_version():
+    """Version endpoint - returns build information"""
+    return {
+        "version": os.getenv("APP_VERSION", "1.0.0"),
+        "commitSha": os.getenv("COMMIT_SHA", "unknown"),
+        "branch": os.getenv("BRANCH", "unknown"),
+        "commitDate": os.getenv("COMMIT_DATE", "unknown"),
+        "buildDate": os.getenv("BUILD_DATE", "unknown"),
+        "environment": os.getenv("ENVIRONMENT", "development")
+    }
+```
 
-### 🌐 **VPS Staging - Une Commande**
+### 2. Backend - Dockerfile avec Build Args
+
+**Fichier** : `api/Dockerfile`
+
+```dockerfile
+# Build arguments for version information
+ARG APP_VERSION=1.0.0
+ARG COMMIT_SHA=unknown
+ARG BRANCH=unknown
+ARG COMMIT_DATE=unknown
+ARG BUILD_DATE=unknown
+
+# Set environment variables from build args
+ENV APP_VERSION=$APP_VERSION
+ENV COMMIT_SHA=$COMMIT_SHA
+ENV BRANCH=$BRANCH
+ENV COMMIT_DATE=$COMMIT_DATE
+ENV BUILD_DATE=$BUILD_DATE
+```
+
+### 3. Docker Compose - Build Args
+
+**Fichiers** : `docker-compose.yml`, `docker-compose.staging.yml`, `docker-compose.prod.yml`
+
+```yaml
+api:
+  build:
+    context: ./api
+    args:
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      COMMIT_SHA: ${COMMIT_SHA:-unknown}
+      BRANCH: ${BRANCH:-unknown}
+      COMMIT_DATE: ${COMMIT_DATE:-unknown}
+      BUILD_DATE: ${BUILD_DATE:-unknown}
+```
+
+### 4. Frontend - Service buildInfo.js
+
+**Fichier** : `frontend/src/services/buildInfo.js`
+
+```javascript
+export const getBuildInfo = async () => {
+  try {
+    // Essayer d'abord l'endpoint /version de l'API
+    const response = await fetch('/api/v1/health/version');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    // Fallback vers build-info.json si l'API n'est pas disponible
+    // Fallback vers variables d'environnement en dernier recours
+  }
+};
+```
+
+## Utilisation
+
+### Local (Développement)
+
+```bash
+# Générer les variables de build
+export COMMIT_SHA=$(git rev-parse --short HEAD)
+export BRANCH=$(git rev-parse --abbrev-ref HEAD)
+export COMMIT_DATE=$(git log -1 --format=%ci)
+export BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Builder et démarrer
+docker-compose build api
+docker-compose up -d
+```
+
+### Staging VPS
 
 ```bash
 # Sur le VPS staging
-./scripts/deploy-staging.sh
+export COMMIT_SHA=$(git rev-parse --short HEAD)
+export BRANCH=$(git rev-parse --abbrev-ref HEAD)
+export COMMIT_DATE=$(git log -1 --format=%ci)
+export BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+docker-compose -f docker-compose.staging.yml build api
+docker-compose -f docker-compose.staging.yml up -d
 ```
 
-**Ce script fait tout automatiquement :**
-- Récupère les dernières modifications Git
-- Génère les variables COMMIT_*
-- Build et déploie le frontend
-- Vérifie le déploiement
-
-### 🚀 **VPS Production - Une Commande**
+### Production VPS
 
 ```bash
 # Sur le VPS production
-./scripts/deploy-prod.sh
+export COMMIT_SHA=$(git rev-parse --short HEAD)
+export BRANCH=$(git rev-parse --abbrev-ref HEAD)
+export COMMIT_DATE=$(git log -1 --format=%ci)
+export BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+docker-compose -f docker-compose.prod.yml build api
+docker-compose -f docker-compose.prod.yml up -d
 ```
-
-**Ce script fait tout automatiquement :**
-- Récupère les dernières modifications Git
-- Génère les variables COMMIT_*
-- Build et déploie le frontend
-- Vérifie le déploiement
-
-## Fichiers Impliqués
-
-### Scripts de Déploiement
-- `scripts/deploy-staging.sh` : Déploiement staging VPS
-- `scripts/deploy-prod.sh` : Déploiement production VPS
-- `scripts/generate-build-args.sh` : Génération des variables Git
-
-### Hooks Git (Local)
-- `.git/hooks/post-commit` : Mise à jour .env après commit
-- `.git/hooks/post-checkout` : Mise à jour .env après checkout
-- `.git/hooks/post-merge` : Mise à jour .env après merge
-
-### Configuration Docker
-- `frontend/scripts/generate-build-info.sh` : Génération du JSON dans l'image
-- `frontend/Dockerfile.dev` : Dockerfile de développement
-- `frontend/Dockerfile` : Dockerfile de production
-- `docker-compose.yml` : Configuration locale
-- `docker-compose.staging.yml` : Configuration staging
-- `docker-compose.prod.yml` : Configuration production
 
 ## Vérification
 
-### Local
-```bash
-# Vérifier que .env contient les bonnes valeurs
-grep -E '^(COMMIT_SHA|BRANCH)=' .env
+### Tester l'endpoint
 
-# Tester l'API
-curl -s http://localhost:4444/build-info.json | jq .
+```bash
+# Local
+curl http://localhost:8000/v1/health/version
+
+# Via frontend (proxy)
+curl http://localhost:4444/api/v1/health/version
 ```
 
-### VPS
-```bash
-# Les scripts affichent automatiquement les informations
-./scripts/deploy-staging.sh
-./scripts/deploy-prod.sh
+### Résultat attendu
+
+```json
+{
+  "version": "1.0.0",
+  "commitSha": "8f0ef93b",
+  "branch": "release/v1.0.1-stable-fixes",
+  "commitDate": "2025-10-20 02:35:28 +0200",
+  "buildDate": "2025-10-20T00:55:09Z",
+  "environment": "development"
+}
 ```
 
-## Avantages de cette Solution
+### Interface Admin
 
-✅ **Local** : 0 commande manuelle - tout est automatique via les hooks Git  
-✅ **Staging** : 1 commande - `./scripts/deploy-staging.sh`  
-✅ **Production** : 1 commande - `./scripts/deploy-prod.sh`  
-✅ **Cohérence** : Même version/commit partout  
-✅ **Sécurité** : Ne touche jamais aux fichiers `.env.staging`/`.env.production`  
-✅ **Simplicité** : Impossible d'oublier - c'est automatique  
+L'interface d'administration affiche maintenant :
+- **Version: 1.0.0 (8f0ef93b)** - avec commit SHA
+- **Version: 1.0.0** - sans commit SHA si non disponible
 
 ## Dépannage
 
-### Problème : Version "unknown"
-- Vérifier que les scripts sont exécutables : `chmod +x scripts/*.sh`
-- Vérifier que les hooks Git sont exécutables : `chmod +x .git/hooks/*`
-- Vérifier que Git est accessible dans le contexte Docker
+### L'endpoint ne répond pas
+1. Vérifier que l'API est démarrée : `docker-compose ps`
+2. Vérifier les logs : `docker-compose logs api`
+3. Tester directement : `curl http://localhost:8000/v1/health/version`
 
-### Problème : Hooks ne s'exécutent pas
-- Vérifier les permissions : `ls -la .git/hooks/`
-- Tester manuellement : `./.git/hooks/post-commit`
+### Le frontend ne peut pas accéder à l'API
+1. Vérifier le proxy Vite dans `vite.config.js`
+2. Vérifier que les conteneurs sont sur le même réseau Docker
+3. Tester via le proxy : `curl http://localhost:4444/api/v1/health/version`
 
-## Cheat Sheet Final
+### Les variables sont "unknown"
+1. Vérifier que les build args sont passés dans docker-compose
+2. Vérifier que les variables sont exportées avant le build
+3. Rebuilder l'image : `docker-compose build --no-cache api`
 
-### 🏠 Local (Développement)
-```bash
-# Workflow normal - tout est automatique
-git add .
-git commit -m "message"  # Hook met à jour .env
-docker-compose up -d frontend  # C'est tout !
-```
+## Avantages de cette Solution
 
-### 🌐 Staging VPS
-```bash
-# Une seule commande
-./scripts/deploy-staging.sh
-```
+### ✅ **Standards de l'Industrie**
+- Endpoint `/version` standard pour les APIs
+- Build-time injection des métadonnées
+- Source unique de vérité (backend)
 
-### 🚀 Production VPS
-```bash
-# Une seule commande
-./scripts/deploy-prod.sh
-```
+### ✅ **Simplicité**
+- Aucun fichier généré à committer
+- Aucun hook Git à maintenir
+- Aucune modification des `.env`
 
-**Résultat** : Version et commit SHA toujours à jour, partout, automatiquement ! 🎉
+### ✅ **Robustesse**
+- Fallback gracieux si l'API n'est pas disponible
+- Fonctionne en local, staging, production
+- Pas de dépendance aux outils Git locaux
+
+### ✅ **Maintenabilité**
+- Code centralisé dans le backend
+- Configuration simple dans Docker Compose
+- Facile à déboguer et tester
+
+## Comparaison avec les Anciennes Solutions
+
+| Aspect | Ancienne (build-info.json) | Nouvelle (endpoint /version) |
+|--------|----------------------------|------------------------------|
+| **Fichiers générés** | ❌ Oui (build-info.json) | ✅ Non |
+| **Hooks Git** | ❌ Requis | ✅ Non |
+| **Modification .env** | ❌ Oui | ✅ Non |
+| **Source unique** | ❌ Non | ✅ Oui (backend) |
+| **Standard industrie** | ❌ Non | ✅ Oui |
+| **Débogage** | ❌ Difficile | ✅ Facile |
+| **Portabilité** | ❌ Dépend des hooks | ✅ 100% portable |
+
+Cette solution respecte les meilleures pratiques de l'industrie et offre une expérience de développement optimale ! 🎉

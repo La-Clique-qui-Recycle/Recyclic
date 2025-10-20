@@ -7,19 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Installer Git pour les commandes git
-RUN apk add --no-cache git
-
-# Arguments de build pour les informations Git
-ARG COMMIT_SHA=unknown
-ARG BRANCH=unknown
-ARG COMMIT_DATE=unknown
-
 # Copier le reste du code source
 COPY . .
-
-# Générer build-info.json automatiquement avec le script
-RUN chmod +x scripts/generate-build-info.sh && COMMIT_SHA="$COMMIT_SHA" BRANCH="$BRANCH" COMMIT_DATE="$COMMIT_DATE" ./scripts/generate-build-info.sh
 
 # Exposer le port du serveur de développement Vite
 EXPOSE 5173

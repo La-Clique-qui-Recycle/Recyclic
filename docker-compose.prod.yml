@@ -38,7 +38,14 @@ services:
 
   api:
     container_name: recyclic-prod-api
-    build: ./api
+    build:
+      context: ./api
+      args:
+        APP_VERSION: ${APP_VERSION:-$(./scripts/get-version.sh)}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BRANCH: ${BRANCH:-unknown}
+        COMMIT_DATE: ${COMMIT_DATE:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     image: recyclic-api:${API_IMAGE_TAG:-latest}
     # CRITICAL (B18-P0): --proxy-headers is mandatory for production to prevent Mixed Content errors
     # This command ensures Uvicorn correctly handles X-Forwarded-* headers from Traefik
