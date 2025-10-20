@@ -18,6 +18,8 @@ else
 fi
 
 if $COMPOSE_CMD --help 2>/dev/null | grep -q -- "--env-file"; then
+  # Arrêter la stack existante sans supprimer les volumes
+  $COMPOSE_CMD -f docker-compose.prod.yml --env-file .env.production --env-file .build-meta.env down || true
   exec $COMPOSE_CMD -f docker-compose.prod.yml --env-file .env.production --env-file .build-meta.env up -d --build
 else
   echo "❌ La commande '$COMPOSE_CMD' ne supporte pas --env-file. Merci d'installer docker compose v2 (recommandé)." >&2
