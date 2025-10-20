@@ -1,156 +1,139 @@
-# Guide de Configuration de l'Affichage de Version
+# Guide de Configuration - Affichage de Version Automatique
 
 ## Vue d'ensemble
 
-Le système d'affichage de version de Recyclic utilise une approche **basée sur des build args** injectés au build (COMMIT_SHA, BRANCH, COMMIT_DATE, BUILD_DATE). Les Dockerfiles génèrent `frontend/public/build-info.json` sans dépendre de git dans l'image.
+Ce guide explique la solution **100% automatique** pour l'affichage de la version et du commit SHA dans l'interface d'administration de Recyclic.
 
 ## Architecture
 
-### Configuration par Environnement
+L'affichage de version utilise un fichier `build-info.json` généré automatiquement qui contient :
+- Version de l'application (depuis `package.json`)
+- Commit SHA (court)
+- Branche Git
+- Date de commit
+- Date de build
 
-- **Développement** : `docker-compose.yml` + `frontend/Dockerfile.dev`
-- **Staging** : `docker-compose.staging.yml` + `frontend/Dockerfile`
-- **Production** : `docker-compose.prod.yml` + `frontend/Dockerfile`
+## Solution Automatique Complète
 
-### Fichiers de Build Info
+### 🏠 **Local (Développement) - 100% Automatique**
 
-Le système génère automatiquement un fichier `build-info.json` dans le répertoire `frontend/public/` avec les informations suivantes :
+**Aucune commande manuelle nécessaire !**
 
-```json
-{
-  "version": "1.0.0",
-  "commitSha": "8c55cc47",
-  "commitDate": "2025-10-18 14:52:16 +0200",
-  "buildDate": "2025-10-19T16:23:58Z",
-  "branch": "main"
-}
+1. **Hooks Git** : Mise à jour automatique du `.env` à chaque action Git
+   - `post-commit` : Après chaque commit
+   - `post-checkout` : Après chaque changement de branche
+   - `post-merge` : Après chaque merge
+
+2. **Workflow** : 
+   ```bash
+   git commit -m "message"  # Le hook met à jour .env automatiquement
+   docker-compose up -d frontend  # C'est tout !
+   ```
+
+### 🌐 **VPS Staging - Une Commande**
+
+```bash
+# Sur le VPS staging
+./scripts/deploy-staging.sh
 ```
 
-## Implémentation
+**Ce script fait tout automatiquement :**
+- Récupère les dernières modifications Git
+- Génère les variables COMMIT_*
+- Build et déploie le frontend
+- Vérifie le déploiement
 
-### 1. Dockerfile Configuration
+### 🚀 **VPS Production - Une Commande**
 
-Les Dockerfiles acceptent des `ARG` et génèrent `build-info.json` via Node:
-
-```dockerfile
-# ARG passés par l'hôte/CI
-ARG COMMIT_SHA=unknown
-ARG BRANCH=unknown
-ARG COMMIT_DATE=unknown
-ARG BUILD_DATE=unknown
-
-# Génération sans git dans l'image
-RUN mkdir -p public \
-  && node -e "const fs=require('fs');const pkg=require('./package.json');const data={version:pkg.version,commitSha:process.env.COMMIT_SHA||'unknown',commitDate:process.env.COMMIT_DATE||'unknown',buildDate:process.env.BUILD_DATE||'unknown',branch:process.env.BRANCH||'unknown'};fs.writeFileSync('public/build-info.json',JSON.stringify(data,null,2)+'\\n')"
+```bash
+# Sur le VPS production
+./scripts/deploy-prod.sh
 ```
 
-### 2. Service Frontend
+**Ce script fait tout automatiquement :**
+- Récupère les dernières modifications Git
+- Génère les variables COMMIT_*
+- Build et déploie le frontend
+- Vérifie le déploiement
 
-Le service `frontend/src/services/buildInfo.js` charge les informations de build :
+## Fichiers Impliqués
 
-```javascript
-export const getBuildInfo = async () => {
-  // Charge build-info.json depuis /build-info.json
-  // Fallback vers les variables d'environnement si nécessaire
-};
+### Scripts de Déploiement
+- `scripts/deploy-staging.sh` : Déploiement staging VPS
+- `scripts/deploy-prod.sh` : Déploiement production VPS
+- `scripts/generate-build-args.sh` : Génération des variables Git
 
-export const getVersionDisplay = async () => {
-  // Retourne "Version: 1.0.0 (8c55cc47)" ou "Version: 1.0.0"
-};
+### Hooks Git (Local)
+- `.git/hooks/post-commit` : Mise à jour .env après commit
+- `.git/hooks/post-checkout` : Mise à jour .env après checkout
+- `.git/hooks/post-merge` : Mise à jour .env après merge
+
+### Configuration Docker
+- `frontend/scripts/generate-build-info.sh` : Génération du JSON dans l'image
+- `frontend/Dockerfile.dev` : Dockerfile de développement
+- `frontend/Dockerfile` : Dockerfile de production
+- `docker-compose.yml` : Configuration locale
+- `docker-compose.staging.yml` : Configuration staging
+- `docker-compose.prod.yml` : Configuration production
+
+## Vérification
+
+### Local
+```bash
+# Vérifier que .env contient les bonnes valeurs
+grep -E '^(COMMIT_SHA|BRANCH)=' .env
+
+# Tester l'API
+curl -s http://localhost:4444/build-info.json | jq .
 ```
 
-### 3. Composant AdminLayout
-
-Le composant `AdminLayout.jsx` utilise le service pour afficher la version :
-
-```javascript
-const [versionDisplay, setVersionDisplay] = useState('Version: 1.0.0');
-
-useEffect(() => {
-  getVersionDisplay().then(setVersionDisplay);
-}, []);
+### VPS
+```bash
+# Les scripts affichent automatiquement les informations
+./scripts/deploy-staging.sh
+./scripts/deploy-prod.sh
 ```
 
 ## Avantages de cette Solution
 
-### ✅ **Automatique**
-- Pas besoin de configuration manuelle
-- Se met à jour automatiquement à chaque build
-- Fonctionne dans tous les environnements
-
-### ✅ **Robuste**
-- Fallback vers les variables d'environnement si le fichier n'est pas disponible
-- Gestion d'erreur gracieuse
-- Pas de dépendance externe
-
-### ✅ **Performant**
-- Fichier statique servi directement par Vite
-- Cache côté client
-- Pas de requête API supplémentaire
-
-### ✅ **Maintenable**
-- Solution centralisée dans les Dockerfiles
-- Pas de scripts externes à maintenir
-- Compatible avec tous les environnements
-
-## Utilisation
-
-### Développement
-Attention: en dev, `docker-compose.yml` monte `./frontend/public:/app/public`. Cela fait foi côté conteneur.
-
-- Option A (auto via image): retirer ce volume pour que l’image serve son `build-info.json` généré par les ARG.
-- Option B (garder le volume): régénérer `frontend/public/build-info.json` côté host ou utiliser les build args.
-
-Cheat sheet (dev):
-```bash
-# 1) Exporter les build args côté host (dev/CI)
-source ./scripts/generate-build-args.sh
-
-# 2) Build + run frontend
-docker-compose build frontend
-docker-compose up -d frontend
-
-# (Si le volume public est conservé) Générer le fichier côté host
-./scripts/generate-build-info.sh
-docker-compose up -d frontend
-```
-
-### Staging/Production
-```bash
-# Exporter les build args (ou variables CI)
-source ./scripts/generate-build-args.sh
-
-# Build & run
-docker-compose -f docker-compose.staging.yml build frontend
-docker-compose -f docker-compose.staging.yml up -d frontend
-```
-
-## Affichage
-
-L'interface d'administration affiche maintenant :
-- **Version: 1.0.0 (8c55cc47)** - avec commit SHA
-- **Version: 1.0.0** - sans commit SHA si non disponible
+✅ **Local** : 0 commande manuelle - tout est automatique via les hooks Git  
+✅ **Staging** : 1 commande - `./scripts/deploy-staging.sh`  
+✅ **Production** : 1 commande - `./scripts/deploy-prod.sh`  
+✅ **Cohérence** : Même version/commit partout  
+✅ **Sécurité** : Ne touche jamais aux fichiers `.env.staging`/`.env.production`  
+✅ **Simplicité** : Impossible d'oublier - c'est automatique  
 
 ## Dépannage
 
-### Le commit SHA ne s'affiche pas
-1. En dev, vérifier le volume `./frontend/public:/app/public` (le fichier host fait foi)
-2. Vérifier que les build args (`COMMIT_SHA`, `BRANCH`, `COMMIT_DATE`, `BUILD_DATE`) sont bien exportés
-3. En cas de doute, régénérer côté host: `./scripts/generate-build-info.sh`
+### Problème : Version "unknown"
+- Vérifier que les scripts sont exécutables : `chmod +x scripts/*.sh`
+- Vérifier que les hooks Git sont exécutables : `chmod +x .git/hooks/*`
+- Vérifier que Git est accessible dans le contexte Docker
 
-### Le fichier build-info.json n'est pas accessible
-1. Vérifier que le fichier est dans `frontend/public/`
-2. Vérifier que Vite sert les fichiers statiques
-3. Vérifier les logs du conteneur frontend
+### Problème : Hooks ne s'exécutent pas
+- Vérifier les permissions : `ls -la .git/hooks/`
+- Tester manuellement : `./.git/hooks/post-commit`
 
-## État de l'art
+## Cheat Sheet Final
 
-Cette solution suit les **meilleures pratiques** de l'industrie :
+### 🏠 Local (Développement)
+```bash
+# Workflow normal - tout est automatique
+git add .
+git commit -m "message"  # Hook met à jour .env
+docker-compose up -d frontend  # C'est tout !
+```
 
-1. **Build-time injection** - Les informations sont injectées au moment du build
-2. **Fichiers statiques** - Utilisation de fichiers JSON statiques
-3. **Fallback gracieux** - Gestion d'erreur avec fallback
-4. **Multi-environnement** - Compatible avec dev/staging/prod
-5. **Performance** - Pas de requête API supplémentaire
+### 🌐 Staging VPS
+```bash
+# Une seule commande
+./scripts/deploy-staging.sh
+```
 
-Cette approche est utilisée par de nombreuses applications modernes et est recommandée pour les projets React/Vite.
+### 🚀 Production VPS
+```bash
+# Une seule commande
+./scripts/deploy-prod.sh
+```
+
+**Résultat** : Version et commit SHA toujours à jour, partout, automatiquement ! 🎉

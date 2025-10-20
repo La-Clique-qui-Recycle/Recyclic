@@ -195,7 +195,6 @@ services:
         COMMIT_SHA: ${COMMIT_SHA:-unknown}
         BRANCH: ${BRANCH:-unknown}
         COMMIT_DATE: ${COMMIT_DATE:-unknown}
-        BUILD_DATE: ${BUILD_DATE:-unknown}
     image: recyclic-frontend-dev:${FRONTEND_IMAGE_TAG:-latest}
     environment:
       DANGEROUSLY_DISABLE_HOST_CHECK: "true"
@@ -204,7 +203,7 @@ services:
     volumes:
       # Mount source code for hot-reloading
       - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
+      # Note: public volume supprimé pour éviter les conflits avec build-info.json
     depends_on:
       api:
         condition: service_healthy

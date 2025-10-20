@@ -1,35 +1,41 @@
 #!/bin/sh
 
-# Script pour générer les informations de build
-# Usage: ./scripts/generate-build-info.sh
+# Script de génération automatique des informations de build
+# Compatible avec Alpine Linux (sh)
 
-set -e
+echo "🔧 Génération des informations de build..."
 
-# Répertoire du projet
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_INFO_FILE="$PROJECT_DIR/frontend/public/build-info.json"
-
-# Récupérer les informations
-VERSION=$(node -p "require('$PROJECT_DIR/frontend/package.json').version")
-COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-COMMIT_DATE=$(git log -1 --format=%ci 2>/dev/null || echo "unknown")
-BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+# Vérifier que nous sommes dans le bon répertoire
+if [ ! -f "package.json" ]; then
+    echo "❌ Erreur: package.json non trouvé. Assurez-vous d'être dans le répertoire frontend/"
+    exit 1
+fi
 
 # Créer le répertoire public s'il n'existe pas
-mkdir -p "$(dirname "$BUILD_INFO_FILE")"
+mkdir -p public
 
-# Créer le fichier build-info.json
-cat > "$BUILD_INFO_FILE" << EOF
+# Extraire la version depuis package.json
+VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
+
+# Utiliser les variables d'environnement passées en argument de build
+COMMIT_SHA=${COMMIT_SHA:-"unknown"}
+BRANCH=${BRANCH:-"unknown"}
+COMMIT_DATE=${COMMIT_DATE:-"unknown"}
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Générer le fichier build-info.json
+cat > public/build-info.json << EOF
 {
-  "version": "$VERSION",
-  "commitSha": "$COMMIT_SHA",
-  "commitDate": "$COMMIT_DATE",
-  "buildDate": "$BUILD_DATE",
-  "branch": "$BRANCH"
+  "version": "${VERSION}",
+  "commitSha": "${COMMIT_SHA}",
+  "branch": "${BRANCH}",
+  "commitDate": "${COMMIT_DATE}",
+  "buildDate": "${BUILD_DATE}"
 }
 EOF
 
-echo "✅ Build info généré: $BUILD_INFO_FILE"
-echo "📋 Contenu:"
-cat "$BUILD_INFO_FILE"
+echo "✅ build-info.json généré avec succès:"
+echo "   Version: ${VERSION}"
+echo "   Commit: ${COMMIT_SHA}"
+echo "   Branche: ${BRANCH}"
+echo "   Date: ${BUILD_DATE}"
