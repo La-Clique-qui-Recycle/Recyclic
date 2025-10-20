@@ -8,6 +8,22 @@
 
 Ce guide décrit le processus manuel et délibéré pour créer une nouvelle version de l'application Recyclic. Le versioning suit le standard **Semantic Versioning** (`MAJEUR.MINEUR.PATCH`).
 
+## Architecture de Versioning
+
+L'application utilise une **architecture centralisée** pour l'affichage de la version :
+
+1. **Source unique** : `frontend/package.json` (version principale)
+2. **Endpoint API** : `/v1/health/version` (expose la version via l'API)
+3. **Frontend** : Consomme l'endpoint API pour afficher la version
+4. **Synchronisation** : Script `rebuild-with-version.sh` synchronise automatiquement
+
+### Avantages de cette Architecture
+
+- ✅ **Source unique de vérité** : La version est définie dans `package.json`
+- ✅ **Cohérence** : Même version affichée partout (local, staging, production)
+- ✅ **Automatique** : Pas de manipulation manuelle des fichiers
+- ✅ **Robuste** : Fallback en cas de problème avec l'API
+
 ## Principe du Versioning
 
 - **MAJEUR** : Changements incompatibles avec l'API ou l'interface
@@ -25,6 +41,21 @@ Avant de commencer, déterminez le type de changement :
 
 ### 2. Mettre à Jour package.json
 
+**Option A : Utiliser npm version (Recommandée)**
+```bash
+# Aller dans le répertoire frontend
+cd frontend
+
+# Incrémenter automatiquement la version
+npm version patch    # 1.1.0 → 1.1.1 (corrections de bugs)
+npm version minor    # 1.1.0 → 1.2.0 (nouvelles fonctionnalités)  
+npm version major    # 1.1.0 → 2.0.0 (changements majeurs)
+
+# Revenir au répertoire racine
+cd ..
+```
+
+**Option B : Modification manuelle**
 Modifiez le fichier `frontend/package.json` :
 
 ```json
@@ -36,7 +67,20 @@ Modifiez le fichier `frontend/package.json` :
 }
 ```
 
-### 3. Créer un Commit de Version
+### 3. Rebuilder l'API avec la Nouvelle Version
+
+```bash
+# Rebuilder l'API pour qu'elle utilise la nouvelle version
+./scripts/rebuild-with-version.sh
+```
+
+**Note :** Ce script automatise :
+- La récupération de la version depuis `package.json`
+- Le rebuild de l'image API avec la bonne version
+- Le redémarrage de l'API
+- Le test de l'endpoint `/version`
+
+### 4. Créer un Commit de Version
 
 ```bash
 # Ajouter les modifications
@@ -50,7 +94,7 @@ git commit -m "chore: bump version to 1.1.0
 - Améliorations: [lister les améliorations]"
 ```
 
-### 4. Créer un Tag Git
+### 5. Créer un Tag Git
 
 ```bash
 # Créer un tag annoté avec le numéro de version
@@ -69,7 +113,7 @@ Améliorations:
 - [Amélioration 2]"
 ```
 
-### 5. Pousser le Commit et le Tag
+### 6. Pousser le Commit et le Tag
 
 ```bash
 # Pousser le commit
@@ -79,7 +123,7 @@ git push origin main
 git push origin v1.1.0
 ```
 
-### 6. Créer la Release sur GitHub
+### 7. Créer la Release sur GitHub
 
 1. Aller sur la page GitHub du projet
 2. Cliquer sur "Releases" dans la barre latérale
@@ -94,8 +138,16 @@ git push origin v1.1.0
 ### 1. Vérifier l'Affichage de Version
 
 Après déploiement, vérifier que la version s'affiche correctement :
+
+**Test de l'endpoint API :**
+```bash
+curl -s http://localhost:8000/v1/health/version
+# Doit retourner : {"version":"1.1.0","commitSha":"...",...}
+```
+
+**Test de l'interface :**
 - Se connecter à l'interface d'administration
-- Vérifier que "v1.1.0" apparaît dans le header à côté du logo Recyclic
+- Vérifier que "Version: 1.1.0 (commit-sha)" apparaît dans le header
 
 ### 2. Tests de Régression
 
@@ -259,8 +311,9 @@ git push origin v1.1.0
 
 ### Problème : Version non affichée
 1. Vérifier que `package.json` a été modifié
-2. Vérifier que le build frontend a été relancé
-3. Vérifier que la variable `VITE_APP_VERSION` est bien définie dans `vite.config.js`
+2. Exécuter `./scripts/rebuild-with-version.sh` pour rebuilder l'API
+3. Vérifier que l'endpoint `/api/v1/health/version` retourne la bonne version
+4. Vérifier que le frontend peut accéder à l'API (proxy Vite configuré)
 
 ## Historique des Versions
 
