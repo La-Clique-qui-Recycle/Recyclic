@@ -1,0 +1,5 @@
+# Gérer automatiquement les fins de ligne
+* text=auto
+
+# Forcer les fins de ligne Unix (LF) pour les scripts shell
+*.sh text eol=lf

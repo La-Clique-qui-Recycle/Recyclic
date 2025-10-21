@@ -18,8 +18,8 @@
 **/node_modules
 
 # Dossiers de build
-**/dist
-**/build
+dist/
+build/
 
 # Fichiers de log
 *.log
