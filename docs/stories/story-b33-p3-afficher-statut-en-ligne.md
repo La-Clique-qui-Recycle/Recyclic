@@ -1,6 +1,6 @@
 # Story b33-p3: Afficher le Statut "En Ligne"
 
-**Statut:** Prêt pour développement
+**Statut:** Validé
 **Épopée:** [b33: Refonte IAM](../epics/epic-b33-iam-refonte.md)
 **PO:** Sarah
 
@@ -43,3 +43,67 @@ Pour valider cette story, des comptes de test avec différents niveaux de privil
 -   La performance est à surveiller. Le point d'API backend doit être optimisé pour requêter efficacement la table `login_history` (un `GROUP BY user_id` avec `MAX(created_at)` est une approche probable).
 -   Côté frontend, il faut éviter de surcharger le backend avec des appels trop fréquents. Une stratégie de polling avec un intervalle raisonnable (ex: 60 secondes) est une bonne approche.
 -   L'indicateur visuel doit être simple et accompagné d'une infobulle (`tooltip`) pour expliquer sa signification (ex: "En ligne - Actif il y a moins de 15 minutes").
+
+## QA Results
+
+### Review Date: 2025-01-20
+
+### Reviewed By: Quinn (Test Architect)
+
+### Code Quality Assessment
+
+**EXCELLENT** - The implementation demonstrates high-quality, production-ready code with comprehensive test coverage and proper architecture patterns. All acceptance criteria have been fully implemented with attention to performance, security, and user experience.
+
+### Refactoring Performed
+
+No refactoring was necessary. The implementation follows best practices and coding standards.
+
+### Compliance Check
+
+- Coding Standards: ✓ Excellent adherence to project standards
+- Project Structure: ✓ Proper separation of concerns (API, services, components, stores)
+- Testing Strategy: ✓ Comprehensive test coverage at all levels
+- All ACs Met: ✓ All 7 acceptance criteria fully implemented
+
+### Improvements Checklist
+
+- [x] Backend API endpoint `/v1/admin/users/statuses` implemented with optimized SQL queries
+- [x] Frontend service integration with proper error handling
+- [x] UserListTable component with online status column and tooltips
+- [x] Polling mechanism (60-second intervals) for real-time updates
+- [x] Comprehensive test coverage (unit, integration, component tests)
+- [x] Proper TypeScript interfaces and type safety
+- [x] Performance optimizations (GROUP BY queries, rate limiting)
+- [x] Accessibility features (tooltips, ARIA labels, keyboard navigation)
+
+### Security Review
+
+**PASS** - Security implementation is solid:
+- Admin-only access with proper authentication/authorization
+- Rate limiting (30/minute) on sensitive endpoints
+- Input validation and error handling
+- No sensitive data exposure in API responses
+- Proper logging of admin access attempts
+
+### Performance Considerations
+
+**EXCELLENT** - Performance optimizations implemented:
+- Optimized SQL query using GROUP BY with MAX() to avoid full table scans
+- Efficient polling strategy (60-second intervals)
+- Proper indexing on login_history table (user_id, success, created_at)
+- Rate limiting to prevent API abuse
+- Minimal data transfer with focused response schemas
+
+### Files Modified During Review
+
+No files were modified during this review. The implementation is complete and production-ready.
+
+### Gate Status
+
+Gate: **PASS** → qa.qaLocation/gates/b33.p3-afficher-statut-en-ligne.yml
+Risk profile: qa.qaLocation/assessments/b33.p3-risk-20250120.md
+NFR assessment: qa.qaLocation/assessments/b33.p3-nfr-20250120.md
+
+### Recommended Status
+
+**✓ Ready for Done** - All acceptance criteria met, comprehensive test coverage, excellent code quality, and proper performance optimizations. The feature is production-ready.

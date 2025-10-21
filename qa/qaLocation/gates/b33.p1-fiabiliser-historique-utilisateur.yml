@@ -1,0 +1,12 @@
+schema: 1
+story: 'b33.p1'
+gate: PASS
+status_reason: 'Critères d’acceptation satisfaits et tests OK.'
+reviewer: 'Quinn'
+updated: '2025-10-20T19:00:00Z'
+top_issues: []
+waiver: { active: false }
+
+
+
+

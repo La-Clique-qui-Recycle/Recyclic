@@ -20,3 +20,5 @@ from .settings import router as settings_router
 from .db_export import router as db_export_router
 from .db_purge import router as db_purge_router
 from .db_import import router as db_import_router
+from .groups import router as groups_router
+from .permissions import router as permissions_router

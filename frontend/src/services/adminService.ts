@@ -5,13 +5,24 @@ import {
   UserStatus,
   UserStatusUpdate,
   UserUpdate,
-  AdminUser,
+  AdminUser as GeneratedAdminUser,
   AdminResponse,
   PendingUserResponse,
+  UserHistoryResponse,
+  ActivityEvent,
   UsersApi,
   AdminApi
 } from '../generated';
 import axiosClient from '../api/axiosClient';
+
+// Types locaux pour l'historique
+export interface HistoryEvent {
+  id: string;
+  type: 'ADMINISTRATION' | 'VENTE' | 'DÉPÔT' | 'CONNEXION' | 'AUTRE';
+  description: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
 
 // Types locaux pour contourner les problèmes d'export
 export interface UserRoleUpdate {
@@ -23,6 +34,12 @@ export interface UserCreate {
   username?: string;
   first_name?: string;
   last_name?: string;
+  email?: string;
+  phone_number?: string;
+  address?: string;
+  notes?: string;
+  skills?: string;
+  availability?: string;
   role?: UserRole;
   status?: UserStatus;
   is_active?: boolean;
@@ -41,6 +58,16 @@ export interface UsersFilter {
 export { UserRole, UserStatus };
 export type { UserStatusUpdate, UserUpdate };
 
+// UI-facing AdminUser type extended with new optional profile fields
+export type AdminUser = GeneratedAdminUser & {
+  email?: string | null;
+  phone_number?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  skills?: string | null;
+  availability?: string | null;
+};
+
 // Helper pour convertir UserResponse en AdminUser
 function convertToAdminUser(user: UserResponse): AdminUser {
   return {
@@ -52,7 +79,12 @@ function convertToAdminUser(user: UserResponse): AdminUser {
     full_name: user.first_name && user.last_name
       ? `${user.first_name} ${user.last_name}`
       : user.username || `User ${user.telegram_id}`,
-    email: undefined, // Pas encore implémenté dans l'API
+    email: (user as any).email ?? null,
+    phone_number: (user as any).phone_number ?? null,
+    address: (user as any).address ?? null,
+    notes: (user as any).notes ?? null,
+    skills: (user as any).skills ?? null,
+    availability: (user as any).availability ?? null,
     role: user.role as UserRole,
     status: user.status as UserStatus,
     is_active: user.is_active ?? false,
@@ -149,7 +181,7 @@ export const adminService = {
   async createUser(userData: UserCreate): Promise<AdminUser> {
     try {
       // Utiliser l'API générée pour créer un utilisateur
-      const newUser = await UsersApi.userapiv1userspost(userData);
+      const newUser = await UsersApi.userapiv1userspost(userData as any);
 
       // Convertir UserResponse en AdminUser
       const adminUser = convertToAdminUser(newUser);
@@ -164,10 +196,10 @@ export const adminService = {
   /**
    * Met à jour un utilisateur
    */
-  async updateUser(userId: string, userData: UserUpdate): Promise<AdminResponse> {
+  async updateUser(userId: string, userData: UserUpdate & Partial<Pick<UserCreate, 'email'|'phone_number'|'address'|'notes'|'skills'|'availability'>>): Promise<AdminResponse> {
     try {
       // Utiliser l'API générée
-      const updatedUser = await UsersApi.userapiv1usersuseridput(userId, userData);
+      const updatedUser = await UsersApi.userapiv1usersuseridput(userId, userData as any);
 
       // Convertir en AdminUser
       const adminUser = convertToAdminUser(updatedUser);
@@ -275,74 +307,77 @@ export const adminService = {
   /**
    * Récupère l'historique d'un utilisateur avec filtres optionnels
    */
-  async getUserHistory(userId: string, filters: any = {}): Promise<any[]> {
+  async getUserHistory(userId: string, filters: any = {}): Promise<HistoryEvent[]> {
     try {
-      // Construire les paramètres de requête
+      // Construire les paramètres de requête pour l'API
       const params: any = {};
+      
+      // Convertir les dates au format ISO pour l'API
       if (filters.startDate) {
-        params.start_date = filters.startDate.toISOString().split('T')[0];
+        params.date_from = filters.startDate.toISOString();
       }
       if (filters.endDate) {
-        params.end_date = filters.endDate.toISOString().split('T')[0];
+        params.date_to = filters.endDate.toISOString();
       }
+      
+      // Convertir les types d'événements pour l'API
       if (filters.eventType && filters.eventType.length > 0) {
-        params.event_types = filters.eventType.join(',');
+        // Mapper les types frontend vers les types API
+        const typeMapping: Record<string, string> = {
+          'ADMINISTRATION': 'ADMINISTRATION',
+          'VENTE': 'VENTE',
+          'DÉPÔT': 'DEPOT',
+          'CONNEXION': 'LOGIN',
+          'AUTRE': 'AUTRE'
+        };
+        params.event_type = filters.eventType
+          .map((type: string) => typeMapping[type] || type)
+          .join(',');
       }
-      if (filters.search) {
-        params.search = filters.search;
+      
+      // Ajouter la pagination
+      if (filters.skip !== undefined) {
+        params.skip = filters.skip;
+      }
+      if (filters.limit !== undefined) {
+        params.limit = filters.limit;
       }
 
-      // Appel à l'API générée (si elle existe)
-      // Pour le moment, on simule des données d'historique
-      // TODO: Implémenter l'endpoint API réel pour l'historique utilisateur
       console.log(`Récupération de l'historique pour l'utilisateur ${userId} avec filtres:`, params);
 
-      // Simulation d'historique utilisateur (à remplacer par un appel API réel)
-      const mockHistory = [
-        {
-          id: `history-${userId}-1`,
-          type: 'CONNEXION' as const,
-          description: 'Connexion réussie à l\'application',
-          timestamp: new Date().toISOString(),
-          metadata: {
-            ip: '192.168.1.1',
-            userAgent: 'Mozilla/5.0...'
-          }
-        },
-        {
-          id: `history-${userId}-2`,
-          type: 'ADMINISTRATION' as const,
-          description: 'Modification du rôle utilisateur',
-          timestamp: new Date(Date.now() - 3600000).toISOString(), // 1h ago
-          metadata: {
-            oldRole: 'USER',
-            newRole: 'MANAGER',
-            adminId: 'admin-123'
-          }
-        }
-      ];
+      // Appel à l'API réelle
+      const response = await AdminApi.userhistoryapiv1adminusersuseridhistoryget(userId, params);
+      
+      // Convertir les données de l'API vers le format attendu par le frontend
+      const historyEvents = response.events.map((event: any) => ({
+        id: event.id,
+        type: adminService.mapEventTypeFromApi(event.event_type),
+        description: event.description,
+        timestamp: event.date,
+        metadata: event.metadata || {}
+      }));
 
-      // Filtrer les résultats côté client si nécessaire
-      let filteredHistory = mockHistory;
-
-      if (filters.eventType && filters.eventType.length > 0) {
-        filteredHistory = filteredHistory.filter(event =>
-          filters.eventType.includes(event.type)
-        );
-      }
-
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        filteredHistory = filteredHistory.filter(event =>
-          event.description.toLowerCase().includes(searchLower)
-        );
-      }
-
-      return filteredHistory;
+      return historyEvents;
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'historique utilisateur:', error);
       throw error;
     }
+  },
+
+  /**
+   * Mappe les types d'événements de l'API vers les types frontend
+   */
+  mapEventTypeFromApi(apiEventType: string): 'ADMINISTRATION' | 'VENTE' | 'DÉPÔT' | 'CONNEXION' | 'AUTRE' {
+    const typeMapping: Record<string, 'ADMINISTRATION' | 'VENTE' | 'DÉPÔT' | 'CONNEXION' | 'AUTRE'> = {
+      'ADMINISTRATION': 'ADMINISTRATION',
+      'VENTE': 'VENTE',
+      'DEPOT': 'DÉPÔT',
+      'LOGIN': 'CONNEXION',
+      'SESSION CAISSE': 'CONNEXION', // Les sessions de caisse sont considérées comme des connexions
+      'AUTRE': 'AUTRE'
+    };
+    
+    return typeMapping[apiEventType] || 'AUTRE';
   },
 
   /**
@@ -517,6 +552,59 @@ export const adminService = {
       return response.data;
     } catch (error) {
       console.error('Erreur lors de l\'envoi de l\'email de test:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Récupère les statuts en ligne/hors ligne de tous les utilisateurs
+   */
+  async getUserStatuses(): Promise<{
+    user_statuses: Array<{
+      user_id: string;
+      is_online: boolean;
+      last_login: string | null;
+      minutes_since_login: number | null;
+    }>;
+    total_count: number;
+    online_count: number;
+    offline_count: number;
+    timestamp: string;
+  }> {
+    try {
+      const response = await axiosClient.get('/v1/admin/users/statuses');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statuts des utilisateurs:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Force un nouveau mot de passe pour un utilisateur (Super Admin uniquement)
+   */
+  async forceUserPassword(userId: string, newPassword: string, reason?: string): Promise<AdminResponse> {
+    try {
+      const response = await axiosClient.post(`/v1/admin/users/${userId}/force-password`, {
+        new_password: newPassword,
+        reason: reason
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors du forçage du mot de passe:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Réinitialise le PIN d'un utilisateur
+   */
+  async resetUserPin(userId: string): Promise<{ message: string; user_id: string; username: string }> {
+    try {
+      const response = await axiosClient.post(`/admin/users/${userId}/reset-pin`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la réinitialisation du PIN:', error);
       throw error;
     }
   }

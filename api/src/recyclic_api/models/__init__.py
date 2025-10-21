@@ -18,6 +18,8 @@ from .ligne_depot import LigneDepot
 from .ligne_depot import Destination
 from .category import Category
 from .setting import Setting
+from .permission import Permission, Group, user_groups, group_permissions
+from .audit_log import AuditLog, AuditActionType
 
 __all__ = [
     "Base",
@@ -41,4 +43,10 @@ __all__ = [
     "LigneDepot",
     "Category",
     "Setting",
+    "Permission",
+    "Group",
+    "user_groups",
+    "group_permissions",
+    "AuditLog",
+    "AuditActionType",
 ]

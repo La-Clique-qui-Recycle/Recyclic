@@ -6,6 +6,7 @@ import {
   Button,
   Modal,
   TextInput,
+  Textarea,
   Select,
   Switch,
   Divider
@@ -15,6 +16,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { notifications } from '@mantine/notifications';
 import { AdminUser, adminService } from '../../services/adminService';
 import { UserRole, UserStatus } from '../../generated';
+import { useAuthStore } from '../../stores/authStore';
 
 interface UserProfileTabProps {
   user: AdminUser | null;
@@ -29,6 +31,12 @@ interface UserFormData {
   first_name?: string;
   last_name?: string;
   username?: string;
+  email?: string;
+  phone_number?: string;
+  address?: string;
+  notes?: string;
+  skills?: string;
+  availability?: string;
   password: string;
   role: UserRole;
   status: UserStatus;
@@ -40,6 +48,12 @@ const sanitizeUserForForm = (user: AdminUser | null): UserFormData => ({
   first_name: user?.first_name || '',
   last_name: user?.last_name || '',
   username: user?.username || '',
+  email: user?.email || '',
+  phone_number: user?.phone_number || '',
+  address: user?.address || '',
+  notes: user?.notes || '',
+  skills: user?.skills || '',
+  availability: user?.availability || '',
   password: '', // Pas de mot de passe par défaut pour la modification
   role: user?.role || UserRole.USER,
   status: user?.status || UserStatus.PENDING,
@@ -54,7 +68,9 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
   onClose
 }) => {
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [forcePasswordModalOpen, setForcePasswordModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const currentUser = useAuthStore((s) => s.currentUser);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch, control } = useForm<UserFormData>({
     defaultValues: sanitizeUserForForm(user)
@@ -144,6 +160,12 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           first_name: values.first_name,
           last_name: values.last_name,
           username: values.username,
+          email: values.email || undefined,
+          phone_number: values.phone_number || undefined,
+          address: values.address || undefined,
+          notes: values.notes || undefined,
+          skills: values.skills || undefined,
+          availability: values.availability || undefined,
           password: values.password,
           role: values.role,
           status: values.status,
@@ -169,6 +191,12 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           first_name: values.first_name,
           last_name: values.last_name,
           username: values.username,
+          email: values.email || undefined,
+          phone_number: values.phone_number || undefined,
+          address: values.address || undefined,
+          notes: values.notes || undefined,
+          skills: values.skills || undefined,
+          availability: values.availability || undefined,
           role: values.role,
           status: values.status,
         };
@@ -229,6 +257,49 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
       notifications.show({
         title: 'Erreur',
         message: 'Impossible d\'envoyer l\'e-mail de réinitialisation.',
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPin = async () => {
+    setLoading(true);
+    try {
+      await adminService.resetUserPin(user.id);
+      notifications.show({
+        title: 'Succès',
+        message: 'Le code PIN a été réinitialisé avec succès. L\'utilisateur devra en créer un nouveau.',
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la réinitialisation du PIN:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible de réinitialiser le code PIN.',
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForcePassword = async (newPassword: string, reason?: string) => {
+    setLoading(true);
+    try {
+      await adminService.forceUserPassword(user.id, newPassword, reason);
+      notifications.show({
+        title: 'Succès',
+        message: 'Mot de passe forcé avec succès',
+        color: 'green',
+      });
+      setForcePasswordModalOpen(false);
+    } catch (error) {
+      console.error('Erreur lors du forçage du mot de passe:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible de forcer le mot de passe.',
         color: 'red',
       });
     } finally {
@@ -303,6 +374,53 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   {user.telegram_id}
                 </Text>
               </Group>
+              <Group justify="space-between">
+                <Text size="sm">Email:</Text>
+                <Text size="sm" fw={500}>
+                  {user.email || 'Non renseigné'}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Téléphone:</Text>
+                <Text size="sm" fw={500}>
+                  {user.phone_number || 'Non renseigné'}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Adresse:</Text>
+                <Text size="sm" fw={500}>
+                  {user.address || 'Non renseigné'}
+                </Text>
+              </Group>
+            </Stack>
+          </div>
+
+          <Divider />
+
+          {/* Informations de profil étendues */}
+          <div>
+            <Text size="sm" fw={500} c="dimmed" mb="xs">
+              Informations de profil
+            </Text>
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm">Compétences:</Text>
+                <Text size="sm" fw={500}>
+                  {user.skills || 'Non renseigné'}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Disponibilité:</Text>
+                <Text size="sm" fw={500}>
+                  {user.availability || 'Non renseigné'}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm">Notes:</Text>
+                <Text size="sm" fw={500}>
+                  {user.notes || 'Non renseigné'}
+                </Text>
+              </Group>
             </Stack>
           </div>
 
@@ -358,6 +476,32 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
             >
               Modifier le profil
             </Button>
+            <Button
+              onClick={handleResetPassword}
+              variant="outline"
+              color="orange"
+              loading={loading}
+            >
+              Réinitialiser le mot de passe
+            </Button>
+            <Button
+              onClick={handleResetPin}
+              variant="outline"
+              color="blue"
+              loading={loading}
+            >
+              Réinitialiser le PIN
+            </Button>
+            {currentUser?.role === 'super-admin' && (
+              <Button
+                onClick={() => setForcePasswordModalOpen(true)}
+                variant="outline"
+                color="red"
+                loading={loading}
+              >
+                Forcer le mot de passe
+              </Button>
+            )}
           </Group>
         </>
       )}
@@ -415,6 +559,75 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
               value={watch('username') || ''}
               onChange={(e) => setValue('username', e.target.value, { shouldValidate: true })}
               error={errors.username?.message}
+            />
+
+            <TextInput
+              label="Email"
+              placeholder="Entrez l'email"
+              type="email"
+              {...register('email', {
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Format d\'email invalide' }
+              })}
+              value={watch('email') || ''}
+              onChange={(e) => setValue('email', e.target.value, { shouldValidate: true })}
+              error={errors.email?.message}
+            />
+
+            <TextInput
+              label="Téléphone"
+              placeholder="Entrez le numéro de téléphone"
+              {...register('phone_number')}
+              value={watch('phone_number') || ''}
+              onChange={(e) => setValue('phone_number', e.target.value, { shouldValidate: true })}
+              error={errors.phone_number?.message}
+            />
+
+            <Textarea
+              label="Adresse"
+              placeholder="Entrez l'adresse"
+              minRows={2}
+              maxRows={4}
+              autosize
+              {...register('address')}
+              value={watch('address') || ''}
+              onChange={(e) => setValue('address', e.target.value, { shouldValidate: true })}
+              error={errors.address?.message}
+            />
+
+            <Textarea
+              label="Compétences"
+              placeholder="Entrez les compétences (ex: Accueil public, Bricolage, Agencement, Manutention, Transport...)"
+              minRows={2}
+              maxRows={4}
+              autosize
+              {...register('skills')}
+              value={watch('skills') || ''}
+              onChange={(e) => setValue('skills', e.target.value, { shouldValidate: true })}
+              error={errors.skills?.message}
+            />
+
+            <Textarea
+              label="Disponibilité"
+              placeholder="Entrez la disponibilité (ex: Tous les vendredis, Le samedi matin, Mercredi après-midi...)"
+              minRows={2}
+              maxRows={4}
+              autosize
+              {...register('availability')}
+              value={watch('availability') || ''}
+              onChange={(e) => setValue('availability', e.target.value, { shouldValidate: true })}
+              error={errors.availability?.message}
+            />
+
+            <Textarea
+              label="Notes"
+              placeholder="Entrez des notes (observations, commentaires...)"
+              minRows={3}
+              maxRows={6}
+              autosize
+              {...register('notes')}
+              value={watch('notes') || ''}
+              onChange={(e) => setValue('notes', e.target.value, { shouldValidate: true })}
+              error={errors.notes?.message}
             />
 
             {isCreateMode && (
@@ -511,7 +724,143 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           </Stack>
         </form>
       </Modal>
+
+      {/* Modal de forçage de mot de passe (Super Admin uniquement) */}
+      <Modal
+        opened={forcePasswordModalOpen}
+        onClose={() => setForcePasswordModalOpen(false)}
+        title="Forcer le mot de passe"
+        size="md"
+      >
+        <ForcePasswordForm
+          onSubmit={handleForcePassword}
+          onCancel={() => setForcePasswordModalOpen(false)}
+          loading={loading}
+        />
+      </Modal>
     </Stack>
+  );
+};
+
+// Composant pour le formulaire de forçage de mot de passe
+interface ForcePasswordFormProps {
+  onSubmit: (newPassword: string, reason?: string) => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+const ForcePasswordForm: React.FC<ForcePasswordFormProps> = ({
+  onSubmit,
+  onCancel,
+  loading
+}) => {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [reason, setReason] = useState('');
+  const [validationError, setValidationError] = useState('');
+
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+
+    if (password.length < 8) {
+      errors.push('Le mot de passe doit contenir au moins 8 caractères');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Le mot de passe doit contenir au moins une majuscule');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Le mot de passe doit contenir au moins une minuscule');
+    }
+    if (!/\d/.test(password)) {
+      errors.push('Le mot de passe doit contenir au moins un chiffre');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push('Le mot de passe doit contenir au moins un caractère spécial');
+    }
+
+    return errors;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError('');
+
+    if (newPassword !== confirmPassword) {
+      setValidationError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    const passwordErrors = validatePassword(newPassword);
+    if (passwordErrors.length > 0) {
+      setValidationError(passwordErrors.join('. '));
+      return;
+    }
+
+    onSubmit(newPassword, reason || undefined);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <Stack gap="md">
+        <Text size="sm" c="dimmed">
+          ⚠️ Cette action est irréversible et remplacera immédiatement le mot de passe de l'utilisateur.
+        </Text>
+
+        <TextInput
+          label="Nouveau mot de passe"
+          type="password"
+          placeholder="Entrez le nouveau mot de passe"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required
+        />
+
+        <TextInput
+          label="Confirmer le mot de passe"
+          type="password"
+          placeholder="Confirmez le nouveau mot de passe"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+        />
+
+        <Textarea
+          label="Raison (optionnelle)"
+          placeholder="Expliquez pourquoi vous forcez ce mot de passe..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          minRows={2}
+        />
+
+        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+          Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
+        </div>
+
+        {validationError && (
+          <div style={{ color: '#dc2626', fontSize: '14px' }}>
+            {validationError}
+          </div>
+        )}
+
+        <Group justify="flex-end" mt="md">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            leftSection={<IconX size={16} />}
+          >
+            Annuler
+          </Button>
+          <Button
+            type="submit"
+            color="red"
+            loading={loading}
+            leftSection={<IconCheck size={16} />}
+          >
+            Forcer le mot de passe
+          </Button>
+        </Group>
+      </Stack>
+    </form>
   );
 };
 

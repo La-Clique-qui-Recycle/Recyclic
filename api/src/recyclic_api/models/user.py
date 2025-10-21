@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum, Boolean
+from sqlalchemy import Column, String, DateTime, Enum, Boolean, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -34,6 +34,12 @@ class User(Base):
     telegram_id = Column(String, unique=False, nullable=True, index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
+    # Profile enrichment fields (all optional)
+    phone_number = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    skills = Column(Text, nullable=True)
+    availability = Column(Text, nullable=True)
     role = Column(Enum(UserRole, values_callable=get_enum_values), default=UserRole.USER, nullable=False)
     status = Column(Enum(UserStatus, values_callable=get_enum_values), default=UserStatus.PENDING, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -45,6 +51,7 @@ class User(Base):
     deposits = relationship("Deposit", back_populates="user")
     cash_sessions = relationship("CashSession", back_populates="operator")
     status_history = relationship("UserStatusHistory", foreign_keys="UserStatusHistory.user_id", back_populates="user")
+    groups = relationship("Group", secondary="user_groups", back_populates="users")
 
     def __repr__(self):
         return f"<User(id={self.id}, telegram_id={self.telegram_id}, role={self.role}, status={self.status})>"

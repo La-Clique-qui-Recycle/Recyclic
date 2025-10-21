@@ -27,7 +27,8 @@ import {
 } from '@tabler/icons-react';
 import { DatePickerInput } from '@mantine/dates';
 import { useForm } from 'react-hook-form';
-import { useAdminStore, HistoryEvent, HistoryFilters } from '../../stores/adminStore';
+import { useAdminStore, HistoryFilters } from '../../stores/adminStore';
+import { HistoryEvent } from '../../services/adminService';
 
 interface UserHistoryTabProps {
   userId: string;

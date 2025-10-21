@@ -9,6 +9,7 @@ import time
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.security import create_access_token, verify_password, hash_password, create_password_reset_token, verify_reset_token
+from recyclic_api.core.audit import log_audit, AuditActionType
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse
@@ -65,6 +66,17 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
         except Exception:
             db.rollback()
 
+        # Log audit for failed login
+        log_audit(
+            action_type=AuditActionType.LOGIN_FAILED,
+            actor=None,
+            details={"username": payload.username, "error_type": "invalid_user_or_inactive"},
+            description=f"Tentative de connexion échouée pour l'utilisateur {payload.username}",
+            ip_address=client_ip,
+            user_agent=request.headers.get("user-agent"),
+            db=db
+        )
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiants invalides ou utilisateur inactif",
@@ -98,6 +110,17 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
             db.commit()
         except Exception:
             db.rollback()
+
+        # Log audit for failed login
+        log_audit(
+            action_type=AuditActionType.LOGIN_FAILED,
+            actor=user,
+            details={"username": payload.username, "error_type": "invalid_password"},
+            description=f"Tentative de connexion échouée pour l'utilisateur {payload.username} (mot de passe invalide)",
+            ip_address=client_ip,
+            user_agent=request.headers.get("user-agent"),
+            db=db
+        )
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -133,6 +156,17 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
         db.commit()
     except Exception:
         db.rollback()
+
+    # Log audit for successful login
+    log_audit(
+        action_type=AuditActionType.LOGIN_SUCCESS,
+        actor=user,
+        details={"username": payload.username, "user_role": user.role.value},
+        description=f"Connexion réussie pour l'utilisateur {payload.username}",
+        ip_address=client_ip,
+        user_agent=request.headers.get("user-agent"),
+        db=db
+    )
 
     return LoginResponse(
         access_token=token,

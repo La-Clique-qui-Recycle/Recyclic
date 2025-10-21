@@ -31,6 +31,8 @@ const ReceptionDashboard = lazy(() => import('./pages/Admin/ReceptionDashboard.t
 const ReceptionReports = lazy(() => import('./pages/Admin/ReceptionReports.tsx'));
 const CashSessionDetail = lazy(() => import('./pages/Admin/CashSessionDetail.tsx'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings.tsx'));
+const AdminGroups = lazy(() => import('./pages/Admin/GroupsReal.tsx'));
+const AuditLog = lazy(() => import('./pages/admin/AuditLog.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -143,6 +145,8 @@ function App() {
               <Route path="cash-registers" element={<AdminCashRegisters />} />
               <Route path="sites" element={<AdminSites />} />
               <Route path="categories" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminCategories /></ProtectedRoute>} />
+              <Route path="groups" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminGroups /></ProtectedRoute>} />
+              <Route path="audit-log" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AuditLog /></ProtectedRoute>} />
               <Route path="health" element={<HealthDashboard />} />
               <Route path="settings" element={<ProtectedRoute requiredRoles={['super-admin']}><AdminSettings /></ProtectedRoute>} />
             </Route>

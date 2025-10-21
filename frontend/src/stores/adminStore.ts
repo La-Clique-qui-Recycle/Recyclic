@@ -1,21 +1,19 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { AdminUser, UserRole, adminService, UsersFilter } from '../services/adminService';
-
-// Types pour l'historique
-interface HistoryEvent {
-  id: string;
-  type: 'ADMINISTRATION' | 'VENTE' | 'DÉPÔT' | 'CONNEXION' | 'AUTRE';
-  description: string;
-  timestamp: string;
-  metadata?: Record<string, any>;
-}
+import { AdminUser, UserRole, adminService, UsersFilter, HistoryEvent } from '../services/adminService';
 
 interface HistoryFilters {
   startDate?: Date | null;
   endDate?: Date | null;
   eventType?: string[];
   search?: string;
+}
+
+interface UserStatusInfo {
+  user_id: string;
+  is_online: boolean;
+  last_login: string | null;
+  minutes_since_login: number | null;
 }
 
 interface AdminState {
@@ -32,6 +30,12 @@ interface AdminState {
   historyError: string | null;
   historyFilters: HistoryFilters;
   
+  // User status state
+  userStatuses: UserStatusInfo[];
+  statusesLoading: boolean;
+  statusesError: string | null;
+  pollingInterval: NodeJS.Timeout | null;
+  
   // Actions
   setUsers: (users: AdminUser[]) => void;
   setLoading: (loading: boolean) => void;
@@ -45,6 +49,11 @@ interface AdminState {
   setHistoryError: (error: string | null) => void;
   setHistoryFilters: (filters: HistoryFilters) => void;
   
+  // User status actions
+  setUserStatuses: (statuses: UserStatusInfo[]) => void;
+  setStatusesLoading: (loading: boolean) => void;
+  setStatusesError: (error: string | null) => void;
+  
   // Async actions
   fetchUsers: () => Promise<void>;
   updateUserRole: (userId: string, role: UserRole) => Promise<boolean>;
@@ -53,6 +62,11 @@ interface AdminState {
   
   // History async actions
   fetchUserHistory: (userId: string, filters?: HistoryFilters) => Promise<void>;
+  
+  // User status async actions
+  fetchUserStatuses: () => Promise<void>;
+  startStatusPolling: () => void;
+  stopStatusPolling: () => void;
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -73,6 +87,12 @@ export const useAdminStore = create<AdminState>()(
       historyLoading: false,
       historyError: null,
       historyFilters: {},
+      
+      // User status initial state
+      userStatuses: [],
+      statusesLoading: false,
+      statusesError: null,
+      pollingInterval: null,
 
       // Setters
       setUsers: (users) => set({ users }),
@@ -86,6 +106,11 @@ export const useAdminStore = create<AdminState>()(
       setHistoryLoading: (historyLoading) => set({ historyLoading }),
       setHistoryError: (historyError) => set({ historyError }),
       setHistoryFilters: (historyFilters) => set({ historyFilters }),
+      
+      // User status setters
+      setUserStatuses: (userStatuses) => set({ userStatuses }),
+      setStatusesLoading: (statusesLoading) => set({ statusesLoading }),
+      setStatusesError: (statusesError) => set({ statusesError }),
 
       // Async actions
       fetchUsers: async () => {
@@ -159,6 +184,50 @@ export const useAdminStore = create<AdminState>()(
           const errorMessage = error instanceof Error ? error.message : 'Erreur lors du chargement de l\'historique';
           set({ historyError: errorMessage, historyLoading: false });
         }
+      },
+      
+      // User status async actions
+      fetchUserStatuses: async () => {
+        set({ statusesLoading: true, statusesError: null });
+        
+        try {
+          const response = await adminService.getUserStatuses();
+          set({ 
+            userStatuses: response.user_statuses, 
+            statusesLoading: false 
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Erreur lors du chargement des statuts';
+          set({ statusesError: errorMessage, statusesLoading: false });
+        }
+      },
+      
+      startStatusPolling: () => {
+        const { pollingInterval, fetchUserStatuses } = get();
+        
+        // Arrêter le polling existant s'il y en a un
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
+        
+        // Récupérer les statuts immédiatement
+        fetchUserStatuses();
+        
+        // Démarrer le polling toutes les 60 secondes
+        const interval = setInterval(() => {
+          fetchUserStatuses();
+        }, 60000); // 60 secondes
+        
+        set({ pollingInterval: interval });
+      },
+      
+      stopStatusPolling: () => {
+        const { pollingInterval } = get();
+        
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          set({ pollingInterval: null });
+        }
       }
     }),
     {
@@ -168,6 +237,6 @@ export const useAdminStore = create<AdminState>()(
 );
 
 // Export des types pour utilisation dans les composants
-export type { HistoryEvent, HistoryFilters };
+export type { HistoryFilters, UserStatusInfo };
 
 export default useAdminStore;

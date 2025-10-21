@@ -1,6 +1,6 @@
 """
 Authentication helpers for the Recyclic API.
-Handles JWT authentication and role checks.
+Handles JWT authentication, role checks, and permission checks.
 """
 
 from typing import Union, List, Optional
@@ -9,12 +9,13 @@ import uuid
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select
 
 from .database import get_db
 from .security import verify_token, create_access_token, create_password_reset_token
 from ..models.user import User, UserRole
+from ..models.permission import Permission, Group
 from .email_service import get_email_service
 from .config import settings
 
@@ -273,3 +274,119 @@ async def send_reset_password_email(email: str, db: Session) -> None:
         """,
         db_session=db
     )
+
+
+# ============================================================================
+# Permission-Based Access Control
+# ============================================================================
+
+def user_has_permission(user: User, permission_name: str, db: Session) -> bool:
+    """Check if a user has a specific permission through their groups.
+
+    Args:
+        user: The user to check
+        permission_name: The name of the permission (e.g., 'caisse.access')
+        db: Database session
+
+    Returns:
+        True if user has the permission, False otherwise
+    """
+    # Super-admins have all permissions
+    if user.role == UserRole.SUPER_ADMIN:
+        return True
+
+    # Load user with groups and their permissions (anti N+1)
+    stmt = (
+        select(User)
+        .options(
+            selectinload(User.groups).selectinload(Group.permissions)
+        )
+        .where(User.id == user.id)
+    )
+    result = db.execute(stmt)
+    user_with_groups = result.scalar_one_or_none()
+
+    if not user_with_groups or not user_with_groups.groups:
+        return False
+
+    # Check if any of the user's groups have the required permission
+    for group in user_with_groups.groups:
+        for permission in group.permissions:
+            if permission.name == permission_name:
+                return True
+
+    return False
+
+
+def require_permission(permission_name: str):
+    """Dependency to require a specific permission.
+
+    This creates a reusable dependency for FastAPI endpoints that
+    checks if the current user has the required permission.
+
+    Example:
+        @router.get("/caisse", dependencies=[Depends(require_permission("caisse.access"))])
+        def access_caisse():
+            pass
+
+    Args:
+        permission_name: The name of the permission required
+
+    Returns:
+        A dependency function for FastAPI
+    """
+
+    def permission_checker(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ) -> User:
+        """Check if current user has the required permission."""
+        if not user_has_permission(current_user, permission_name, db):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission requise: {permission_name}",
+            )
+        return current_user
+
+    return permission_checker
+
+
+def get_user_permissions(user: User, db: Session) -> List[str]:
+    """Get all permissions for a user.
+
+    Args:
+        user: The user
+        db: Database session
+
+    Returns:
+        List of permission names the user has
+    """
+    # Super-admins have all permissions
+    if user.role == UserRole.SUPER_ADMIN:
+        # Return all available permissions
+        stmt = select(Permission)
+        result = db.execute(stmt)
+        all_permissions = result.scalars().all()
+        return [perm.name for perm in all_permissions]
+
+    # Load user with groups and their permissions (anti N+1)
+    stmt = (
+        select(User)
+        .options(
+            selectinload(User.groups).selectinload(Group.permissions)
+        )
+        .where(User.id == user.id)
+    )
+    result = db.execute(stmt)
+    user_with_groups = result.scalar_one_or_none()
+
+    if not user_with_groups or not user_with_groups.groups:
+        return []
+
+    # Collect unique permissions from all groups
+    permissions = set()
+    for group in user_with_groups.groups:
+        for permission in group.permissions:
+            permissions.add(permission.name)
+
+    return sorted(list(permissions))

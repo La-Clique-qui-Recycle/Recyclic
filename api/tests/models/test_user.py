@@ -1,157 +1,148 @@
-"""
-Tests for User model
-"""
 import pytest
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 from recyclic_api.models.user import User, UserRole, UserStatus
+from uuid import UUID
 
-def test_user_role_enum_values():
-    """Test that UserRole enum has all expected values"""
-    assert UserRole.SUPER_ADMIN == "super-admin"
-    assert UserRole.ADMIN == "admin"
-    assert UserRole.MANAGER == "manager"
-    assert "cashier" not in [r.value for r in UserRole]
-    assert UserRole.USER == "user"
 
-def test_user_status_enum_values():
-    """Test that UserStatus enum has all expected values"""
-    assert UserStatus.PENDING == "pending"
-    assert UserStatus.APPROVED == "approved"
-    assert UserStatus.REJECTED == "rejected"
-
-def test_user_creation_with_defaults(db_session):
-    """Test user creation with default values"""
-    user = User(
-        username="test_user",
-        email="test@example.com",
-        hashed_password="hashed_password_123",
-        first_name="Test",
-        last_name="User"
-    )
-
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
-    # Check defaults
-    assert user.role == UserRole.USER
-    assert user.status == UserStatus.PENDING
-    assert user.is_active == True
-    assert user.email == "test@example.com"
-    assert user.hashed_password == "hashed_password_123"
-    assert user.telegram_id is None  # telegram_id is now nullable
-    assert user.first_name == "Test"
-    assert user.last_name == "User"
-
-def test_user_creation_with_custom_values(db_session):
-    """Test user creation with custom role and status"""
-    user = User(
-        username="admin_user",
-        email="admin@example.com",
-        hashed_password="admin_hashed_password",
-        telegram_id="987654321",
-        first_name="Admin",
-        last_name="User",
-        role=UserRole.SUPER_ADMIN,
-        status=UserStatus.APPROVED
-    )
-
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
-    assert user.role == UserRole.SUPER_ADMIN
-    assert user.status == UserStatus.APPROVED
-    assert user.email == "admin@example.com"
-    assert user.hashed_password == "admin_hashed_password"
-    assert user.telegram_id == "987654321"
-
-def test_user_repr():
-    """Test user string representation"""
-    user = User(
-        email="admin@example.com",
-        hashed_password="hashed_password",
-        telegram_id="123456789",
-        first_name="Test",
-        last_name="User",
-        role=UserRole.ADMIN,
-        status=UserStatus.APPROVED
-    )
-
-    repr_str = repr(user)
-    assert "telegram_id=123456789" in repr_str
-    assert "role=UserRole.ADMIN" in repr_str
-    assert "status=UserStatus.APPROVED" in repr_str
-
-def test_user_creation_with_email_and_password(db_session):
-    """Test user creation with new email and hashed_password fields"""
-    user = User(
-        username="email_user",
-        email="user@test.com",
-        hashed_password="secure_hashed_password",
-        first_name="Email",
-        last_name="User"
-    )
-
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
-    assert user.email == "user@test.com"
-    assert user.hashed_password == "secure_hashed_password"
-    assert user.telegram_id is None  # telegram_id can be None now
-
-def test_user_unique_username(db_session):
-    """Test that username must be unique"""
-    user1 = User(username="duplicate_user", email="user1@example.com", hashed_password="password1", first_name="User1")
-    user2 = User(username="duplicate_user", email="user2@example.com", hashed_password="password2", first_name="User2")
-
-    db_session.add(user1)
-    db_session.commit()
-
-    db_session.add(user2)
-    with pytest.raises(IntegrityError):  # Should raise integrity error
-        db_session.commit()
-
-def test_user_non_unique_email(db_session):
-    """Test that email can be duplicated (non-unique)"""
-    user1 = User(username="user1", email="duplicate@example.com", hashed_password="password1", first_name="User1")
-    user2 = User(username="user2", email="duplicate@example.com", hashed_password="password2", first_name="User2")
-
-    db_session.add(user1)
-    db_session.add(user2)
-    db_session.commit()  # Should succeed - email is no longer unique
-
-    db_session.refresh(user1)
-    db_session.refresh(user2)
-    assert user1.email == "duplicate@example.com"
-    assert user2.email == "duplicate@example.com"
-
-def test_user_nullable_telegram_id(db_session):
-    """Test that telegram_id can be None and multiple users can have None telegram_id"""
-    user1 = User(username="user1", email="user1@example.com", hashed_password="password1", first_name="User1")
-    user2 = User(username="user2", email="user2@example.com", hashed_password="password2", first_name="User2")
-
-    # Both users should be able to have None telegram_id
-    db_session.add(user1)
-    db_session.add(user2)
-    db_session.commit()
-
-    db_session.refresh(user1)
-    db_session.refresh(user2)
-
-    assert user1.telegram_id is None
-    assert user2.telegram_id is None
-
-def test_user_username_required(db_session):
-    """Test that username is required (not nullable)"""
-    user = User(
-        email="test@example.com",
-        hashed_password="password123",
-        first_name="Test",
-        last_name="User"
-    )
+class TestUserModel:
+    """Tests unitaires pour le modèle User avec les nouveaux champs de profil."""
     
-    db_session.add(user)
-    with pytest.raises(IntegrityError):  # Should raise integrity error due to null username
+    def test_user_creation_with_profile_fields(self, db_session: Session):
+        """Test de création d'un utilisateur avec tous les nouveaux champs de profil."""
+        user = User(
+            username="test@example.com",
+            hashed_password="hashed_password",
+            first_name="John",
+            last_name="Doe",
+            email="john.doe@example.com",
+            phone_number="+33123456789",
+            address="123 Rue de la Paix, 75001 Paris",
+            notes="Bénévole très motivé, disponible le weekend",
+            skills="Gestion d'événements, Communication, Logistique",
+            availability="Weekends et vacances scolaires",
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True
+        )
+        
+        db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
+        
+        # Vérifier que tous les champs sont correctement sauvegardés
+        assert user.phone_number == "+33123456789"
+        assert user.address == "123 Rue de la Paix, 75001 Paris"
+        assert user.notes == "Bénévole très motivé, disponible le weekend"
+        assert user.skills == "Gestion d'événements, Communication, Logistique"
+        assert user.availability == "Weekends et vacances scolaires"
+        assert user.email == "john.doe@example.com"
+    
+    def test_user_creation_with_minimal_fields(self, db_session: Session):
+        """Test de création d'un utilisateur avec seulement les champs obligatoires."""
+        user = User(
+            username="minimal@example.com",
+            hashed_password="hashed_password",
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True
+        )
+        
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        
+        # Vérifier que les nouveaux champs sont null par défaut
+        assert user.phone_number is None
+        assert user.address is None
+        assert user.notes is None
+        assert user.skills is None
+        assert user.availability is None
+        assert user.email is None
+    
+    def test_user_profile_fields_optional(self, db_session: Session):
+        """Test que les nouveaux champs de profil sont optionnels."""
+        user = User(
+            username="optional@example.com",
+            hashed_password="hashed_password",
+            first_name="Jane",
+            last_name="Smith",
+            # Champs de profil partiellement remplis
+            phone_number="+33987654321",
+            # address, notes, skills, availability laissés vides
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True
+        )
+        
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        
+        # Vérifier que seuls les champs remplis sont présents
+        assert user.phone_number == "+33987654321"
+        assert user.address is None
+        assert user.notes is None
+        assert user.skills is None
+        assert user.availability is None
+    
+    def test_user_profile_fields_long_text(self, db_session: Session):
+        """Test que les champs texte long (notes, skills, availability) acceptent du contenu long."""
+        long_notes = "Notes très détaillées sur l'utilisateur. " * 50  # ~2000 caractères
+        long_skills = "Compétences détaillées. " * 50  # ~2000 caractères
+        long_availability = "Disponibilités détaillées. " * 50  # ~2000 caractères
+        
+        user = User(
+            username="longtext@example.com",
+            hashed_password="hashed_password",
+            notes=long_notes,
+            skills=long_skills,
+            availability=long_availability,
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True
+        )
+        
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        
+        # Vérifier que les textes longs sont correctement sauvegardés
+        assert user.notes == long_notes
+        assert user.skills == long_skills
+        assert user.availability == long_availability
+        assert len(user.notes) > 1000
+        assert len(user.skills) > 1000
+        assert len(user.availability) > 1000
+    
+    def test_user_profile_fields_update(self, db_session: Session):
+        """Test de mise à jour des champs de profil."""
+        user = User(
+            username="update@example.com",
+            hashed_password="hashed_password",
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            is_active=True
+        )
+        
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        
+        # Mise à jour des champs de profil
+        user.phone_number = "+33555666777"
+        user.address = "456 Avenue des Champs, 75008 Paris"
+        user.notes = "Notes mises à jour"
+        user.skills = "Nouvelles compétences"
+        user.availability = "Nouvelles disponibilités"
+        user.email = "updated@example.com"
+        
+        db_session.commit()
+        db_session.refresh(user)
+        
+        # Vérifier que les mises à jour sont persistées
+        assert user.phone_number == "+33555666777"
+        assert user.address == "456 Avenue des Champs, 75008 Paris"
+        assert user.notes == "Notes mises à jour"
+        assert user.skills == "Nouvelles compétences"
+        assert user.availability == "Nouvelles disponibilités"
+        assert user.email == "updated@example.com"

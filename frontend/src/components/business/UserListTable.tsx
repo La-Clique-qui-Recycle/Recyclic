@@ -1,12 +1,20 @@
 import React from 'react';
-import { Table, Badge, Text, Skeleton } from '@mantine/core';
+import { Table, Badge, Text, Skeleton, Tooltip, Group } from '@mantine/core';
 import { AdminUser, UserRole, UserStatus } from '../../services/adminService';
+
+interface UserStatusInfo {
+  user_id: string;
+  is_online: boolean;
+  last_login: string | null;
+  minutes_since_login: number | null;
+}
 
 interface UserListTableProps {
   users: AdminUser[];
   loading?: boolean;
   onRoleChange: (userId: string, newRole: UserRole) => Promise<boolean>;
   onRowClick?: (user: AdminUser) => void;
+  userStatuses?: UserStatusInfo[];
 }
 
 // const getRoleColor = (role: UserRole) => {
@@ -58,11 +66,49 @@ const getActiveStatusColor = (isActive: boolean) => {
   return isActive ? 'green' : 'red';
 };
 
+const getOnlineStatusInfo = (userId: string, userStatuses?: UserStatusInfo[]) => {
+  if (!userStatuses) return null;
+  return userStatuses.find(status => status.user_id === userId);
+};
+
+const getOnlineStatusLabel = (statusInfo: UserStatusInfo | null) => {
+  if (!statusInfo) return 'Inconnu';
+  return statusInfo.is_online ? 'En ligne' : 'Hors ligne';
+};
+
+const getOnlineStatusColor = (statusInfo: UserStatusInfo | null) => {
+  if (!statusInfo) return 'gray';
+  return statusInfo.is_online ? 'green' : 'red';
+};
+
+const getOnlineStatusTooltip = (statusInfo: UserStatusInfo | null) => {
+  if (!statusInfo) return 'Statut inconnu';
+  
+  if (statusInfo.is_online) {
+    return `En ligne - Actif il y a moins de 15 minutes`;
+  } else if (statusInfo.last_login) {
+    const minutes = statusInfo.minutes_since_login;
+    if (minutes !== null) {
+      if (minutes < 60) {
+        return `Hors ligne - Dernière connexion il y a ${minutes} minutes`;
+      } else {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        return `Hors ligne - Dernière connexion il y a ${hours}h${remainingMinutes > 0 ? remainingMinutes : ''}`;
+      }
+    }
+    return 'Hors ligne - Dernière connexion inconnue';
+  } else {
+    return 'Hors ligne - Jamais connecté';
+  }
+};
+
 export const UserListTable: React.FC<UserListTableProps> = ({
   users,
   loading = false,
   onRoleChange,
-  onRowClick
+  onRowClick,
+  userStatuses
 }) => {
   if (loading) {
     return (
@@ -73,6 +119,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
             <Table.Th>Rôle</Table.Th>
             <Table.Th>Statut d'approbation</Table.Th>
             <Table.Th>Statut d'activité</Table.Th>
+            <Table.Th>Statut en ligne</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -81,6 +128,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
               <Table.Td><Skeleton height={20} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={100} data-testid="skeleton" /></Table.Td>
+              <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
             </Table.Tr>
           ))}
@@ -105,6 +153,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
           <Table.Th>Rôle</Table.Th>
           <Table.Th>Statut d'approbation</Table.Th>
           <Table.Th>Statut d'activité</Table.Th>
+          <Table.Th>Statut en ligne</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
@@ -127,7 +176,9 @@ export const UserListTable: React.FC<UserListTableProps> = ({
             <Table.Td>
               <div>
                 <Text fw={500}>
-                  {user.full_name || `${user.first_name} ${user.last_name}` || user.username || 'Utilisateur'}
+                  {user.first_name && user.last_name 
+                    ? `${user.first_name} ${user.last_name}`
+                    : user.first_name || user.last_name || user.username || 'Utilisateur'}
                 </Text>
                 <Text size="sm" c="dimmed">
                   @{user.username || user.telegram_id}
@@ -151,6 +202,22 @@ export const UserListTable: React.FC<UserListTableProps> = ({
               <Badge color={getActiveStatusColor(user.is_active)} variant="light">
                 {getActiveStatusLabel(user.is_active)}
               </Badge>
+            </Table.Td>
+            <Table.Td>
+              {(() => {
+                const statusInfo = getOnlineStatusInfo(user.id, userStatuses);
+                return (
+                  <Tooltip label={getOnlineStatusTooltip(statusInfo)} withArrow>
+                    <Badge 
+                      color={getOnlineStatusColor(statusInfo)} 
+                      variant="light"
+                      data-testid={`online-status-${user.id}`}
+                    >
+                      {getOnlineStatusLabel(statusInfo)}
+                    </Badge>
+                  </Tooltip>
+                );
+              })()}
             </Table.Td>
           </Table.Tr>
         ))}

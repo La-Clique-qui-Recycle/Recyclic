@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Title, Text, Group, Select, TextInput, Button, Stack, Alert, Pagination, Grid, Paper } from '@mantine/core';
 import { IconSearch, IconRefresh, IconAlertCircle, IconUserPlus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useAdminStore } from '../../stores/adminStore';
+import { useAdminStore, UserStatusInfo } from '../../stores/adminStore';
 import { UserListTable } from '../../components/business/UserListTable';
 import UserDetailView from '../../components/business/UserDetailView';
 import { UserProfileTab } from '../../components/business/UserProfileTab';
@@ -15,11 +15,17 @@ const AdminUsers: React.FC = () => {
     error,
     filters,
     selectedUser,
+    userStatuses,
+    statusesLoading,
+    statusesError,
     fetchUsers,
     updateUserRole,
     filterUsers,
     setFilters,
-    setSelectedUser
+    setSelectedUser,
+    fetchUserStatuses,
+    startStatusPolling,
+    stopStatusPolling
   } = useAdminStore();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +34,14 @@ const AdminUsers: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    // Démarrer le polling des statuts
+    startStatusPolling();
+    
+    // Nettoyer le polling lors du démontage du composant
+    return () => {
+      stopStatusPolling();
+    };
+  }, [fetchUsers, startStatusPolling, stopStatusPolling]);
 
   const handleRoleChange = async (userId: string, newRole: UserRole): Promise<boolean> => {
     try {
@@ -152,6 +165,42 @@ const AdminUsers: React.FC = () => {
           </Alert>
         )}
 
+        {statusesError && (
+          <Alert
+            icon={<IconAlertCircle size={16} />}
+            title="Erreur de statuts"
+            color="orange"
+            data-testid="statuses-error-message"
+          >
+            {statusesError}
+          </Alert>
+        )}
+
+        {/* Statistiques des statuts en ligne */}
+        {userStatuses.length > 0 && (
+          <Paper p="md" withBorder>
+            <Group justify="space-between" align="center">
+              <div>
+                <Text size="lg" fw={600}>Statuts en ligne</Text>
+                <Text size="sm" c="dimmed">
+                  {userStatuses.filter(s => s.is_online).length} en ligne • {userStatuses.filter(s => !s.is_online).length} hors ligne
+                </Text>
+              </div>
+              <Group gap="xs">
+                <Button
+                  variant="light"
+                  size="xs"
+                  onClick={fetchUserStatuses}
+                  loading={statusesLoading}
+                  data-testid="refresh-statuses-button"
+                >
+                  Actualiser les statuts
+                </Button>
+              </Group>
+            </Group>
+          </Paper>
+        )}
+
         <Group gap="md" align="end">
           <TextInput
             placeholder="Rechercher un utilisateur..."
@@ -214,6 +263,7 @@ const AdminUsers: React.FC = () => {
                   loading={loading}
                   onRoleChange={handleRoleChange}
                   onRowClick={handleRowClick}
+                  userStatuses={userStatuses}
                 />
                 
                 {users.length > 0 && (

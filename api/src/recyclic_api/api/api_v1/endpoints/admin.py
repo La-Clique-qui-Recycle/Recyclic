@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import logging
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -11,9 +11,10 @@ from uuid import UUID
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.auth import get_current_user, require_admin_role, require_admin_role_strict
-from recyclic_api.core.audit import log_role_change, log_admin_access
+from recyclic_api.core.audit import log_role_change, log_admin_access, log_audit, AuditActionType
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.user_status_history import UserStatusHistory
+from recyclic_api.models.login_history import LoginHistory
 from recyclic_api.services.telegram_service import telegram_service
 from recyclic_api.schemas.admin import (
     AdminUserList,
@@ -26,7 +27,10 @@ from recyclic_api.schemas.admin import (
     UserApprovalRequest,
     UserRejectionRequest,
     UserProfileUpdate,
-    UserHistoryResponse
+    UserHistoryResponse,
+    UserStatusInfo,
+    UserStatusesResponse,
+    ForcePasswordRequest
 )
 from recyclic_api.schemas.user import UserStatusUpdate
 from recyclic_api.services.user_history_service import UserHistoryService
@@ -105,6 +109,120 @@ def get_users(
             detail=f"Erreur lors de la récupération des utilisateurs: {str(e)}"
         )
 
+@router.get(
+    "/users/statuses",
+    response_model=UserStatusesResponse,
+    summary="Statuts des utilisateurs (Admin)",
+    description="Récupère les statuts en ligne/hors ligne de tous les utilisateurs"
+)
+@limiter.limit("30/minute")
+def get_users_statuses(
+    request: Request,
+    current_user: User = Depends(require_admin_role),
+    db: Session = Depends(get_db)
+):
+    """Récupère les statuts en ligne/hors ligne de tous les utilisateurs"""
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, and_
+        
+        # Log de l'accès admin
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username or current_user.telegram_id,
+            endpoint="/admin/users/statuses",
+            success=True
+        )
+
+        # Seuil de 15 minutes pour considérer un utilisateur comme "en ligne"
+        ONLINE_THRESHOLD_MINUTES = 15
+        threshold_time = datetime.now(timezone.utc) - timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+        
+        # Requête optimisée pour récupérer la dernière connexion réussie de chaque utilisateur
+        # Utilise GROUP BY avec MAX pour éviter de scanner toute la table login_history
+        last_logins_subquery = db.query(
+            LoginHistory.user_id,
+            func.max(LoginHistory.created_at).label('last_login')
+        ).filter(
+            and_(
+                LoginHistory.success == True,
+                LoginHistory.user_id.isnot(None)
+            )
+        ).group_by(LoginHistory.user_id).subquery()
+        
+        # Récupérer tous les utilisateurs avec leur dernière connexion
+        users_with_logins = db.query(
+            User.id,
+            User.username,
+            User.first_name,
+            User.last_name,
+            last_logins_subquery.c.last_login
+        ).outerjoin(
+            last_logins_subquery, 
+            User.id == last_logins_subquery.c.user_id
+        ).all()
+        
+        # Calculer les statuts
+        user_statuses = []
+        online_count = 0
+        offline_count = 0
+        
+        for user_data in users_with_logins:
+            user_id, username, first_name, last_name, last_login = user_data
+            
+            is_online = False
+            minutes_since_login = None
+            
+            if last_login:
+                # S'assurer que les deux dates ont le même timezone
+                now_utc = datetime.now(timezone.utc)
+                if last_login.tzinfo is None:
+                    # Si last_login n'a pas de timezone, on suppose qu'il est en UTC
+                    last_login_utc = last_login.replace(tzinfo=timezone.utc)
+                else:
+                    last_login_utc = last_login.astimezone(timezone.utc)
+                
+                time_diff = now_utc - last_login_utc
+                minutes_since_login = int(time_diff.total_seconds() / 60)
+                is_online = minutes_since_login <= ONLINE_THRESHOLD_MINUTES
+            
+            if is_online:
+                online_count += 1
+            else:
+                offline_count += 1
+            
+            user_status = UserStatusInfo(
+                user_id=str(user_id),
+                is_online=is_online,
+                last_login=last_login,
+                minutes_since_login=minutes_since_login
+            )
+            user_statuses.append(user_status)
+        
+        total_count = len(user_statuses)
+        
+        return UserStatusesResponse(
+            user_statuses=user_statuses,
+            total_count=total_count,
+            online_count=online_count,
+            offline_count=offline_count,
+            timestamp=datetime.now(timezone.utc)
+        )
+
+    except Exception as e:
+        # Log de l'échec
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username or current_user.telegram_id,
+            endpoint="/admin/users/statuses",
+            success=False,
+            error_message=str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la récupération des statuts: {str(e)}"
+        )
+
 @router.put(
     "/users/{user_id}/role",
     response_model=AdminResponse,
@@ -176,7 +294,8 @@ def update_user_role(
             target_username=user.username or user.telegram_id,
             old_role=old_role.value,
             new_role=user.role.value,
-            success=True
+            success=True,
+            db=db
         )
 
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
@@ -304,7 +423,8 @@ async def approve_user(
             target_username=user.username or user.telegram_id,
             old_role="pending",
             new_role="approved",
-            success=True
+            success=True,
+            db=db
         )
 
         # Envoyer notification Telegram à l'utilisateur
@@ -406,7 +526,8 @@ async def reject_user(
             target_username=user.username or user.telegram_id,
             old_role="pending",
             new_role="rejected",
-            success=True
+            success=True,
+            db=db
         )
 
         # Envoyer notification Telegram à l'utilisateur
@@ -532,7 +653,8 @@ def update_user_status(
             target_username=user.username or user.telegram_id,
             old_role=f"is_active={old_status}",
             new_role=f"is_active={status_update.is_active}",
-            success=True
+            success=True,
+            db=db
         )
 
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
@@ -638,7 +760,8 @@ def update_user_profile(
             target_username=user.username or user.telegram_id,
             old_role="profile_update",
             new_role=f"updated_fields={','.join(updated_fields)}",
-            success=True
+            success=True,
+            db=db
         )
 
         full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
@@ -695,6 +818,21 @@ async def trigger_reset_password(
 
         await send_reset_password_email(user.email, db)
 
+        # Log audit for password reset trigger
+        log_audit(
+            action_type=AuditActionType.PASSWORD_RESET,
+            actor=current_user,
+            target_id=user.id,
+            target_type="user",
+            details={
+                "target_username": user.username or user.telegram_id,
+                "target_email": user.email,
+                "admin_username": current_user.username or current_user.telegram_id
+            },
+            description=f"Réinitialisation de mot de passe déclenchée pour {user.username or user.telegram_id} par {current_user.username or current_user.telegram_id}",
+            db=db
+        )
+
         return AdminResponse(
             message=f"E-mail de réinitialisation de mot de passe envoyé à {user.email}",
             success=True
@@ -731,6 +869,38 @@ def get_user_history(
             username=current_user.username or current_user.telegram_id,
             endpoint=f"/admin/users/{user_id}/history",
             success=True
+        )
+
+        # Récupérer le nom de l'utilisateur cible pour une description plus lisible
+        target_user = db.query(User).filter(User.id == user_id).first()
+        target_name = "utilisateur inconnu"
+        if target_user:
+            if target_user.first_name and target_user.last_name:
+                target_name = f"{target_user.first_name} {target_user.last_name}"
+            elif target_user.first_name:
+                target_name = target_user.first_name
+            elif target_user.username:
+                target_name = target_user.username
+            elif target_user.telegram_id:
+                target_name = f"@{target_user.telegram_id}"
+
+        # Log audit pour accès aux données sensibles
+        log_audit(
+            action_type=AuditActionType.SYSTEM_CONFIG_CHANGED,  # Utiliser un type approprié
+            actor=current_user,
+            target_id=user_id,
+            target_type="user_history",
+            details={
+                "admin_username": current_user.username or current_user.telegram_id,
+                "target_user_id": user_id,
+                "filters": {
+                    "date_from": date_from.isoformat() if date_from else None,
+                    "date_to": date_to.isoformat() if date_to else None,
+                    "event_type": event_type
+                }
+            },
+            description=f"Accès à l'historique de {target_name}",
+            db=db
         )
 
         # Créer le service d'historique
@@ -963,6 +1133,474 @@ async def get_scheduler_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération du statut: {str(e)}"
+        )
+
+@router.post(
+    "/users/{user_id}/force-password",
+    response_model=AdminResponse,
+    summary="Forcer un nouveau mot de passe (Super Admin uniquement)",
+    description="Force un nouveau mot de passe pour un utilisateur. Réservé aux Super Administrateurs uniquement."
+)
+@limiter.limit("5/minute")
+async def force_user_password(
+    user_id: str,
+    force_request: ForcePasswordRequest,
+    request: Request,
+    current_user: User = Depends(require_admin_role_strict()),
+    db: Session = Depends(get_db)
+):
+    """Force un nouveau mot de passe pour un utilisateur (Super Admin uniquement)"""
+    try:
+        # Vérifier que l'utilisateur actuel est un Super Admin
+        if current_user.role != UserRole.SUPER_ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cette action est réservée aux Super Administrateurs uniquement"
+            )
+
+        # Log de l'accès admin
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username or current_user.telegram_id,
+            endpoint=f"/admin/users/{user_id}/force-password",
+            success=True
+        )
+
+        # Recherche de l'utilisateur cible
+        try:
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            target_user = db.query(User).filter(User.id == user_uuid).first()
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Utilisateur non trouvé"
+            )
+
+        if not target_user:
+            # Log de l'échec
+            log_admin_access(
+                user_id=str(current_user.id),
+                username=current_user.username or current_user.telegram_id,
+                endpoint=f"/admin/users/{user_id}/force-password",
+                success=False,
+                error_message="Utilisateur non trouvé"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Utilisateur non trouvé"
+            )
+
+        # Valider la force du nouveau mot de passe
+        from recyclic_api.core.security import validate_password_strength
+        is_valid, errors = validate_password_strength(force_request.new_password)
+        if not is_valid:
+            # Translate common English messages to French keywords expected by tests
+            translations = {
+                "Password must be at least 8 characters long": "Le mot de passe doit contenir au moins 8 caractères",
+                "Password must contain at least one uppercase letter": "Le mot de passe doit contenir au moins une lettre majuscule",
+                "Password must contain at least one lowercase letter": "Le mot de passe doit contenir au moins une lettre minuscule",
+                "Password must contain at least one digit": "Le mot de passe doit contenir au moins un chiffre",
+                "Password must contain at least one special character": "Le mot de passe doit contenir au moins un caractère spécial",
+            }
+            fr_errors = [translations.get(e, e) for e in errors]
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Mot de passe invalide: {' '.join(fr_errors)}",
+            )
+
+        # Hasher le nouveau mot de passe
+        from recyclic_api.core.security import hash_password
+        new_hashed_password = hash_password(force_request.new_password)
+
+        # Sauvegarder l'ancien mot de passe pour l'audit
+        old_password_hash = target_user.hashed_password
+
+        # Mettre à jour le mot de passe
+        target_user.hashed_password = new_hashed_password
+        db.commit()
+        db.refresh(target_user)
+
+        # Log de l'action de forçage de mot de passe
+        log_role_change(
+            admin_user_id=str(current_user.id),
+            admin_username=current_user.username or current_user.telegram_id,
+            target_user_id=str(target_user.id),
+            target_username=target_user.username or target_user.telegram_id,
+            old_role="password_forced",
+            new_role=f"new_password_set_by_super_admin",
+            success=True,
+            db=db
+        )
+
+        # Enregistrer l'action dans l'historique utilisateur
+        from recyclic_api.models.user_status_history import UserStatusHistory
+        password_force_history = UserStatusHistory(
+            user_id=target_user.id,
+            changed_by_admin_id=current_user.id,
+            old_status=True,  # L'utilisateur était actif
+            new_status=True,  # L'utilisateur reste actif
+            reason=f"Mot de passe forcé par Super Admin. Raison: {force_request.reason or 'Non spécifiée'}"
+        )
+        db.add(password_force_history)
+        db.commit()
+
+        # Log audit pour le forçage de mot de passe
+        log_audit(
+            action_type=AuditActionType.PASSWORD_FORCED,
+            actor=current_user,
+            target_id=target_user.id,
+            target_type="user",
+            details={
+                "target_username": target_user.username,
+                "target_telegram_id": target_user.telegram_id,
+                "reason": force_request.reason,
+                "admin_username": current_user.username or current_user.telegram_id
+            },
+            description=f"Mot de passe forcé pour l'utilisateur {target_user.username} par Super Admin {current_user.username or current_user.telegram_id}",
+            db=db
+        )
+
+        full_name = f"{target_user.first_name} {target_user.last_name}" if target_user.first_name and target_user.last_name else target_user.first_name or target_user.last_name
+
+        return AdminResponse(
+            data={
+                "user_id": str(target_user.id),
+                "action": "password_forced",
+                "reason": force_request.reason,
+                "forced_by": str(current_user.id),
+                "forced_at": datetime.now(timezone.utc).isoformat()
+            },
+            message=f"Mot de passe forcé avec succès pour l'utilisateur {full_name or target_user.username}",
+            success=True
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log de l'échec
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username or current_user.telegram_id,
+            endpoint=f"/admin/users/{user_id}/force-password",
+            success=False,
+            error_message=str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors du forçage du mot de passe: {str(e)}"
+        )
+
+
+@router.post(
+    "/users/{user_id}/reset-pin",
+    response_model=dict,
+    summary="Réinitialiser le PIN d'un utilisateur",
+    description="Efface le PIN d'un utilisateur, le forçant à en créer un nouveau"
+)
+@limiter.limit("10/minute")
+def reset_user_pin(
+    request: Request,
+    user_id: str,
+    current_user: User = Depends(require_admin_role),
+    db: Session = Depends(get_db)
+):
+    """Réinitialise le PIN d'un utilisateur (Admin uniquement)"""
+    try:
+        # Log de l'accès admin
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username or current_user.telegram_id,
+            endpoint=f"/admin/users/{user_id}/reset-pin",
+            success=True
+        )
+
+        # Recherche de l'utilisateur cible
+        try:
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            target_user = db.query(User).filter(User.id == user_uuid).first()
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Utilisateur non trouvé"
+            )
+
+        if not target_user:
+            # Log de l'échec
+            log_admin_access(
+                user_id=str(current_user.id),
+                username=current_user.username or current_user.telegram_id,
+                endpoint=f"/admin/users/{user_id}/reset-pin",
+                success=False,
+                error_message="Utilisateur non trouvé"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Utilisateur non trouvé"
+            )
+
+        # Effacer le PIN (mettre à NULL)
+        target_user.hashed_pin = None
+        db.commit()
+
+        # Log audit pour la réinitialisation de PIN
+        log_audit(
+            action_type=AuditActionType.PIN_RESET,
+            actor=current_user,
+            target_id=target_user.id,
+            target_type="user",
+            details={
+                "target_username": target_user.username,
+                "target_telegram_id": target_user.telegram_id,
+                "admin_username": current_user.username or current_user.telegram_id
+            },
+            description=f"PIN réinitialisé pour l'utilisateur {target_user.username} par Admin {current_user.username or current_user.telegram_id}",
+            db=db
+        )
+
+        # Log de l'action
+        full_name = f"{target_user.first_name} {target_user.last_name}".strip() if target_user.first_name and target_user.last_name else target_user.first_name or target_user.last_name
+        logger.info(
+            f"PIN reset for user {target_user.id} by admin {current_user.id}",
+            extra={
+                "target_user_id": str(target_user.id),
+                "target_username": target_user.username,
+                "admin_user_id": str(current_user.id),
+                "admin_username": current_user.username or current_user.telegram_id,
+                "action": "pin_reset",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )
+
+        return {
+            "message": f"PIN réinitialisé avec succès pour l'utilisateur {full_name or target_user.username}",
+            "user_id": str(target_user.id),
+            "username": target_user.username
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log de l'échec
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username or current_user.telegram_id,
+            endpoint=f"/admin/users/{user_id}/reset-pin",
+            success=False,
+            error_message=str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la réinitialisation du PIN: {str(e)}"
+        )
+
+
+@router.get(
+    "/audit-log",
+    response_model=dict,
+    summary="Journal d'audit (Admin)",
+    description="Récupère le journal d'audit avec filtres et pagination"
+)
+@limiter.limit("30/minute")
+async def get_audit_log(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_role_strict()),
+    page: int = Query(1, ge=1, description="Numéro de page"),
+    page_size: int = Query(20, ge=1, le=100, description="Taille de page"),
+    action_type: Optional[str] = Query(None, description="Filtrer par type d'action"),
+    actor_username: Optional[str] = Query(None, description="Filtrer par nom d'utilisateur acteur"),
+    target_type: Optional[str] = Query(None, description="Filtrer par type de cible"),
+    start_date: Optional[datetime] = Query(None, description="Date de début (ISO format)"),
+    end_date: Optional[datetime] = Query(None, description="Date de fin (ISO format)"),
+    search: Optional[str] = Query(None, description="Recherche dans description ou détails")
+):
+    """
+    Récupère le journal d'audit avec filtres et pagination.
+    Seuls les administrateurs peuvent accéder à cette fonctionnalité.
+    """
+    try:
+        from recyclic_api.models.audit_log import AuditLog
+        from sqlalchemy import and_, or_, desc
+        
+        # Construire la requête de base
+        query = db.query(AuditLog)
+        
+        # Appliquer les filtres
+        filters = []
+        
+        if action_type:
+            filters.append(AuditLog.action_type == action_type)
+        
+        if actor_username:
+            filters.append(AuditLog.actor_username.ilike(f"%{actor_username}%"))
+        
+        if target_type:
+            filters.append(AuditLog.target_type == target_type)
+        
+        if start_date:
+            filters.append(AuditLog.timestamp >= start_date)
+        
+        if end_date:
+            filters.append(AuditLog.timestamp <= end_date)
+        
+        if search:
+            from sqlalchemy import cast, String
+            search_filter = or_(
+                AuditLog.description.ilike(f"%{search}%"),
+                cast(AuditLog.details_json, String).ilike(f"%{search}%")
+            )
+            filters.append(search_filter)
+        
+        if filters:
+            query = query.filter(and_(*filters))
+        
+        # Compter le total d'entrées
+        total_count = query.count()
+        
+        # Appliquer la pagination et l'ordre
+        offset = (page - 1) * page_size
+        audit_entries = query.order_by(desc(AuditLog.timestamp)).offset(offset).limit(page_size).all()
+        
+        # Calculer les informations de pagination
+        total_pages = (total_count + page_size - 1) // page_size
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        # Formater les entrées pour la réponse
+        entries = []
+        for entry in audit_entries:
+            # Récupérer le nom complet de l'acteur avec fallback intelligent
+            actor_display_name = entry.actor_username or "Système"
+            if entry.actor_id:
+                actor_user = db.query(User).filter(User.id == entry.actor_id).first()
+                if actor_user:
+                    # Logique de fallback intelligente
+                    if actor_user.first_name and actor_user.last_name:
+                        # Nom complet + identifiant
+                        if actor_user.username:
+                            actor_display_name = f"{actor_user.first_name} {actor_user.last_name} (@{actor_user.username})"
+                        elif actor_user.telegram_id:
+                            actor_display_name = f"{actor_user.first_name} {actor_user.last_name} (@{actor_user.telegram_id})"
+                        else:
+                            actor_display_name = f"{actor_user.first_name} {actor_user.last_name}"
+                    elif actor_user.first_name:
+                        # Prénom seul + identifiant
+                        if actor_user.username:
+                            actor_display_name = f"{actor_user.first_name} (@{actor_user.username})"
+                        elif actor_user.telegram_id:
+                            actor_display_name = f"{actor_user.first_name} (@{actor_user.telegram_id})"
+                        else:
+                            actor_display_name = actor_user.first_name
+                    elif actor_user.username:
+                        actor_display_name = f"@{actor_user.username}"
+                    elif actor_user.telegram_id:
+                        actor_display_name = f"@{actor_user.telegram_id}"
+                    else:
+                        # Dernier recours : ID
+                        actor_display_name = f"ID: {str(actor_user.id)[:8]}..."
+            
+            # Récupérer le nom complet de l'utilisateur cible avec fallback intelligent
+            target_display_name = None
+            if entry.target_id and entry.target_type == "user":
+                target_user = db.query(User).filter(User.id == entry.target_id).first()
+                if target_user:
+                    # Logique de fallback intelligente
+                    if target_user.first_name and target_user.last_name:
+                        # Nom complet + identifiant
+                        if target_user.username:
+                            target_display_name = f"{target_user.first_name} {target_user.last_name} (@{target_user.username})"
+                        elif target_user.telegram_id:
+                            target_display_name = f"{target_user.first_name} {target_user.last_name} (@{target_user.telegram_id})"
+                        else:
+                            target_display_name = f"{target_user.first_name} {target_user.last_name}"
+                    elif target_user.first_name:
+                        # Prénom seul + identifiant
+                        if target_user.username:
+                            target_display_name = f"{target_user.first_name} (@{target_user.username})"
+                        elif target_user.telegram_id:
+                            target_display_name = f"{target_user.first_name} (@{target_user.telegram_id})"
+                        else:
+                            target_display_name = target_user.first_name
+                    elif target_user.username:
+                        target_display_name = f"@{target_user.username}"
+                    elif target_user.telegram_id:
+                        target_display_name = f"@{target_user.telegram_id}"
+                    else:
+                        # Dernier recours : ID
+                        target_display_name = f"ID: {str(target_user.id)[:8]}..."
+            
+            # Améliorer la description en remplaçant les IDs par des noms
+            improved_description = entry.description
+            if entry.description and entry.target_id and target_display_name:
+                # Remplacer les IDs par les noms dans la description
+                improved_description = entry.description.replace(
+                    str(entry.target_id), 
+                    target_display_name
+                )
+            
+            entry_data = {
+                "id": str(entry.id),
+                "timestamp": entry.timestamp.isoformat(),
+                "actor_id": str(entry.actor_id) if entry.actor_id else None,
+                "actor_username": actor_display_name,
+                "action_type": entry.action_type,
+                "target_id": str(entry.target_id) if entry.target_id else None,
+                "target_username": target_display_name,
+                "target_type": entry.target_type,
+                "details": entry.details_json,
+                "description": improved_description,
+                "ip_address": entry.ip_address,
+                "user_agent": entry.user_agent
+            }
+            entries.append(entry_data)
+        
+        # Log de l'accès au journal d'audit
+        logger.info(
+            f"Audit log accessed by admin {current_user.id}",
+            extra={
+                "admin_user_id": str(current_user.id),
+                "admin_username": current_user.username or current_user.telegram_id,
+                "action": "audit_log_access",
+                "filters": {
+                    "action_type": action_type,
+                    "actor_username": actor_username,
+                    "target_type": target_type,
+                    "start_date": start_date.isoformat() if start_date else None,
+                    "end_date": end_date.isoformat() if end_date else None,
+                    "search": search
+                },
+                "page": page,
+                "page_size": page_size,
+                "total_count": total_count,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )
+        
+        return {
+            "entries": entries,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total_count": total_count,
+                "total_pages": total_pages,
+                "has_next": has_next,
+                "has_prev": has_prev
+            },
+            "filters_applied": {
+                "action_type": action_type,
+                "actor_username": actor_username,
+                "target_type": target_type,
+                "start_date": start_date.isoformat() if start_date else None,
+                "end_date": end_date.isoformat() if end_date else None,
+                "search": search
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du journal d'audit: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la récupération du journal d'audit: {str(e)}"
         )
 
 

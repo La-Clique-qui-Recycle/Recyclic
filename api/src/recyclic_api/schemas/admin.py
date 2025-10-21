@@ -13,6 +13,11 @@ class AdminUser(BaseModel):
     last_name: Optional[str] = None
     full_name: Optional[str] = None  # Computed field
     email: Optional[str] = None
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    skills: Optional[str] = None
+    availability: Optional[str] = None
     role: UserRole
     status: UserStatus
     is_active: bool
@@ -119,6 +124,30 @@ class ActivityEvent(BaseModel):
         if isinstance(self.id, UUID):
             self.id = str(self.id)
 
+class UserStatusInfo(BaseModel):
+    """Schéma pour les informations de statut d'un utilisateur"""
+    user_id: Union[str, UUID]
+    is_online: bool = Field(..., description="Indique si l'utilisateur est en ligne")
+    last_login: Optional[datetime] = Field(None, description="Dernière connexion réussie")
+    minutes_since_login: Optional[int] = Field(None, description="Minutes écoulées depuis la dernière connexion")
+    
+    model_config = {"from_attributes": True}
+    
+    def model_post_init(self, __context) -> None:
+        """Convertit les UUIDs en strings après validation"""
+        if isinstance(self.user_id, UUID):
+            self.user_id = str(self.user_id)
+
+class UserStatusesResponse(BaseModel):
+    """Schéma pour la réponse des statuts des utilisateurs"""
+    user_statuses: List[UserStatusInfo] = Field(..., description="Liste des statuts des utilisateurs")
+    total_count: int = Field(..., description="Nombre total d'utilisateurs")
+    online_count: int = Field(..., description="Nombre d'utilisateurs en ligne")
+    offline_count: int = Field(..., description="Nombre d'utilisateurs hors ligne")
+    timestamp: datetime = Field(..., description="Timestamp de la requête")
+    
+    model_config = {"from_attributes": True}
+
 class UserHistoryResponse(BaseModel):
     """Schéma pour la réponse de l'historique utilisateur"""
     user_id: Union[str, UUID]
@@ -135,3 +164,8 @@ class UserHistoryResponse(BaseModel):
         """Convertit les UUIDs en strings après validation"""
         if isinstance(self.user_id, UUID):
             self.user_id = str(self.user_id)
+
+class ForcePasswordRequest(BaseModel):
+    """Schéma pour forcer un nouveau mot de passe (Super Admin uniquement)"""
+    new_password: str = Field(..., min_length=8, description="Nouveau mot de passe")
+    reason: Optional[str] = Field(None, description="Raison du forçage du mot de passe")

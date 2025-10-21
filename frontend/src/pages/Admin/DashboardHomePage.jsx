@@ -127,12 +127,17 @@ const DashboardHomePage = () => {
         <AdminCard>
           <CardTitle>GESTION DES ACCÈS</CardTitle>
           <CardDescription>
-            Gérer les comptes utilisateurs, leurs rôles et les inscriptions en attente.
+            Gérer les comptes utilisateurs, leurs rôles, groupes et les inscriptions en attente.
           </CardDescription>
           <LinkList>
             <LinkItem>
               <AdminLink onClick={() => handleNavigation('/admin/users')}>
                 Utilisateurs
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/groups')}>
+                Groupes & Permissions
               </AdminLink>
             </LinkItem>
             <LinkItem>
@@ -185,6 +190,11 @@ const DashboardHomePage = () => {
             <LinkItem>
               <AdminLink onClick={() => handleNavigation('/admin/reception-reports')}>
                 Rapports de Réception
+              </AdminLink>
+            </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/audit-log')}>
+                Journal d'Audit
               </AdminLink>
             </LinkItem>
           </LinkList>

@@ -61,7 +61,25 @@ async def set_user_pin(
     """Définir ou modifier le PIN de l'utilisateur connecté.
 
     Le PIN doit être exactement 4 chiffres et sera haché avant stockage.
+    Si l'utilisateur a déjà un PIN, le mot de passe actuel est requis.
     """
+    from recyclic_api.core.security import verify_password
+    
+    # Si l'utilisateur a déjà un PIN, vérifier le mot de passe
+    if current_user.hashed_pin is not None:
+        if not pin_request.current_password:
+            raise HTTPException(
+                status_code=400,
+                detail="Current password is required to modify existing PIN"
+            )
+        
+        # Vérifier le mot de passe actuel
+        if not verify_password(pin_request.current_password, current_user.hashed_password):
+            raise HTTPException(
+                status_code=400,
+                detail="Current password is incorrect"
+            )
+    
     # Hash the PIN using the same security mechanism as passwords
     current_user.hashed_pin = hash_password(pin_request.pin)
 
@@ -102,6 +120,7 @@ async def get_user(user_id: str, db: Session = Depends(get_db)):
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """Create new user"""
     from recyclic_api.core.security import hash_password
+    from recyclic_api.core.audit import log_audit, AuditActionType
 
     # Check if username already exists
     existing_user = db.query(User).filter(User.username == user.username).first()
@@ -119,11 +138,29 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    # Log audit for user creation
+    log_audit(
+        action_type=AuditActionType.USER_CREATED,
+        actor=None,  # System creation, no specific actor
+        target_id=db_user.id,
+        target_type="user",
+        details={
+            "username": db_user.username,
+            "role": db_user.role.value if db_user.role else None,
+            "status": db_user.status.value if db_user.status else None
+        },
+        description=f"Utilisateur créé: {db_user.username}",
+        db=db
+    )
+    
     return db_user
 
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get_db)):
     """Update user by ID"""
+    from recyclic_api.core.audit import log_audit, AuditActionType
+    
     user_uuid = validate_and_convert_uuid(user_id)
 
     user = db.query(User).filter(User.id == user_uuid).first()
@@ -132,21 +169,55 @@ async def update_user(user_id: str, user_update: UserUpdate, db: Session = Depen
 
     # Update only provided fields
     update_data = user_update.model_dump(exclude_unset=True)
+    updated_fields = list(update_data.keys())
+    
     for field, value in update_data.items():
         setattr(user, field, value)
 
     db.commit()
     db.refresh(user)
+    
+    # Log audit for user update
+    log_audit(
+        action_type=AuditActionType.USER_UPDATED,
+        actor=None,  # Self-update, no specific actor
+        target_id=user.id,
+        target_type="user",
+        details={
+            "username": user.username,
+            "updated_fields": updated_fields
+        },
+        description=f"Utilisateur modifié: {user.username} (champs: {', '.join(updated_fields)})",
+        db=db
+    )
+    
     return user
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: str, db: Session = Depends(get_db)):
     """Delete user by ID"""
+    from recyclic_api.core.audit import log_audit, AuditActionType
+    
     user_uuid = validate_and_convert_uuid(user_id)
 
     user = db.query(User).filter(User.id == user_uuid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Log audit before deletion
+    log_audit(
+        action_type=AuditActionType.USER_DELETED,
+        actor=None,  # System deletion, no specific actor
+        target_id=user.id,
+        target_type="user",
+        details={
+            "username": user.username,
+            "role": user.role.value if user.role else None,
+            "status": user.status.value if user.status else None
+        },
+        description=f"Utilisateur supprimé: {user.username}",
+        db=db
+    )
 
     db.delete(user)
     db.commit()

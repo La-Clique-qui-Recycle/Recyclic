@@ -9,6 +9,12 @@ class UserBase(BaseModel):
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    skills: Optional[str] = None
+    availability: Optional[str] = None
     role: UserRole = UserRole.USER
     status: UserStatus = UserStatus.PENDING
     is_active: bool = True
@@ -59,6 +65,12 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    skills: Optional[str] = None
+    availability: Optional[str] = None
     role: Optional[UserRole] = None
     status: Optional[UserStatus] = None
     is_active: Optional[bool] = None
@@ -74,6 +86,8 @@ class UserSelfUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
 
     @field_validator('username')
     @classmethod
