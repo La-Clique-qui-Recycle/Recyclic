@@ -32,7 +32,7 @@ const ReceptionReports = lazy(() => import('./pages/Admin/ReceptionReports.tsx')
 const CashSessionDetail = lazy(() => import('./pages/Admin/CashSessionDetail.tsx'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings.tsx'));
 const AdminGroups = lazy(() => import('./pages/Admin/GroupsReal.tsx'));
-const AuditLog = lazy(() => import('./pages/admin/AuditLog.tsx'));
+const AuditLog = lazy(() => import('./pages/Admin/AuditLog.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
