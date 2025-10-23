@@ -4,7 +4,7 @@ Statistics and analytics endpoints.
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from datetime import date
+from datetime import date, datetime
 import logging
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -35,13 +35,13 @@ limiter = Limiter(key_func=get_remote_address)
 @limiter.limit("60/minute")
 def get_reception_summary(
     request: Request,
-    start_date: Optional[date] = Query(
+    start_date: Optional[datetime] = Query(
         None,
-        description="Start date (inclusive) in ISO 8601 format (YYYY-MM-DD)"
+        description="Start date (inclusive) in ISO 8601 format"
     ),
-    end_date: Optional[date] = Query(
+    end_date: Optional[datetime] = Query(
         None,
-        description="End date (inclusive) in ISO 8601 format (YYYY-MM-DD)"
+        description="End date (inclusive) in ISO 8601 format"
     ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)  # Changed: Allow all authenticated users
@@ -78,13 +78,13 @@ def get_reception_summary(
 @limiter.limit("60/minute")
 def get_reception_by_category(
     request: Request,
-    start_date: Optional[date] = Query(
+    start_date: Optional[datetime] = Query(
         None,
-        description="Start date (inclusive) in ISO 8601 format (YYYY-MM-DD)"
+        description="Start date (inclusive) in ISO 8601 format"
     ),
-    end_date: Optional[date] = Query(
+    end_date: Optional[datetime] = Query(
         None,
-        description="End date (inclusive) in ISO 8601 format (YYYY-MM-DD)"
+        description="End date (inclusive) in ISO 8601 format"
     ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)  # Changed: Allow all authenticated users

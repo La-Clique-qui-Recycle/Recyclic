@@ -232,35 +232,38 @@ function UnifiedDashboard() {
   // Calculate date range based on preset
   const getDateRange = (preset: DateRangePreset): { start: string | undefined; end: string | undefined } => {
     const today = new Date();
-    const end = today.toISOString().split('T')[0];
-    let start = end;
+    let end = new Date(today);
+    end.setHours(23, 59, 59, 999); // Important: définir l'heure à la fin de la journée
+
+    let start = new Date(today);
+    start.setHours(0, 0, 0, 0); // Important: définir l'heure au début de la journée
 
     switch (preset) {
       case 'all':
         return { start: undefined, end: undefined };
       case 'today':
-        start = end;
+        // 'start' et 'end' sont déjà corrects
         break;
       case 'week':
-        const weekAgo = new Date(today);
-        weekAgo.setDate(today.getDate() - 7);
-        start = weekAgo.toISOString().split('T')[0];
+        start.setDate(start.getDate() - 7);
         break;
       case 'month':
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(today.getMonth() - 1);
-        start = monthAgo.toISOString().split('T')[0];
+        start.setMonth(start.getMonth() - 1);
         break;
       case 'year':
-        const yearAgo = new Date(today);
-        yearAgo.setFullYear(today.getFullYear() - 1);
-        start = yearAgo.toISOString().split('T')[0];
+        start.setFullYear(start.getFullYear() - 1);
         break;
       case 'custom':
-        return { start: startDate || undefined, end: endDate || undefined };
+        // La logique custom doit retourner des ISOString
+        const customStart = startDate ? new Date(startDate) : undefined;
+        if (customStart) customStart.setHours(0, 0, 0, 0);
+        const customEnd = endDate ? new Date(endDate) : undefined;
+        if (customEnd) customEnd.setHours(23, 59, 59, 999);
+        return { start: customStart?.toISOString(), end: customEnd?.toISOString() };
     }
 
-    return { start, end };
+    // Retourner les dates au format ISO complet (corrigé pour b34-p19)
+    return { start: start.toISOString(), end: end.toISOString() };
   };
 
   // Fonction pour charger les statistiques avec filtres

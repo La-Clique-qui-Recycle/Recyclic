@@ -1,6 +1,6 @@
 # Story b34-p18: Bug: Corriger TypeError sur la consultation de session de caisse
 
-**Statut:** Prêt pour développement
+**Statut:** ✅ Terminé et Validé
 **Épopée:** [b34: Rattrapage et Sécurisation](./../epics/epic-b34-rattrapage-securisation.md)
 **PO:** Sarah
 **Type:** Bug

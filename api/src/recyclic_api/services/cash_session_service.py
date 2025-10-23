@@ -142,10 +142,18 @@ class CashSessionService:
             query = query.filter(CashSession.register_id == rid)
 
         if filters.date_from:
-            query = query.filter(CashSession.opened_at >= filters.date_from)
+            # Rendre la date consciente du fuseau horaire (UTC)
+            date_from = filters.date_from
+            if date_from.tzinfo is None:
+                date_from = date_from.replace(tzinfo=timezone.utc)
+            query = query.filter(CashSession.opened_at >= date_from)
         
         if filters.date_to:
-            query = query.filter(CashSession.opened_at <= filters.date_to)
+            # Rendre la date consciente du fuseau horaire (UTC)
+            date_to = filters.date_to
+            if date_to.tzinfo is None:
+                date_to = date_to.replace(tzinfo=timezone.utc)
+            query = query.filter(CashSession.opened_at <= date_to)
         
         # Recherche textuelle (nom opérateur ou ID session)
         if getattr(filters, 'search', None):
@@ -263,8 +271,14 @@ class CashSessionService:
         
         # Appliquer les filtres de date
         if date_from:
+            # Rendre la date consciente du fuseau horaire (UTC)
+            if date_from.tzinfo is None:
+                date_from = date_from.replace(tzinfo=timezone.utc)
             query = query.filter(CashSession.opened_at >= date_from)
         if date_to:
+            # Rendre la date consciente du fuseau horaire (UTC)
+            if date_to.tzinfo is None:
+                date_to = date_to.replace(tzinfo=timezone.utc)
             query = query.filter(CashSession.opened_at <= date_to)
         
         # Statistiques de base
