@@ -26,7 +26,11 @@ if $COMPOSE_CMD --help 2>/dev/null | grep -q -- "--env-file"; then
   $COMPOSE_CMD -f docker-compose.staging.yml -p recyclic-staging --env-file .env.staging --env-file .build-meta.env down || true
   # Nettoyage ciblé si des conteneurs résiduels existent encore
   docker rm -f recyclic-staging-postgres recyclic-staging-redis 2>/dev/null || true
-  exec $COMPOSE_CMD -f docker-compose.staging.yml -p recyclic-staging --env-file .env.staging --env-file .build-meta.env up -d --build --remove-orphans
+  # Forcer la reconstruction des images sans cache pour garantir la fraîcheur
+  $COMPOSE_CMD -f docker-compose.staging.yml -p recyclic-staging --env-file .env.staging --env-file .build-meta.env build --no-cache
+
+  # Démarrer les services avec les nouvelles images
+  exec $COMPOSE_CMD -f docker-compose.staging.yml -p recyclic-staging --env-file .env.staging --env-file .build-meta.env up -d --remove-orphans
 else
   echo "❌ La commande '$COMPOSE_CMD' ne supporte pas --env-file. Merci d'installer docker compose v2 (recommandé)." >&2
   echo "   Commande alternative manuelle (si .env.staging renommé temporairement en .env) :" >&2
