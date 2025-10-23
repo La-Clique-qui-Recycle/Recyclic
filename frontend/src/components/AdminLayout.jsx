@@ -104,8 +104,7 @@ const AdminLayout = () => {
 
   // Charger les informations de version
   useEffect(() => {
-    // Version simplifiée pour éviter les erreurs
-    setVersionDisplay('Version: 1.0.0');
+    getVersionDisplay().then(setVersionDisplay);
   }, []);
 
   // Fermer le menu quand on clique ailleurs
