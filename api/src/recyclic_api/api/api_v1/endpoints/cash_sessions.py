@@ -107,12 +107,12 @@ async def create_cash_session(
         existing_session = service.get_open_session_by_operator(session_data.operator_id)
         if existing_session:
             log_cash_session_opening(
-                operator_id=current_user.id,
-                operator_username=current_user.username or "Unknown",
+                user_id=str(current_user.id),
+                username=current_user.username or "Unknown",
                 session_id="",
-                initial_amount=session_data.initial_amount,
+                opening_amount=session_data.initial_amount,
                 success=False,
-                error_message="Session already open for operator"
+                db=db
             )
             raise HTTPException(
                 status_code=400,
@@ -129,33 +129,34 @@ async def create_cash_session(
 
         # Log de l'ouverture de session
         log_cash_session_opening(
-            operator_id=current_user.id,
-            operator_username=current_user.username or "Unknown",
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
             session_id=str(cash_session.id),
-            initial_amount=session_data.initial_amount,
-            success=True
+            opening_amount=session_data.initial_amount,
+            success=True,
+            db=db
         )
 
         return CashSessionResponse.model_validate(cash_session)
     except ValueError as e:
         log_cash_session_opening(
-            operator_id=current_user.id,
-            operator_username=current_user.username or "Unknown",
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
             session_id="",
-            initial_amount=session_data.initial_amount,
+            opening_amount=session_data.initial_amount,
             success=False,
-            error_message=str(e)
+            db=db
         )
         # Important: renvoyer un JSON cohérent
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         log_cash_session_opening(
-            operator_id=current_user.id,
-            operator_username=current_user.username or "Unknown",
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
             session_id="",
-            initial_amount=session_data.initial_amount,
+            opening_amount=session_data.initial_amount,
             success=False,
-            error_message=str(e)
+            db=db
         )
         raise
 
@@ -364,8 +365,8 @@ async def get_cash_session_detail(
             user_id=str(current_user.id),
             username=current_user.username or "Unknown",
             session_id=session_id,
-            action="view_details",
-            success=True
+            success=True,
+            db=db
         )
         
         # Construire la réponse avec les ventes
@@ -391,9 +392,8 @@ async def get_cash_session_detail(
             user_id=str(current_user.id),
             username=current_user.username or "Unknown",
             session_id=session_id,
-            action="view_details",
             success=False,
-            error_message=str(e)
+            db=db
         )
         raise HTTPException(
             status_code=500,
@@ -529,14 +529,12 @@ async def close_cash_session(
         session = service.get_session_by_id(session_id)
         if not session:
             log_cash_session_closing(
-                operator_id=current_user.id,
-                operator_username=current_user.username or "Unknown",
+                user_id=str(current_user.id),
+                username=current_user.username or "Unknown",
                 session_id=session_id,
-                final_amount=0,
-                total_sales=0,
-                total_items=0,
+                closing_amount=0,
                 success=False,
-                error_message="Session not found"
+                db=db
             )
             raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
         
@@ -544,27 +542,23 @@ async def close_cash_session(
         if (current_user.role == UserRole.USER and 
             str(session.operator_id) != str(current_user.id)):
             log_cash_session_closing(
-                operator_id=current_user.id,
-                operator_username=current_user.username or "Unknown",
+                user_id=str(current_user.id),
+                username=current_user.username or "Unknown",
                 session_id=session_id,
-                final_amount=session.current_amount,
-                total_sales=session.total_sales or 0,
-                total_items=session.total_items or 0,
+                closing_amount=session.current_amount,
                 success=False,
-                error_message="Unauthorized access"
+                db=db
             )
             raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
         
         if session.status == CashSessionStatus.CLOSED:
             log_cash_session_closing(
-                operator_id=current_user.id,
-                operator_username=current_user.username or "Unknown",
+                user_id=str(current_user.id),
+                username=current_user.username or "Unknown",
                 session_id=session_id,
-                final_amount=session.current_amount,
-                total_sales=session.total_sales or 0,
-                total_items=session.total_items or 0,
+                closing_amount=session.current_amount,
                 success=False,
-                error_message="Session already closed"
+                db=db
             )
             raise HTTPException(status_code=400, detail="La session est déjà fermée")
         
@@ -574,14 +568,12 @@ async def close_cash_session(
         
         if abs(variance) > 0.01 and not close_data.variance_comment:  # Tolérance de 1 centime
             log_cash_session_closing(
-                operator_id=current_user.id,
-                operator_username=current_user.username or "Unknown",
+                user_id=str(current_user.id),
+                username=current_user.username or "Unknown",
                 session_id=session_id,
-                final_amount=close_data.actual_amount,
-                total_sales=session.total_sales or 0,
-                total_items=session.total_items or 0,
+                closing_amount=close_data.actual_amount,
                 success=False,
-                error_message="Commentaire obligatoire pour les écarts"
+                db=db
             )
             raise HTTPException(
                 status_code=400, 
@@ -597,13 +589,12 @@ async def close_cash_session(
         
         # Log de la fermeture de session
         log_cash_session_closing(
-            operator_id=current_user.id,
-            operator_username=current_user.username or "Unknown",
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
             session_id=session_id,
-            final_amount=closed_session.current_amount,
-            total_sales=closed_session.total_sales or 0,
-            total_items=closed_session.total_items or 0,
-            success=True
+            closing_amount=closed_session.current_amount,
+            success=True,
+            db=db
         )
         
 
@@ -671,14 +662,12 @@ async def close_cash_session(
         raise
     except Exception as e:
         log_cash_session_closing(
-            operator_id=current_user.id,
-            operator_username=current_user.username or "Unknown",
+            user_id=str(current_user.id),
+            username=current_user.username or "Unknown",
             session_id=session_id,
-            final_amount=0,
-            total_sales=0,
-            total_items=0,
+            closing_amount=0,
             success=False,
-            error_message=str(e)
+            db=db
         )
         raise
 
