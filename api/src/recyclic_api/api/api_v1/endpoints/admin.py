@@ -914,24 +914,6 @@ def get_user_history(
             elif target_user.telegram_id:
                 target_name = f"@{target_user.telegram_id}"
 
-        # Log audit pour acc├¿s aux donn├®es sensibles
-        log_audit(
-            action_type=AuditActionType.SYSTEM_CONFIG_CHANGED,  # Utiliser un type appropri├®
-            actor=current_user,
-            target_id=user_id,
-            target_type="user_history",
-            details={
-                "admin_username": current_user.username or current_user.telegram_id,
-                "target_user_id": user_id,
-                "filters": {
-                    "date_from": date_from.isoformat() if date_from else None,
-                    "date_to": date_to.isoformat() if date_to else None,
-                    "event_type": event_type
-                }
-            },
-            description=f"Acc├¿s ├á l'historique de {target_name}",
-            db=db
-        )
 
         # Cr├®er le service d'historique
         history_service = UserHistoryService(db)
