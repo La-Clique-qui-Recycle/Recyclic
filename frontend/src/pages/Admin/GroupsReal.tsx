@@ -287,7 +287,7 @@ export default function GroupsReal() {
       <LoadingOverlay visible={loading} />
 
       <MantineGroup justify="space-between" mb="lg">
-        <Title order={2}>Gestion des Groupes (API Réelle)</Title>
+        <Title order={2}>Gestion des Groupes</Title>
         <Button
           leftSection={<IconPlus size={16} />}
           onClick={() => setCreateModalOpen(true)}

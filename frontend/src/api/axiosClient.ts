@@ -50,8 +50,10 @@ axiosClient.interceptors.request.use(
 axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            // Token expiré, invalide, ou permissions insuffisantes
+        // Déconnecter UNIQUEMENT sur 401 (token invalide/expiré)
+        // Ne PAS déconnecter sur 403 (permissions insuffisantes) - laisser le composant gérer l'erreur
+        if (error.response?.status === 401) {
+            // Token expiré ou invalide
             localStorage.removeItem('token');
             // Redirection simple pour éviter les dépendances cycliques avec les stores
             window.location.href = '/login';

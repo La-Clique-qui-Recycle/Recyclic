@@ -10,7 +10,7 @@ import axiosClient from './api/axiosClient';
 
 // Lazy loading des pages pour le code-splitting
 const BenevoleDashboard = lazy(() => import('./pages/BenevoleDashboard.jsx'));
-const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const UnifiedDashboard = lazy(() => import('./pages/UnifiedDashboard.tsx'));
 const CashRegister = lazy(() => import('./pages/CashRegister/CashRegisterDashboard.tsx'));
 const OpenCashSession = lazy(() => import('./pages/CashRegister/OpenCashSession.tsx'));
 const Sale = lazy(() => import('./pages/CashRegister/Sale.tsx'));
@@ -179,7 +179,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/telegram-auth" element={<TelegramAuth />} />
-            <Route path="/" element={<ProtectedRoute><PostLoginRedirect /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><UnifiedDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/benevole" element={<ProtectedRoute><BenevoleDashboard /></ProtectedRoute>} />
             <Route path="/caisse" element={<ProtectedRoute requiredPermission="caisse.access"><CashRegister /></ProtectedRoute>} />
             <Route path="/cash-register/session/open" element={<ProtectedRoute requiredPermission="caisse.access"><OpenCashSession /></ProtectedRoute>} />
@@ -198,7 +198,7 @@ function App() {
               <Route index element={<DashboardHomePage />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="cash-sessions/:id" element={<CashSessionDetail />} />
-              <Route path="reception-stats" element={<ReceptionDashboard />} />
+              <Route path="reception-stats" element={<Navigate to="/" replace />} />
               <Route path="reception-reports" element={<ReceptionReports />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="pending" element={<PendingUsers />} />

@@ -62,6 +62,8 @@ export default function Header() {
   const logout = useAuthStore((s) => s.logout);
   const isAdmin = useAuthStore((s) => s.isAdmin());
   const hasCashAccess = useAuthStore((s) => s.hasCashAccess());
+  const hasReceptionAccess = useAuthStore((s) => s.hasReceptionAccess());
+  const isUserRole = currentUser?.role === 'user';
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   const onLogout = () => {
@@ -74,14 +76,14 @@ export default function Header() {
     { path: '/', label: 'Tableau de bord', icon: Home }
   ];
 
-  // Éléments supplémentaires uniquement si authentifié
-  if (isAuthenticated) {
-    navItems.push({ path: '/reception', label: 'Réception', icon: Receipt });
-  }
-
-  // Caisse accessible aux rôles autorisés (user/manager/admin)
+  // Caisse - visible si l'utilisateur a la permission
   if (hasCashAccess) {
     navItems.splice(1, 0, { path: '/caisse', label: 'Caisse', icon: Calculator });
+  }
+
+  // Réception - visible si l'utilisateur a la permission
+  if (hasReceptionAccess) {
+    navItems.push({ path: '/reception', label: 'Réception', icon: Receipt });
   }
 
   // Journal de Caisse retiré du menu principal (désormais dans Administration)
@@ -148,6 +150,22 @@ export default function Header() {
                     zIndex: 1000
                   }}
                 >
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); navigate('/dashboard/benevole'); }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '10px 12px',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                    data-testid="menu-personal-dashboard"
+                  >
+                    Dashboard personnel
+                  </button>
                   <button
                     role="menuitem"
                     onClick={() => { setMenuOpen(false); navigate('/profil'); }}

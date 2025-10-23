@@ -44,6 +44,8 @@ interface AuthState {
   // Computed
   isAdmin: () => boolean;
   hasPermission: (permission: string) => boolean; // NEW: Vérifier une permission
+  hasCashAccess: () => boolean;
+  hasReceptionAccess: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -205,13 +207,25 @@ export const useAuthStore = create<AuthState>()(
 
         hasPermission: (permission: string) => {
           const { permissions, currentUser } = get();
-          if (currentUser?.role === 'super-admin') return true;
+          // Admins and Super-admins have all permissions
+          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
           return permissions.includes(permission);
         },
 
         hasCashAccess: () => {
-          const { currentUser } = get();
-          return currentUser?.role === 'user' || currentUser?.role === 'admin' || currentUser?.role === 'super-admin';
+          const { permissions, currentUser } = get();
+          // Admins and Super-admins always have access
+          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
+          // Volunteers need the permission
+          return permissions.includes('caisse.access');
+        },
+
+        hasReceptionAccess: () => {
+          const { permissions, currentUser } = get();
+          // Admins and Super-admins always have access
+          if (currentUser?.role === 'admin' || currentUser?.role === 'super-admin') return true;
+          // Volunteers need the permission
+          return permissions.includes('reception.access');
         }
       }),
       {
