@@ -30,7 +30,7 @@ limiter = Limiter(key_func=get_remote_address)
     response_model=ReceptionSummaryStats,
     summary="Get reception summary statistics",
     description="Retrieve summary statistics (total weight, items, categories) for reception data. "
-                "Optionally filter by date range. Requires ADMIN or SUPER_ADMIN role."
+                "Optionally filter by date range. Available to all authenticated users."
 )
 @limiter.limit("60/minute")
 def get_reception_summary(
@@ -44,7 +44,7 @@ def get_reception_summary(
         description="End date (inclusive) in ISO 8601 format (YYYY-MM-DD)"
     ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin_role)
+    current_user: User = Depends(get_current_user)  # Changed: Allow all authenticated users
 ) -> ReceptionSummaryStats:
     """
     Get summary statistics for reception data.
@@ -54,7 +54,7 @@ def get_reception_summary(
     - Total number of items
     - Number of unique categories
 
-    Access restricted to ADMIN and SUPER_ADMIN roles.
+    Available to all authenticated users.
     """
     logger.info(
         f"User {current_user.id} requesting reception summary stats "
@@ -73,7 +73,7 @@ def get_reception_summary(
     response_model=List[CategoryStats],
     summary="Get reception statistics by category",
     description="Retrieve reception statistics grouped by category. "
-                "Optionally filter by date range. Requires ADMIN or SUPER_ADMIN role."
+                "Optionally filter by date range. Available to all authenticated users."
 )
 @limiter.limit("60/minute")
 def get_reception_by_category(
@@ -87,7 +87,7 @@ def get_reception_by_category(
         description="End date (inclusive) in ISO 8601 format (YYYY-MM-DD)"
     ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin_role)
+    current_user: User = Depends(get_current_user)  # Changed: Allow all authenticated users
 ) -> List[CategoryStats]:
     """
     Get reception statistics grouped by category.
@@ -99,7 +99,7 @@ def get_reception_by_category(
 
     Results are sorted by total weight (descending).
 
-    Access restricted to ADMIN and SUPER_ADMIN roles.
+    Available to all authenticated users.
     """
     logger.info(
         f"User {current_user.id} requesting reception by category stats "

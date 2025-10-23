@@ -291,8 +291,8 @@ def user_has_permission(user: User, permission_name: str, db: Session) -> bool:
     Returns:
         True if user has the permission, False otherwise
     """
-    # Super-admins have all permissions
-    if user.role == UserRole.SUPER_ADMIN:
+    # Admins and Super-admins have all permissions
+    if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         return True
 
     # Load user with groups and their permissions (anti N+1)
@@ -361,8 +361,8 @@ def get_user_permissions(user: User, db: Session) -> List[str]:
     Returns:
         List of permission names the user has
     """
-    # Super-admins have all permissions
-    if user.role == UserRole.SUPER_ADMIN:
+    # Admins and Super-admins have all permissions
+    if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         # Return all available permissions
         stmt = select(Permission)
         result = db.execute(stmt)

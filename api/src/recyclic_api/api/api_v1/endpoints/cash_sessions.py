@@ -689,7 +689,7 @@ async def get_cash_session_stats(
     date_to: Optional[datetime] = Query(None, description="Date de fin (ISO 8601)"),
     site_id: Optional[str] = Query(None, description="Filtrer par ID de site"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(get_current_user)  # Changed: Allow all authenticated users
 ):
     """
     Récupère les statistiques des sessions de caisse (KPIs agrégés).
