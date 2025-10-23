@@ -1,6 +1,6 @@
 # Story b34-p8: Fiabilisation du Statut d'Activité en Temps Réel
 
-**Statut:** Prêt pour développement
+**Statut:** Ready for Review
 **Épopée:** [b34: Rattrapage et Sécurisation](./../epics/epic-b34-rattrapage-securisation.md)
 **PO:** Sarah
 

@@ -181,8 +181,13 @@ class UserHistoryService:
 
         events: List[ActivityEvent] = []
         for record in records:
-            status_text = "CONNECTÉ" if record.success else "ÉCHEC CONNEXION"
-            reason_text = f" (Raison: {record.error_type})" if record.error_type else ""
+            if record.error_type == "logout":
+                status_text = "DÉCONNEXION"
+                reason_text = ""
+            else:
+                status_text = "CONNECTÉ" if record.success else "ÉCHEC CONNEXION"
+                reason_text = f" (Raison: {record.error_type})" if record.error_type else ""
+
             description = f"{status_text} depuis {record.client_ip or 'IP inconnue'}{reason_text}"
 
             events.append(ActivityEvent(
@@ -194,6 +199,7 @@ class UserHistoryService:
                     "success": record.success,
                     "client_ip": record.client_ip,
                     "error_type": record.error_type,
+                    "event": "logout" if record.error_type == "logout" else "login",
                     "username": record.username,
                 }
             ))

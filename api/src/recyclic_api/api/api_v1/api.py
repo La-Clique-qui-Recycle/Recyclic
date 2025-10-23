@@ -24,6 +24,7 @@ from .endpoints import (
     groups_router as groups,
     permissions_router as permissions,
     webhooks_router as webhooks,
+    activity_router as activity,
 )
 
 api_router = APIRouter()
@@ -53,5 +54,5 @@ api_router.include_router(db_import, prefix="/admin", tags=["admin"])
 api_router.include_router(groups, prefix="/admin/groups", tags=["admin", "groups"])
 api_router.include_router(permissions, prefix="/admin/permissions", tags=["admin", "permissions"])
 api_router.include_router(webhooks, prefix="/webhooks", tags=["webhooks"])
-
+api_router.include_router(activity, prefix="/activity", tags=["activity"])
 

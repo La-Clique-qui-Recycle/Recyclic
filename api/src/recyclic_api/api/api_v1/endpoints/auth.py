@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+﻿from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from slowapi import _rate_limit_exceeded_handler
@@ -6,6 +6,7 @@ from slowapi.errors import RateLimitExceeded
 from recyclic_api.utils.rate_limit import limiter, conditional_rate_limit
 import logging
 import time
+import uuid
 
 from recyclic_api.core.database import get_db
 from recyclic_api.core.security import create_access_token, verify_password, hash_password, create_password_reset_token, verify_reset_token
@@ -19,6 +20,7 @@ from recyclic_api.utils.auth_metrics import auth_metrics
 from recyclic_api.core.uuid_validation import validate_and_convert_uuid
 from recyclic_api.utils.password_reset_email import send_password_reset_email_safe
 from recyclic_api.core.config import settings
+from recyclic_api.services.activity_service import ActivityService
 
 router = APIRouter(tags=["auth"])
 
@@ -441,38 +443,51 @@ async def logout(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> LogoutResponse:
-    """Déconnexion audité d'un utilisateur authentifié."""
-    
+    """Deconnexion auditee d'un utilisateur authentifie."""
+
     client_ip = getattr(request.client, 'host', 'unknown') if request.client else 'unknown'
-    user_agent = request.headers.get("user-agent", "unknown")
-    
-    # Log audit pour la déconnexion
+    user_agent = request.headers.get('user-agent', 'unknown')
+
+    # Audit de la deconnexion
     log_audit(
         action_type=AuditActionType.LOGOUT,
         actor=current_user,
         details={
-            "username": current_user.username,
-            "user_id": str(current_user.id),
-            "user_role": current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+            'username': current_user.username,
+            'user_id': str(current_user.id),
+            'user_role': current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
         },
-        description=f"Déconnexion de l'utilisateur {current_user.username}",
+        description=f"Deconnexion de l'utilisateur {current_user.username}",
         ip_address=client_ip,
         user_agent=user_agent,
         db=db
     )
-    
-    logger.info(f"User {current_user.username} (ID: {current_user.id}) logged out from IP: {client_ip}")
-    
-    # Supprimer l'activité Redis lors de la déconnexion
+
+    logger.info('User %s (ID: %s) logged out from IP: %s', current_user.username, current_user.id, client_ip)
+
+    # Enregistrer la deconnexion dans login_history
     try:
-        from recyclic_api.core.redis import get_redis
-        redis_client = get_redis()
-        activity_key = f"user_activity:{current_user.id}"
-        redis_client.delete(activity_key)
-        logger.info(f"Activité Redis supprimée pour l'utilisateur {current_user.username}")
-    except Exception as e:
-        logger.warning(f"Erreur lors de la suppression de l'activité Redis: {e}")
-    
-    return LogoutResponse(message="Déconnexion réussie")
+        logout_entry = LoginHistory(
+            id=uuid.uuid4(),
+            user_id=current_user.id,
+            username=current_user.username,
+            success=True,
+            client_ip=client_ip,
+            error_type='logout',
+        )
+        db.add(logout_entry)
+        db.commit()
+    except Exception as exc:
+        logger.warning("Impossible d'enregistrer la deconnexion dans login_history: %s", exc)
+        db.rollback()
+
+    # Nettoyer l'activite temps reel
+    try:
+        ActivityService().clear_user_activity(str(current_user.id))
+        logger.info("Activite Redis supprimee pour l'utilisateur %s", current_user.username)
+    except Exception as exc:
+        logger.warning("Erreur lors de la suppression de l'activite Redis: %s", exc)
+
+    return LogoutResponse(message='Deconnexion reussie')
 
 

@@ -6,6 +6,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import PostLoginRedirect from './components/PostLoginRedirect';
 import { ReceptionProvider } from './contexts/ReceptionContext';
 import { useAuthStore } from './stores/authStore';
+import axiosClient from './api/axiosClient';
 
 // Lazy loading des pages pour le code-splitting
 const BenevoleDashboard = lazy(() => import('./pages/BenevoleDashboard.jsx'));
@@ -77,6 +78,7 @@ const LoadingSpinner = () => (
 function App() {
   const location = useLocation();
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   // Exposer le store globalement pour les intercepteurs
   useEffect(() => {
@@ -87,6 +89,57 @@ function App() {
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  useEffect(() => {
+    let intervalId = null;
+
+    const sendPing = async () => {
+      try {
+        await axiosClient.post('/v1/activity/ping');
+      } catch (error) {
+        console.debug('Activity ping failed', error);
+      }
+    };
+
+    const stopInterval = () => {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const startInterval = () => {
+      if (intervalId !== null) {
+        return;
+      }
+      sendPing();
+      intervalId = window.setInterval(() => {
+        if (!document.hidden) {
+          sendPing();
+        }
+      }, 60000);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopInterval();
+      } else if (isAuthenticated) {
+        startInterval();
+      }
+    };
+
+    if (isAuthenticated) {
+      if (!document.hidden) {
+        startInterval();
+      }
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopInterval();
+    };
+  }, [isAuthenticated]);
 
   // Routes en mode Kiosque (sans header principal)
   const kioskModeRoutes = [

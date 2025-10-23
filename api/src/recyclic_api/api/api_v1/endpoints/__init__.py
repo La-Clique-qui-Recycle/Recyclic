@@ -23,3 +23,4 @@ from .db_import import router as db_import_router
 from .groups import router as groups_router
 from .permissions import router as permissions_router
 from .webhooks import router as webhooks_router
+from .activity import router as activity_router

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Page de Paramètres Admin (Story B26-P1)
  * Accessible uniquement aux Super-Admins
  * Contient les outils de gestion de la base de données
@@ -374,6 +374,12 @@ const Settings: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [importConfirmationText, setImportConfirmationText] = useState('')
   
+  // États pour le seuil d'activité "En ligne"
+  const [activityThreshold, setActivityThreshold] = useState(15)
+  const [loadingActivityThreshold, setLoadingActivityThreshold] = useState(false)
+  const [savingActivityThreshold, setSavingActivityThreshold] = useState(false)
+  const [activityThresholdError, setActivityThresholdError] = useState<string | null>(null)
+
   // États pour les paramètres de session
   const [sessionSettings, setSessionSettings] = useState({ token_expiration_minutes: 480 })
   const [loadingSessionSettings, setLoadingSessionSettings] = useState(false)
@@ -421,6 +427,29 @@ const Settings: React.FC = () => {
 
     if (currentUser?.role === 'super-admin') {
       loadSessionSettings()
+    }
+  }, [currentUser])
+
+  useEffect(() => {
+    const loadActivityThreshold = async () => {
+      try {
+        setLoadingActivityThreshold(true)
+        setActivityThresholdError(null)
+        const response = await adminService.getActivityThreshold()
+        const minutes = response?.activity_threshold_minutes
+        if (typeof minutes === 'number' && !Number.isNaN(minutes)) {
+          setActivityThreshold(minutes)
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement du seuil d'activité:", error)
+        setActivityThresholdError("Erreur lors du chargement du seuil d'activité")
+      } finally {
+        setLoadingActivityThreshold(false)
+      }
+    }
+
+    if (currentUser?.role === 'super-admin') {
+      loadActivityThreshold()
     }
   }, [currentUser])
 
@@ -656,6 +685,33 @@ const Settings: React.FC = () => {
     }
   }
 
+  const handleActivityThresholdChange = (value: number) => {
+    const clamped = Math.max(0, value)
+    setActivityThreshold(clamped)
+    if (activityThresholdError) {
+      setActivityThresholdError(null)
+    }
+  }
+
+  const handleSaveActivityThreshold = async () => {
+    if (activityThreshold < 1 || activityThreshold > 1440) {
+      setActivityThresholdError("Le seuil doit être compris entre 1 et 1440 minutes")
+      return
+    }
+
+    try {
+      setSavingActivityThreshold(true)
+      setActivityThresholdError(null)
+      await adminService.updateActivityThreshold(activityThreshold)
+      alert("✅ Seuil d'activité mis à jour !")
+    } catch (error: any) {
+      console.error("Erreur lors de la mise à jour du seuil d'activité:", error)
+      setActivityThresholdError("Erreur lors de l'enregistrement du seuil d'activité")
+    } finally {
+      setSavingActivityThreshold(false)
+    }
+  }
+
   // Fonctions pour les paramètres email
   const handleEmailSettingsChange = (field: string, value: string) => {
     setEmailSettingsError(null)
@@ -860,6 +916,59 @@ const Settings: React.FC = () => {
               <strong>⚠️ DANGER :</strong> Cette action supprimera définitivement toutes les données transactionnelles.
               Elle ne doit être utilisée qu'une seule fois avant le lancement officiel de l'application.
             </WarningBox>
+          </ActionCard>
+          <ActionCard>
+            <ActionHeader>
+              <ActionInfo>
+                <ActionTitle>Seuil d'activité « En ligne »</ActionTitle>
+                <ActionDescription>
+                  Définit le temps pendant lequel un utilisateur reste affiché comme en ligne après son dernier ping.
+                </ActionDescription>
+              </ActionInfo>
+            </ActionHeader>
+            {loadingActivityThreshold ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                Chargement du seuil...
+              </div>
+            ) : (
+              <div>
+                <FormGroup>
+                  <Label htmlFor="activity-threshold">Seuil en minutes</Label>
+                  <Input
+                    id="activity-threshold"
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={activityThreshold}
+                    onChange={(e) => {
+                      const nextValue = parseInt(e.target.value ?? '0', 10)
+                      const clamped = Number.isNaN(nextValue) ? 0 : Math.min(1440, Math.max(0, nextValue))
+                      handleActivityThresholdChange(clamped)
+                    }}
+                    disabled={savingActivityThreshold}
+                  />
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                    Valeur par défaut : 15 minutes (modifiable depuis ce panneau).
+                  </div>
+                </FormGroup>
+
+                {activityThresholdError && (
+                  <ErrorMessage>
+                    {activityThresholdError}
+                  </ErrorMessage>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                  <Button
+                    variant="primary"
+                    onClick={handleSaveActivityThreshold}
+                    disabled={savingActivityThreshold}
+                  >
+                    {savingActivityThreshold ? 'Sauvegarde...' : 'Enregistrer'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </ActionCard>
         </ActionGroup>
       </Section>

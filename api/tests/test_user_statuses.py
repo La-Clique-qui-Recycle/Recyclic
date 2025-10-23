@@ -1,8 +1,46 @@
+﻿import jwt
 """
 Tests pour l'endpoint des statuts des utilisateurs
 """
-import pytest
 import time
+import sys
+import types
+
+if "reportlab" not in sys.modules:
+    reportlab = types.ModuleType("reportlab")
+    lib = types.ModuleType("reportlab.lib")
+    colors = types.ModuleType("reportlab.lib.colors")
+    colors.HexColor = lambda value: value
+    pagesizes = types.ModuleType("reportlab.lib.pagesizes")
+    pagesizes.A4 = (0, 0)
+    styles = types.ModuleType("reportlab.lib.styles")
+    class _Dummy:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    styles.getSampleStyleSheet = lambda: {}
+    styles.ParagraphStyle = _Dummy
+    units = types.ModuleType("reportlab.lib.units")
+    units.cm = 1
+    enums = types.ModuleType("reportlab.lib.enums")
+    enums.TA_CENTER = 1
+    enums.TA_LEFT = 0
+    platypus = types.ModuleType("reportlab.platypus")
+    platypus.SimpleDocTemplate = _Dummy
+    platypus.Table = _Dummy
+    platypus.TableStyle = _Dummy
+    platypus.Paragraph = _Dummy
+    platypus.Spacer = _Dummy
+    platypus.PageBreak = _Dummy
+    platypus.KeepTogether = _Dummy
+    sys.modules["reportlab"] = reportlab
+    sys.modules["reportlab.lib"] = lib
+    sys.modules["reportlab.lib.colors"] = colors
+    sys.modules["reportlab.lib.pagesizes"] = pagesizes
+    sys.modules["reportlab.lib.styles"] = styles
+    sys.modules["reportlab.lib.units"] = units
+    sys.modules["reportlab.lib.enums"] = enums
+    sys.modules["reportlab.platypus"] = platypus
 from fastapi.testclient import TestClient
 from recyclic_api.main import app
 from recyclic_api.core.redis import get_redis
@@ -16,9 +54,12 @@ class TestUserStatuses:
         self.redis_client = get_redis()
         
         # Nettoyer Redis avant chaque test
-        keys = self.redis_client.keys("user_activity:*")
+        keys = self.redis_client.keys("last_activity:*")
         if keys:
             self.redis_client.delete(*keys)
+        meta_keys = self.redis_client.keys("last_activity_meta:*")
+        if meta_keys:
+            self.redis_client.delete(*meta_keys)
     
     def test_get_user_statuses_requires_auth(self):
         """Test que l'endpoint nécessite une authentification"""
@@ -140,7 +181,7 @@ class TestUserStatuses:
         user_id = payload["sub"]
         
         # Simuler une activité récente dans Redis
-        activity_key = f"user_activity:{user_id}"
+        activity_key = f"last_activity:{user_id}"
         current_time = int(time.time())
         self.redis_client.set(activity_key, current_time)
         self.redis_client.expire(activity_key, 1800)  # 30 minutes
@@ -162,6 +203,47 @@ class TestUserStatuses:
         )
         assert current_user_status is not None
         assert current_user_status["is_online"] is True
+
+    def test_user_offline_after_logout(self):
+        """Vérifie qu'un utilisateur est marqué hors ligne immédiatement après sa déconnexion."""
+        login_response = self.client.post("/v1/auth/login", json={
+            "username": "superadmintest1",
+            "password": "Test1234!"
+        })
+        assert login_response.status_code == 200
+        token = login_response.json()["access_token"]
+        payload = jwt.decode(token, options={"verify_signature": False})
+        user_id = payload["sub"]
+
+        # Enregistrer une activité manuelle
+        ping_response = self.client.post("/v1/activity/ping", headers={"Authorization": f"Bearer {token}"})
+        assert ping_response.status_code == 200
+
+        # Déconnexion
+        logout_response = self.client.post("/v1/auth/logout", headers={"Authorization": f"Bearer {token}"})
+        assert logout_response.status_code == 200
+
+        # Utiliser un autre compte admin pour consulter les statuts
+        admin_login = self.client.post("/v1/auth/login", json={
+            "username": "admintest1",
+            "password": "Test1234!"
+        })
+        assert admin_login.status_code == 200
+        admin_token = admin_login.json()["access_token"]
+
+        response = self.client.get(
+            "/v1/admin/users/statuses",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        status_entry = next(
+            (status for status in data["user_statuses"] if status["user_id"] == user_id),
+            None
+        )
+        assert status_entry is not None
+        assert status_entry["is_online"] is False
     
     def test_rate_limiting(self):
         """Test que le rate limiting fonctionne"""

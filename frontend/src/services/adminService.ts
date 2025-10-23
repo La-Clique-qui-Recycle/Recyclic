@@ -468,6 +468,28 @@ export const adminService = {
     }
   },
 
+  async getActivityThreshold(): Promise<{ activity_threshold_minutes: number; description?: string }> {
+    try {
+      const response = await axiosClient.get('/v1/admin/settings/activity-threshold');
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors de la récupération du seuil d'activité:", error);
+      throw error;
+    }
+  },
+
+  async updateActivityThreshold(minutes: number): Promise<{ message: string; activity_threshold_minutes: number }> {
+    try {
+      const response = await axiosClient.put('/v1/admin/settings/activity-threshold', {
+        activity_threshold_minutes: minutes,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du seuil d'activité:", error);
+      throw error;
+    }
+  },
+
   /**
    * Importe une sauvegarde de base de données (réservé aux Super-Admins)
    * Remplace la base de données existante par le contenu du fichier SQL

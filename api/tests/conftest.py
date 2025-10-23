@@ -1,4 +1,4 @@
-"""
+﻿"""
 Configuration des tests pour l'API Recyclic
 """
 
@@ -8,6 +8,113 @@ from pathlib import Path
 # Ajouter la racine du projet au PYTHONPATH pour résoudre les imports
 # /app/tests/conftest.py -> /app
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import types
+
+if "reportlab" not in sys.modules:
+    reportlab = types.ModuleType("reportlab")
+    lib = types.ModuleType("reportlab.lib")
+    colors = types.ModuleType("reportlab.lib.colors")
+    colors.HexColor = lambda value: value
+    pagesizes = types.ModuleType("reportlab.lib.pagesizes")
+    pagesizes.A4 = (0, 0)
+    styles = types.ModuleType("reportlab.lib.styles")
+    class _Dummy:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    styles.getSampleStyleSheet = lambda: {}
+    styles.ParagraphStyle = _Dummy
+    units = types.ModuleType("reportlab.lib.units")
+    units.cm = 1
+    enums = types.ModuleType("reportlab.lib.enums")
+    enums.TA_CENTER = 1
+    enums.TA_LEFT = 0
+    platypus = types.ModuleType("reportlab.platypus")
+    platypus.SimpleDocTemplate = _Dummy
+    platypus.Table = _Dummy
+    platypus.TableStyle = _Dummy
+    platypus.Paragraph = _Dummy
+    platypus.Spacer = _Dummy
+    platypus.PageBreak = _Dummy
+    platypus.KeepTogether = _Dummy
+    sys.modules["reportlab"] = reportlab
+    sys.modules["reportlab.lib"] = lib
+    sys.modules["reportlab.lib.colors"] = colors
+    sys.modules["reportlab.lib.pagesizes"] = pagesizes
+    sys.modules["reportlab.lib.styles"] = styles
+    sys.modules["reportlab.lib.units"] = units
+    sys.modules["reportlab.lib.enums"] = enums
+    sys.modules["reportlab.platypus"] = platypus
+
+if "openpyxl" not in sys.modules:
+    class _DummyCell:
+        def __init__(self):
+            self.font = None
+            self.fill = None
+            self.alignment = None
+
+    class _DummyColumn:
+        def __init__(self):
+            self.width = None
+
+    class _DummyWorksheet:
+        def __init__(self):
+            self.title = ""
+            self._rows = []
+            self.column_dimensions = {chr(ord('A') + i): _DummyColumn() for i in range(26)}
+
+        def append(self, row):
+            self._rows.append(row)
+
+        def __getitem__(self, key):
+            index = int(key) - 1 if not isinstance(key, int) else key - 1
+            row = self._rows[index] if 0 <= index < len(self._rows) else []
+            return [_DummyCell() for _ in row]
+
+        @property
+        def max_row(self):
+            return len(self._rows)
+
+        def iter_rows(self, min_row=1, max_row=None):
+            max_row = max_row or self.max_row
+            for idx in range(min_row - 1, max_row):
+                row = self._rows[idx] if 0 <= idx < len(self._rows) else []
+                yield [_DummyCell() for _ in row]
+
+    class _DummyWorkbook:
+        def __init__(self):
+            self.active = _DummyWorksheet()
+
+        def save(self, _buffer):
+            pass
+
+    class _DummyFont:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class _DummyAlignment:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class _DummyPatternFill:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    openpyxl = types.ModuleType("openpyxl")
+    styles_module = types.ModuleType("openpyxl.styles")
+    styles_module.Font = _DummyFont
+    styles_module.Alignment = _DummyAlignment
+    styles_module.PatternFill = _DummyPatternFill
+
+    sys.modules["openpyxl"] = openpyxl
+    sys.modules["openpyxl.styles"] = styles_module
+    openpyxl.styles = styles_module
+
+    def _workbook_factory():
+        return _DummyWorkbook()
+
+    openpyxl.Workbook = _DummyWorkbook
 
 import os
 import pytest
