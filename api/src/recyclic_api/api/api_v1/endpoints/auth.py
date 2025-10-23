@@ -10,12 +10,15 @@ import time
 from recyclic_api.core.database import get_db
 from recyclic_api.core.security import create_access_token, verify_password, hash_password, create_password_reset_token, verify_reset_token
 from recyclic_api.core.audit import log_audit, AuditActionType
+from recyclic_api.core.auth import get_current_user
 from recyclic_api.models.user import User, UserRole, UserStatus
 from recyclic_api.models.login_history import LoginHistory
-from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse
+from recyclic_api.schemas.auth import LoginRequest, LoginResponse, AuthUser, SignupRequest, SignupResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse, LogoutResponse
 from recyclic_api.schemas.pin import PinAuthRequest, PinAuthResponse
 from recyclic_api.utils.auth_metrics import auth_metrics
 from recyclic_api.core.uuid_validation import validate_and_convert_uuid
+from recyclic_api.utils.password_reset_email import send_password_reset_email_safe
+from recyclic_api.core.config import settings
 
 router = APIRouter(tags=["auth"])
 
@@ -210,6 +213,17 @@ async def signup(request: Request, payload: SignupRequest, db: Session = Depends
             detail="Ce nom d'utilisateur est déjà pris",
         )
 
+    # Vérifier si l'email existe déjà (si fourni)
+    if payload.email is not None:
+        result = db.execute(select(User).where(User.email == payload.email))
+        existing_email_user = result.scalar_one_or_none()
+        
+        if existing_email_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Un compte avec cet email existe déjà",
+            )
+
     # Hasher le mot de passe
     hashed_password = hash_password(payload.password)
 
@@ -238,11 +252,14 @@ async def signup(request: Request, payload: SignupRequest, db: Session = Depends
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
 @conditional_rate_limit("5/minute")
 async def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)) -> ForgotPasswordResponse:
-    """Génère un token de réinitialisation et l'envoie par email (ou le log)."""
+    """Génère un token de réinitialisation et l'envoie par email."""
 
     # Rechercher l'utilisateur par email
+    # Note: En cas de doublons d'email (problème de contrainte d'unicité), on prend le premier
     result = db.execute(select(User).where(User.email == payload.email))
-    user = result.scalar_one_or_none()
+    user = result.first()
+    if user:
+        user = user[0]  # Extraire l'objet User du tuple
 
     # Toujours retourner le même message, même si l'utilisateur n'existe pas
     # (pour éviter l'énumération d'emails)
@@ -252,13 +269,38 @@ async def forgot_password(request: Request, payload: ForgotPasswordRequest, db: 
         # Générer le token de réinitialisation
         reset_token = create_password_reset_token(str(user.id))
 
-        # TODO: Intégrer un service d'envoi d'email ici
-        # Pour le développement, on log le lien dans la console
-        reset_link = f"http://localhost:4444/reset-password?token={reset_token}"
-        print(f"🔑 Lien de réinitialisation pour {user.email}: {reset_link}")
+        # Construire le lien de réinitialisation
+        # Utiliser FRONTEND_URL depuis les settings pour la production
+        base_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:4444')
+        reset_link = f"{base_url}/reset-password?token={reset_token}"
 
-        # Dans un vrai environnement, ici on enverrait l'email:
-        # await send_password_reset_email(user.email, reset_link)
+        # Envoyer l'email de réinitialisation
+        try:
+            email_sent = send_password_reset_email_safe(
+                to_email=user.email,
+                reset_link=reset_link,
+                user_name=user.first_name or user.username
+            )
+            
+            if email_sent:
+                logger.info(f"Password reset email sent successfully to {user.email}")
+                
+                # Log audit for password reset request
+                log_audit(
+                    action_type=AuditActionType.PASSWORD_RESET,
+                    actor=user,
+                    details={"email": user.email, "reset_link_generated": True},
+                    description=f"Demande de réinitialisation de mot de passe pour {user.email}",
+                    ip_address=getattr(request.client, 'host', 'unknown') if request.client else 'unknown',
+                    user_agent=request.headers.get("user-agent"),
+                    db=db
+                )
+            else:
+                logger.error(f"Failed to send password reset email to {user.email}")
+                
+        except Exception as e:
+            logger.error(f"Error sending password reset email to {user.email}: {e}")
+            # Ne pas exposer l'erreur à l'utilisateur pour des raisons de sécurité
 
     return ForgotPasswordResponse(message=response_message)
 
@@ -391,5 +433,46 @@ async def authenticate_with_pin(
         username=user.username or "",
         role=user.role.value if hasattr(user.role, "value") else str(user.role)
     )
+
+
+@router.post("/logout", response_model=LogoutResponse)
+async def logout(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> LogoutResponse:
+    """Déconnexion audité d'un utilisateur authentifié."""
+    
+    client_ip = getattr(request.client, 'host', 'unknown') if request.client else 'unknown'
+    user_agent = request.headers.get("user-agent", "unknown")
+    
+    # Log audit pour la déconnexion
+    log_audit(
+        action_type=AuditActionType.LOGOUT,
+        actor=current_user,
+        details={
+            "username": current_user.username,
+            "user_id": str(current_user.id),
+            "user_role": current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+        },
+        description=f"Déconnexion de l'utilisateur {current_user.username}",
+        ip_address=client_ip,
+        user_agent=user_agent,
+        db=db
+    )
+    
+    logger.info(f"User {current_user.username} (ID: {current_user.id}) logged out from IP: {client_ip}")
+    
+    # Supprimer l'activité Redis lors de la déconnexion
+    try:
+        from recyclic_api.core.redis import get_redis
+        redis_client = get_redis()
+        activity_key = f"user_activity:{current_user.id}"
+        redis_client.delete(activity_key)
+        logger.info(f"Activité Redis supprimée pour l'utilisateur {current_user.username}")
+    except Exception as e:
+        logger.warning(f"Erreur lors de la suppression de l'activité Redis: {e}")
+    
+    return LogoutResponse(message="Déconnexion réussie")
 
 

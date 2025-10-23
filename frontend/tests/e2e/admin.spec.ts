@@ -154,7 +154,7 @@ test.describe('Interface d\'Administration E2E', () => {
     await page.locator('[data-testid="role-selector-button"]').first().click();
     
     // Sélectionner le nouveau rôle
-    await page.locator('[data-testid="role-option-manager"]').click();
+    await page.locator('[data-testid="role-option-admin"]').click();
     
     // Confirmer la modification
     await page.locator('[data-testid="confirm-role-change"]').click();
@@ -565,7 +565,7 @@ test.describe('Performance Administration', () => {
     const startTime = Date.now();
     
     await page.locator('[data-testid="role-selector-button"]').first().click();
-    await page.locator('[data-testid="role-option-manager"]').click();
+    await page.locator('[data-testid="role-option-admin"]').click();
     await page.locator('[data-testid="confirm-role-change"]').click();
     
     await page.waitForSelector('[data-testid="success-notification"]');

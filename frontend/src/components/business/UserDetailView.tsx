@@ -105,11 +105,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
         return 'Super Admin';
       case UserRole.ADMIN:
         return 'Administrateur';
-      case UserRole.MANAGER:
-        return 'Manager';
       case UserRole.USER:
       default:
-        return 'Utilisateur';
+        return 'Bénévole';
     }
   };
 
@@ -123,7 +121,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
           </Avatar>
           <div style={{ flex: 1 }}>
             <Text size="lg" fw={600}>
-              {user.full_name || `${user.first_name} ${user.last_name}` || user.username || 'Utilisateur'}
+              {user.full_name || `${user.first_name} ${user.last_name}` || user.username || 'Bénévole'}
             </Text>
             <Text size="sm" c="dimmed">
               @{user.username || user.telegram_id}

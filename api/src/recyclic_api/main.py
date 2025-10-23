@@ -21,6 +21,7 @@ from recyclic_api.core.database import engine
 from recyclic_api.models import Base
 from recyclic_api.core.database import SessionLocal
 from recyclic_api.initial_data import init_super_admin_if_configured
+# from recyclic_api.middleware.activity_tracker import ActivityTrackerMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -135,6 +136,9 @@ async def add_process_time_header(request, call_next):
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
     return response
+
+# Add activity tracking middleware
+# app.add_middleware(ActivityTrackerMiddleware, activity_threshold_minutes=15)
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)

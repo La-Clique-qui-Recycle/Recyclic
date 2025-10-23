@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, status as http_status, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -35,6 +35,8 @@ from recyclic_api.schemas.admin import (
 from recyclic_api.schemas.user import UserStatusUpdate
 from recyclic_api.services.user_history_service import UserHistoryService
 from recyclic_api.core.auth import send_reset_password_email
+from recyclic_api.schemas.email_log import EmailLogListResponse, EmailLogFilters
+from recyclic_api.services.email_log_service import EmailLogService
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -105,7 +107,7 @@ def get_users(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération des utilisateurs: {str(e)}"
         )
 
@@ -125,6 +127,8 @@ def get_users_statuses(
     try:
         from datetime import datetime, timedelta
         from sqlalchemy import func, and_
+        from recyclic_api.core.redis import get_redis
+        import time
         
         # Log de l'accès admin
         log_admin_access(
@@ -137,6 +141,17 @@ def get_users_statuses(
         # Seuil de 15 minutes pour considérer un utilisateur comme "en ligne"
         ONLINE_THRESHOLD_MINUTES = 15
         threshold_time = datetime.now(timezone.utc) - timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+        
+        # Récupérer le client Redis
+        redis_client = get_redis()
+        
+        # Enregistrer l'activité de l'utilisateur actuel dans Redis
+        try:
+            activity_key = f"user_activity:{current_user.id}"
+            current_time = int(time.time())
+            redis_client.set(activity_key, current_time, ex=3600)  # Expire après 1 heure
+        except Exception as e:
+            logger.warning(f"Erreur lors de l'enregistrement de l'activité: {e}")
         
         # Requête optimisée pour récupérer la dernière connexion réussie de chaque utilisateur
         # Utilise GROUP BY avec MAX pour éviter de scanner toute la table login_history
@@ -162,7 +177,7 @@ def get_users_statuses(
             User.id == last_logins_subquery.c.user_id
         ).all()
         
-        # Calculer les statuts
+        # Calculer les statuts en utilisant login_history uniquement
         user_statuses = []
         online_count = 0
         offline_count = 0
@@ -171,9 +186,28 @@ def get_users_statuses(
             user_id, username, first_name, last_name, last_login = user_data
             
             is_online = False
-            minutes_since_login = None
+            minutes_since_activity = None
+            last_activity_source = "login_history"
             
-            if last_login:
+            # 1. Vérifier d'abord l'activité récente dans Redis
+            try:
+                activity_key = f"user_activity:{user_id}"
+                last_activity_timestamp = redis_client.get(activity_key)
+                
+                if last_activity_timestamp:
+                    current_time = int(time.time())
+                    last_activity_time = int(last_activity_timestamp)
+                    minutes_since_activity = (current_time - last_activity_time) / 60
+                    
+                    if minutes_since_activity <= ONLINE_THRESHOLD_MINUTES:
+                        is_online = True
+                        last_activity_source = "redis_activity"
+            except Exception as e:
+                # En cas d'erreur Redis, on continue avec login_history
+                pass
+            
+            # 2. Si pas d'activité récente dans Redis, vérifier login_history
+            if not is_online and last_login:
                 # S'assurer que les deux dates ont le même timezone
                 now_utc = datetime.now(timezone.utc)
                 if last_login.tzinfo is None:
@@ -184,7 +218,11 @@ def get_users_statuses(
                 
                 time_diff = now_utc - last_login_utc
                 minutes_since_login = int(time_diff.total_seconds() / 60)
-                is_online = minutes_since_login <= ONLINE_THRESHOLD_MINUTES
+                
+                if minutes_since_login <= ONLINE_THRESHOLD_MINUTES:
+                    is_online = True
+                    minutes_since_activity = minutes_since_login
+                    last_activity_source = "login_history"
             
             if is_online:
                 online_count += 1
@@ -195,7 +233,7 @@ def get_users_statuses(
                 user_id=str(user_id),
                 is_online=is_online,
                 last_login=last_login,
-                minutes_since_login=minutes_since_login
+                minutes_since_login=int(minutes_since_activity) if minutes_since_activity else None
             )
             user_statuses.append(user_status)
         
@@ -219,7 +257,7 @@ def get_users_statuses(
             error_message=str(e)
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération des statuts: {str(e)}"
         )
 
@@ -252,7 +290,7 @@ def update_user_role(
         except ValueError:
             # user_id n'est pas un UUID valide
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
         if not user:
@@ -265,7 +303,7 @@ def update_user_role(
                 error_message="Utilisateur non trouvé"
             )
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -276,7 +314,7 @@ def update_user_role(
             if (current_user.role in admin_roles and
                 role_update.role not in admin_roles):
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
+                    status_code=http_status.HTTP_403_FORBIDDEN,
                     detail="Un administrateur ne peut pas se dégrader lui-même"
                 )
 
@@ -314,7 +352,7 @@ def update_user_role(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la mise à jour du rôle: {str(e)}"
         )
 
@@ -362,7 +400,7 @@ def get_pending_users(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération des utilisateurs en attente: {str(e)}"
         )
 
@@ -394,19 +432,19 @@ async def approve_user(
             user = db.query(User).filter(User.id == user_uuid).first()
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
         if user.status != UserStatus.PENDING:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="L'utilisateur n'est pas en attente d'approbation"
             )
 
@@ -465,7 +503,7 @@ async def approve_user(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de l'approbation: {str(e)}"
         )
 
@@ -497,19 +535,19 @@ async def reject_user(
             user = db.query(User).filter(User.id == user_uuid).first()
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
         if user.status != UserStatus.PENDING:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="L'utilisateur n'est pas en attente d'approbation"
             )
 
@@ -569,7 +607,7 @@ async def reject_user(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors du rejet: {str(e)}"
         )
 
@@ -601,7 +639,7 @@ def update_user_status(
             user = db.query(User).filter(User.id == user_uuid).first()
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -615,14 +653,14 @@ def update_user_status(
                 error_message="Utilisateur non trouvé"
             )
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
         # Vérifier que l'admin ne se désactive pas lui-même
         if str(user.id) == str(current_user.id) and not status_update.is_active:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Un administrateur ne peut pas se désactiver lui-même"
             )
 
@@ -675,7 +713,7 @@ def update_user_status(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la mise à jour du statut: {str(e)}"
         )
 
@@ -707,7 +745,7 @@ def update_user_profile(
             user = db.query(User).filter(User.id == user_uuid).first()
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -721,7 +759,7 @@ def update_user_profile(
                 error_message="Utilisateur non trouvé"
             )
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -734,8 +772,20 @@ def update_user_profile(
             existing_user = db.query(User).filter(User.username == update_data['username']).first()
             if existing_user:
                 raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
+                    status_code=http_status.HTTP_409_CONFLICT,
                     detail="Ce nom d'utilisateur est déjà pris"
+                )
+
+        # Vérifier l'unicité de l'email si modifié
+        if 'email' in update_data and update_data['email'] is not None and update_data['email'] != user.email:
+            existing_email_user = db.query(User).filter(
+                User.email == update_data['email'],
+                User.id != user.id
+            ).first()
+            if existing_email_user:
+                raise HTTPException(
+                    status_code=http_status.HTTP_409_CONFLICT,
+                    detail="Un compte avec cet email existe déjà"
                 )
 
         for field, value in update_data.items():
@@ -745,7 +795,7 @@ def update_user_profile(
 
         if not updated_fields:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Aucun champ à mettre à jour fourni"
             )
 
@@ -784,7 +834,7 @@ def update_user_profile(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la mise à jour du profil: {str(e)}"
         )
 
@@ -806,13 +856,13 @@ async def trigger_reset_password(
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
         if not user.email:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="L'utilisateur n'a pas d'adresse e-mail configurée."
             )
 
@@ -841,7 +891,7 @@ async def trigger_reset_password(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de l'envoi de l'e-mail de réinitialisation: {str(e)}"
         )
 
@@ -928,7 +978,7 @@ def get_user_history(
             error_message=str(e)
         )
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
     except Exception as e:
@@ -941,7 +991,7 @@ def get_user_history(
             error_message=str(e)
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération de l'historique: {str(e)}"
         )
 
@@ -1036,7 +1086,7 @@ async def get_system_health(
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des métriques de santé: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération des métriques: {str(e)}"
         )
 
@@ -1070,7 +1120,7 @@ async def get_anomalies(
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des anomalies: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération des anomalies: {str(e)}"
         )
 
@@ -1101,7 +1151,7 @@ async def test_notifications(
     except Exception as e:
         logger.error(f"Erreur lors de l'envoi de la notification de test: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de l'envoi de la notification: {str(e)}"
         )
 
@@ -1131,7 +1181,7 @@ async def get_scheduler_status(
     except Exception as e:
         logger.error(f"Erreur lors de la récupération du statut du scheduler: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération du statut: {str(e)}"
         )
 
@@ -1154,7 +1204,7 @@ async def force_user_password(
         # Vérifier que l'utilisateur actuel est un Super Admin
         if current_user.role != UserRole.SUPER_ADMIN:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Cette action est réservée aux Super Administrateurs uniquement"
             )
 
@@ -1172,7 +1222,7 @@ async def force_user_password(
             target_user = db.query(User).filter(User.id == user_uuid).first()
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -1186,7 +1236,7 @@ async def force_user_password(
                 error_message="Utilisateur non trouvé"
             )
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -1204,7 +1254,7 @@ async def force_user_password(
             }
             fr_errors = [translations.get(e, e) for e in errors]
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Mot de passe invalide: {' '.join(fr_errors)}",
             )
 
@@ -1286,7 +1336,7 @@ async def force_user_password(
             error_message=str(e)
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors du forçage du mot de passe: {str(e)}"
         )
 
@@ -1320,7 +1370,7 @@ def reset_user_pin(
             target_user = db.query(User).filter(User.id == user_uuid).first()
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -1334,7 +1384,7 @@ def reset_user_pin(
                 error_message="Utilisateur non trouvé"
             )
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Utilisateur non trouvé"
             )
 
@@ -1389,7 +1439,7 @@ def reset_user_pin(
             error_message=str(e)
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la réinitialisation du PIN: {str(e)}"
         )
 
@@ -1599,8 +1649,214 @@ async def get_audit_log(
     except Exception as e:
         logger.error(f"Erreur lors de la récupération du journal d'audit: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la récupération du journal d'audit: {str(e)}"
+        )
+
+
+@router.get(
+    "/email-logs",
+    response_model=EmailLogListResponse,
+    summary="Liste des logs d'emails (Admin)",
+    description="Récupère la liste des emails envoyés avec filtrage et pagination"
+)
+@limiter.limit("30/minute")
+async def get_email_logs(
+    request: Request,
+    recipient_email: Optional[str] = Query(None, description="Filtrer par adresse email du destinataire"),
+    status: Optional[str] = Query(None, description="Filtrer par statut de l'email"),
+    email_type: Optional[str] = Query(None, description="Filtrer par type d'email"),
+    user_id: Optional[str] = Query(None, description="Filtrer par ID utilisateur"),
+    page: int = Query(1, ge=1, description="Numéro de page"),
+    per_page: int = Query(50, ge=1, le=100, description="Nombre d'éléments par page"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_role_strict())
+):
+    """
+    Récupère la liste des logs d'emails avec filtrage et pagination.
+    
+    Seuls les administrateurs et super-administrateurs peuvent accéder à cette fonctionnalité.
+    """
+    try:
+        # Log de l'accès admin
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username,
+            endpoint="get_email_logs",
+            success=True,
+            db=db
+        )
+        
+        # Créer le service de logs d'email
+        email_log_service = EmailLogService(db)
+        
+        # Convertir les paramètres de filtrage
+        from recyclic_api.models.email_log import EmailStatus, EmailType
+        
+        status_filter = None
+        if status:
+                   try:
+                       status_filter = EmailStatus(status)
+                   except ValueError:
+                       raise HTTPException(
+                           status_code=http_status.HTTP_400_BAD_REQUEST,
+                           detail=f"Statut invalide: {status}"
+                       )
+        
+        type_filter = None
+        if email_type:
+            try:
+                type_filter = EmailType(email_type)
+            except ValueError:
+                raise HTTPException(
+                    status_code=http_status.HTTP_400_BAD_REQUEST,
+                    detail=f"Type d'email invalide: {email_type}"
+                )
+        
+        # Calculer l'offset pour la pagination
+        skip = (page - 1) * per_page
+        
+        # Récupérer les logs d'email
+        email_logs = email_log_service.get_email_logs(
+            skip=skip,
+            limit=per_page,
+            recipient_email=recipient_email,
+            status=status_filter,
+            email_type=type_filter,
+            user_id=user_id
+        )
+        
+        # Récupérer le total pour la pagination
+        total = email_log_service.get_email_logs_count(
+            recipient_email=recipient_email,
+            status=status_filter,
+            email_type=type_filter,
+            user_id=user_id
+        )
+        
+        # Calculer le nombre total de pages
+        total_pages = (total + per_page - 1) // per_page
+        
+        return EmailLogListResponse(
+            email_logs=email_logs,
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des logs d'emails: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la récupération des logs d'emails: {str(e)}"
+        )
+
+
+@router.get(
+    "/settings/activity-threshold",
+    summary="Récupérer le seuil d'activité",
+    description="Récupère le seuil d'activité configuré pour déterminer si un utilisateur est en ligne"
+)
+@limiter.limit("30/minute")
+async def get_activity_threshold(
+    request: Request,
+    current_user: User = Depends(require_admin_role),
+    db: Session = Depends(get_db)
+):
+    """Récupère le seuil d'activité configuré"""
+    try:
+        from recyclic_api.models.setting import Setting
+        
+        # Récupérer le seuil d'activité depuis la base de données
+        setting = db.query(Setting).filter(Setting.key == "activity_threshold_minutes").first()
+        
+        if setting:
+            threshold = int(setting.value)
+        else:
+            # Valeur par défaut si pas configuré
+            threshold = 15
+        
+        return {
+            "activity_threshold_minutes": threshold,
+            "description": "Seuil en minutes pour considérer un utilisateur comme en ligne"
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du seuil d'activité: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la récupération du seuil d'activité: {str(e)}"
+        )
+
+
+@router.put(
+    "/settings/activity-threshold",
+    summary="Modifier le seuil d'activité",
+    description="Modifie le seuil d'activité pour déterminer si un utilisateur est en ligne"
+)
+@limiter.limit("10/minute")
+async def update_activity_threshold(
+    request: Request,
+    threshold_data: dict,
+    current_user: User = Depends(require_admin_role),
+    db: Session = Depends(get_db)
+):
+    """Modifie le seuil d'activité configuré"""
+    try:
+        from recyclic_api.models.setting import Setting
+        
+        # Valider les données
+        threshold = threshold_data.get("activity_threshold_minutes")
+        if not isinstance(threshold, int) or threshold < 1 or threshold > 1440:  # Max 24h
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Le seuil doit être un entier entre 1 et 1440 minutes"
+            )
+        
+        # Récupérer ou créer le paramètre
+        setting = db.query(Setting).filter(Setting.key == "activity_threshold_minutes").first()
+        
+        if setting:
+            setting.value = str(threshold)
+        else:
+            setting = Setting(
+                key="activity_threshold_minutes",
+                value=str(threshold)
+            )
+            db.add(setting)
+        
+        db.commit()
+        
+        # Log de l'audit
+        log_audit(
+            action_type=AuditActionType.SETTING_UPDATED,
+            actor=current_user,
+            details={
+                "setting_key": "activity_threshold_minutes",
+                "old_value": setting.value if setting else "15",
+                "new_value": str(threshold)
+            },
+            description=f"Seuil d'activité modifié à {threshold} minutes",
+            ip_address=getattr(request.client, 'host', 'unknown') if request.client else 'unknown',
+            user_agent=request.headers.get("user-agent", "unknown"),
+            db=db
+        )
+        
+        return {
+            "message": f"Seuil d'activité mis à jour à {threshold} minutes",
+            "activity_threshold_minutes": threshold
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur lors de la mise à jour du seuil d'activité: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la mise à jour du seuil d'activité: {str(e)}"
         )
 
 

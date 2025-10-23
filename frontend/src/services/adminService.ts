@@ -206,7 +206,7 @@ export const adminService = {
 
       return {
         data: adminUser,
-        message: 'Utilisateur mis à jour avec succès',
+        message: 'Bénévole mis à jour avec succès',
         success: true
       };
     } catch (error) {
@@ -225,7 +225,7 @@ export const adminService = {
       
       return {
         data: undefined,
-        message: 'Utilisateur supprimé avec succès',
+        message: 'Bénévole supprimé avec succès',
         success: true
       };
     } catch (error) {
@@ -605,6 +605,30 @@ export const adminService = {
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la réinitialisation du PIN:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Récupère les statuts en ligne/hors ligne de tous les utilisateurs
+   */
+  async getUserStatuses(): Promise<{
+    user_statuses: Array<{
+      user_id: string;
+      is_online: boolean;
+      last_login: string | null;
+      minutes_since_login: number | null;
+    }>;
+    total_count: number;
+    online_count: number;
+    offline_count: number;
+    timestamp: string;
+  }> {
+    try {
+      const response = await axiosClient.get('/v1/admin/users/statuses');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statuts:', error);
       throw error;
     }
   }

@@ -69,9 +69,8 @@ describe('RoleSelector Component', () => {
     // Vérifier que les options sont présentes
     fireEvent.click(select)
     
-    // Utiliser getAllByText car "Utilisateur" apparaît dans le bouton et dans le select
-    expect(screen.getAllByText('Utilisateur')).toHaveLength(2)
-    expect(screen.getByText('Manager')).toBeInTheDocument()
+    // Utiliser getAllByText car "Bénévole" apparaît dans le bouton et dans le select
+    expect(screen.getAllByText('Bénévole')).toHaveLength(2)
     expect(screen.getByText('Administrateur')).toBeInTheDocument()
     expect(screen.getByText('Super Admin')).toBeInTheDocument()
   })
@@ -199,7 +198,6 @@ describe('RoleSelector Component', () => {
   it('should render correct role icons', () => {
     const roles = [
       { role: UserRole.USER, icon: 'icon-user' },
-      { role: UserRole.MANAGER, icon: 'icon-settings' },
       { role: UserRole.ADMIN, icon: 'icon-shield' },
       { role: UserRole.SUPER_ADMIN, icon: 'icon-shield' }
     ]
@@ -213,8 +211,7 @@ describe('RoleSelector Component', () => {
 
   it('should handle different user roles correctly', () => {
     const testCases = [
-      { role: UserRole.USER, expectedLabel: 'Utilisateur' },
-      { role: UserRole.MANAGER, expectedLabel: 'Manager' },
+      { role: UserRole.USER, expectedLabel: 'Bénévole' },
       { role: UserRole.ADMIN, expectedLabel: 'Administrateur' },
       { role: UserRole.SUPER_ADMIN, expectedLabel: 'Super Admin' }
     ]

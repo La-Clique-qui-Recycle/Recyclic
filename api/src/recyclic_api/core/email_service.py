@@ -49,6 +49,8 @@ from recyclic_api.core.config import settings
 from recyclic_api.utils.email_metrics import email_metrics
 from recyclic_api.core.database import get_db
 from recyclic_api.models.email_event import EmailStatusModel
+from recyclic_api.models.email_log import EmailLog, EmailStatus, EmailType
+from recyclic_api.services.email_log_service import EmailLogService
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +116,11 @@ class EmailService:
         from_email: Optional[str] = None,
         from_name: Optional[str] = None,
         db_session=None,
-        attachments: Optional[List[EmailAttachment]] = None
+        attachments: Optional[List[EmailAttachment]] = None,
+        email_type: EmailType = EmailType.OTHER,
+        user_id: Optional[str] = None,
+        recipient_name: Optional[str] = None,
+        body_text: Optional[str] = None
     ) -> bool:
         """
         Send an email via Brevo API.
@@ -192,21 +198,30 @@ class EmailService:
                 message_id=api_response.message_id
             )
 
-            # Create email status record if database session provided
+            # Create email log record if database session provided
             if db_session:
                 try:
-                    email_status = EmailStatusModel(
-                        email_address=to_email,
-                        message_id=api_response.message_id,
-                        current_status="sent",
-                        sent_timestamp=datetime.fromtimestamp(start_time),
+                    email_log_service = EmailLogService(db_session)
+                    email_log = email_log_service.create_email_log(
+                        recipient_email=to_email,
                         subject=subject,
-                        provider="brevo"
+                        body_text=body_text,
+                        body_html=html_content,
+                        email_type=email_type,
+                        user_id=user_id,
+                        recipient_name=recipient_name,
+                        external_id=api_response.message_id
                     )
-                    db_session.add(email_status)
-                    db_session.commit()
+                    
+                    # Update status to SENT
+                    email_log_service.update_email_status(
+                        email_log_id=str(email_log.id),
+                        status=EmailStatus.SENT,
+                        external_id=api_response.message_id,
+                        timestamp=datetime.fromtimestamp(start_time)
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to create email status record: {e}")
+                    logger.warning(f"Failed to create email log record: {e}")
                     # Don't fail the email send if status tracking fails
                     db_session.rollback()
 
@@ -230,6 +245,29 @@ class EmailService:
                 error_detail=error_detail
             )
 
+            # Log failed email attempt if database session provided
+            if db_session:
+                try:
+                    email_log_service = EmailLogService(db_session)
+                    email_log = email_log_service.create_email_log(
+                        recipient_email=to_email,
+                        subject=subject,
+                        body_text=body_text,
+                        body_html=html_content,
+                        email_type=email_type,
+                        user_id=user_id,
+                        recipient_name=recipient_name
+                    )
+                    
+                    # Update status to FAILED
+                    email_log_service.update_email_status(
+                        email_log_id=str(email_log.id),
+                        status=EmailStatus.FAILED,
+                        error_message=error_detail
+                    )
+                except Exception as log_error:
+                    logger.warning(f"Failed to create email log record for failed email: {log_error}")
+
             return False
 
         except Exception as e:
@@ -249,6 +287,29 @@ class EmailService:
                 error_type=error_type,
                 error_detail=error_detail
             )
+
+            # Log failed email attempt if database session provided
+            if db_session:
+                try:
+                    email_log_service = EmailLogService(db_session)
+                    email_log = email_log_service.create_email_log(
+                        recipient_email=to_email,
+                        subject=subject,
+                        body_text=body_text,
+                        body_html=html_content,
+                        email_type=email_type,
+                        user_id=user_id,
+                        recipient_name=recipient_name
+                    )
+                    
+                    # Update status to FAILED
+                    email_log_service.update_email_status(
+                        email_log_id=str(email_log.id),
+                        status=EmailStatus.FAILED,
+                        error_message=error_detail
+                    )
+                except Exception as log_error:
+                    logger.warning(f"Failed to create email log record for failed email: {log_error}")
 
             return False
 

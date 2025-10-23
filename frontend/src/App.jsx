@@ -1,12 +1,14 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from './components/Header.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import PostLoginRedirect from './components/PostLoginRedirect';
 import { ReceptionProvider } from './contexts/ReceptionContext';
 import { useAuthStore } from './stores/authStore';
 
 // Lazy loading des pages pour le code-splitting
+const BenevoleDashboard = lazy(() => import('./pages/BenevoleDashboard.jsx'));
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const CashRegister = lazy(() => import('./pages/CashRegister/CashRegisterDashboard.tsx'));
 const OpenCashSession = lazy(() => import('./pages/CashRegister/OpenCashSession.tsx'));
@@ -33,6 +35,7 @@ const CashSessionDetail = lazy(() => import('./pages/Admin/CashSessionDetail.tsx
 const AdminSettings = lazy(() => import('./pages/Admin/Settings.tsx'));
 const AdminGroups = lazy(() => import('./pages/Admin/GroupsReal.tsx'));
 const AuditLog = lazy(() => import('./pages/Admin/AuditLog.tsx'));
+const EmailLogs = lazy(() => import('./pages/Admin/EmailLogs.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -104,8 +107,12 @@ function App() {
   // Routes d'administration (sans header principal car AdminLayout a son propre menu)
   const isAdminRoute = location.pathname.startsWith('/admin');
 
-  // Afficher le header seulement si ce n'est ni kiosque ni admin
-  const shouldShowHeader = !isKioskMode && !isAdminRoute;
+  // Pages publiques (sans header)
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/telegram-auth', '/inscription'];
+  const isPublicRoute = publicRoutes.includes(location.pathname);
+
+  // Afficher le header seulement si ce n'est ni kiosque, ni admin, ni page publique
+  const shouldShowHeader = !isKioskMode && !isAdminRoute && !isPublicRoute;
 
   return (
     <ReceptionProvider>
@@ -119,15 +126,16 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/telegram-auth" element={<TelegramAuth />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/caisse" element={<ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}><CashRegister /></ProtectedRoute>} />
-            <Route path="/cash-register/session/open" element={<ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}><OpenCashSession /></ProtectedRoute>} />
-            <Route path="/cash-register/sale" element={<ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}><Sale /></ProtectedRoute>} />
-            <Route path="/cash-register/session/close" element={<ProtectedRoute requiredRoles={['user', 'admin', 'super-admin']}><CloseSession /></ProtectedRoute>} />
-            <Route path="/reception" element={<ProtectedRoute><Reception /></ProtectedRoute>} />
-            <Route path="/reception/ticket" element={<ProtectedRoute><TicketForm /></ProtectedRoute>} />
-            <Route path="/reception/ticket/:ticketId" element={<ProtectedRoute><TicketForm /></ProtectedRoute>} />
-            <Route path="/reception/ticket/:ticketId/view" element={<ProtectedRoute><TicketView /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><PostLoginRedirect /></ProtectedRoute>} />
+            <Route path="/dashboard/benevole" element={<ProtectedRoute><BenevoleDashboard /></ProtectedRoute>} />
+            <Route path="/caisse" element={<ProtectedRoute requiredPermission="caisse.access"><CashRegister /></ProtectedRoute>} />
+            <Route path="/cash-register/session/open" element={<ProtectedRoute requiredPermission="caisse.access"><OpenCashSession /></ProtectedRoute>} />
+            <Route path="/cash-register/sale" element={<ProtectedRoute requiredPermission="caisse.access"><Sale /></ProtectedRoute>} />
+            <Route path="/cash-register/session/close" element={<ProtectedRoute requiredPermission="caisse.access"><CloseSession /></ProtectedRoute>} />
+            <Route path="/reception" element={<ProtectedRoute requiredPermission="reception.access"><Reception /></ProtectedRoute>} />
+            <Route path="/reception/ticket" element={<ProtectedRoute requiredPermission="reception.access"><TicketForm /></ProtectedRoute>} />
+            <Route path="/reception/ticket/:ticketId" element={<ProtectedRoute requiredPermission="reception.access"><TicketForm /></ProtectedRoute>} />
+            <Route path="/reception/ticket/:ticketId/view" element={<ProtectedRoute requiredPermission="reception.access"><TicketView /></ProtectedRoute>} />
             <Route path="/profil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/depots" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
             <Route path="/rapports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
@@ -147,6 +155,7 @@ function App() {
               <Route path="categories" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminCategories /></ProtectedRoute>} />
               <Route path="groups" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AdminGroups /></ProtectedRoute>} />
               <Route path="audit-log" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><AuditLog /></ProtectedRoute>} />
+              <Route path="email-logs" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><EmailLogs /></ProtectedRoute>} />
               <Route path="health" element={<HealthDashboard />} />
               <Route path="settings" element={<ProtectedRoute requiredRoles={['super-admin']}><AdminSettings /></ProtectedRoute>} />
             </Route>

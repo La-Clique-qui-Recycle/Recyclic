@@ -197,6 +197,11 @@ const DashboardHomePage = () => {
                 Journal d'Audit
               </AdminLink>
             </LinkItem>
+            <LinkItem>
+              <AdminLink onClick={() => handleNavigation('/admin/email-logs')}>
+                Journal des Emails
+              </AdminLink>
+            </LinkItem>
           </LinkList>
         </AdminCard>
 

@@ -231,13 +231,24 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
 
         setEditModalOpen(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la sauvegarde:', error);
-      notifications.show({
-        title: 'Erreur',
-        message: `Impossible de ${isCreateMode ? 'créer' : 'mettre à jour'} l'utilisateur`,
-        color: 'red',
-      });
+      
+      // Gestion spécifique de l'erreur 409 Conflict pour email dupliqué
+      if (error?.response?.status === 409) {
+        const errorMessage = error?.response?.data?.detail || 'Un compte avec cet email existe déjà';
+        notifications.show({
+          title: 'Email déjà utilisé',
+          message: errorMessage,
+          color: 'red',
+        });
+      } else {
+        notifications.show({
+          title: 'Erreur',
+          message: `Impossible de ${isCreateMode ? 'créer' : 'mettre à jour'} l'utilisateur`,
+          color: 'red',
+        });
+      }
     } finally {
       setLoading(false);
     }

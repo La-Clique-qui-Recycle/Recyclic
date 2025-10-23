@@ -183,16 +183,20 @@ Les webhooks permettent à Brevo d'envoyer des notifications à Recyclic sur l'�
 
 ### 5.2 Configurer le webhook
 
-1. **URL du webhook** : `https://votredomaine.com/api/v1/webhooks/brevo`
+1. **URL du webhook** : `https://votredomaine.com/v1/webhooks/brevo/email-status`
    (Remplacez par votre URL de production Recyclic)
+   
+   **⚠️ Note importante :** Les webhooks ne fonctionnent qu'en production/staging car Brevo doit pouvoir atteindre votre serveur. En développement local, les webhooks ne peuvent pas être testés.
 
 2. **Événements à surveiller** (cochez) :
+   - ✅ `sent` (email envoyé)
    - ✅ `delivered` (email délivré)
-   - ✅ `soft_bounce` (échec temporaire)
-   - ✅ `hard_bounce` (échec permanent)
-   - ✅ `spam` (marqué comme spam)
-   - ✅ `invalid_email` (email invalide)
-   - ⚠️ Ne cochez PAS `opened` ni `clicked` (génère trop de trafic pour des emails transactionnels)
+   - ✅ `opened` (email ouvert)
+   - ✅ `clicked` (lien cliqué)
+   - ✅ `bounced` (email rebondi)
+   - ✅ `blocked` (email bloqué)
+   - ✅ `invalid` (email invalide)
+   - ✅ `complaint` (plainte spam)
 
 3. **Secret du webhook** : Générez un secret aléatoire long (ex: 32 caractères)
    - Vous pouvez utiliser un générateur comme [https://randomkeygen.com/](https://randomkeygen.com/)

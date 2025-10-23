@@ -75,3 +75,9 @@ class ResetPasswordResponse(BaseModel):
     message: str = Field(..., description="Message de confirmation")
 
 
+class LogoutResponse(BaseModel):
+    """Réponse pour la déconnexion."""
+
+    message: str = Field(..., description="Message de confirmation")
+
+

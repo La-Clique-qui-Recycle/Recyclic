@@ -14,7 +14,7 @@ from recyclic_api.schemas.user import (
     PasswordChangeRequest,
 )
 from recyclic_api.schemas.pin import PinSetRequest
-from recyclic_api.core.auth import require_role_strict, get_current_user
+from recyclic_api.core.auth import require_role_strict, get_current_user, get_user_permissions
 from recyclic_api.core.security import hash_password
 from recyclic_api.services.telegram_link_service import TelegramLinkService
 from recyclic_api.utils.rate_limit import conditional_rate_limit
@@ -23,6 +23,14 @@ router = APIRouter()
 
 
 # --- Self endpoints MUST come before /{user_id} to avoid route shadowing ---
+@router.get("/me", response_model=UserResponse)
+async def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les informations de l'utilisateur connecté."""
+    return current_user
+
 @router.put("/me", response_model=UserResponse)
 async def update_me(
     payload: UserSelfUpdate,
@@ -31,6 +39,16 @@ async def update_me(
 ):
     """Mettre à jour les informations de l'utilisateur connecté (champs non sensibles)."""
     update_data = payload.model_dump(exclude_unset=True)
+    
+    # Check if email is being updated and if it already exists
+    if 'email' in update_data and update_data['email'] is not None:
+        existing_email_user = db.query(User).filter(
+            User.email == update_data['email'],
+            User.id != current_user.id
+        ).first()
+        if existing_email_user:
+            raise HTTPException(status_code=409, detail="Un compte avec cet email existe déjà")
+    
     for field, value in update_data.items():
         setattr(current_user, field, value)
 
@@ -61,24 +79,8 @@ async def set_user_pin(
     """Définir ou modifier le PIN de l'utilisateur connecté.
 
     Le PIN doit être exactement 4 chiffres et sera haché avant stockage.
-    Si l'utilisateur a déjà un PIN, le mot de passe actuel est requis.
+    L'utilisateur doit être authentifié pour modifier son PIN.
     """
-    from recyclic_api.core.security import verify_password
-    
-    # Si l'utilisateur a déjà un PIN, vérifier le mot de passe
-    if current_user.hashed_pin is not None:
-        if not pin_request.current_password:
-            raise HTTPException(
-                status_code=400,
-                detail="Current password is required to modify existing PIN"
-            )
-        
-        # Vérifier le mot de passe actuel
-        if not verify_password(pin_request.current_password, current_user.hashed_password):
-            raise HTTPException(
-                status_code=400,
-                detail="Current password is incorrect"
-            )
     
     # Hash the PIN using the same security mechanism as passwords
     current_user.hashed_pin = hash_password(pin_request.pin)
@@ -87,6 +89,17 @@ async def set_user_pin(
     db.refresh(current_user)
 
     return {"message": "PIN successfully set"}
+
+
+@router.get("/me/permissions", response_model=dict)
+async def get_my_permissions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les permissions de l'utilisateur connecté."""
+    permissions = get_user_permissions(current_user, db)
+    return {"permissions": permissions}
+
 
 @router.get("/active-operators", response_model=List[UserResponse])
 async def get_active_operators(db: Session = Depends(get_db), current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))):
@@ -126,6 +139,12 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already registered")
+
+    # Check if email already exists (if provided)
+    if user.email is not None:
+        existing_email_user = db.query(User).filter(User.email == user.email).first()
+        if existing_email_user:
+            raise HTTPException(status_code=409, detail="Un compte avec cet email existe déjà")
 
     # Hash the password before creating user
     user_data = user.model_dump()
@@ -170,6 +189,15 @@ async def update_user(user_id: str, user_update: UserUpdate, db: Session = Depen
     # Update only provided fields
     update_data = user_update.model_dump(exclude_unset=True)
     updated_fields = list(update_data.keys())
+    
+    # Check if email is being updated and if it already exists
+    if 'email' in update_data and update_data['email'] is not None:
+        existing_email_user = db.query(User).filter(
+            User.email == update_data['email'],
+            User.id != user_uuid
+        ).first()
+        if existing_email_user:
+            raise HTTPException(status_code=409, detail="Un compte avec cet email existe déjà")
     
     for field, value in update_data.items():
         setattr(user, field, value)

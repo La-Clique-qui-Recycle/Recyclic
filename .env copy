@@ -1,0 +1,77 @@
+# For Docker Compose
+POSTGRES_DB=recyclic
+POSTGRES_PASSWORD=your_postgres_password
+SECRET_KEY=your-super-secret-key-that-is-long-and-random
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token
+ADMIN_TELEGRAM_IDS=your_admin_telegram_id,another_admin_id
+TELEGRAM_BOT_URL=http://bot:8001
+# Feature flag: activer les boutons inline (HTTPS requis). false => fallback cliquable
+ENABLE_INLINE_BUTTONS=false
+
+# Public HTTPS URL for dev (from cloudflared/ngrok)
+# Example after starting tunnel: https://your-subdomain.trycloudflare.com
+FRONTEND_URL=https://replace-with-your-dev-public-https-url
+
+# API & Front
+VITE_API_URL=/api
+API_V1_STR=/v1
+ROOT_PATH=
+
+# URLs locales
+FRONTEND_URL=http://localhost:4444
+ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ALLOW_ORIGINS=http://localhost:4444
+BACKEND_CORS_ORIGINS=http://localhost:4444
+
+# URL pour les builds de production et de staging
+VITE_API_URL_STAGING=https://devrecyclic.jarvos.eu/api
+VITE_API_URL_PROD=https://recyclic.jarvos.eu/api
+
+# For local testing (e.g., pytest)
+# These are used when running the app outside of Docker.
+DATABASE_URL=postgresql://recyclic:${POSTGRES_PASSWORD}@localhost:5432/recyclic
+REDIS_URL=redis://localhost:6379
+
+# Common
+ENVIRONMENT=development
+
+# Email Service (Brevo)
+# Clé API Brevo pour l'envoi d'emails (obligatoire pour les fonctionnalités email)
+BREVO_API_KEY=
+# Secret webhook Brevo pour vérifier les callbacks (optionnel, laisser vide en dev)
+BREVO_WEBHOOK_SECRET=
+# Nom de l'expéditeur affiché dans les emails
+EMAIL_FROM_NAME=Recyclic (Dev)
+# Adresse email de l'expéditeur (doit être vérifiée dans Brevo)
+EMAIL_FROM_ADDRESS=noreply@recyclic.dev
+# Adresse email par défaut pour les tests (optionnel, configurable via l'interface admin)
+DEFAULT_EMAIL_RECIPIENT=
+# kDrive Sync
+KDRIVE_WEBDAV_URL=https://kdrive.example.com/remote.php/webdav
+KDRIVE_WEBDAV_USERNAME=your_kdrive_username
+KDRIVE_WEBDAV_PASSWORD=your_kdrive_app_password
+KDRIVE_REMOTE_BASE_PATH=/Recyclic/exports
+KDRIVE_SYNC_ENABLED=false
+KDRIVE_SYNC_INTERVAL_SECONDS=3600
+KDRIVE_RETRY_DELAY_SECONDS=5
+KDRIVE_MAX_RETRIES=3
+# Cash session reports
+CASH_SESSION_REPORT_DIR=/app/reports/cash_sessions
+CASH_SESSION_REPORT_RECIPIENT=finance-team@example.com
+# Cash session reports tokens
+CASH_SESSION_REPORT_TOKEN_TTL_SECONDS=900
+CASH_SESSION_REPORT_RETENTION_DAYS=30
+
+# Backup Configuration
+BACKUP_REMOTE_HOST=
+BACKUP_REMOTE_USER=
+BACKUP_REMOTE_PATH=/backups/recyclic
+BACKUP_RETENTION_DAYS=7
+NOTIFICATION_EMAIL=
+NOTIFICATION_TELEGRAM_TOKEN=
+NOTIFICATION_TELEGRAM_CHAT_ID=
+
+# First Super Admin bootstrap (création automatique au démarrage si défini)
+FIRST_SUPER_ADMIN_USERNAME=admin
+FIRST_SUPER_ADMIN_PASSWORD=Changeme1!
+

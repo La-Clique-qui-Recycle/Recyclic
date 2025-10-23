@@ -9,7 +9,10 @@ export interface User {
   username?: string;
   first_name?: string;
   last_name?: string;
-  role: 'user' | 'admin' | 'super-admin' | 'manager';
+  email?: string;
+  phone_number?: string;
+  address?: string;
+  role: 'user' | 'admin' | 'super-admin';
   status: 'pending' | 'approved' | 'rejected';
   is_active: boolean;
   site_id?: string;
@@ -21,6 +24,7 @@ interface AuthState {
   // State
   currentUser: User | null;
   isAuthenticated: boolean;
+  permissions: string[]; // NEW: Stocker les permissions de l'utilisateur
   loading: boolean;
   error: string | null;
 
@@ -34,13 +38,12 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   initializeAuth: () => Promise<void>;
 
   // Computed
   isAdmin: () => boolean;
-  hasCashAccess: () => boolean;
-  canManageUsers: () => boolean;
+  hasPermission: (permission: string) => boolean; // NEW: Vérifier une permission
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -50,6 +53,7 @@ export const useAuthStore = create<AuthState>()(
         // Initial state
         currentUser: null,
         isAuthenticated: false,
+        permissions: [], // NEW
         loading: false,
         error: null,
 
@@ -60,16 +64,28 @@ export const useAuthStore = create<AuthState>()(
             const loginData: LoginRequest = { username, password };
             const response: LoginResponse = await AuthApi.apiv1authloginpost(loginData);
             
-            // Stocker le token JWT
             localStorage.setItem('token', response.access_token);
+            axiosClient.defaults.headers.common['Authorization'] = `Bearer ${response.access_token}`;
+
+            // Récupérer les permissions de l'utilisateur
+            let userPermissions: string[] = [];
+            try {
+              const permissionsResponse = await axiosClient.get('/v1/users/me/permissions');
+              userPermissions = permissionsResponse.data.permissions || [];
+            } catch (permError) {
+              console.error("Could not fetch user permissions", permError);
+              // Ne pas bloquer le login si les permissions ne peuvent être récupérées
+            }
             
-            // Convertir AuthUser en User
             const user: User = {
               id: response.user.id,
               telegram_id: response.user.telegram_id,
               username: response.user.username,
               first_name: response.user.first_name,
               last_name: response.user.last_name,
+              email: (response.user as any).email,
+              phone_number: (response.user as any).phone_number,
+              address: (response.user as any).address,
               role: response.user.role as User['role'],
               status: response.user.status as User['status'],
               is_active: response.user.is_active,
@@ -80,37 +96,18 @@ export const useAuthStore = create<AuthState>()(
             set({ 
               currentUser: user, 
               isAuthenticated: true, 
+              permissions: userPermissions, // NEW
               loading: false,
               error: null 
             });
           } catch (error: any) {
             let errorMessage = 'Erreur de connexion';
-
-            // L'interceptor Axios retourne directement error.response.data
             if (error?.detail) {
-              // Gérer les erreurs de validation (array)
-              if (Array.isArray(error.detail)) {
-                errorMessage = error.detail.map((e: any) => e.msg).join(', ');
-              } else {
-                errorMessage = error.detail;
-              }
-            } else if (error?.response?.data?.detail) {
-              // Fallback si l'interceptor n'a pas fonctionné
-              if (Array.isArray(error.response.data.detail)) {
-                errorMessage = error.response.data.detail.map((e: any) => e.msg).join(', ');
-              } else {
-                errorMessage = error.response.data.detail;
-              }
+              errorMessage = Array.isArray(error.detail) ? error.detail.map((e: any) => e.msg).join(', ') : error.detail;
             } else if (error?.message) {
               errorMessage = error.message;
-            } else if (typeof error === 'string') {
-              errorMessage = error;
             }
-
-            set({
-              error: errorMessage,
-              loading: false
-            });
+            set({ error: errorMessage, loading: false });
             throw new Error(errorMessage);
           }
         },
@@ -119,21 +116,21 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: true, error: null });
           try {
             const signupData = { username, password, email };
-            const response = await AuthApi.apiv1authsignuppost(signupData);
-
-            set({
-              loading: false,
-              error: null
-            });
-
-            // Note: L'utilisateur n'est pas connecté automatiquement après l'inscription
-            // car son compte est en attente de validation
+            await AuthApi.apiv1authsignuppost(signupData);
+            set({ loading: false, error: null });
           } catch (error: any) {
-            const errorMessage = error?.detail || error?.message || "Erreur lors de l'inscription";
-            set({
-              error: errorMessage,
-              loading: false
-            });
+            let errorMessage = "Erreur lors de l'inscription";
+            
+            // Gestion spécifique de l'erreur 409 Conflict pour email dupliqué
+            if (error?.response?.status === 409) {
+              errorMessage = error?.response?.data?.detail || 'Un compte avec cet email existe déjà';
+            } else if (error?.detail) {
+              errorMessage = Array.isArray(error.detail) ? error.detail.map((e: any) => e.msg).join(', ') : error.detail;
+            } else if (error?.message) {
+              errorMessage = error.message;
+            }
+            
+            set({ error: errorMessage, loading: false });
             throw error;
           }
         },
@@ -141,18 +138,11 @@ export const useAuthStore = create<AuthState>()(
         forgotPassword: async (email: string) => {
           set({ loading: true, error: null });
           try {
-            const response = await axiosClient.post('/v1/auth/forgot-password', { email });
-
-            set({
-              loading: false,
-              error: null
-            });
+            await axiosClient.post('/v1/auth/forgot-password', { email });
+            set({ loading: false, error: null });
           } catch (error: any) {
             const errorMessage = error?.response?.data?.detail || error?.message || "Erreur lors de l'envoi de l'email";
-            set({
-              error: errorMessage,
-              loading: false
-            });
+            set({ error: errorMessage, loading: false });
             throw error;
           }
         },
@@ -160,61 +150,51 @@ export const useAuthStore = create<AuthState>()(
         resetPassword: async (token: string, newPassword: string) => {
           set({ loading: true, error: null });
           try {
-            const response = await axiosClient.post('/v1/auth/reset-password', {
-              token,
-              new_password: newPassword
-            });
-
-            set({
-              loading: false,
-              error: null
-            });
+            await axiosClient.post('/v1/auth/reset-password', { token, new_password: newPassword });
+            set({ loading: false, error: null });
           } catch (error: any) {
             const errorMessage = error?.response?.data?.detail || error?.message || "Erreur lors de la réinitialisation";
-            set({
-              error: errorMessage,
-              loading: false
-            });
+            set({ error: errorMessage, loading: false });
             throw error;
           }
         },
 
-        // Setters
-        setCurrentUser: (user) => set({ 
-          currentUser: user, 
-          isAuthenticated: !!user 
-        }),
+        setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
         setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
         setLoading: (loading) => set({ loading }),
         setError: (error) => set({ error }),
         clearError: () => set({ error: null }),
         
-        logout: () => {
-          set({ 
-            currentUser: null, 
-            isAuthenticated: false, 
-            error: null 
-          });
-          localStorage.removeItem('token');
+        logout: async () => {
+          try {
+            // Appeler l'API de logout pour enregistrer l'événement d'audit
+            // Même si l'appel échoue, on procède quand même à la déconnexion locale
+            try {
+              await axiosClient.post('/v1/auth/logout');
+            } catch (apiError) {
+              // Log l'erreur mais ne pas bloquer la déconnexion
+              console.warn('Logout API call failed, proceeding with local logout:', apiError);
+            }
+          } catch (error) {
+            // En cas d'erreur, on continue quand même la déconnexion locale
+            console.warn('Logout API call failed, proceeding with local logout:', error);
+          } finally {
+            // Toujours procéder à la déconnexion locale
+            localStorage.removeItem('token');
+            delete axiosClient.defaults.headers.common['Authorization'];
+            set({ currentUser: null, isAuthenticated: false, permissions: [], error: null });
+          }
         },
 
         initializeAuth: async () => {
           const token = localStorage.getItem('token');
           if (!token) {
-            set({ 
-              currentUser: null, 
-              isAuthenticated: false, 
-              loading: false 
-            });
+            set({ currentUser: null, isAuthenticated: false, permissions: [], loading: false });
             return;
           }
-
-          // Pour l'instant, on fait confiance au token stocké
-          // L'intercepteur axios gérera les erreurs 401/403
-          set({ 
-            isAuthenticated: true, 
-            loading: false 
-          });
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          // TODO: Récupérer l'utilisateur et les permissions ici pour valider le token
+          set({ isAuthenticated: true, loading: false });
         },
 
         // Computed
@@ -223,22 +203,23 @@ export const useAuthStore = create<AuthState>()(
           return currentUser?.role === 'admin' || currentUser?.role === 'super-admin';
         },
 
-        hasCashAccess: () => {
-          const { currentUser } = get();
-          // La caisse est accessible aux utilisateurs, managers et admins
-          return currentUser?.role === 'user' || currentUser?.role === 'manager' || get().isAdmin();
+        hasPermission: (permission: string) => {
+          const { permissions, currentUser } = get();
+          if (currentUser?.role === 'super-admin') return true;
+          return permissions.includes(permission);
         },
 
-        canManageUsers: () => {
+        hasCashAccess: () => {
           const { currentUser } = get();
-          return currentUser?.role === 'admin' || currentUser?.role === 'super-admin';
+          return currentUser?.role === 'user' || currentUser?.role === 'admin' || currentUser?.role === 'super-admin';
         }
       }),
       {
         name: 'auth-store',
         partialize: (state) => ({ 
           currentUser: state.currentUser,
-          isAuthenticated: state.isAuthenticated
+          isAuthenticated: state.isAuthenticated,
+          permissions: state.permissions // NEW
         })
       }
     ),

@@ -65,6 +65,8 @@ services:
       POSTGRES_DB: recyclic
     ports:
       - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./api/src:/app/src
     depends_on:
       postgres:
         condition: service_healthy
@@ -210,12 +212,18 @@ services:
     image: recyclic-frontend-dev:${FRONTEND_IMAGE_TAG:-latest}
     environment:
       DANGEROUSLY_DISABLE_HOST_CHECK: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
     ports:
       - "4444:5173"
     volumes:
       # Mount source code for hot-reloading
       - ./frontend/src:/app/src
-      # Note: public volume supprimé pour éviter les conflits avec build-info.json
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/vite.config.js:/app/vite.config.js
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tsconfig.node.json:/app/tsconfig.node.json
     depends_on:
       api:
         condition: service_healthy

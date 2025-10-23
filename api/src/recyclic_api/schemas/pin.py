@@ -5,7 +5,6 @@ import re
 class PinSetRequest(BaseModel):
     """Schéma pour la définition d'un PIN."""
     pin: str
-    current_password: str | None = None  # Required only when modifying existing PIN
 
     @field_validator('pin')
     @classmethod

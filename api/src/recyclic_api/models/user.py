@@ -14,7 +14,6 @@ def get_enum_values(enum_class):
 class UserRole(str, enum.Enum):
     SUPER_ADMIN = "super-admin"
     ADMIN = "admin"
-    MANAGER = "manager"
     USER = "user"
 
 class UserStatus(str, enum.Enum):
@@ -52,6 +51,7 @@ class User(Base):
     cash_sessions = relationship("CashSession", back_populates="operator")
     status_history = relationship("UserStatusHistory", foreign_keys="UserStatusHistory.user_id", back_populates="user")
     groups = relationship("Group", secondary="user_groups", back_populates="users")
+    email_logs = relationship("EmailLog", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, telegram_id={self.telegram_id}, role={self.role}, status={self.status})>"

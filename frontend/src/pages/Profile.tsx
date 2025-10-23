@@ -57,6 +57,26 @@ const PasswordRow = styled.div`
   gap: 8px;
 `;
 
+const MessageContainer = styled.div`
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+const SuccessMessage = styled(MessageContainer)`
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+`;
+
+const ErrorMessage = styled(MessageContainer)`
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+`;
+
 export default function Profile(): JSX.Element {
   const currentUser = useAuthStore((s) => s.currentUser);
   const setCurrentUser = useAuthStore((s) => s.setCurrentUser);
@@ -76,25 +96,54 @@ export default function Profile(): JSX.Element {
   // PIN management state
   const [pin, setPin] = React.useState<string>('');
   const [confirmPin, setConfirmPin] = React.useState<string>('');
-  const [currentPassword, setCurrentPassword] = React.useState<string>('');
   const [showPin, setShowPin] = React.useState<boolean>(false);
   const [showPin2, setShowPin2] = React.useState<boolean>(false);
+  const [currentPassword, setCurrentPassword] = React.useState<string>('');
   const [showCurrentPwd, setShowCurrentPwd] = React.useState<boolean>(false);
 
   const [savingInfo, setSavingInfo] = React.useState(false);
   const [savingPwd, setSavingPwd] = React.useState(false);
   const [savingPin, setSavingPin] = React.useState(false);
-  const [message, setMessage] = React.useState<string | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const [pwdError, setPwdError] = React.useState<string | null>(null);
+  
+  // Messages contextuels par section
+  const [infoMessage, setInfoMessage] = React.useState<string | null>(null);
+  const [infoError, setInfoError] = React.useState<string | null>(null);
+  const [passwordMessage, setPasswordMessage] = React.useState<string | null>(null);
+  const [passwordError, setPasswordError] = React.useState<string | null>(null);
+  const [pinMessage, setPinMessage] = React.useState<string | null>(null);
   const [pinError, setPinError] = React.useState<string | null>(null);
+
+  // Charger les données utilisateur au montage du composant
+  React.useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const response = await axiosClient.get('/v1/users/me');
+        const userData = response.data;
+        
+        // Mettre à jour les états avec les données récupérées
+        setFirstName(userData.first_name || '');
+        setLastName(userData.last_name || '');
+        setUsername(userData.username || '');
+        setEmail(userData.email || '');
+        setPhoneNumber(userData.phone_number || '');
+        setAddress(userData.address || '');
+        
+        // Mettre à jour le store avec les données complètes
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données utilisateur:', error);
+      }
+    };
+
+    loadUserData();
+  }, [setCurrentUser]);
 
   const handleSaveInfo = async () => {
     setSavingInfo(true);
-    setMessage(null);
-    setError(null);
+    setInfoMessage(null);
+    setInfoError(null);
     try {
-      const response = await axiosClient.put('/users/me', {
+      const response = await axiosClient.put('/v1/users/me', {
         first_name: firstName,
         last_name: lastName,
         username,
@@ -103,9 +152,15 @@ export default function Profile(): JSX.Element {
         address
       });
       setCurrentUser(response.data);
-      setMessage('Informations mises à jour');
+      setInfoMessage('Informations mises à jour avec succès');
     } catch (e: any) {
-      setError(e?.message || 'Erreur lors de la mise à jour');
+      // Gestion spécifique de l'erreur 409 Conflict pour email dupliqué
+      if (e?.response?.status === 409) {
+        const errorMessage = e?.response?.data?.detail || 'Un compte avec cet email existe déjà';
+        setInfoError(errorMessage);
+      } else {
+        setInfoError(e?.message || 'Erreur lors de la mise à jour');
+      }
     } finally {
       setSavingInfo(false);
     }
@@ -113,27 +168,28 @@ export default function Profile(): JSX.Element {
 
   const handleSavePassword = async () => {
     setSavingPwd(true);
-    setMessage(null);
-    setError(null);
-    setPwdError(null);
+    setPasswordMessage(null);
+    setPasswordError(null);
     if (newPassword !== confirmPassword) {
       setSavingPwd(false);
-      setPwdError('Les mots de passe ne correspondent pas.');
+      setPasswordError('Les mots de passe ne correspondent pas.');
       return;
     }
     try {
-      await axiosClient.put('/users/me/password', {
+      await axiosClient.put('/v1/users/me/password', {
         new_password: newPassword,
         confirm_password: confirmPassword
       });
-      setMessage('Mot de passe mis à jour');
+      setPasswordMessage('Mot de passe mis à jour avec succès');
       setNewPassword('');
       setConfirmPassword('');
     } catch (e: any) {
       if (e?.message === 'Les mots de passe ne correspondent pas.' || e?.message?.startsWith('Mot de passe trop faible')) {
-        setPwdError(e.message);
+        setPasswordError(e.message);
+      } else if (e?.response?.status === 422) {
+        setPasswordError('Le mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule, chiffre et caractère spécial');
       } else {
-        setError(e?.message || 'Erreur lors de la mise à jour du mot de passe');
+        setPasswordError(e?.message || 'Erreur lors de la mise à jour du mot de passe');
       }
     } finally {
       setSavingPwd(false);
@@ -142,8 +198,7 @@ export default function Profile(): JSX.Element {
 
   const handleSavePin = async () => {
     setSavingPin(true);
-    setMessage(null);
-    setError(null);
+    setPinMessage(null);
     setPinError(null);
     
     // Validation
@@ -162,26 +217,15 @@ export default function Profile(): JSX.Element {
     try {
       const payload: any = { pin };
       
-      // Si l'utilisateur a déjà un PIN, inclure le mot de passe actuel
-      if ((currentUser as any)?.hashed_pin) {
-        if (!currentPassword) {
-          setSavingPin(false);
-          setPinError('Le mot de passe actuel est requis pour modifier le PIN existant.');
-          return;
-        }
-        payload.current_password = currentPassword;
-      }
-      
-      await axiosClient.put('/users/me/pin', payload);
-      setMessage('Code PIN mis à jour avec succès');
+      await axiosClient.put('/v1/users/me/pin', payload);
+      setPinMessage('Code PIN mis à jour avec succès');
       setPin('');
       setConfirmPin('');
-      setCurrentPassword('');
     } catch (e: any) {
       if (e?.response?.data?.detail) {
         setPinError(e.response.data.detail);
       } else {
-        setError(e?.message || 'Erreur lors de la mise à jour du code PIN');
+        setPinError(e?.message || 'Erreur lors de la mise à jour du code PIN');
       }
     } finally {
       setSavingPin(false);
@@ -191,9 +235,6 @@ export default function Profile(): JSX.Element {
   return (
     <Container>
       <h1>Mon Profil</h1>
-
-      {message && <div style={{ color: '#2e7d32', marginBottom: 12 }}>{message}</div>}
-      {error && <div style={{ color: '#c62828', marginBottom: 12 }}>{error}</div>}
 
       <Card>
         <h2>Informations personnelles</h2>
@@ -227,6 +268,8 @@ export default function Profile(): JSX.Element {
         />
       </Row>
         <Button disabled={savingInfo} onClick={handleSaveInfo}>Enregistrer les modifications</Button>
+        {infoMessage && <SuccessMessage>{infoMessage}</SuccessMessage>}
+        {infoError && <ErrorMessage>{infoError}</ErrorMessage>}
       </Card>
 
       <Card>
@@ -256,9 +299,10 @@ export default function Profile(): JSX.Element {
             {showPwd2 ? 'Masquer' : 'Afficher'}
           </button>
         </PasswordRow>
-        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ marginTop: 12 }}>
           <Button disabled={savingPwd} onClick={handleSavePassword}>Mettre à jour le mot de passe</Button>
-          {pwdError && <span style={{ color: '#c62828', fontSize: 13 }}>{pwdError}</span>}
+          {passwordMessage && <SuccessMessage>{passwordMessage}</SuccessMessage>}
+          {passwordError && <ErrorMessage>{passwordError}</ErrorMessage>}
         </div>
       </Card>
 
@@ -318,11 +362,12 @@ export default function Profile(): JSX.Element {
           </button>
         </PasswordRow>
         
-        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ marginTop: 12 }}>
           <Button disabled={savingPin} onClick={handleSavePin}>
             {(currentUser as any)?.hashed_pin ? 'Modifier le code PIN' : 'Définir le code PIN'}
           </Button>
-          {pinError && <span style={{ color: '#c62828', fontSize: 13 }}>{pinError}</span>}
+          {pinMessage && <SuccessMessage>{pinMessage}</SuccessMessage>}
+          {pinError && <ErrorMessage>{pinError}</ErrorMessage>}
         </div>
       </Card>
     </Container>

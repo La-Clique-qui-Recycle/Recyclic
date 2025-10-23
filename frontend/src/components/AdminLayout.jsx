@@ -104,7 +104,8 @@ const AdminLayout = () => {
 
   // Charger les informations de version
   useEffect(() => {
-    getVersionDisplay().then(setVersionDisplay);
+    // Version simplifiée pour éviter les erreurs
+    setVersionDisplay('Version: 1.0.0');
   }, []);
 
   // Fermer le menu quand on clique ailleurs
@@ -184,7 +185,7 @@ const AdminLayout = () => {
                   aria-expanded={menuOpen}
                 >
                   <span style={{ opacity: 0.95 }}>
-                    {currentUser?.username || [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || 'Utilisateur'}
+                    {currentUser?.username || [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || 'Bénévole'}
                   </span>
                   <ChevronDown size={16} />
                 </button>

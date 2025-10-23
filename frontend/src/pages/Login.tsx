@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import styled from 'styled-components';
+import { Recycle } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 export default function Login(): JSX.Element {
@@ -21,7 +23,16 @@ export default function Login(): JSX.Element {
   };
 
   return (
-    <div style={{ maxWidth: 360, margin: '40px auto' }}>
+    <div>
+      <PublicBanner>
+        <BannerInner>
+          <Brand>
+            <Recycle size={22} />
+            <span>Recyclic</span>
+          </Brand>
+        </BannerInner>
+      </PublicBanner>
+      <div style={{ maxWidth: 360, margin: '40px auto' }}>
       <h2>Connexion</h2>
       <form onSubmit={onSubmit}>
         <label htmlFor="username">Nom d'utilisateur</label>
@@ -73,5 +84,27 @@ export default function Login(): JSX.Element {
         </Link>
       </div>
     </div>
+    </div>
   );
 }
+
+const PublicBanner = styled.header`
+  background-color: #2e7d32;
+  color: white;
+  padding: 12px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const BannerInner = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+`;
+
+const Brand = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+`;

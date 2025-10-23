@@ -23,6 +23,7 @@ from .endpoints import (
     db_import_router as db_import,
     groups_router as groups,
     permissions_router as permissions,
+    webhooks_router as webhooks,
 )
 
 api_router = APIRouter()
@@ -51,5 +52,6 @@ api_router.include_router(db_purge, prefix="/admin", tags=["admin"])
 api_router.include_router(db_import, prefix="/admin", tags=["admin"])
 api_router.include_router(groups, prefix="/admin/groups", tags=["admin", "groups"])
 api_router.include_router(permissions, prefix="/admin/permissions", tags=["admin", "permissions"])
+api_router.include_router(webhooks, prefix="/webhooks", tags=["webhooks"])
 
 

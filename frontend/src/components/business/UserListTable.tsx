@@ -178,7 +178,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
                 <Text fw={500}>
                   {user.first_name && user.last_name 
                     ? `${user.first_name} ${user.last_name}`
-                    : user.first_name || user.last_name || user.username || 'Utilisateur'}
+                    : user.first_name || user.last_name || user.username || 'Bénévole'}
                 </Text>
                 <Text size="sm" c="dimmed">
                   @{user.username || user.telegram_id}
@@ -189,8 +189,7 @@ export const UserListTable: React.FC<UserListTableProps> = ({
               <Badge color="blue" variant="light" style={{ cursor: 'default' }}>
                 {user.role === UserRole.SUPER_ADMIN ? 'Super Admin' :
                  user.role === UserRole.ADMIN ? 'Administrateur' :
-                 user.role === UserRole.MANAGER ? 'Manager' :
-                 'Utilisateur'}
+                 'Bénévole'}
               </Badge>
             </Table.Td>
             <Table.Td>

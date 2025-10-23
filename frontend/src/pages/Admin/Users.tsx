@@ -106,7 +106,7 @@ const AdminUsers: React.FC = () => {
 
       notifications.show({
         title: 'Succès',
-        message: 'Utilisateur créé avec succès',
+        message: 'Bénévole créé avec succès',
         color: 'green',
       });
     } catch (error) {
@@ -226,8 +226,7 @@ const AdminUsers: React.FC = () => {
             value={filters.role || null}
             onChange={(value) => handleFilterChange('role', value)}
             data={[
-              { value: UserRole.USER, label: 'Utilisateur' },
-              { value: UserRole.MANAGER, label: 'Manager' },
+              { value: UserRole.USER, label: 'Bénévole' },
               { value: UserRole.ADMIN, label: 'Administrateur' },
               { value: UserRole.SUPER_ADMIN, label: 'Super Admin' },
             ]}
