@@ -39,7 +39,6 @@ interface UserFormData {
   availability?: string;
   password: string;
   role: UserRole;
-  status: UserStatus;
   is_active: boolean;
 }
 
@@ -56,7 +55,6 @@ const sanitizeUserForForm = (user: AdminUser | null): UserFormData => ({
   availability: user?.availability || '',
   password: '', // Pas de mot de passe par défaut pour la modification
   role: user?.role || UserRole.USER,
-  status: user?.status || UserStatus.PENDING,
   is_active: user?.is_active ?? true,
 });
 
@@ -168,7 +166,6 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           availability: values.availability || undefined,
           password: values.password,
           role: values.role,
-          status: values.status,
           is_active: values.is_active,
         };
 
@@ -198,7 +195,6 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           skills: values.skills || undefined,
           availability: values.availability || undefined,
           role: values.role,
-          status: values.status,
         };
 
         await adminService.updateUser(user.id, updateData);
@@ -450,12 +446,6 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 </Text>
               </Group>
               <Group justify="space-between">
-                <Text size="sm">Statut:</Text>
-                <Text size="sm" fw={500}>
-                  {getStatusLabel(user.status)}
-                </Text>
-              </Group>
-              <Group justify="space-between">
                 <Text size="sm">Actif:</Text>
                 <Text size="sm" fw={500}>
                   {user.is_active ? 'Oui' : 'Non'}
@@ -673,22 +663,6 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   ]}
                   value={field.value}
                   onChange={(val) => field.onChange(val as UserRole)}
-                />
-              )}
-            />
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  label="Statut"
-                  data={[
-                    { value: UserStatus.PENDING, label: 'En attente' },
-                    { value: UserStatus.APPROVED, label: 'Approuvé' },
-                    { value: UserStatus.REJECTED, label: 'Rejeté' },
-                  ]}
-                  value={field.value}
-                  onChange={(val) => field.onChange(val as UserStatus)}
                 />
               )}
             />

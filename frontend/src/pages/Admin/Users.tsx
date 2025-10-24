@@ -131,12 +131,6 @@ const AdminUsers: React.FC = () => {
           </div>
           <Group>
             <Button
-              variant="outline"
-              onClick={() => window.location.href = '/admin/pending'}
-            >
-              Demandes d'inscription
-            </Button>
-            <Button
               leftSection={<IconUserPlus size={16} />}
               onClick={() => setCreateModalOpen(true)}
               data-testid="create-user-button"
@@ -232,19 +226,6 @@ const AdminUsers: React.FC = () => {
             ]}
             clearable
             data-testid="role-filter"
-          />
-          <Select
-            label="Filtrer par statut"
-            placeholder="Tous les statuts"
-            value={filters.status || null}
-            onChange={(value) => handleFilterChange('status', value)}
-            data={[
-              { value: UserStatus.PENDING, label: 'En attente' },
-              { value: UserStatus.APPROVED, label: 'Approuvé' },
-              { value: UserStatus.REJECTED, label: 'Rejeté' },
-            ]}
-            clearable
-            data-testid="status-filter"
           />
         </Group>
 

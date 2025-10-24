@@ -140,11 +140,6 @@ const DashboardHomePage = () => {
                 Groupes & Permissions
               </AdminLink>
             </LinkItem>
-            <LinkItem>
-              <AdminLink onClick={() => handleNavigation('/admin/pending')}>
-                Utilisateurs en attente
-              </AdminLink>
-            </LinkItem>
           </LinkList>
         </AdminCard>
 

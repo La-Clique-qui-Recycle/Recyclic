@@ -117,7 +117,6 @@ export const UserListTable: React.FC<UserListTableProps> = ({
           <Table.Tr>
             <Table.Th>Nom</Table.Th>
             <Table.Th>Rôle</Table.Th>
-            <Table.Th>Statut d'approbation</Table.Th>
             <Table.Th>Statut d'activité</Table.Th>
             <Table.Th>Statut en ligne</Table.Th>
           </Table.Tr>
@@ -127,7 +126,6 @@ export const UserListTable: React.FC<UserListTableProps> = ({
             <Table.Tr key={index}>
               <Table.Td><Skeleton height={20} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
-              <Table.Td><Skeleton height={20} width={100} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
               <Table.Td><Skeleton height={20} width={80} data-testid="skeleton" /></Table.Td>
             </Table.Tr>
@@ -151,7 +149,6 @@ export const UserListTable: React.FC<UserListTableProps> = ({
         <Table.Tr>
           <Table.Th>Nom</Table.Th>
           <Table.Th>Rôle</Table.Th>
-          <Table.Th>Statut d'approbation</Table.Th>
           <Table.Th>Statut d'activité</Table.Th>
           <Table.Th>Statut en ligne</Table.Th>
         </Table.Tr>
@@ -190,11 +187,6 @@ export const UserListTable: React.FC<UserListTableProps> = ({
                 {user.role === UserRole.SUPER_ADMIN ? 'Super Admin' :
                  user.role === UserRole.ADMIN ? 'Administrateur' :
                  'Bénévole'}
-              </Badge>
-            </Table.Td>
-            <Table.Td>
-              <Badge color={getStatusColor(user.status)} variant="light">
-                {getStatusLabel(user.status)}
               </Badge>
             </Table.Td>
             <Table.Td>
