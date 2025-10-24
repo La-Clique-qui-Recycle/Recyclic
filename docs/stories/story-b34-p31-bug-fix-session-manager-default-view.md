@@ -1,14 +1,12 @@
 # Story b34-p31: Bug: La page des sessions de caisse est vide par défaut
 
-**Statut:** Prêt pour développement
-**Épopée:** [b34: Rattrapage et Sécurisation](./../epics/epic-b34-rattrapage-securisation.md)
-**PO:** Sarah
-**Type:** Bug / Amélioration UX
-**Priorité:** Critique
+**Statut:** ❌ Annulée - Problème non reproductible
 
 ## 1. Contexte
 
-L'audit UX de Sally (`b34-p27`) a identifié comme point de friction critique le fait que la page de gestion des sessions de caisse (`/admin/session-manager`) est vide par défaut. L'utilisateur ne voit aucune donnée et doit deviner qu'il faut utiliser les filtres pour afficher les sessions, ce qui est contre-intuitif.
+L'audit UX de Sally (`b34-p27`) avait identifié comme point de friction critique le fait que la page de gestion des sessions de caisse (`/admin/session-manager`) était vide par défaut. Cependant, une vérification par le PO a montré que la page affiche bien la liste des sessions par défaut.
+
+Cette story est donc annulée car le problème n'est pas reproductible et la prémisse de l'audit était erronée.
 
 ## 2. User Story (En tant que...)
 

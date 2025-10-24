@@ -1,14 +1,12 @@
 # Story b34-p32: Bug: Le sélecteur de catégories est inutilisable
 
-**Statut:** Prêt pour développement
-**Épopée:** [b34: Rattrapage et Sécurisation](./../epics/epic-b34-rattrapage-securisation.md)
-**PO:** Sarah
-**Type:** Bug / Amélioration UX
-**Priorité:** Critique
+**Statut:** ❌ Annulée - Problème non reproductible / Erreur d'audit
 
 ## 1. Contexte
 
-L'audit UX de Sally (`b34-p27`) a identifié comme point de friction critique le menu déroulant de sélection des catégories, notamment dans l'interface de réception. Avec plus de 100 options, il est impossible pour un utilisateur de trouver rapidement la catégorie qu'il cherche, ce qui rend le composant inutilisable en pratique.
+L'audit UX de Sally (`b34-p27`) avait identifié comme point de friction critique le menu déroulant de sélection des catégories, notamment dans l'interface de réception. Cependant, une vérification par le PO a montré que la page de création de ticket utilise des boutons tactiles et non un menu déroulant.
+
+Cette story est donc annulée car le problème n'est pas reproductible et la prémisse de l'audit était erronée.
 
 ## 2. User Story (En tant que...)
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { Select } from '@mantine/core';
 import { getReceptionLignes, exportReceptionLignesCSV, getReceptionCategories } from '../../services/api';
 
 // Styled Components
@@ -224,7 +225,7 @@ interface LigneDepot {
   ticket_id: string;
   poste_id: string;
   benevole_username: string;
-  dom_category_label: string;
+  category_label: string;
   poids_kg: number;
   destination: string;
   notes?: string;
@@ -241,8 +242,7 @@ interface LigneDepotListResponse {
 
 interface Category {
   id: string;
-  label: string;
-  slug: string;
+  name: string;
 }
 
 const ReceptionReports: React.FC = () => {
@@ -430,18 +430,21 @@ const ReceptionReports: React.FC = () => {
 
           <FilterGroup>
             <FilterLabel htmlFor="category">Catégorie</FilterLabel>
-            <FilterSelect
+            <Select
               id="category"
               value={filters.categoryId}
-              onChange={(e) => handleFilterChange('categoryId', e.target.value)}
-            >
-              <option value="">Toutes les catégories</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.label}
-                </option>
-              ))}
-            </FilterSelect>
+              onChange={(value) => handleFilterChange('categoryId', value || '')}
+              placeholder="Rechercher une catégorie..."
+              searchable
+              clearable
+              data={[
+                { value: '', label: 'Toutes les catégories' },
+                ...categories.filter(category => category && category.id && category.name).map(category => ({
+                  value: category.id,
+                  label: category.name
+                }))
+              ]}
+            />
           </FilterGroup>
 
           <FilterGroup>
@@ -476,7 +479,7 @@ const ReceptionReports: React.FC = () => {
               <TableRow key={ligne.id}>
                 <TableCell>{formatDate(ligne.created_at)}</TableCell>
                 <TableCell>{ligne.benevole_username}</TableCell>
-                <TableCell>{ligne.dom_category_label}</TableCell>
+                <TableCell>{ligne.category_label}</TableCell>
                 <TableCell>{formatWeight(ligne.poids_kg)}</TableCell>
                 <TableCell>{ligne.destination}</TableCell>
                 <TableCell>{ligne.notes || '-'}</TableCell>

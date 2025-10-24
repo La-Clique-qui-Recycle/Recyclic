@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Stack,
   Text,
@@ -9,14 +9,16 @@ import {
   Textarea,
   Select,
   Switch,
-  Divider
+  Divider,
+  MultiSelect
 } from '@mantine/core';
 import { IconEdit, IconCheck, IconX } from '@tabler/icons-react';
 import { useForm, Controller } from 'react-hook-form';
 import { notifications } from '@mantine/notifications';
-import { AdminUser, adminService } from '../../services/adminService';
+import { AdminUser, adminService, UserGroupUpdate } from '../../services/adminService';
 import { UserRole, UserStatus } from '../../generated';
 import { useAuthStore } from '../../stores/authStore';
+import { groupService, Group as GroupType } from '../../services/groupService';
 
 interface UserProfileTabProps {
   user: AdminUser | null;
@@ -68,11 +70,88 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [forcePasswordModalOpen, setForcePasswordModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [groups, setGroups] = useState<GroupType[]>([]);
+  const [userGroups, setUserGroups] = useState<string[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
   const currentUser = useAuthStore((s) => s.currentUser);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch, control } = useForm<UserFormData>({
     defaultValues: sanitizeUserForForm(user)
   });
+
+  // Charger les groupes disponibles
+  const loadGroups = async () => {
+    try {
+      setGroupsLoading(true);
+      const groupsData = await groupService.listGroups();
+      setGroups(groupsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des groupes:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible de charger les groupes',
+        color: 'red',
+      });
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  // Charger les groupes de l'utilisateur
+  const loadUserGroups = async () => {
+    if (!user) return;
+    
+    try {
+      // Pour l'instant, on récupère les groupes depuis l'API des groupes
+      // En attendant que l'API utilisateur expose les groupes
+      const allGroups = await groupService.listGroups();
+      const userGroupIds = allGroups
+        .filter(group => group.user_ids.includes(user.id))
+        .map(group => group.id);
+      setUserGroups(userGroupIds);
+    } catch (error) {
+      console.error('Erreur lors du chargement des groupes de l\'utilisateur:', error);
+    }
+  };
+
+  // Sauvegarder les groupes de l'utilisateur
+  const handleSaveGroups = async (selectedGroupIds: string[]) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const groupData: UserGroupUpdate = {
+        group_ids: selectedGroupIds
+      };
+      
+      await adminService.updateUserGroups(user.id, groupData);
+      
+      setUserGroups(selectedGroupIds);
+      
+      notifications.show({
+        title: 'Succès',
+        message: 'Groupes de l\'utilisateur mis à jour avec succès',
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des groupes:', error);
+      notifications.show({
+        title: 'Erreur',
+        message: 'Impossible de mettre à jour les groupes de l\'utilisateur',
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger les groupes au montage du composant
+  useEffect(() => {
+    loadGroups();
+    if (user) {
+      loadUserGroups();
+    }
+  }, [user]);
 
   const handleEdit = () => {
     const sanitized = sanitizeUserForForm(user);
@@ -463,6 +542,15 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   {new Date(user.updated_at).toLocaleDateString('fr-FR')}
                 </Text>
               </Group>
+              <Group justify="space-between">
+                <Text size="sm">Groupes:</Text>
+                <Text size="sm" fw={500}>
+                  {userGroups.length > 0 
+                    ? groups.filter(g => userGroups.includes(g.id)).map(g => g.name).join(', ')
+                    : 'Aucun groupe assigné'
+                  }
+                </Text>
+              </Group>
             </Stack>
           </div>
 
@@ -677,6 +765,20 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   onChange={(event) => field.onChange(event.currentTarget.checked)}
                 />
               )}
+            />
+
+            {/* Sélecteur de groupes */}
+            <MultiSelect
+              label="Groupes"
+              description="Sélectionnez les groupes auxquels cet utilisateur doit appartenir"
+              placeholder="Choisir des groupes..."
+              data={groups.map(group => ({ value: group.id, label: group.name }))}
+              value={userGroups}
+              onChange={handleSaveGroups}
+              searchable
+              clearable
+              disabled={groupsLoading}
+              loading={groupsLoading}
             />
 
             {!isCreateMode && (
