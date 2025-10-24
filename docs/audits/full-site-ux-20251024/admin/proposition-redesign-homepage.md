@@ -82,19 +82,21 @@ La nouvelle page d'accueil sera organisée en **3 zones principales** :
 ### **3. HIÉRARCHISATION - PRINCIPE DE PRIORISATION**
 
 #### **Niveau 1 - Actions Critiques (Toujours Visibles)**
-- **Alertes système** : Erreurs, utilisateurs en attente
-- **Sessions de caisse** : Opérations en cours
+- **Statistiques quotidiennes** : CA, poids, tickets
+- **Notifications** : Alertes, erreurs, statut caisse
 - **Actions urgentes** : Corriger, Approuver, Résoudre
 
-#### **Niveau 2 - Actions Courantes (Widgets Principaux)**
+#### **Niveau 2 - Actions Courantes (Navigation Principale)**
 - **Gestion utilisateurs** : Nouveaux, modifications, groupes
-- **Statistiques** : Vue d'ensemble, performance
-- **Rapports** : Accès rapide aux données
+- **Rapports & Exports** : Accès rapide aux données
+- **Catégories & Tarifs** : Modification des prix
+- **Sessions de Caisse** : Historique, ouverture/fermeture
+- **Paramètres & Config** : Réglages système
 
-#### **Niveau 3 - Actions Secondaires (Navigation Rapide)**
-- **Configuration** : Paramètres, sites, catégories
-- **Outils avancés** : Audit, logs, maintenance
-- **Exports** : Données, rapports, sauvegardes
+#### **Niveau 3 - Administration Super-Admin (Rétractable)**
+- **Sites & Caisses** : Création ponctuelle (Super-Admin uniquement)
+- **Paramètres Avancés** : Configuration technique (Super-Admin uniquement)
+- **Audit & Logs** : Consultation technique (Super-Admin uniquement)
 
 ### **4. GUIDAGE UTILISATEUR - PRINCIPE DE DÉCOUVERTE PROGRESSIVE**
 
@@ -116,28 +118,28 @@ La nouvelle page d'accueil sera organisée en **3 zones principales** :
 ## 🎯 **RÉSOLUTION DES POINTS DE FRICTION**
 
 ### **1. EFFORT COGNITIF - Assignation de Groupes**
-**Solution :** Widget "Utilisateurs Récents" avec action directe
-- **Bouton "Assigner Groupe"** directement dans le widget
-- **Modal intégré** pour l'assignation sans navigation
+**Solution :** Navigation principale "Utilisateurs & Groupes"
+- **Accès direct** à la gestion des utilisateurs
+- **Interface unifiée** pour l'assignation de groupes
 - **Feedback immédiat** : Confirmation et mise à jour en temps réel
 
 ### **2. RUPTURE DE CONTEXTE - Navigation**
-**Solution :** Actions contextuelles dans les widgets
-- **Liens directs** vers les actions depuis les widgets
-- **Modals intégrés** pour les actions rapides
-- **Breadcrumbs intelligents** pour la navigation
+**Solution :** Navigation claire et hiérarchisée
+- **Zone 2** : Fonctions quotidiennes facilement accessibles
+- **Zone 3** : Administration technique (Super-Admin uniquement)
+- **Icônes distinctives** : Reconnaissance visuelle immédiate
 
 ### **3. CLARTÉ DU FEEDBACK - Interface Encombrée**
-**Solution :** Widgets avec données pertinentes
-- **Colonnes utiles** : Données réelles, pas de colonnes vides
-- **Filtres intelligents** : Affichage des données pertinentes
-- **Actions claires** : Boutons avec labels explicites
+**Solution :** Structure simplifiée et organisée
+- **Zone 1** : Stats essentielles (toujours visibles)
+- **Zone 2** : Navigation principale (6 sections claires)
+- **Zone 3** : Administration technique (masquée pour les admins)
 
 ### **4. SÉLECTEUR DE CATÉGORIES**
-**Solution :** Prévisualisation dans les widgets
-- **Catégories populaires** : Affichage des plus utilisées
-- **Recherche intégrée** : Autocomplétion et suggestions
-- **Historique** : Catégories récemment utilisées
+**Solution :** Section dédiée "Catégories & Tarifs"
+- **Accès direct** à la modification des prix
+- **Interface claire** pour la gestion des catégories
+- **Navigation intuitive** avec icônes et labels évidents
 
 ## 📱 **ADAPTABILITÉ ET RESPONSIVE**
 
@@ -169,10 +171,15 @@ La nouvelle page d'accueil sera organisée en **3 zones principales** :
 - **+30% d'adoption** des fonctionnalités avancées
 
 ### **Résolution des Points de Friction**
-- **Assignation de groupes** : Workflow unifié et direct
-- **Navigation** : Actions contextuelles et modals intégrés
-- **Interface** : Widgets pertinents avec données réelles
-- **Découverte** : Guidage progressif et tutoriels intégrés
+- **Assignation de groupes** : Navigation directe et claire
+- **Navigation** : Structure hiérarchisée et intuitive
+- **Interface** : Organisation logique par usage quotidien
+- **Sécurité** : Séparation claire entre fonctions opérationnelles et techniques
+
+### **Gestion des Rôles**
+- **Interface adaptée** : Admin (opérationnel) vs Super-Admin (technique)
+- **Sécurité renforcée** : Accès contrôlé aux fonctions sensibles
+- **Expérience optimisée** : Interface simplifiée selon le rôle
 
 ## 📋 **PLAN DE MISE EN ŒUVRE**
 
