@@ -7,6 +7,7 @@ Create Date: 2025-01-27 21:45:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+import uuid
 
 # revision identifiers, used by Alembic.
 revision = '9ca74a277c0d'
@@ -27,32 +28,32 @@ def upgrade() -> None:
     # Insert the 6 initial permissions
     op.bulk_insert(permissions_table, [
         {
-            'id': sa.func.gen_random_uuid(),
+            'id': str(uuid.uuid4()),
             'name': 'caisse.access',
             'description': 'Donne accès au module de Caisse.'
         },
         {
-            'id': sa.func.gen_random_uuid(),
+            'id': str(uuid.uuid4()),
             'name': 'reception.access',
             'description': 'Donne accès au module de Réception.'
         },
         {
-            'id': sa.func.gen_random_uuid(),
+            'id': str(uuid.uuid4()),
             'name': 'admin.users.manage',
             'description': 'Permet la gestion des utilisateurs.'
         },
         {
-            'id': sa.func.gen_random_uuid(),
+            'id': str(uuid.uuid4()),
             'name': 'admin.groups.manage',
             'description': 'Permet la gestion des groupes et permissions.'
         },
         {
-            'id': sa.func.gen_random_uuid(),
+            'id': str(uuid.uuid4()),
             'name': 'reports.view',
             'description': 'Permet de consulter les rapports.'
         },
         {
-            'id': sa.func.gen_random_uuid(),
+            'id': str(uuid.uuid4()),
             'name': 'reports.export',
             'description': 'Permet d\'exporter les rapports.'
         }

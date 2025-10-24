@@ -20,10 +20,14 @@ else
 fi
 
 if $COMPOSE_CMD --help 2>/dev/null | grep -q -- "--env-file"; then
-  # Arrêter la stack existante (projet explicite)
+  # 1. Forcer la reconstruction des images sans cache PENDANT que l'ancienne version tourne
+  $COMPOSE_CMD -f docker-compose.prod.yml -p recyclic-prod --env-file .env.production --env-file .build-meta.env build --no-cache
+
+  # 2. Arrêter l'ancienne version de la stack
   $COMPOSE_CMD -f docker-compose.prod.yml -p recyclic-prod --env-file .env.production --env-file .build-meta.env down || true
-  docker rm -f recyclic-prod-postgres recyclic-prod-redis 2>/dev/null || true
-  exec $COMPOSE_CMD -f docker-compose.prod.yml -p recyclic-prod --env-file .env.production --env-file .build-meta.env up -d --build --remove-orphans
+
+  # 3. Démarrer les services avec les nouvelles images (interruption minimale)
+  exec $COMPOSE_CMD -f docker-compose.prod.yml -p recyclic-prod --env-file .env.production --env-file .build-meta.env up -d --remove-orphans
 else
   echo "❌ La commande '$COMPOSE_CMD' ne supporte pas --env-file. Merci d'installer docker compose v2 (recommandé)." >&2
   echo "   Commande alternative manuelle (si .env.production renommé temporairement en .env) :" >&2
