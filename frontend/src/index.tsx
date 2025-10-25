@@ -21,18 +21,24 @@ const queryClient = new QueryClient({
 });
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
+// Désactiver React.StrictMode en production/staging pour éviter le double rendu
+const isProduction = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
+
+const AppContent = (
+  <HydrationWrapper>
+    <MantineProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <App />
+          <Notifications />
+          <Toaster position="top-right" />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </MantineProvider>
+  </HydrationWrapper>
+);
+
 root.render(
-  <React.StrictMode>
-    <HydrationWrapper>
-      <MantineProvider>
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <App />
-            <Notifications />
-            <Toaster position="top-right" />
-          </BrowserRouter>
-        </QueryClientProvider>
-      </MantineProvider>
-    </HydrationWrapper>
-  </React.StrictMode>
+  isProduction ? AppContent : <React.StrictMode>{AppContent}</React.StrictMode>
 );

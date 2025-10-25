@@ -362,6 +362,7 @@ const SuccessMessage = styled.div`
 const Settings: React.FC = () => {
   const currentUser = useAuthStore((state) => state.currentUser)
   const navigate = useNavigate()
+  const isSuperAdmin = currentUser?.role === 'super-admin'
   const [exportingDatabase, setExportingDatabase] = useState(false)
   const [purgingData, setPurgingData] = useState(false)
   const [showPurgeModal, setShowPurgeModal] = useState(false)
@@ -409,86 +410,93 @@ const Settings: React.FC = () => {
     default_recipient: ''
   })
 
-  // Charger les paramètres de session au montage du composant
   useEffect(() => {
+    if (!isSuperAdmin) {
+      return
+    }
+
+    let isCancelled = false
+
     const loadSessionSettings = async () => {
       try {
         setLoadingSessionSettings(true)
         setSessionSettingsError(null)
         const settings = await adminService.getSessionSettings()
-        setSessionSettings(settings)
+        if (!isCancelled) {
+          setSessionSettings(settings)
+        }
       } catch (error) {
         console.error('Erreur lors du chargement des paramètres de session:', error)
-        setSessionSettingsError('Erreur lors du chargement des paramètres')
+        if (!isCancelled) {
+          setSessionSettingsError('Erreur lors du chargement des paramètres')
+        }
       } finally {
-        setLoadingSessionSettings(false)
+        if (!isCancelled) {
+          setLoadingSessionSettings(false)
+        }
       }
     }
 
-    if (currentUser?.role === 'super-admin') {
-      loadSessionSettings()
-    }
-  }, [currentUser])
-
-  useEffect(() => {
     const loadActivityThreshold = async () => {
       try {
         setLoadingActivityThreshold(true)
         setActivityThresholdError(null)
         const response = await adminService.getActivityThreshold()
         const minutes = response?.activity_threshold_minutes
-        if (typeof minutes === 'number' && !Number.isNaN(minutes)) {
+        if (!isCancelled && typeof minutes === 'number' && !Number.isNaN(minutes)) {
           setActivityThreshold(minutes)
         }
       } catch (error) {
         console.error("Erreur lors du chargement du seuil d'activité:", error)
-        setActivityThresholdError("Erreur lors du chargement du seuil d'activité")
+        if (!isCancelled) {
+          setActivityThresholdError("Erreur lors du chargement du seuil d'activité")
+        }
       } finally {
-        setLoadingActivityThreshold(false)
+        if (!isCancelled) {
+          setLoadingActivityThreshold(false)
+        }
       }
     }
 
-    if (currentUser?.role === 'super-admin') {
-      loadActivityThreshold()
-    }
-  }, [currentUser])
-
-  // Charger les paramètres email au montage du composant
-  useEffect(() => {
     const loadEmailSettings = async () => {
       try {
         setLoadingEmailSettings(true)
         setEmailSettingsError(null)
         const settings = await adminService.getEmailSettings()
-        setEmailSettings(settings)
-        setOriginalEmailSettings({
-          from_name: settings.from_name,
-          from_address: settings.from_address,
-          default_recipient: settings.default_recipient || ''
-        })
-        // Définir l'email de test par défaut
-        if (settings.default_recipient) {
-          setTestEmailAddress(settings.default_recipient)
+        if (!isCancelled) {
+          setEmailSettings(settings)
+          setOriginalEmailSettings({
+            from_name: settings.from_name,
+            from_address: settings.from_address,
+            default_recipient: settings.default_recipient || ''
+          })
+          if (settings.default_recipient) {
+            setTestEmailAddress(settings.default_recipient)
+          }
         }
       } catch (error) {
         console.error('Erreur lors du chargement des paramètres email:', error)
-        setEmailSettingsError('Erreur lors du chargement des paramètres email')
+        if (!isCancelled) {
+          setEmailSettingsError('Erreur lors du chargement des paramètres email')
+        }
       } finally {
-        setLoadingEmailSettings(false)
+        if (!isCancelled) {
+          setLoadingEmailSettings(false)
+        }
       }
     }
 
-    if (currentUser?.role === 'super-admin') {
-      loadEmailSettings()
-    }
-  }, [currentUser])
+    loadSessionSettings()
+    loadActivityThreshold()
+    loadEmailSettings()
 
-  // Debug: Log user info
-  console.log('Settings - User:', currentUser)
-  console.log('Settings - User role:', currentUser?.role)
+    return () => {
+      isCancelled = true
+    }
+  }, [isSuperAdmin])
 
   // Vérifier si l'utilisateur est Super-Admin
-  if (!currentUser || currentUser.role !== 'super-admin') {
+  if (!isSuperAdmin) {
     return (
       <SettingsContainer>
         <UnauthorizedContainer>

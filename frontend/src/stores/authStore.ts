@@ -24,6 +24,7 @@ interface AuthState {
   // State
   currentUser: User | null;
   isAuthenticated: boolean;
+  token: string | null; // OPTIMIZATION: Cache token in memory to avoid repeated localStorage reads
   permissions: string[]; // NEW: Stocker les permissions de l'utilisateur
   loading: boolean;
   error: string | null;
@@ -35,6 +36,8 @@ interface AuthState {
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   setCurrentUser: (user: User | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
+  setToken: (token: string | null) => void; // OPTIMIZATION: Set cached token
+  getToken: () => string | null; // OPTIMIZATION: Get cached token
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
@@ -55,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
         // Initial state
         currentUser: null,
         isAuthenticated: false,
+        token: null, // OPTIMIZATION: Cached token in memory
         permissions: [], // NEW
         loading: false,
         error: null,
@@ -66,6 +70,7 @@ export const useAuthStore = create<AuthState>()(
             const loginData: LoginRequest = { username, password };
             const response: LoginResponse = await AuthApi.apiv1authloginpost(loginData);
             
+            // OPTIMIZATION: Store token in both localStorage (persistence) and memory (cache)
             localStorage.setItem('token', response.access_token);
             axiosClient.defaults.headers.common['Authorization'] = `Bearer ${response.access_token}`;
 
@@ -95,12 +100,13 @@ export const useAuthStore = create<AuthState>()(
               updated_at: response.user.updated_at || new Date().toISOString()
             };
             
-            set({ 
-              currentUser: user, 
-              isAuthenticated: true, 
+            set({
+              currentUser: user,
+              isAuthenticated: true,
+              token: response.access_token, // OPTIMIZATION: Cache token in memory
               permissions: userPermissions, // NEW
               loading: false,
-              error: null 
+              error: null
             });
           } catch (error: any) {
             let errorMessage = 'Erreur de connexion';
@@ -163,6 +169,8 @@ export const useAuthStore = create<AuthState>()(
 
         setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
         setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
+        setToken: (token) => set({ token }), // OPTIMIZATION: Set cached token
+        getToken: () => get().token, // OPTIMIZATION: Get cached token from memory
         setLoading: (loading) => set({ loading }),
         setError: (error) => set({ error }),
         clearError: () => set({ error: null }),
@@ -184,19 +192,21 @@ export const useAuthStore = create<AuthState>()(
             // Toujours procéder à la déconnexion locale
             localStorage.removeItem('token');
             delete axiosClient.defaults.headers.common['Authorization'];
-            set({ currentUser: null, isAuthenticated: false, permissions: [], error: null });
+            set({ currentUser: null, isAuthenticated: false, token: null, permissions: [], error: null }); // OPTIMIZATION: Clear cached token
           }
         },
 
         initializeAuth: async () => {
+          // OPTIMIZATION: Read from localStorage only once on app init, then cache in memory
           const token = localStorage.getItem('token');
           if (!token) {
-            set({ currentUser: null, isAuthenticated: false, permissions: [], loading: false });
+            set({ currentUser: null, isAuthenticated: false, token: null, permissions: [], loading: false });
             return;
           }
           axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          // Cache the token in memory for subsequent requests
+          set({ isAuthenticated: true, token, loading: false });
           // TODO: Récupérer l'utilisateur et les permissions ici pour valider le token
-          set({ isAuthenticated: true, loading: false });
         },
 
         // Computed

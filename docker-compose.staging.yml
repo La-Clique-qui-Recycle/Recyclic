@@ -15,7 +15,7 @@ services:
       - staging_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U recyclic"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
     networks:
@@ -29,7 +29,7 @@ services:
       - .env.staging
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
     networks:
@@ -62,10 +62,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
     networks:
       - recyclic-staging-network
       - traefik-public
@@ -82,31 +82,33 @@ services:
       - "traefik.http.services.recyclic-api-staging.loadbalancer.server.port=8000"
     restart: unless-stopped
 
-  bot:
-    container_name: recyclic-staging-bot
-    build: ./bot
-    image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
-    env_file:
-      - .env.staging
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379
-      API_BASE_URL: http://api:8000
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - recyclic-staging-network
-    restart: unless-stopped
+  # BOT SERVICE DISABLED (STORY-B36-P3)
+  # bot:
+  #   container_name: recyclic-staging-bot
+  #   build: ./bot
+  #   image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
+  #   env_file:
+  #     - .env.staging
+  #   environment:
+  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+  #     REDIS_URL: redis://redis:6379
+  #     API_BASE_URL: http://api:8000
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     api:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+  #     interval: 60s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
+  #   networks:
+  #     - recyclic-staging-network
+  #   restart: unless-stopped
 
   # Service dédié pour les migrations Alembic
   api-migrations:
