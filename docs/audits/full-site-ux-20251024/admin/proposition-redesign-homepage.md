@@ -69,10 +69,14 @@ La nouvelle page d'accueil sera organisée en **3 zones principales** :
 - **Actions :** Modifier profil, Assigner groupe, Voir permissions
 - **Priorité :** 🟡 IMPORTANTE - Résout le problème d'assignation de groupes
 
-#### **Widget 4: STATISTIQUES GLOBALES**
-- **Contenu :** CA du jour, poids reçu, tickets créés, performance
+#### **Widget 4: STATISTIQUES QUOTIDIENNES**
+- **Carte "Financier"** : CA du jour + Dons (€) - *Même nature financière*
+- **Carte "Poids Reçu"** : Total des matières reçues (kg) - *Bilan entrées*
+- **Carte "Poids Sorti"** : Total des matières sorties (kg) - *Bilan sorties*
 - **Actions :** Voir rapport détaillé, Exporter données
 - **Priorité :** 🟢 INFORMATIF - Vue d'ensemble rapide
+
+**Logique métier :** Séparation claire entre financier et matières, avec un bilan complet des flux (reçu vs sorti)
 
 #### **Widget 5: SANTÉ SYSTÈME**
 - **Contenu :** Statut des services, performance, recommandations
@@ -87,16 +91,29 @@ La nouvelle page d'accueil sera organisée en **3 zones principales** :
 - **Actions urgentes** : Corriger, Approuver, Résoudre
 
 #### **Niveau 2 - Actions Courantes (Navigation Principale)**
-- **Gestion utilisateurs** : Nouveaux, modifications, groupes
-- **Rapports & Exports** : Accès rapide aux données
-- **Catégories & Tarifs** : Modification des prix
-- **Sessions de Caisse** : Historique, ouverture/fermeture
-- **Paramètres & Config** : Réglages système
+**Layout : 2 lignes de 3 boutons chacune**
+
+**Ligne 1 (Gauche à Droite) :**
+- **👥 Utilisateurs & Profils** → `/admin/users`
+- **👥 Groupes & Permissions** → `/admin/groups`
+- **📦 Catégories & Tarifs** → `/admin/categories`
+
+**Ligne 2 (Gauche à Droite) :**
+- **💰 Sessions de Caisse** → `/admin/session-manager`
+- **📊 Rapports & Exports** → `/admin/reception-reports`
+- **📈 Activité & Logs** → `/admin/audit-log`
+
+**Chaque section est un "hub" qui organise les fonctions connexes !**
 
 #### **Niveau 3 - Administration Super-Admin (Rétractable)**
-- **Sites & Caisses** : Création ponctuelle (Super-Admin uniquement)
-- **Paramètres Avancés** : Configuration technique (Super-Admin uniquement)
-- **Audit & Logs** : Consultation technique (Super-Admin uniquement)
+**Layout : 1 ligne de 3 boutons**
+
+**Ligne 1 (Gauche à Droite) :**
+- **🔍 Santé Système** → `/admin/health` (Gauche)
+- **⚙️ Paramètres Avancés** → `/admin/settings` (Milieu)
+- **🏢 Sites & Caisses** → `/admin/sites` (Droite)
+
+**Fonctions techniques réservées aux Super-Admin uniquement**
 
 ### **4. GUIDAGE UTILISATEUR - PRINCIPE DE DÉCOUVERTE PROGRESSIVE**
 

@@ -1,14 +1,10 @@
 # Story b35-p3: Développer le widget "Utilisateurs Récents"
 
-**Statut:** Prêt pour développement
-**Épopée:** [b35: Refonte UX du Dashboard Admin](./epic-b35-refonte-ux-admin.md)
-**PO:** Sarah
-**Type:** Feature / Frontend
-**Dépendance :** `b35-p1` (le layout doit exister)
+**Statut:** ❌ Annulée - Remplacée par la nouvelle vision du dashboard
 
 ## 1. Contexte
 
-Cette story est la première étape de l'implémentation des widgets du nouveau dashboard admin. Elle vise à développer le widget "Utilisateurs Récents", qui a été identifié comme ayant une grande valeur car il résout le point de friction critique de l'assignation des groupes.
+Cette story visait à créer un widget "Utilisateurs Récents". Cependant, la proposition de redesign finale a évolué vers une approche de "hubs" de navigation. Le widget n'est donc plus pertinent et est remplacé par la story `b37-p4` qui crée une page de sous-menu pour "Utilisateurs & Groupes".
 
 ## 2. User Story (En tant que...)
 

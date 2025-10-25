@@ -174,12 +174,13 @@ def delete_ligne(
 def get_tickets(
     page: int = Query(1, ge=1, description="Numéro de page"),
     per_page: int = Query(10, ge=1, le=100, description="Nombre d'éléments par page"),
+    status: Optional[str] = Query(None, description="Filtrer par statut"),
     db: Session = Depends(get_db),
     current_user=Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
     """Récupérer la liste des tickets de réception avec pagination."""
     service = ReceptionService(db)
-    tickets, total = service.get_tickets_list(page=page, per_page=per_page)
+    tickets, total = service.get_tickets_list(page=page, per_page=per_page, status=status)
     
     # Calculer les totaux pour chaque ticket
     ticket_summaries = []
