@@ -51,6 +51,17 @@ async def startup_event():
     # Initialize the application
     await telegram_app.initialize()
     await telegram_app.start()
+
+    # Set the webhook
+    if settings.TELEGRAM_WEBHOOK_URL:
+        logger.info(f"Setting webhook to {settings.TELEGRAM_WEBHOOK_URL}...")
+        await telegram_app.bot.set_webhook(
+            url=settings.TELEGRAM_WEBHOOK_URL,
+            secret_token=settings.TELEGRAM_WEBHOOK_SECRET
+        )
+        logger.info("Webhook set successfully")
+    else:
+        logger.warning("TELEGRAM_WEBHOOK_URL is not set. Skipping webhook setup.")
     
     logger.info("Telegram application initialized successfully")
 
@@ -62,6 +73,9 @@ async def shutdown_event():
     logger.info("Shutting down Recyclic Bot Webhook Server...")
     
     if telegram_app:
+        logger.info("Deleting webhook...")
+        await telegram_app.bot.delete_webhook()
+        logger.info("Webhook deleted successfully.")
         await telegram_app.stop()
         await telegram_app.shutdown()
     

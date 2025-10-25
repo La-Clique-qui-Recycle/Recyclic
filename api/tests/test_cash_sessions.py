@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 import uuid
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -11,17 +11,22 @@ from recyclic_api.models.site import Site
 from recyclic_api.models.cash_session import CashSession, CashSessionStatus
 from recyclic_api.core.auth import create_access_token
 from recyclic_api.core.security import hash_password
-from recyclic_api.schemas.cash_session import CashSessionResponse, CashSessionListResponse, CashSessionStatus as SchemaCashSessionStatus
+from recyclic_api.schemas.cash_session import (
+    CashSessionResponse,
+    CashSessionListResponse,
+    CashSessionStatus as SchemaCashSessionStatus,
+    CashSessionFilters,
+)
 
 def validate_with_resolver(instance, schema, openapi_schema):
-    """Valide une instance contre un schéma OpenAPI avec résolution des références."""
-    # Résoudre manuellement les références $ref dans le schéma
+    """Valide une instance contre un schÃ©ma OpenAPI avec rÃ©solution des rÃ©fÃ©rences."""
+    # RÃ©soudre manuellement les rÃ©fÃ©rences $ref dans le schÃ©ma
     def resolve_refs(obj, schema_dict):
         if isinstance(obj, dict):
             if '$ref' in obj:
                 ref_path = obj['$ref']
                 if ref_path.startswith('#/'):
-                    # Résoudre la référence dans le schéma OpenAPI
+                    # RÃ©soudre la rÃ©fÃ©rence dans le schÃ©ma OpenAPI
                     path_parts = ref_path[2:].split('/')
                     ref_obj = schema_dict
                     for part in path_parts:
@@ -36,16 +41,16 @@ def validate_with_resolver(instance, schema, openapi_schema):
         else:
             return obj
     
-    # Résoudre les références dans le schéma
+    # RÃ©soudre les rÃ©fÃ©rences dans le schÃ©ma
     resolved_schema = resolve_refs(schema, openapi_schema)
     
-    # Valider avec le schéma résolu
+    # Valider avec le schÃ©ma rÃ©solu
     validate(instance=instance, schema=resolved_schema)
 
 
 @pytest.fixture
 def test_cashier():
-    """Créer un utilisateur caissier pour les tests."""
+    """CrÃ©er un utilisateur caissier pour les tests."""
     return {
         "id": uuid.uuid4(),
         "telegram_id": 123456789,
@@ -61,7 +66,7 @@ def test_cashier():
 
 @pytest.fixture
 def test_admin():
-    """Créer un utilisateur admin pour les tests."""
+    """CrÃ©er un utilisateur admin pour les tests."""
     return {
         "id": uuid.uuid4(),
         "telegram_id": 987654321,
@@ -76,7 +81,7 @@ def test_admin():
 
 @pytest.fixture
 def test_site():
-    """Créer un site de test."""
+    """CrÃ©er un site de test."""
     return {
         "id": uuid.uuid4(),
         "name": "Site de Test",
@@ -87,13 +92,13 @@ def test_site():
 
 @pytest.fixture
 def cashier_token(test_cashier):
-    """Créer un token JWT pour le caissier."""
+    """CrÃ©er un token JWT pour le caissier."""
     return create_access_token(data={"sub": str(test_cashier["id"])})
 
 
 @pytest.fixture
 def admin_token(test_admin):
-    """Créer un token JWT pour l'admin."""
+    """CrÃ©er un token JWT pour l'admin."""
     return create_access_token(data={"sub": str(test_admin["id"])})
 
 
@@ -101,22 +106,22 @@ class TestCashSessionEndpoints:
     """Tests pour les endpoints des sessions de caisse."""
     
     def test_create_cash_session_success(self, client: TestClient, test_cashier, test_site, cashier_token, db_session):
-        """Test de création d'une session de caisse avec succès."""
-        # Créer l'utilisateur et le site en base de données
+        """Test de crÃ©ation d'une session de caisse avec succÃ¨s."""
+        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
         db_session.add(site)
         db_session.commit()
 
-        # Données de la session
+        # DonnÃ©es de la session
         session_data = {
             "operator_id": str(str(test_cashier["id"])),
             "site_id": str(str(test_site["id"])),
             "initial_amount": 50.0
         }
         
-        # Créer la session
+        # CrÃ©er la session
         response = client.post(
             "/api/v1/cash-sessions/",
             json=session_data,
@@ -128,13 +133,13 @@ class TestCashSessionEndpoints:
         assert response.status_code == 201
         data = response.json()
         
-        # Validation du schéma Pydantic de la réponse
+        # Validation du schÃ©ma Pydantic de la rÃ©ponse
         try:
             validated_session = CashSessionResponse(**data)
         except Exception as e:
-            pytest.fail(f"Validation Pydantic échouée pour la session de caisse: {e}")
+            pytest.fail(f"Validation Pydantic Ã©chouÃ©e pour la session de caisse: {e}")
         
-        # Vérifications sur le contenu
+        # VÃ©rifications sur le contenu
         assert validated_session.operator_id == str(test_cashier["id"])
         assert validated_session.site_id == str(test_site["id"])
         assert validated_session.initial_amount == 50.0
@@ -148,7 +153,7 @@ class TestCashSessionEndpoints:
         assert "opened_at" in data
     
     def test_create_cash_session_unauthorized(self, client_with_jwt_auth: TestClient, test_cashier):
-        """Test de création d'une session sans authentification."""
+        """Test de crÃ©ation d'une session sans authentification."""
         session_data = {
             "operator_id": str(test_cashier["id"]),
             "initial_amount": 50.0
@@ -159,8 +164,8 @@ class TestCashSessionEndpoints:
         assert response.status_code == 403
     
     def test_create_cash_session_invalid_amount(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
-        """Test de création d'une session avec un montant invalide."""
-        # Créer l'utilisateur et le site en base de données
+        """Test de crÃ©ation d'une session avec un montant invalide."""
+        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
@@ -170,7 +175,7 @@ class TestCashSessionEndpoints:
         session_data = {
             "operator_id": str(str(test_cashier["id"])),
             "site_id": str(str(test_site["id"])),
-            "initial_amount": -10.0  # Montant négatif
+            "initial_amount": -10.0  # Montant nÃ©gatif
         }
         
         response = client_with_jwt_auth.post(
@@ -182,8 +187,8 @@ class TestCashSessionEndpoints:
         assert response.status_code == 422  # Validation error
     
     def test_get_cash_sessions_list(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
-        """Test de récupération de la liste des sessions."""
-        # Créer l'utilisateur admin en base de données
+        """Test de rÃ©cupÃ©ration de la liste des sessions."""
+        # CrÃ©er l'utilisateur admin en base de donnÃ©es
         admin_user = User(**test_admin)
         db_session.add(admin_user)
         db_session.commit()
@@ -203,8 +208,8 @@ class TestCashSessionEndpoints:
         assert isinstance(data["data"], list)
     
     def test_get_cash_sessions_with_filters(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
-        """Test de récupération des sessions avec filtres."""
-        # Créer l'utilisateur admin en base de données
+        """Test de rÃ©cupÃ©ration des sessions avec filtres."""
+        # CrÃ©er l'utilisateur admin en base de donnÃ©es
         admin_user = User(**test_admin)
         db_session.add(admin_user)
         db_session.commit()
@@ -218,20 +223,20 @@ class TestCashSessionEndpoints:
         data = response.json()
         
         assert data["limit"] == 10
-        # Vérifier que toutes les sessions retournées sont ouvertes
+        # VÃ©rifier que toutes les sessions retournÃ©es sont ouvertes
         for session in data["data"]:
             assert session["status"] == "open"
     
     def test_get_current_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
-        """Test de récupération de la session courante."""
-        # Créer l'utilisateur et le site en base de données
+        """Test de rÃ©cupÃ©ration de la session courante."""
+        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
         db_session.add(site)
         db_session.commit()
         
-        # D'abord créer une session
+        # D'abord crÃ©er une session
         session_data = {
             "operator_id": str(test_cashier["id"]),
             "site_id": str(test_site["id"]),
@@ -245,7 +250,7 @@ class TestCashSessionEndpoints:
         )
         assert create_response.status_code == 201
         
-        # Récupérer la session courante
+        # RÃ©cupÃ©rer la session courante
         response = client_with_jwt_auth.get(
             "/api/v1/cash-sessions/current",
             headers={"Authorization": f"Bearer {cashier_token}"}
@@ -258,15 +263,15 @@ class TestCashSessionEndpoints:
         assert data["status"] == "open"
     
     def test_get_cash_session_by_id(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
-        """Test de récupération d'une session par ID."""
-        # Créer l'utilisateur et le site en base de données
+        """Test de rÃ©cupÃ©ration d'une session par ID."""
+        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
         db_session.add(site)
         db_session.commit()
         
-        # Créer une session
+        # CrÃ©er une session
         session_data = {
             "operator_id": str(test_cashier["id"]),
             "site_id": str(test_site["id"]),
@@ -280,7 +285,7 @@ class TestCashSessionEndpoints:
         )
         session_id = create_response.json()["id"]
         
-        # Récupérer la session par ID
+        # RÃ©cupÃ©rer la session par ID
         response = client_with_jwt_auth.get(
             f"/api/v1/cash-sessions/{session_id}",
             headers={"Authorization": f"Bearer {cashier_token}"}
@@ -293,8 +298,8 @@ class TestCashSessionEndpoints:
         assert data["operator_id"] == str(test_cashier["id"])
     
     def test_get_cash_session_not_found(self, client_with_jwt_auth: TestClient, test_cashier, cashier_token, db_session):
-        """Test de récupération d'une session inexistante."""
-        # Créer l'utilisateur caissier en base de données
+        """Test de rÃ©cupÃ©ration d'une session inexistante."""
+        # CrÃ©er l'utilisateur caissier en base de donnÃ©es
         cashier_user = User(**test_cashier)
         db_session.add(cashier_user)
         db_session.commit()
@@ -307,15 +312,15 @@ class TestCashSessionEndpoints:
         assert response.status_code == 404
     
     def test_update_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
-        """Test de mise à jour d'une session."""
-        # Créer l'utilisateur et le site en base de données
+        """Test de mise Ã  jour d'une session."""
+        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
         db_session.add(site)
         db_session.commit()
         
-        # Créer une session
+        # CrÃ©er une session
         session_data = {
             "operator_id": str(test_cashier["id"]),
             "site_id": str(test_site["id"]),
@@ -329,7 +334,7 @@ class TestCashSessionEndpoints:
         )
         session_id = create_response.json()["id"]
         
-        # Mettre à jour la session
+        # Mettre Ã  jour la session
         update_data = {
             "current_amount": 75.0,
             "total_sales": 25.0,
@@ -351,14 +356,14 @@ class TestCashSessionEndpoints:
     
     def test_close_cash_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
         """Test de fermeture d'une session."""
-        # Créer l'utilisateur et le site en base de données
+        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
         db_session.add(site)
         db_session.commit()
         
-        # Créer une session
+        # CrÃ©er une session
         session_data = {
             "operator_id": str(test_cashier["id"]),
             "site_id": str(test_site["id"]),
@@ -390,15 +395,15 @@ class TestCashSessionEndpoints:
         assert data["closed_at"] is not None
     
     def test_close_already_closed_session(self, client_with_jwt_auth: TestClient, test_cashier, test_site, cashier_token, db_session):
-        """Test de fermeture d'une session déjà fermée."""
-        # Créer l'utilisateur et le site en base de données
+        """Test de fermeture d'une session dÃ©jÃ  fermÃ©e."""
+        # CrÃ©er l'utilisateur et le site en base de donnÃ©es
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
         db_session.add(site)
         db_session.commit()
         
-        # Créer et fermer une session
+        # CrÃ©er et fermer une session
         session_data = {
             "operator_id": str(test_cashier["id"]),
             "site_id": str(test_site["id"]),
@@ -412,7 +417,7 @@ class TestCashSessionEndpoints:
         )
         session_id = create_response.json()["id"]
         
-        # Fermer la session une première fois
+        # Fermer la session une premiÃ¨re fois
         close_data = {
             "actual_amount": 50.0,
             "variance_comment": None
@@ -424,7 +429,7 @@ class TestCashSessionEndpoints:
         )
         assert close_response.status_code == 200
         
-        # Essayer de fermer à nouveau
+        # Essayer de fermer Ã  nouveau
         response = client_with_jwt_auth.post(
             f"/api/v1/cash-sessions/{session_id}/close",
             json=close_data,
@@ -432,11 +437,11 @@ class TestCashSessionEndpoints:
         )
         
         assert response.status_code == 400
-        assert "déjà fermée" in response.json()["detail"]
+        assert "dÃ©jÃ  fermÃ©e" in response.json()["detail"]
     
     def test_get_cash_session_stats(self, client_with_jwt_auth: TestClient, test_admin, admin_token, db_session):
-        """Test de récupération des statistiques des sessions."""
-        # Créer l'utilisateur admin en base de données
+        """Test de rÃ©cupÃ©ration des statistiques des sessions."""
+        # CrÃ©er l'utilisateur admin en base de donnÃ©es
         admin_user = User(**test_admin)
         db_session.add(admin_user)
         db_session.commit()
@@ -457,8 +462,8 @@ class TestCashSessionEndpoints:
         assert "average_session_duration" in data
     
     def test_cashier_cannot_access_other_sessions(self, client_with_jwt_auth: TestClient, test_cashier, test_admin, test_site, cashier_token, db_session):
-        """Test qu'un caissier ne peut pas accéder aux sessions d'autres caissiers."""
-        # Créer les utilisateurs et le site en base de données
+        """Test qu'un caissier ne peut pas accÃ©der aux sessions d'autres caissiers."""
+        # CrÃ©er les utilisateurs et le site en base de donnÃ©es
         cashier_user = User(**test_cashier)
         admin_user = User(**test_admin)
         site = Site(**test_site)
@@ -467,21 +472,21 @@ class TestCashSessionEndpoints:
         db_session.add(site)
         db_session.commit()
         
-        # Créer une session pour l'admin
+        # CrÃ©er une session pour l'admin
         admin_session_data = {
             "operator_id": str(test_admin["id"]),
             "site_id": str(test_site["id"]),
             "initial_amount": 100.0
         }
         
-        # Note: Dans un vrai test, il faudrait créer un token admin
-        # Pour simplifier, on teste juste que l'accès est refusé
+        # Note: Dans un vrai test, il faudrait crÃ©er un token admin
+        # Pour simplifier, on teste juste que l'accÃ¨s est refusÃ©
         response = client_with_jwt_auth.get(
             f"/api/v1/cash-sessions/{test_admin['id']}",
             headers={"Authorization": f"Bearer {cashier_token}"}
         )
         
-        # Devrait retourner 404 (session non trouvée) ou 403 (accès refusé)
+        # Devrait retourner 404 (session non trouvÃ©e) ou 403 (accÃ¨s refusÃ©)
         assert response.status_code in [403, 404]
 
 
@@ -489,19 +494,19 @@ class TestCashSessionService:
     """Tests pour le service des sessions de caisse."""
     
     def test_create_session(self, db_session: Session, test_cashier, test_site):
-        """Test de création d'une session via le service."""
+        """Test de crÃ©ation d'une session via le service."""
         from recyclic_api.services.cash_session_service import CashSessionService
         
         service = CashSessionService(db_session)
         
-        # Créer l'utilisateur et le site en base
+        # CrÃ©er l'utilisateur et le site en base
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
         db_session.add(site)
         db_session.commit()
         
-        # Créer la session
+        # CrÃ©er la session
         session = service.create_session(
             operator_id=str(test_cashier["id"]),
             site_id=str(test_site["id"]),
@@ -516,12 +521,12 @@ class TestCashSessionService:
         assert session.id is not None
     
     def test_get_open_session_by_operator(self, db_session: Session, test_cashier, test_site):
-        """Test de récupération de la session ouverte d'un opérateur."""
+        """Test de rÃ©cupÃ©ration de la session ouverte d'un opÃ©rateur."""
         from recyclic_api.services.cash_session_service import CashSessionService
 
         service = CashSessionService(db_session)
 
-        # Créer l'utilisateur, le site et la session
+        # CrÃ©er l'utilisateur, le site et la session
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
@@ -534,7 +539,7 @@ class TestCashSessionService:
             initial_amount=50.0
         )
         
-        # Récupérer la session ouverte
+        # RÃ©cupÃ©rer la session ouverte
         open_session = service.get_open_session_by_operator(str(test_cashier["id"]))
         
         assert open_session is not None
@@ -547,7 +552,7 @@ class TestCashSessionService:
 
         service = CashSessionService(db_session)
 
-        # Créer l'utilisateur, le site et la session
+        # CrÃ©er l'utilisateur, le site et la session
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
@@ -568,12 +573,12 @@ class TestCashSessionService:
         assert closed_session.closed_at is not None
     
     def test_add_sale_to_session(self, db_session: Session, test_cashier, test_site):
-        """Test d'ajout d'une vente à une session."""
+        """Test d'ajout d'une vente Ã  une session."""
         from recyclic_api.services.cash_session_service import CashSessionService
 
         service = CashSessionService(db_session)
 
-        # Créer l'utilisateur, le site et la session
+        # CrÃ©er l'utilisateur, le site et la session
         user = User(**test_cashier)
         site = Site(**test_site)
         db_session.add(user)
@@ -591,8 +596,31 @@ class TestCashSessionService:
         
         assert success is True
         
-        # Vérifier que la session a été mise à jour
+        # VÃ©rifier que la session a Ã©tÃ© mise Ã  jour
         updated_session = service.get_session_by_id(session.id)
         assert updated_session.current_amount == 75.0
         assert updated_session.total_sales == 25.0
         assert updated_session.total_items == 1
+    def test_get_sessions_search_is_case_insensitive(self, db_session: Session, test_cashier, test_site):
+        """Search by operator name must remain case-insensitive."""
+        from recyclic_api.services.cash_session_service import CashSessionService
+
+        service = CashSessionService(db_session)
+
+        user = User(**test_cashier)
+        site = Site(**test_site)
+        db_session.add_all([user, site])
+        db_session.commit()
+
+        service.create_session(
+            operator_id=str(test_cashier["id"]),
+            site_id=str(test_site["id"]),
+            initial_amount=50.0,
+        )
+
+        filters = CashSessionFilters(search=test_cashier["username"].upper())
+        sessions, total = service.get_sessions_with_filters(filters)
+
+        assert total == 1
+        assert len(sessions) == 1
+        assert str(sessions[0].operator_id) == str(test_cashier["id"])

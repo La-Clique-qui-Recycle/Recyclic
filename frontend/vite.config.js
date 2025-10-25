@@ -36,15 +36,21 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
         // Configuration explicite pour les requêtes POST et autres méthodes
         configure: (proxy, _options) => {
+          // Logging configurable via variable d'environnement
+          const enableProxyLogging = process.env.VITE_PROXY_LOGGING === 'true';
+          
           proxy.on('error', (err, _req, _res) => {
             console.log('proxy error', err);
           });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-          });
+          
+          if (enableProxyLogging) {
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log('Sending Request to the Target:', req.method, req.url);
+            });
+            proxy.on('proxyRes', (proxyRes, req, _res) => {
+              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            });
+          }
         },
         // Headers pour éviter les problèmes CORS
         headers: {
@@ -82,7 +88,14 @@ export default defineConfig({
       }
     },
     // Augmenter la limite d'avertissement pour les chunks
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    // Configuration Terser pour supprimer les console.log en production
+    terserOptions: {
+      compress: {
+        drop_console: process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging',
+        drop_debugger: process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging',
+      },
+    },
   },
   resolve: {
     alias: {

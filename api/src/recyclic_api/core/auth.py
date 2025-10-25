@@ -3,33 +3,177 @@ Authentication helpers for the Recyclic API.
 Handles JWT authentication, role checks, and permission checks.
 """
 
-from typing import Union, List, Optional
+from dataclasses import dataclass
+from datetime import datetime
+import json
 import os
 import uuid
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError
-from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import select
+from typing import List, Optional, Union
 
-from .database import get_db
-from .security import verify_token, create_access_token, create_password_reset_token
-from ..models.user import User, UserRole
-from ..models.permission import Permission, Group
-from .email_service import get_email_service
+import redis
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
 from .config import settings
+from .database import get_db
+from .email_service import get_email_service
+from .redis import get_redis
+from .security import create_access_token, create_password_reset_token, verify_token
+from ..models.permission import Group, Permission
+from ..models.user import User, UserRole, UserStatus
 
 # Security scheme (don't auto-raise 403 so we can return 401)
 security = HTTPBearer(auto_error=False)
 # Strict variant that returns 403 when Authorization header is missing
 security_strict = HTTPBearer(auto_error=True)
 
+SAFE_CACHE_METHODS = {"GET", "HEAD", "OPTIONS"}
+USER_CACHE_TTL_SECONDS = 300
+
+
+@dataclass
+class CachedUser:
+    """Lightweight representation of an authenticated user stored in Redis."""
+
+    id: uuid.UUID
+    username: Optional[str]
+    email: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    role: UserRole
+    status: UserStatus
+    is_active: bool
+    telegram_id: Optional[str]
+    site_id: Optional[uuid.UUID]
+    phone_number: Optional[str]
+    address: Optional[str]
+    notes: Optional[str]
+    skills: Optional[str]
+    availability: Optional[str]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CachedUser":
+        """Rehydrate a cached user payload into a strongly typed object."""
+
+        def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
+            return datetime.fromisoformat(value) if value else None
+
+        def _parse_uuid(value: Optional[str]) -> Optional[uuid.UUID]:
+            return uuid.UUID(value) if value else None
+
+        return cls(
+            id=uuid.UUID(data["id"]),
+            username=data.get("username"),
+            email=data.get("email"),
+            first_name=data.get("first_name"),
+            last_name=data.get("last_name"),
+            role=UserRole(data["role"]),
+            status=UserStatus(data["status"]),
+            is_active=bool(data.get("is_active", True)),
+            telegram_id=data.get("telegram_id"),
+            site_id=_parse_uuid(data.get("site_id")),
+            phone_number=data.get("phone_number"),
+            address=data.get("address"),
+            notes=data.get("notes"),
+            skills=data.get("skills"),
+            availability=data.get("availability"),
+            created_at=_parse_datetime(data.get("created_at")),
+            updated_at=_parse_datetime(data.get("updated_at")),
+        )
+
+    def to_cache_dict(self) -> dict:
+        """Serialize the cached user back to a JSON-friendly payload."""
+
+        def _serialize_value(value):
+            if isinstance(value, uuid.UUID):
+                return str(value)
+            if isinstance(value, (UserRole, UserStatus)):
+                return value.value
+            if isinstance(value, datetime):
+                return value.isoformat()
+            return value
+
+        return {
+            "id": str(self.id),
+            "username": self.username,
+            "email": self.email,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "role": self.role.value,
+            "status": self.status.value,
+            "is_active": self.is_active,
+            "telegram_id": self.telegram_id,
+            "site_id": str(self.site_id) if self.site_id else None,
+            "phone_number": self.phone_number,
+            "address": self.address,
+            "notes": self.notes,
+            "skills": self.skills,
+            "availability": self.availability,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+def serialize_user_for_cache(user: User) -> dict:
+    """Serialize a SQLAlchemy user into a cache-ready dictionary."""
+    payload = {
+        "id": str(user.id),
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role.value if user.role else UserRole.USER.value,
+        "status": user.status.value if user.status else UserStatus.PENDING.value,
+        "is_active": user.is_active,
+        "telegram_id": user.telegram_id,
+        "site_id": str(user.site_id) if user.site_id else None,
+        "phone_number": user.phone_number,
+        "address": user.address,
+        "notes": user.notes,
+        "skills": user.skills,
+        "availability": user.availability,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+    }
+    return payload
+
+
+def load_cached_user(redis_client: redis.Redis, cache_key: str) -> Optional[CachedUser]:
+    """Return a cached user if the payload is valid."""
+    try:
+        cached_user_data = redis_client.get(cache_key)
+    except Exception:
+        return None
+
+    if not cached_user_data:
+        return None
+
+    try:
+        deserialized = json.loads(cached_user_data)
+        return CachedUser.from_dict(deserialized)
+    except (json.JSONDecodeError, KeyError, ValueError):
+        return None
+
+
+def should_use_cached_payload(request: Optional[Request]) -> bool:
+    """Determine whether it is safe to return the cached DTO (read-only requests)."""
+    if request is None:
+        return False
+    return request.method.upper() in SAFE_CACHE_METHODS
+
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
-) -> User:
-    """Return current user from JWT, or raise 401."""
+    redis_client: redis.Redis = Depends(get_redis),
+    request: Request = None,
+) -> Union[User, CachedUser]:
+    """Return current user from JWT, using Redis cache for safe requests when possible."""
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -38,10 +182,8 @@ async def get_current_user(
     )
 
     try:
-        # En absence de credentials → 401 (schéma HTTPBearer non strict)
         if credentials is None:
             raise credentials_exception
-        # Verify token
         payload = verify_token(credentials.credentials)
         user_id: Optional[str] = payload.get("sub")
         if not user_id:
@@ -51,11 +193,17 @@ async def get_current_user(
     except Exception:
         raise credentials_exception
 
-    # Load user from database
-    from uuid import UUID
+    cache_key = f"user_cache:{user_id}"
+    cached_user = load_cached_user(redis_client, cache_key)
+    if cached_user:
+        if not cached_user.is_active:
+            raise credentials_exception
+        if should_use_cached_payload(request):
+            return cached_user
 
+    # --- Database Lookup (Cache Miss or unsafe method) ---
     try:
-        user_uuid = UUID(user_id)
+        user_uuid = uuid.UUID(user_id)
     except Exception:
         raise credentials_exception
 
@@ -65,16 +213,34 @@ async def get_current_user(
     if user is None or not user.is_active:
         raise credentials_exception
 
+    # --- Cache Population ---
+    try:
+        redis_client.set(
+            cache_key,
+            json.dumps(serialize_user_for_cache(user)),
+            ex=USER_CACHE_TTL_SECONDS,
+        )
+    except Exception:
+        # If caching fails, do not block the request
+        pass
+
     return user
 
 
 async def get_current_user_strict(
     credentials: HTTPAuthorizationCredentials = Depends(security_strict),
     db: Session = Depends(get_db),
-) -> User:
+    redis_client: redis.Redis = Depends(get_redis),
+    request: Request = None,
+) -> Union[User, CachedUser]:
     """Variant that raises 403 on missing credentials (via security_strict)."""
     # If we reached here, credentials is present (auto_error=True); delegate to normal validation
-    return await get_current_user(credentials=credentials, db=db)
+    return await get_current_user(
+        credentials=credentials,
+        db=db,
+        redis_client=redis_client,
+        request=request,
+    )
 
 
 def require_role(required_role: Union[UserRole, str, List[UserRole]]):

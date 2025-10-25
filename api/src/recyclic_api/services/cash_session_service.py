@@ -124,74 +124,87 @@ class CashSessionService:
     def get_sessions_with_filters(self, filters: CashSessionFilters) -> Tuple[List[CashSession], int]:
         """Récupère les sessions avec filtres et pagination."""
         query = self.db.query(CashSession)
-        
+
         # Appliquer les filtres
         if filters.status:
             query = query.filter(CashSession.status == filters.status)
-        
         if filters.operator_id:
             oid = UUID(str(filters.operator_id)) if not isinstance(filters.operator_id, UUID) else filters.operator_id
             query = query.filter(CashSession.operator_id == oid)
-        
         if filters.site_id:
             sid = UUID(str(filters.site_id)) if not isinstance(filters.site_id, UUID) else filters.site_id
             query = query.filter(CashSession.site_id == sid)
-
         if getattr(filters, 'register_id', None):
             rid = UUID(str(filters.register_id)) if not isinstance(filters.register_id, UUID) else filters.register_id
             query = query.filter(CashSession.register_id == rid)
-
         if filters.date_from:
-            # Rendre la date consciente du fuseau horaire (UTC)
             date_from = filters.date_from
             if date_from.tzinfo is None:
                 date_from = date_from.replace(tzinfo=timezone.utc)
             query = query.filter(CashSession.opened_at >= date_from)
-        
         if filters.date_to:
-            # Rendre la date consciente du fuseau horaire (UTC)
             date_to = filters.date_to
             if date_to.tzinfo is None:
                 date_to = date_to.replace(tzinfo=timezone.utc)
             query = query.filter(CashSession.opened_at <= date_to)
-        
-        # Recherche textuelle (nom opérateur ou ID session)
+
+        # Recherche textuelle
         if getattr(filters, 'search', None):
             search_value = f"%{filters.search.strip()}%"
-            # Join sur User pour rechercher par nom d'opérateur
-            query = (
-                query
-                .join(User, User.id == CashSession.operator_id)
-                .filter(
-                    or_(
-                        func.lower(User.username).like(func.lower(search_value)),
-                        cast(CashSession.id, String).ilike(search_value)
-                    )
+            query = query.join(User, User.id == CashSession.operator_id).filter(
+                or_(
+                    User.username.ilike(search_value),
+                    cast(CashSession.id, String).ilike(search_value)
                 )
             )
 
-        # Compter le total
+        # Compter le total avant la pagination
         total = query.count()
-        
+
         # Appliquer la pagination et l'ordre
         sessions = query.order_by(desc(CashSession.opened_at)).offset(filters.skip).limit(filters.limit).all()
-        
-        # Enrichir chaque session avec les calculs supplémentaires
-        enriched_sessions = []
+        session_ids = [s.id for s in sessions]
+
+        if not session_ids:
+            return [], total
+
+        # --- Optimisation N+1 ---
+        # 1. Calculer le nombre de ventes par session en une seule requête
+        sales_count_subq = (
+            self.db.query(
+                Sale.cash_session_id,
+                func.count(Sale.id).label("sales_count")
+            )
+            .filter(Sale.cash_session_id.in_(session_ids))
+            .group_by(Sale.cash_session_id)
+            .subquery()
+        )
+
+        # 2. Calculer la somme des dons par session en une seule requête
+        donations_sum_subq = (
+            self.db.query(
+                Sale.cash_session_id,
+                func.sum(Sale.donation).label("total_donations")
+            )
+            .filter(Sale.cash_session_id.in_(session_ids), Sale.donation.isnot(None))
+            .group_by(Sale.cash_session_id)
+            .subquery()
+        )
+
+        # Récupérer les résultats des agrégations
+        sales_counts = self.db.query(sales_count_subq).all()
+        donations_sums = self.db.query(donations_sum_subq).all()
+
+        # Mapper les résultats dans des dictionnaires pour un accès rapide
+        sales_map = {str(sid): count for sid, count in sales_counts}
+        donations_map = {str(sid): total for sid, total in donations_sums}
+
+        # Enrichir les sessions sans requêtes supplémentaires dans la boucle
         for session in sessions:
-            # Calculer le nombre de ventes et total des dons pour cette session
-            sales_count = self.db.query(Sale).filter(Sale.cash_session_id == session.id).count()
-            donations_sum = self.db.query(func.sum(Sale.donation)).filter(
-                Sale.cash_session_id == session.id,
-                Sale.donation.isnot(None)
-            ).scalar() or 0.0
-            
-            # Ajouter les attributs calculés à la session
-            session.number_of_sales = sales_count
-            session.total_donations = float(donations_sum)
-            enriched_sessions.append(session)
-        
-        return enriched_sessions, total
+            session.number_of_sales = sales_map.get(str(session.id), 0)
+            session.total_donations = float(donations_map.get(str(session.id), 0.0))
+
+        return sessions, total
     
     def update_session(self, session_id: str, update_data: Dict[str, Any]) -> Optional[CashSession]:
         """Met à jour une session de caisse."""

@@ -113,11 +113,12 @@ function App() {
         return;
       }
       sendPing();
+      // OPTIMIZATION: Increase interval from 60s to 5 minutes (300000ms) to reduce server load
       intervalId = window.setInterval(() => {
         if (!document.hidden) {
           sendPing();
         }
-      }, 60000);
+      }, 300000); // 5 minutes
     };
 
     const handleVisibilityChange = () => {
