@@ -1,6 +1,8 @@
 // Fichier : frontend/src/api/axiosClient.ts
 
 import axios from 'axios';
+// OPTIMIZATION: Import auth store to read cached token from memory instead of localStorage
+import { useAuthStore } from '../stores/authStore';
 
 // 1. Création de l'instance unique
 const rawBaseURL = import.meta.env.VITE_API_URL ?? '/api';
@@ -31,8 +33,9 @@ axiosClient.interceptors.request.use(
             config.url = config.url.replace(/^\/+/, '');
         }
 
-        // Récupère le token depuis le localStorage
-        const token = localStorage.getItem('token'); // Clé 'token' utilisée dans authService.ts
+        // OPTIMIZATION: Get token from memory cache (Zustand store) instead of localStorage
+        // This avoids reading from localStorage on every single API request
+        const token = useAuthStore.getState().getToken();
 
         if (token) {
             // Si un token existe, l'ajoute à l'en-tête Authorization
@@ -55,6 +58,8 @@ axiosClient.interceptors.response.use(
         if (error.response?.status === 401) {
             // Token expiré ou invalide
             localStorage.removeItem('token');
+            // OPTIMIZATION: Also clear the cached token from memory
+            useAuthStore.getState().setToken(null);
             // Redirection simple pour éviter les dépendances cycliques avec les stores
             window.location.href = '/login';
         }

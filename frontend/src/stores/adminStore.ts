@@ -212,12 +212,12 @@ export const useAdminStore = create<AdminState>()(
         
         // Récupérer les statuts immédiatement
         fetchUserStatuses();
-        
-        // Démarrer le polling toutes les 60 secondes
+
+        // OPTIMIZATION: Increase polling interval from 60s to 5 minutes (300000ms) to reduce server load
         const interval = setInterval(() => {
           fetchUserStatuses();
-        }, 60000); // 60 secondes
-        
+        }, 300000); // 5 minutes
+
         set({ pollingInterval: interval });
       },
       

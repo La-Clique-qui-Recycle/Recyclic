@@ -81,31 +81,32 @@ services:
     networks:
       - recyclic-network
 
-  bot:
-    build: ./bot
-    image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
-    environment:
-      DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
-      REDIS_URL: redis://redis:6379
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      API_BASE_URL: http://api:8000
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
-      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
-      ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS:-true}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - recyclic-network
+  # BOT SERVICE DISABLED (STORY-B36-P3)
+  # bot:
+  #   build: ./bot
+  #   image: recyclic-bot:${BOT_IMAGE_TAG:-latest}
+  #   environment:
+  #     DATABASE_URL: postgresql://recyclic:${POSTGRES_PASSWORD}@postgres:5432/recyclic
+  #     REDIS_URL: redis://redis:6379
+  #     TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+  #     API_BASE_URL: http://api:8000
+  #     FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4444}
+  #     ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
+  #     ENABLE_INLINE_BUTTONS: ${ENABLE_INLINE_BUTTONS:-true}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     api:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   networks:
+  #     - recyclic-network
 
   # Service dédié pour les migrations Alembic avec configuration Docker optimisée
   api-migrations:

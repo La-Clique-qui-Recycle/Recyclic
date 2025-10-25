@@ -128,14 +128,21 @@ else:
         allowed_hosts=allowed_hosts
     )
 
-# Add request timing middleware
+# Add request timing middleware (development only)
+# This middleware adds X-Process-Time header for debugging purposes
+# It is NOT used by the user online status system (which uses ActivityService + Redis)
 @app.middleware("http")
 async def add_process_time_header(request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
+    # Only add timing header in development environments
+    if settings.ENVIRONMENT in ("development", "dev", "local"):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
+    else:
+        # In production, skip timing calculation for performance
+        return await call_next(request)
 
 # Add activity tracking middleware
 # app.add_middleware(ActivityTrackerMiddleware, activity_threshold_minutes=15)
