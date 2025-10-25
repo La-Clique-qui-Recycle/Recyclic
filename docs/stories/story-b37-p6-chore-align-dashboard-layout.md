@@ -1,6 +1,6 @@
 # Story b37-p6: Chore: Ajuster le layout du dashboard admin au schéma final
 
-**Statut:** Prêt pour développement
+**Statut:** ✅ Terminé et Validé
 **Épopée:** [b37: Refonte UX du Dashboard Admin](./epic-b37-refonte-ux-admin.md)
 **PO:** Sarah
 **Type:** Tâche Technique / Refactorisation

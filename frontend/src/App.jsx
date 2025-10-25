@@ -196,7 +196,7 @@ function App() {
             <Route path="/inscription" element={<Registration />} />
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
               <Route index element={<DashboardHomePage />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="dashboard" element={<DashboardHomePage />} />
               <Route path="cash-sessions/:id" element={<CashSessionDetail />} />
               <Route path="reception-stats" element={<Navigate to="/" replace />} />
               <Route path="reception-reports" element={<ReceptionReports />} />

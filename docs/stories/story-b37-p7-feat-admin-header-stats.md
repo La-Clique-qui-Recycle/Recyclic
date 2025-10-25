@@ -1,6 +1,6 @@
 # Story b37-p7: Feature: Ajouter les stats globales dans le header de l'admin
 
-**Statut:** Prêt pour développement
+**Statut:** ✅ Terminé et Validé
 **Épopée:** [b37: Refonte UX du Dashboard Admin](./epic-b37-refonte-ux-admin.md)
 **PO:** Sarah
 **Type:** Feature / Frontend

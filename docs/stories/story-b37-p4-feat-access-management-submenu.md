@@ -1,6 +1,8 @@
 # Story b37-p4: Feature: Créer une page de sous-menu pour "Utilisateurs & Groupes"
 
-**Statut:** Prêt pour développement
+**Statut:** ❌ Annulée
+
+**Note :** Cette story est annulée car la fonctionnalité de sous-menu sera intégrée directement dans une future refonte plus globale de la navigation admin.
 **Épopée:** [b37: Refonte UX du Dashboard Admin](./epic-b37-refonte-ux-admin.md)
 **PO:** Sarah
 **Type:** Feature / Frontend

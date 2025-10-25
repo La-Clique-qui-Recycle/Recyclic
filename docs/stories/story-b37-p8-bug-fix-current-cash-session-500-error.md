@@ -1,6 +1,6 @@
 # Story b37-p8: Bug: L'endpoint /v1/cash-sessions/current retourne une erreur 500
 
-**Statut:** Prêt pour développement
+**Statut:** ✅ Terminé et Validé
 **Épopée:** [b37: Refonte UX du Dashboard Admin](./epic-b37-refonte-ux-admin.md)
 **PO:** Sarah
 **Type:** Bug / Backend

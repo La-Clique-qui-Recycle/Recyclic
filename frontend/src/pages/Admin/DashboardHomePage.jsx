@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Grid, Stack, Paper, Title, Text, Button, Group } from '@mantine/core';
 import { IconBell, IconChartBar, IconUser, IconCurrencyEuro, IconScale, IconPackage, IconUsers, IconShield, IconTags, IconCash, IconReport, IconActivity, IconSettings, IconBuilding } from '@tabler/icons-react';
@@ -75,10 +75,56 @@ const DashboardHomePage = () => {
   const currentUser = useAuthStore((state) => state.currentUser);
   const isSuperAdmin = currentUser?.role === 'super-admin';
   
+  // États simples pour les valeurs des statistiques
+  const [stats, setStats] = useState({
+    ca: 0,
+    donations: 0,
+    weightReceived: 0,
+    weightSold: 0
+  });
 
   const handleNavigation = (path) => {
     navigate(path);
   };
+
+  // Récupération simple des valeurs selon B37-12
+  const fetchStats = async () => {
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      // 1. Statistiques financières + poids vendu
+      const financialResponse = await axiosClient.get('/v1/cash-sessions/stats/summary', {
+        params: {
+          date_from: startOfDay.toISOString(),
+          date_to: endOfDay.toISOString()
+        }
+      });
+      
+      // 2. Poids des matières reçues
+      const receptionResponse = await axiosClient.get('/v1/stats/reception/summary', {
+        params: {
+          date_from: startOfDay.toISOString(),
+          date_to: endOfDay.toISOString()
+        }
+      });
+      
+      setStats({
+        ca: financialResponse.data.total_sales || 0,
+        donations: financialResponse.data.total_donations || 0,
+        weightReceived: Number(receptionResponse.data.total_weight) || 0,
+        weightSold: Number(financialResponse.data.total_weight_sold) || 0
+      });
+      
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
 
   const handleNavigateToLatestCashSession = async () => {
@@ -120,7 +166,7 @@ const DashboardHomePage = () => {
         </Grid>
       </Paper>
       
-        {/* Statistiques quotidiennes - 3 cartes horizontales */}
+        {/* Statistiques quotidiennes - 3 cartes statiques avec design original */}
         <Paper p="md" withBorder>
           <Stack gap="md" style={{ gap: '16px' }}>
             <Title order={2} size={{ base: 'h4', sm: 'h3' }} mb="sm">Statistiques quotidiennes</Title>
@@ -136,22 +182,8 @@ const DashboardHomePage = () => {
                   <Stack gap={{ base: 'xs', sm: 'sm' }} align="center">
                     <IconCurrencyEuro size={32} color="#059669" />
                     <Text size={{ base: 'sm', sm: 'md' }} fw={700} c="dark">Financier</Text>
-                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">CA + Dons (€)</Text>
-                  </Stack>
-                </Paper>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <Paper 
-                  p={{ base: 'sm', sm: 'md' }} 
-                  withBorder 
-                  bg="blue.0" 
-                  className="stat-card"
-                  style={{ borderLeft: '4px solid #2563eb' }}
-                >
-                  <Stack gap={{ base: 'xs', sm: 'sm' }} align="center">
-                    <IconScale size={32} color="#2563eb" />
-                    <Text size={{ base: 'sm', sm: 'md' }} fw={700} c="dark">Poids reçu</Text>
-                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">Matières (kg)</Text>
+                    <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="dark">{(stats.ca + stats.donations).toFixed(2)}€</Text>
+                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">({stats.ca.toFixed(2)}€ + {stats.donations.toFixed(2)}€)</Text>
                   </Stack>
                 </Paper>
               </Grid.Col>
@@ -166,6 +198,23 @@ const DashboardHomePage = () => {
                   <Stack gap={{ base: 'xs', sm: 'sm' }} align="center">
                     <IconPackage size={32} color="#d97706" />
                     <Text size={{ base: 'sm', sm: 'md' }} fw={700} c="dark">Poids sorti</Text>
+                    <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="dark">{stats.weightSold.toFixed(1)}</Text>
+                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">Matières (kg)</Text>
+                  </Stack>
+                </Paper>
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <Paper 
+                  p={{ base: 'sm', sm: 'md' }} 
+                  withBorder 
+                  bg="blue.0" 
+                  className="stat-card"
+                  style={{ borderLeft: '4px solid #2563eb' }}
+                >
+                  <Stack gap={{ base: 'xs', sm: 'sm' }} align="center">
+                    <IconScale size={32} color="#2563eb" />
+                    <Text size={{ base: 'sm', sm: 'md' }} fw={700} c="dark">Poids reçu</Text>
+                    <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="dark">{stats.weightReceived.toFixed(1)}</Text>
                     <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">Matières (kg)</Text>
                   </Stack>
                 </Paper>
