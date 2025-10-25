@@ -32,6 +32,7 @@ from recyclic_api.schemas.admin import (
     UserStatusesResponse,
     ForcePasswordRequest
 )
+from recyclic_api.schemas.permission import UserGroupUpdateRequest
 from recyclic_api.schemas.user import UserStatusUpdate
 from recyclic_api.services.user_history_service import UserHistoryService
 from recyclic_api.core.auth import send_reset_password_email
@@ -1828,6 +1829,115 @@ async def update_activity_threshold(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la mise ├á jour du seuil d'activit├®: {str(e)}"
+        )
+
+
+@router.put(
+    "/users/{user_id}/groups",
+    response_model=AdminResponse,
+    summary="Mettre à jour les groupes d'un utilisateur (Admin)",
+    description="Met à jour l'assignation des groupes pour un utilisateur spécifique"
+)
+def update_user_groups(
+    user_id: str,
+    group_update: UserGroupUpdateRequest,
+    current_user: User = Depends(require_admin_role),
+    db: Session = Depends(get_db)
+):
+    """Met à jour les groupes d'un utilisateur."""
+    try:
+        # Log de l'accès admin
+        log_admin_access(
+            user_id=str(current_user.id),
+            username=current_user.username or current_user.telegram_id,
+            endpoint="/admin/users/{user_id}/groups",
+            success=True
+        )
+
+        # Recherche de l'utilisateur
+        try:
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            user = db.query(User).filter(User.id == user_uuid).first()
+        except ValueError:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Utilisateur non trouvé"
+            )
+
+        if not user:
+            # Log de l'échec
+            log_admin_access(
+                user_id=str(current_user.id),
+                username=current_user.username or current_user.telegram_id,
+                endpoint="/admin/users/{user_id}/groups",
+                success=False,
+                error_message="Utilisateur non trouvé"
+            )
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Utilisateur non trouvé"
+            )
+
+        # Importer le modèle Group
+        from recyclic_api.models.permission import Group
+
+        # Valider que tous les groupes existent
+        group_uuids = []
+        for group_id in group_update.group_ids:
+            try:
+                group_uuid = uuid.UUID(group_id)
+                group = db.query(Group).filter(Group.id == group_uuid).first()
+                if not group:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_404_NOT_FOUND,
+                        detail=f"Groupe non trouvé: {group_id}"
+                    )
+                group_uuids.append(group_uuid)
+            except ValueError:
+                raise HTTPException(
+                    status_code=http_status.HTTP_400_BAD_REQUEST,
+                    detail=f"ID de groupe invalide: {group_id}"
+                )
+
+        # Récupérer les groupes existants
+        existing_groups = db.query(Group).filter(Group.id.in_(group_uuids)).all()
+        
+        # Mettre à jour les groupes de l'utilisateur
+        user.groups = existing_groups
+        db.commit()
+        db.refresh(user)
+
+        # Log de la modification des groupes
+        log_role_change(
+            admin_user_id=str(current_user.id),
+            admin_username=current_user.username or current_user.telegram_id,
+            target_user_id=str(user.id),
+            target_username=user.username or user.telegram_id,
+            old_role=f"groups={[g.name for g in user.groups]}",
+            new_role=f"groups={[g.name for g in existing_groups]}",
+            success=True,
+            db=db
+        )
+
+        full_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.first_name or user.last_name
+        group_names = [group.name for group in existing_groups]
+
+        return AdminResponse(
+            data={
+                "user_id": str(user.id),
+                "group_ids": group_update.group_ids,
+                "group_names": group_names
+            },
+            message=f"Groupes de l'utilisateur {full_name or user.username} mis à jour avec succès",
+            success=True
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la mise à jour des groupes: {str(e)}"
         )
 
 

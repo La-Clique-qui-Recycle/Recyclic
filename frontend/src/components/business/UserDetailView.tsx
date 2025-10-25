@@ -130,9 +130,6 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
               <Badge color={getRoleColor(user.role)} variant="light">
                 {getRoleLabel(user.role)}
               </Badge>
-              <Badge color={getStatusColor(user.status)} variant="light">
-                {getStatusLabel(user.status)}
-              </Badge>
             </Group>
           </div>
         </Group>

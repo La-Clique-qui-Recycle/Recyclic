@@ -29,11 +29,11 @@ router = APIRouter(tags=["categories"])
     response_model=CategoryRead,
     status_code=201,
     summary="Create a new category",
-    description="Create a new category. Requires SUPER_ADMIN role."
+    description="Create a new category. Requires ADMIN or SUPER_ADMIN role."
 )
 async def create_category(
     category_data: CategoryCreate,
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     """Create a new category"""
@@ -76,11 +76,11 @@ async def get_categories_hierarchy(
 @router.get(
     "/actions/export",
     summary="Export categories configuration",
-    description="Export all categories to PDF, Excel or CSV format. Requires SUPER_ADMIN role."
+    description="Export all categories to PDF, Excel or CSV format. Requires ADMIN or SUPER_ADMIN role."
 )
 async def export_categories(
     format: str = Query(..., description="Export format: 'pdf' or 'xls' or 'csv'"),
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     """
@@ -122,10 +122,10 @@ async def export_categories(
 @router.get(
     "/import/template",
     summary="Télécharger le modèle CSV d'import des catégories",
-    description="Retourne un fichier CSV modèle avec les colonnes requises. Nécessite SUPER_ADMIN.",
+    description="Retourne un fichier CSV modèle avec les colonnes requises. Nécessite ADMIN ou SUPER_ADMIN.",
 )
 async def download_categories_import_template(
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     service = CategoryImportService(db)
@@ -142,11 +142,11 @@ async def download_categories_import_template(
     "/import/analyze",
     response_model=CategoryImportAnalyzeResponse,
     summary="Analyser un CSV d'import de catégories",
-    description="Valide le CSV et prépare une session d'import. Nécessite SUPER_ADMIN.",
+    description="Valide le CSV et prépare une session d'import. Nécessite ADMIN ou SUPER_ADMIN.",
 )
 async def analyze_categories_import(
     file: UploadFile = File(...),
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     if not file.filename.lower().endswith((".csv")):
@@ -161,15 +161,15 @@ async def analyze_categories_import(
 @router.post(
     "/import/execute",
     summary="Exécuter un import de catégories depuis une session",
-    description="Exécute l'upsert transactionnel à partir d'une session d'analyse. Nécessite SUPER_ADMIN.",
+    description="Exécute l'upsert transactionnel à partir d'une session d'analyse. Nécessite ADMIN ou SUPER_ADMIN.",
 )
 async def execute_categories_import(
     payload: CategoryImportExecuteRequest,
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     service = CategoryImportService(db)
-    result = service.execute(payload.session_id)
+    result = service.execute(payload.session_id, payload.delete_existing)
     return result
 
 
@@ -198,12 +198,12 @@ async def get_category(
     "/{category_id}",
     response_model=CategoryRead,
     summary="Update a category",
-    description="Update a category's information. Requires SUPER_ADMIN role."
+    description="Update a category's information. Requires ADMIN or SUPER_ADMIN role."
 )
 async def update_category(
     category_id: str,
     category_data: CategoryUpdate,
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     """Update a category"""
@@ -220,11 +220,11 @@ async def update_category(
     "/{category_id}",
     response_model=CategoryRead,
     summary="Soft delete a category",
-    description="Soft delete a category by setting is_active to False. Requires SUPER_ADMIN role."
+    description="Soft delete a category by setting is_active to False. Requires ADMIN or SUPER_ADMIN role."
 )
 async def delete_category(
     category_id: str,
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     """Soft delete a category"""
@@ -240,12 +240,12 @@ async def delete_category(
 @router.delete(
     "/{category_id}/hard",
     summary="Hard delete a category",
-    description="Delete a category permanently if it has no children. Requires SUPER_ADMIN role.",
+    description="Delete a category permanently if it has no children. Requires ADMIN or SUPER_ADMIN role.",
     status_code=204,
 )
 async def hard_delete_category(
     category_id: str,
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     service = CategoryService(db)
@@ -313,11 +313,11 @@ async def get_category_breadcrumb(
 @router.get(
     "/export",
     summary="Export categories configuration",
-    description="Export all categories to PDF or Excel format. Requires SUPER_ADMIN role."
+    description="Export all categories to PDF or Excel format. Requires ADMIN or SUPER_ADMIN role."
 )
 async def export_categories(
     format: str = Query(..., description="Export format: 'pdf' or 'xls'"),
-    current_user: User = Depends(require_role_strict(UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
     """

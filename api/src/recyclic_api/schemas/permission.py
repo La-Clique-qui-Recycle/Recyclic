@@ -124,6 +124,11 @@ class RemoveUserFromGroupRequest(BaseModel):
     user_id: str
 
 
+class UserGroupUpdateRequest(BaseModel):
+    """Schema for updating user groups assignment."""
+    group_ids: List[str]
+
+
 # Avoid circular imports - import UserResponse at the end
 from recyclic_api.schemas.user import UserResponse
 GroupDetailResponse.model_rebuild()

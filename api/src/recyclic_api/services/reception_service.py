@@ -173,7 +173,7 @@ class ReceptionService:
         self.ligne_repo.delete(ligne)
 
     # Méthodes pour l'historique des tickets
-    def get_tickets_list(self, page: int = 1, per_page: int = 10) -> Tuple[List[TicketDepot], int]:
+    def get_tickets_list(self, page: int = 1, per_page: int = 10, status: Optional[str] = None) -> Tuple[List[TicketDepot], int]:
         """Récupérer la liste paginée des tickets avec leurs informations de base."""
         offset = (page - 1) * per_page
         
@@ -182,6 +182,10 @@ class ReceptionService:
             selectinload(TicketDepot.benevole),
             selectinload(TicketDepot.lignes)
         ).order_by(desc(TicketDepot.created_at))
+        
+        # Appliquer le filtre par statut si fourni
+        if status:
+            query = query.filter(TicketDepot.status == status)
         
         # Compter le total
         total = query.count()

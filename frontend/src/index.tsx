@@ -8,6 +8,7 @@ import { Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import './index.css';
+import './styles/global.css';
 import App from './App.jsx';
 import HydrationWrapper from './components/HydrationWrapper.jsx';
 

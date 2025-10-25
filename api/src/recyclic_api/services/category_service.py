@@ -57,12 +57,12 @@ class CategoryService:
                 if not parent:
                     raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
 
-                # NEW RULE: Check if parent has any price defined
+                # NEW RULE: If parent has prices, remove them automatically to make it a container
                 if parent.price is not None or parent.max_price is not None:
-                    raise HTTPException(
-                        status_code=422,
-                        detail="Cannot add a subcategory to a category that has prices defined. Remove prices from parent category first."
-                    )
+                    parent.price = None
+                    parent.max_price = None
+                    # Commit the parent update immediately
+                    self.db.commit()
 
                 # Check hierarchy depth
                 parent_depth = self._get_hierarchy_depth(parent_id)
@@ -161,12 +161,12 @@ class CategoryService:
                     if not parent:
                         raise HTTPException(status_code=400, detail=f"Parent category with ID '{category_data.parent_id}' not found or inactive")
 
-                    # NEW RULE: Check if parent has any price defined
+                    # NEW RULE: If parent has prices, remove them automatically to make it a container
                     if parent.price is not None or parent.max_price is not None:
-                        raise HTTPException(
-                            status_code=422,
-                            detail="Cannot add a subcategory to a category that has prices defined. Remove prices from parent category first."
-                        )
+                        parent.price = None
+                        parent.max_price = None
+                        # Commit the parent update immediately
+                        self.db.commit()
 
                     # Prevent self-reference
                     if final_parent_id == cat_uuid:

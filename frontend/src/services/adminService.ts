@@ -46,6 +46,10 @@ export interface UserCreate {
   site_id?: string;
 }
 
+export interface UserGroupUpdate {
+  group_ids: string[];
+}
+
 export interface UsersFilter {
   skip?: number;
   limit?: number;
@@ -211,6 +215,19 @@ export const adminService = {
       };
     } catch (error) {
       console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Met à jour les groupes d'un utilisateur
+   */
+  async updateUserGroups(userId: string, groupData: UserGroupUpdate): Promise<AdminResponse> {
+    try {
+      const response = await axiosClient.put(`/v1/admin/users/${userId}/groups`, groupData);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des groupes de l\'utilisateur:', error);
       throw error;
     }
   },

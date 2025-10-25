@@ -59,3 +59,4 @@ class CategoryImportAnalyzeResponse(BaseModel):
 
 class CategoryImportExecuteRequest(BaseModel):
     session_id: str
+    delete_existing: bool = False

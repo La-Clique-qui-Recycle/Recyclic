@@ -1,0 +1,215 @@
+/* ===== SYSTÈME DE DESIGN - RECYCLIC ADMIN ===== */
+
+/* Variables CSS Globales */
+:root {
+  /* Couleurs principales */
+  --primary: #2563eb;
+  --secondary: #64748b;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #0891b2;
+  
+  /* Couleurs de fond */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f1f5f9;
+  
+  /* Couleurs de texte */
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  
+  /* Couleurs de bordure */
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --border-accent: #3b82f6;
+  
+  /* Espacement cohérent */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* Ombres */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* ===== CLASSES UTILITAIRES ===== */
+
+/* Cartes statistiques */
+.stat-card {
+  padding: var(--spacing-lg);
+  margin: var(--spacing-md);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-card:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+/* Boutons navigation */
+.nav-button {
+  min-height: 48px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: 8px;
+  gap: var(--spacing-md);
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.nav-button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-button:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Zone Super-Admin */
+.super-admin-section {
+  background: var(--bg-secondary);
+  border-top: 2px solid var(--border-primary);
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  border-radius: 8px;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .stat-cards { 
+    flex-direction: column; 
+    gap: var(--spacing-md);
+  }
+  
+  .nav-buttons { 
+    grid-template-columns: 1fr; 
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 1024px) {
+  .nav-buttons { 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: var(--spacing-md);
+  }
+}
+
+@media (min-width: 1025px) {
+  .nav-buttons { 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: var(--spacing-md);
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.loading {
+  animation: pulse 2s infinite;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* États de chargement pour les cartes */
+.stat-card.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ===== ACCESSIBILITÉ ===== */
+.focusable:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ===== UTILITAIRES ===== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-center { align-items: center; justify-content: center; }
+.flex-between { justify-content: space-between; }
+
+.gap-xs { gap: var(--spacing-xs); }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+.gap-xl { gap: var(--spacing-xl); }
+
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+
+.m-xs { margin: var(--spacing-xs); }
+.m-sm { margin: var(--spacing-sm); }
+.m-md { margin: var(--spacing-md); }
+.m-lg { margin: var(--spacing-lg); }
+.m-xl { margin: var(--spacing-xl); }

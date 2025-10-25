@@ -22,7 +22,6 @@ const Registration = lazy(() => import('./pages/Registration.jsx'));
 const AdminLayout = lazy(() => import('./components/AdminLayout.jsx'));
 const DashboardHomePage = lazy(() => import('./pages/Admin/DashboardHomePage.jsx'));
 const AdminUsers = lazy(() => import('./pages/Admin/Users.tsx'));
-const PendingUsers = lazy(() => import('./pages/Admin/PendingUsers.tsx'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard.tsx'));
 const AdminReports = lazy(() => import('./pages/Admin/Reports.tsx'));
 const HealthDashboard = lazy(() => import('./pages/Admin/HealthDashboard.tsx'));
@@ -37,6 +36,7 @@ const AdminSettings = lazy(() => import('./pages/Admin/Settings.tsx'));
 const AdminGroups = lazy(() => import('./pages/Admin/GroupsReal.tsx'));
 const AuditLog = lazy(() => import('./pages/Admin/AuditLog.tsx'));
 const EmailLogs = lazy(() => import('./pages/Admin/EmailLogs.tsx'));
+const SitesAndRegistersPage = lazy(() => import('./pages/Admin/SitesAndRegistersPage.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -197,12 +197,11 @@ function App() {
             <Route path="/inscription" element={<Registration />} />
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
               <Route index element={<DashboardHomePage />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="dashboard" element={<DashboardHomePage />} />
               <Route path="cash-sessions/:id" element={<CashSessionDetail />} />
               <Route path="reception-stats" element={<Navigate to="/" replace />} />
               <Route path="reception-reports" element={<ReceptionReports />} />
               <Route path="users" element={<AdminUsers />} />
-              <Route path="pending" element={<PendingUsers />} />
               <Route path="session-manager" element={<SessionManager />} />
               <Route path="cash-registers" element={<AdminCashRegisters />} />
               <Route path="sites" element={<AdminSites />} />
@@ -212,6 +211,7 @@ function App() {
               <Route path="email-logs" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><EmailLogs /></ProtectedRoute>} />
               <Route path="health" element={<HealthDashboard />} />
               <Route path="settings" element={<ProtectedRoute requiredRoles={['super-admin']}><AdminSettings /></ProtectedRoute>} />
+              <Route path="sites-and-registers" element={<ProtectedRoute requiredRoles={['super-admin']}><SitesAndRegistersPage /></ProtectedRoute>} />
             </Route>
             </Routes>
           </Suspense>

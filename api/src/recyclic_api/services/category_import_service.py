@@ -82,9 +82,11 @@ class CategoryImportService:
 
         rows: List[Dict[str, Any]] = []
         errors: List[str] = []
+        warnings: List[str] = []  # Nouveaux avertissements
         to_create = 0
         to_update = 0
         roots_seen: set[str] = set()
+        parent_price_conflicts: Dict[str, bool] = {}  # Track parents with prices
 
         for idx, raw in enumerate(reader, start=2):  # start=2 inclut l'en-tête ligne 1
             root = self._clean_name(raw.get("Catégorie racine"))
@@ -96,10 +98,8 @@ class CategoryImportService:
                 errors.append(f"L{idx}: 'Catégorie racine' manquante")
                 continue
 
-            # Règles: si sous-catégorie absente → ligne root-only (création éventuelle du parent)
-            if sub is None and (min_price is not None or max_price is not None):
-                errors.append(f"L{idx}: Prix fournis sans 'Sous-catégorie' (prix uniquement sur feuilles)")
-                continue
+            # Nouvelle règle: Les prix peuvent être définis sur les catégories racines
+            # (Cette règle a été supprimée pour permettre la cohérence avec B37-16)
 
             # Charger existence en base pour déterminer create/update
             # Contrainte d'unicité globale sur name: on identifie par name uniquement
@@ -107,8 +107,16 @@ class CategoryImportService:
 
             if root_obj is None:
                 roots_seen.add(root)
+            else:
+                # Vérifier si le parent a des prix (conflit potentiel)
+                if root_obj.price is not None or root_obj.max_price is not None:
+                    parent_price_conflicts[root] = True
 
             if sub:
+                # Vérifier si le parent a des prix (conflit potentiel)
+                if parent_price_conflicts.get(root, False):
+                    warnings.append(f"L{idx}: La catégorie parente '{root}' a des prix qui seront supprimés automatiquement lors de l'import")
+                
                 sub_obj = None
                 # Identifier par nom global (unicité sur name)
                 sub_obj = self.db.query(Category).filter(Category.name == sub).first()
@@ -156,10 +164,11 @@ class CategoryImportService:
             },
             "sample": sample,
             "errors": errors,
+            "warnings": warnings,  # Nouveaux avertissements
         }
 
     # ---------- Execute ----------
-    def execute(self, session_id: str) -> Dict[str, Any]:
+    def execute(self, session_id: str, delete_existing: bool = False) -> Dict[str, Any]:
         """Exécute l'import (upsert) à partir d'une session d'analyse valide."""
         key = f"{self.REDIS_KEY_PREFIX}{session_id}"
         payload_raw = self.redis.get(key)
@@ -175,6 +184,15 @@ class CategoryImportService:
         errors: List[str] = []
 
         try:
+            # Supprimer toutes les catégories existantes si demandé
+            if delete_existing:
+                # D'abord supprimer les lignes de dépôt qui référencent les catégories
+                from recyclic_api.models.ligne_depot import LigneDepot
+                self.db.query(LigneDepot).delete()
+                # Puis supprimer toutes les catégories
+                self.db.query(Category).delete()
+                self.db.flush()  # Flush pour s'assurer que la suppression est effective
+            
             # Transaction explicite
             for row in rows:
                 root = row["root"]
@@ -193,8 +211,25 @@ class CategoryImportService:
                     root_obj.parent_id = None
                     root_obj.is_active = True
 
+                # NOUVELLE RÈGLE: Gérer les prix sur les catégories racines (si pas de sous-catégorie)
+                if sub is None and (min_price is not None or max_price is not None):
+                    # Mettre à jour les prix de la catégorie racine
+                    root_obj.price = min_price
+                    root_obj.max_price = max_price
+                    if root_obj.id not in [obj.id for obj in self.db.new]:  # Si pas nouveau
+                        updated += 1
+                    else:
+                        imported += 1
+
                 # Subcat upsert si présent (par nom global)
                 if sub is not None:
+                    # NOUVELLE RÈGLE: Supprimer automatiquement les prix du parent si nécessaire
+                    if root_obj.price is not None or root_obj.max_price is not None:
+                        root_obj.price = None
+                        root_obj.max_price = None
+                        # Commit immédiat pour le parent
+                        self.db.commit()
+                    
                     sub_obj = self.db.query(Category).filter(Category.name == sub).first()
                     if sub_obj is None:
                         sub_obj = Category(

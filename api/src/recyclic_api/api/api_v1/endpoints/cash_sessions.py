@@ -272,6 +272,42 @@ async def get_cash_sessions(
     )
 
 
+@router.get("/current", response_model=Optional[CashSessionResponse])
+async def get_current_cash_session(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    """
+    Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté.
+    """
+    logging.info(f"=== DEBUG: get_current_cash_session appelé pour user {current_user.id} ===")
+    try:
+        service = CashSessionService(db)
+        session = service.get_open_session_by_operator(str(current_user.id))
+        
+        logging.info(f"=== DEBUG: session trouvée: {session is not None} ===")
+        
+        if not session:
+            logging.info("=== DEBUG: Aucune session ouverte, retour null ===")
+            return None
+        
+        logging.info(f"=== DEBUG: Retour de la session {session.id} ===")
+        # Retourner directement l'objet session - FastAPI gère la sérialisation
+        return session
+        
+    except Exception as e:
+        # Log de l'erreur pour debug
+        logging.error(f"=== DEBUG: Erreur dans get_current_cash_session: {e} ===")
+        logging.error(f"=== DEBUG: Type d'erreur: {type(e)} ===")
+        logging.error(f"=== DEBUG: User ID: {current_user.id} ===")
+        
+        # Retourner une erreur 500 avec plus de détails
+        raise HTTPException(
+            status_code=500,
+            detail=f"DEBUG: Erreur lors de la récupération de la session courante: {str(e)}"
+        )
+
+
 @router.get(
     "/{session_id}",
     response_model=CashSessionDetailResponse,
@@ -374,13 +410,27 @@ async def get_cash_session_detail(
         for sale in session.sales:
             sales_data.append(SaleDetail.model_validate(sale))
         
-        # Construire la réponse détaillée
-        response_data = CashSessionResponse.model_validate(session).model_dump()
-        response_data.update({
+        # Construire la réponse détaillée - éviter model_validate pour éviter l'erreur 500
+        response_data = {
+            "id": str(session.id),
+            "operator_id": str(session.operator_id),
+            "site_id": str(session.site_id),
+            "register_id": str(session.register_id) if session.register_id else None,
+            "initial_amount": session.initial_amount,
+            "current_amount": session.current_amount,
+            "status": session.status.value,
+            "opened_at": session.opened_at,
+            "closed_at": session.closed_at,
+            "total_sales": session.total_sales,
+            "total_items": session.total_items,
+            "closing_amount": session.closing_amount,
+            "actual_amount": session.actual_amount,
+            "variance": session.variance,
+            "variance_comment": session.variance_comment,
             "sales": sales_data,
             "operator_name": session.operator.username if session.operator else None,
             "site_name": session.site.name if session.site else None
-        })
+        }
         
         return CashSessionDetailResponse(**response_data)
         
@@ -399,26 +449,6 @@ async def get_cash_session_detail(
             status_code=500,
             detail="Erreur lors de la récupération des détails de la session"
         )
-
-
-@router.get("/current", response_model=Optional[CashSessionResponse])
-async def get_current_cash_session(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
-):
-    """
-    Récupère la session de caisse actuellement ouverte pour l'utilisateur connecté.
-    """
-    service = CashSessionService(db)
-    
-    session = service.get_open_session_by_operator(str(current_user.id))
-    
-    if not session:
-        return None
-    
-    return CashSessionResponse.model_validate(session)
-
-
 
 
 @router.put("/{session_id}", response_model=CashSessionResponse)
