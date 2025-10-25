@@ -1,6 +1,6 @@
 # Story b37-15: Bug: Les administrateurs n'ont pas les permissions d'édition nécessaires
 
-**Statut:** Prêt pour développement
+**Statut:** ✅ Terminé et Validé
 **Épopée:** [b37: Refonte UX du Dashboard Admin](./epic-b37-refonte-ux-admin.md)
 **PO:** Sarah
 **Type:** Bug

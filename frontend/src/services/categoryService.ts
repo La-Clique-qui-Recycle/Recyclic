@@ -183,8 +183,11 @@ class CategoryService {
   /**
    * Execute categories import from analyzed session
    */
-  async importExecute(sessionId: string): Promise<{ imported: number; updated: number; errors: string[]; }> {
-    const response = await api.post('/v1/categories/import/execute', { session_id: sessionId });
+  async importExecute(sessionId: string, deleteExisting: boolean = false): Promise<{ imported: number; updated: number; errors: string[]; }> {
+    const response = await api.post('/v1/categories/import/execute', { 
+      session_id: sessionId,
+      delete_existing: deleteExisting
+    });
     return response.data;
   }
 }

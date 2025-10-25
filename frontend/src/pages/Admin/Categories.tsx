@@ -17,7 +17,8 @@ import {
   Collapse,
   Menu,
   FileInput,
-  Divider
+  Divider,
+  Checkbox
 } from '@mantine/core';
 import {
   IconPlus,
@@ -49,6 +50,7 @@ const AdminCategories: React.FC = () => {
   const [importing, setImporting] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState<{ session_id: string | null; summary: any; sample: any[]; errors: string[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [deleteExisting, setDeleteExisting] = useState(false);
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -104,15 +106,19 @@ const AdminCategories: React.FC = () => {
     if (!analyzeResult?.session_id) return;
     setImporting(true);
     try {
-      const res = await categoryService.importExecute(analyzeResult.session_id);
+      const res = await categoryService.importExecute(analyzeResult.session_id, deleteExisting);
       if (res.errors?.length) {
         notifications.show({ title: 'Import terminé avec erreurs', message: res.errors.join('\n'), color: 'yellow' });
       } else {
-        notifications.show({ title: 'Import réussi', message: 'Catégories mises à jour', color: 'green' });
+        const message = deleteExisting 
+          ? 'Import réussi - Toutes les catégories et lignes de dépôt existantes ont été supprimées et remplacées'
+          : 'Import réussi - Catégories mises à jour';
+        notifications.show({ title: 'Import réussi', message, color: 'green' });
       }
       setImportModalOpen(false);
       setAnalyzeResult(null);
       setSelectedFile(null);
+      setDeleteExisting(false);
       fetchCategories();
     } catch (e) {
       notifications.show({ title: 'Erreur', message: 'Exécution de l\'import échouée', color: 'red' });
@@ -485,6 +491,25 @@ const AdminCategories: React.FC = () => {
             value={selectedFile}
             onChange={setSelectedFile}
             accept=".csv"
+          />
+          <Checkbox
+            label="Supprimer toutes les catégories existantes avant l'import"
+            description="⚠️ Cette action est irréversible et supprimera aussi toutes les lignes de dépôt associées"
+            checked={deleteExisting}
+            onChange={(event) => {
+              const isChecked = event.currentTarget.checked;
+              if (isChecked) {
+                notifications.show({
+                  title: '⚠️ Attention - Suppression complète',
+                  message: 'Vous êtes sur le point de supprimer TOUTES les catégories existantes ET toutes les lignes de dépôt associées. Cette action est irréversible et effacera toutes les données de dépôt historiques.',
+                  color: 'red',
+                  autoClose: 10000,
+                });
+              }
+              setDeleteExisting(isChecked);
+            }}
+            color="red"
+            data-testid="delete-existing-checkbox"
           />
           <Group>
             <Button onClick={handleAnalyzeImport} loading={importing} disabled={!selectedFile}>Analyser</Button>

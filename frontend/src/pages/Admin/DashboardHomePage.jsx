@@ -148,8 +148,8 @@ const DashboardHomePage = () => {
   };
 
   return (
-    <Stack gap={{ base: 'lg', sm: 'xl' }} style={{ gap: '24px' }}>
-      <Title order={1} size={{ base: 'h2', sm: 'h1' }} ta="center" mb="md">Tableau de Bord d'Administration</Title>
+    <Stack gap={{ base: 'xs', sm: 'sm' }} style={{ gap: '8px' }}>
+      <Title order={1} size={{ base: 'h1', sm: 'h1' }} ta="center" mb="xs" mt={0} fw={700}>Tableau de Bord d'Administration</Title>
       
       {/* Header - Statut Global - Structure 3 colonnes avec composants avancés */}
       <Paper p={{ base: 'sm', sm: 'md' }} withBorder bg="gray.0">
@@ -166,67 +166,120 @@ const DashboardHomePage = () => {
         </Grid>
       </Paper>
       
-        {/* Statistiques quotidiennes - 3 cartes statiques avec design original */}
-        <Paper p="md" withBorder>
-          <Stack gap="md" style={{ gap: '16px' }}>
-            <Title order={2} size={{ base: 'h4', sm: 'h3' }} mb="sm">Statistiques quotidiennes</Title>
-            <Grid gutter="md">
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <Paper 
-                  p={{ base: 'sm', sm: 'md' }} 
-                  withBorder 
-                  bg="green.0" 
-                  className="stat-card"
-                  style={{ borderLeft: '4px solid #059669' }}
-                >
-                  <Stack gap={{ base: 'xs', sm: 'sm' }} align="center">
-                    <IconCurrencyEuro size={32} color="#059669" />
-                    <Text size={{ base: 'sm', sm: 'md' }} fw={700} c="dark">Financier</Text>
-                    <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="dark">{(stats.ca + stats.donations).toFixed(2)}€</Text>
-                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">({stats.ca.toFixed(2)}€ + {stats.donations.toFixed(2)}€)</Text>
-                  </Stack>
-                </Paper>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <Paper 
-                  p={{ base: 'sm', sm: 'md' }} 
-                  withBorder 
-                  bg="orange.0" 
-                  className="stat-card"
-                  style={{ borderLeft: '4px solid #d97706' }}
-                >
-                  <Stack gap={{ base: 'xs', sm: 'sm' }} align="center">
-                    <IconPackage size={32} color="#d97706" />
-                    <Text size={{ base: 'sm', sm: 'md' }} fw={700} c="dark">Poids sorti</Text>
-                    <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="dark">{stats.weightSold.toFixed(1)}</Text>
-                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">Matières (kg)</Text>
-                  </Stack>
-                </Paper>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <Paper 
-                  p={{ base: 'sm', sm: 'md' }} 
-                  withBorder 
-                  bg="blue.0" 
-                  className="stat-card"
-                  style={{ borderLeft: '4px solid #2563eb' }}
-                >
-                  <Stack gap={{ base: 'xs', sm: 'sm' }} align="center">
-                    <IconScale size={32} color="#2563eb" />
-                    <Text size={{ base: 'sm', sm: 'md' }} fw={700} c="dark">Poids reçu</Text>
-                    <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="dark">{stats.weightReceived.toFixed(1)}</Text>
-                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed" ta="center">Matières (kg)</Text>
-                  </Stack>
-                </Paper>
-              </Grid.Col>
-            </Grid>
+        {/* Statistiques quotidiennes - 3 cartes harmonisées */}
+        <Paper p="sm" withBorder>
+          <Stack gap="sm" style={{ gap: '12px' }}>
+            <Title order={2} size={{ base: 'h4', sm: 'h3' }} mb="xs">Statistiques quotidiennes</Title>
+            <div style={{ 
+              display: 'flex', 
+              gap: '16px', 
+              alignItems: 'stretch',
+              '@media (max-width: 768px)': {
+                flexDirection: 'column',
+                gap: '12px'
+              }
+            }}>
+              <Paper 
+                p="md" 
+                withBorder 
+                bg="green.0" 
+                className="stat-card"
+                style={{ 
+                  borderLeft: '4px solid #059669',
+                  flex: 1,
+                  minHeight: '120px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  background: 'white'
+                }}
+              >
+                <Stack gap="xs" align="center">
+                  <Group gap="xs" align="center">
+                    <IconCurrencyEuro size={20} color="#059669" />
+                    <Text size="md" fw={600} c="dark">Financier</Text>
+                  </Group>
+                  <Text size="xl" fw={700} c="dark" style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+                    {(stats.ca + stats.donations).toFixed(2)}€
+                  </Text>
+                  <Text size="sm" c="dimmed" ta="center" style={{ fontSize: '14px', color: '#666' }}>
+                    CA: {stats.ca.toFixed(2)}€ • Dons: {stats.donations.toFixed(2)}€
+                  </Text>
+                </Stack>
+              </Paper>
+              <Paper 
+                p="md" 
+                withBorder 
+                bg="orange.0" 
+                className="stat-card"
+                style={{ 
+                  borderLeft: '4px solid #d97706',
+                  flex: 1,
+                  minHeight: '120px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  background: 'white'
+                }}
+              >
+                <Stack gap="xs" align="center">
+                  <Group gap="xs" align="center">
+                    <IconPackage size={20} color="#d97706" />
+                    <Text size="md" fw={600} c="dark">Poids sorti</Text>
+                  </Group>
+                  <Text size="xl" fw={700} c="dark" style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+                    {stats.weightSold.toFixed(1)} kg
+                  </Text>
+                  <Text size="sm" c="dimmed" ta="center" style={{ fontSize: '14px', color: '#666' }}>
+                    Sorti aujourd'hui
+                  </Text>
+                </Stack>
+              </Paper>
+              <Paper 
+                p="md" 
+                withBorder 
+                bg="blue.0" 
+                className="stat-card"
+                style={{ 
+                  borderLeft: '4px solid #2563eb',
+                  flex: 1,
+                  minHeight: '120px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  background: 'white'
+                }}
+              >
+                <Stack gap="xs" align="center">
+                  <Group gap="xs" align="center">
+                    <IconScale size={20} color="#2563eb" />
+                    <Text size="md" fw={600} c="dark">Poids reçu</Text>
+                  </Group>
+                  <Text size="xl" fw={700} c="dark" style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+                    {stats.weightReceived.toFixed(1)} kg
+                  </Text>
+                  <Text size="sm" c="dimmed" ta="center" style={{ fontSize: '14px', color: '#666' }}>
+                    Reçu aujourd'hui
+                  </Text>
+                </Stack>
+              </Paper>
+            </div>
           </Stack>
         </Paper>
 
       {/* Navigation principale - Grille 3x2 */}
-      <Paper p="md" withBorder>
-        <Stack gap="md" style={{ gap: '16px' }}>
-          <Title order={2} size={{ base: 'h4', sm: 'h3' }} mb="sm">Navigation principale</Title>
+      <Paper p="sm" withBorder>
+        <Stack gap="sm" style={{ gap: '12px' }}>
+          <Title order={2} size={{ base: 'h4', sm: 'h3' }} mb="xs">Navigation principale</Title>
           <Grid gutter="md">
             {/* Première rangée */}
             <Grid.Col span={{ base: 12, sm: 4 }}>
@@ -303,9 +356,9 @@ const DashboardHomePage = () => {
 
       {/* Administration Super-Admin - 3 boutons horizontaux */}
       {isSuperAdmin && (
-        <Paper p="md" withBorder bg="#f8f9fa" className="super-admin-section">
-          <Stack gap="md" style={{ gap: '16px' }}>
-            <Title order={2} size={{ base: 'h4', sm: 'h3' }} mb="sm" c="dimmed">Administration Super-Admin</Title>
+        <Paper p="sm" withBorder bg="#f8f9fa" className="super-admin-section">
+          <Stack gap="sm" style={{ gap: '12px' }}>
+            <Title order={2} size={{ base: 'h4', sm: 'h3' }} mb="xs" c="dimmed">Administration Super-Admin</Title>
             <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <SuperAdminButton

@@ -22,7 +22,7 @@ async def list_sites(
     limit: int = Query(100, ge=1, le=200),
     only_active: bool = Query(False, description="Ne retourner que les sites actifs"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+    current_user: User = Depends(require_role_strict([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     """Lister tous les sites"""
     service = SiteService(db)
