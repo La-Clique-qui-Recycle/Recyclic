@@ -325,7 +325,7 @@ const DashboardHomePage = () => {
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <SuperAdminButton
-                  onClick={() => handleNavigation('/admin/sites')}
+                  onClick={() => handleNavigation('/admin/sites-and-registers')}
                   leftSection={<IconBuilding size={20} />}
                 >
                   Sites & Caisses

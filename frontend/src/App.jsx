@@ -36,6 +36,7 @@ const AdminSettings = lazy(() => import('./pages/Admin/Settings.tsx'));
 const AdminGroups = lazy(() => import('./pages/Admin/GroupsReal.tsx'));
 const AuditLog = lazy(() => import('./pages/Admin/AuditLog.tsx'));
 const EmailLogs = lazy(() => import('./pages/Admin/EmailLogs.tsx'));
+const SitesAndRegistersPage = lazy(() => import('./pages/Admin/SitesAndRegistersPage.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const Signup = lazy(() => import('./pages/Signup.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
@@ -210,6 +211,7 @@ function App() {
               <Route path="email-logs" element={<ProtectedRoute requiredRoles={['admin','super-admin']}><EmailLogs /></ProtectedRoute>} />
               <Route path="health" element={<HealthDashboard />} />
               <Route path="settings" element={<ProtectedRoute requiredRoles={['super-admin']}><AdminSettings /></ProtectedRoute>} />
+              <Route path="sites-and-registers" element={<ProtectedRoute requiredRoles={['super-admin']}><SitesAndRegistersPage /></ProtectedRoute>} />
             </Route>
             </Routes>
           </Suspense>
