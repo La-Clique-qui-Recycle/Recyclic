@@ -161,3 +161,4 @@ export function handleAZERTYWeightKey(currentInput: string, key: string, event?:
 
 
 
+
