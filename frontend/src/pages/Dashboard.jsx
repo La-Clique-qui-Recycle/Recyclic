@@ -144,7 +144,7 @@ function Dashboard() {
       <WelcomeSection>
         <WelcomeTitle>Bienvenue sur RecyClique</WelcomeTitle>
         <WelcomeText>
-          Plateforme de gestion de recyclage intelligente. 
+          Plateforme de gestion pour ressourceries. 
           Gérez vos dépôts, suivez vos ventes et analysez vos performances.
         </WelcomeText>
       </WelcomeSection>

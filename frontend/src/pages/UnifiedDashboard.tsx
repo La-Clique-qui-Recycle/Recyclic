@@ -337,7 +337,7 @@ function UnifiedDashboard() {
             Bienvenue sur RecyClique{currentUser ? `, ${currentUser.first_name || currentUser.username}` : ''}
           </WelcomeTitle>
           <WelcomeText>
-            Plateforme de gestion de recyclage intelligente.
+            Plateforme de gestion pour ressourceries.
             Gérez vos dépôts, suivez vos ventes et analysez vos performances.
           </WelcomeText>
         </WelcomeContent>

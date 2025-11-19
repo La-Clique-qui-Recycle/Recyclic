@@ -8,7 +8,7 @@ describe('Dashboard Page', () => {
     render(<Dashboard />)
     
     expect(screen.getByText('Bienvenue sur RecyClique')).toBeInTheDocument()
-    expect(screen.getByText(/Plateforme de gestion de recyclage intelligente/)).toBeInTheDocument()
+    expect(screen.getByText(/Plateforme de gestion de gestion pour ressourceries/)).toBeInTheDocument()
   })
 
   it('should render all stat cards', () => {
@@ -83,7 +83,7 @@ describe('Dashboard Page', () => {
   it('should display proper welcome content', () => {
     render(<Dashboard />)
     
-    const welcomeText = screen.getByText(/Plateforme de gestion de recyclage intelligente/)
+    const welcomeText = screen.getByText(/Plateforme de gestion de gestion pour ressourceries/)
     expect(welcomeText).toBeInTheDocument()
     
     const descriptionText = screen.getByText(/Gérez vos dépôts, suivez vos ventes et analysez vos performances/)

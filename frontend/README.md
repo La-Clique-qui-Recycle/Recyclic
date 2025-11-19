@@ -1,6 +1,6 @@
 # Frontend RecyClique
 
-Interface web React pour la plateforme RecyClique - Gestion de recyclage intelligente.
+Interface web React pour la plateforme RecyClique - Plateforme de gestion pour ressourceries.
 
 ## 🚀 Démarrage Rapide
 
