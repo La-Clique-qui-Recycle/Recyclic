@@ -9,10 +9,10 @@ from recyclic_api.core.database import Base
 
 
 class PaymentMethod(str, enum.Enum):
-    """Méthodes de paiement disponibles"""
-    CASH = "espèces"
-    CARD = "carte bancaire"
-    CHECK = "chèque"
+    """Méthodes de paiement disponibles - codes simples pour éviter problèmes d'encodage"""
+    CASH = "cash"
+    CARD = "card"
+    CHECK = "check"
 
 
 class Sale(Base):

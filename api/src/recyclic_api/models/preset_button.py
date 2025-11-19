@@ -25,7 +25,7 @@ class PresetButton(Base):
     name = Column(String, nullable=False, index=True)
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=False, index=True)
     preset_price = Column(Numeric(10, 2), nullable=False)
-    button_type = Column(Enum(ButtonType, values_callable=get_enum_values), nullable=False)
+    button_type = Column(Enum(ButtonType, values_callable=lambda obj: [e.name for e in obj]), nullable=False)
     sort_order = Column(Integer, nullable=False, default=0, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

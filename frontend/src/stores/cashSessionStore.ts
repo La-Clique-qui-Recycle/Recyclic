@@ -250,6 +250,13 @@ export const useCashSessionStore = create<CashSessionState>()(
           set({ loading: true, error: null });
 
           try {
+            // Fonction pour valider si une chaîne est un UUID valide
+            const isValidUUID = (str: string | undefined | null): boolean => {
+              if (!str) return false;
+              const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+              return uuidRegex.test(str);
+            };
+
             const saleData: SaleCreate = {
               cash_session_id: currentSession.id,
               items: items.map(item => ({
@@ -258,35 +265,25 @@ export const useCashSessionStore = create<CashSessionState>()(
                 weight: item.weight,  // Ajout du poids
                 unit_price: item.price,
                 total_price: item.total,
-                preset_id: item.presetId || null,  // Story 1.1.2: Preset par item
+                // Ne garder preset_id que si c'est un UUID valide (filtre les valeurs comme "don-0")
+                preset_id: item.presetId && isValidUUID(item.presetId) ? item.presetId : null,
                 notes: item.notes || null  // Story 1.1.2: Notes par item
               })),
               total_amount: items.reduce((sum, item) => sum + item.total, 0)
             };
 
-            // Map payment method from UI values to backend enum values
-            const paymentMethodMap: Record<string, string> = {
-              'cash': 'espèces',
-              'card': 'carte bancaire',
-              'check': 'chèque'
-            };
-
             // Étendre le payload pour inclure finalisation (don, paiement)
             // Story 1.1.2: preset_id et notes sont maintenant par item, pas au niveau vente globale
+            // Les codes de paiement sont maintenant simples (cash/card/check) pour éviter problèmes d'encodage
             const extendedPayload = {
               ...saleData,
               donation: finalization?.donation ?? 0,
-              payment_method: paymentMethodMap[finalization?.paymentMethod ?? 'cash'] ?? 'espèces',
+              payment_method: finalization?.paymentMethod ?? 'cash',  // Envoie directement cash/card/check
               // preset_id et notes supprimés du niveau vente - maintenant dans chaque item
             };
 
-            console.log('[submitSale] Preparing sale:', saleData);
-            console.log('[submitSale] Extended payload:', extendedPayload);
-
             // Call API to create sale using axiosClient (handles auth automatically)
-            console.log('[submitSale] Sending POST to /api/v1/sales/');
             const response = await axiosClient.post('/v1/sales/', extendedPayload);
-            console.log('[submitSale] Sale created successfully:', response.data);
 
             // Clear current sale on success
             set({
@@ -295,9 +292,22 @@ export const useCashSessionStore = create<CashSessionState>()(
             });
 
             return true;
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'enregistrement de la vente';
-            console.error('[submitSale] Error:', errorMessage, error);
+          } catch (error: any) {
+            // Extraire le détail de l'erreur de validation Pydantic si disponible
+            let errorMessage = 'Erreur lors de l\'enregistrement de la vente';
+            if (error?.response?.data?.detail) {
+              const detail = error.response.data.detail;
+              if (Array.isArray(detail)) {
+                // Erreur de validation Pydantic avec plusieurs champs
+                const errors = detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join(', ');
+                errorMessage = `Erreur de validation: ${errors}`;
+              } else if (typeof detail === 'string') {
+                errorMessage = detail;
+              }
+            } else if (error instanceof Error) {
+              errorMessage = error.message;
+            }
+            console.error('[submitSale] Error:', errorMessage);
             set({ error: errorMessage, loading: false });
             return false;
           }

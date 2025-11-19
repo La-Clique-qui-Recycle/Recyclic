@@ -49,7 +49,7 @@ class CashSession(Base):
     
     # Statut de la session
     status = Column(
-        SAEnum(CashSessionStatus, values_callable=lambda obj: [e.value for e in obj]),
+        SAEnum(CashSessionStatus, values_callable=lambda obj: [e.name for e in obj]),
         nullable=False,
         default=CashSessionStatus.OPEN,
     )
@@ -60,7 +60,7 @@ class CashSession(Base):
 
     # Métriques d'étapes (pour indicateurs visuels)
     current_step = Column(
-        SAEnum(CashSessionStep, values_callable=lambda obj: [e.value for e in obj]),
+        SAEnum(CashSessionStep, values_callable=lambda obj: [e.name for e in obj]),
         nullable=True,
         default=None,
         comment="Étape actuelle du workflow (entry/sale/exit)"

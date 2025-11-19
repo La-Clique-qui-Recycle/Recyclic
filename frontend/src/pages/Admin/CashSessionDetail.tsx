@@ -8,6 +8,21 @@ import { getCategories, Category } from '../../services/categoriesService'
 import { getUsers, User as UserType } from '../../services/usersService'
 import { presetService } from '../../services/presetService'
 
+// Fonction utilitaire pour convertir les codes de paiement en libellés français
+const getPaymentMethodLabel = (code?: string): string => {
+  if (!code) return 'Non spécifié'
+  const labels: Record<string, string> = {
+    'cash': 'Espèces',
+    'card': 'Carte bancaire',
+    'check': 'Chèque',
+    // Support des anciennes valeurs pour compatibilité
+    'espèces': 'Espèces',
+    'carte bancaire': 'Carte bancaire',
+    'chèque': 'Chèque'
+  }
+  return labels[code] || code
+}
+
 // Types pour les données de la session
 interface SaleSummary {
   id: string
@@ -708,7 +723,7 @@ const CashSessionDetail: React.FC = () => {
                   <Td>{formatDate(sale.created_at)}</Td>
                   <Td>{formatCurrency(sale.total_amount)}</Td>
                   <Td>{sale.donation ? formatCurrency(sale.donation) : '-'}</Td>
-                  <Td>{sale.payment_method || 'Non spécifié'}</Td>
+                  <Td>{getPaymentMethodLabel(sale.payment_method)}</Td>
                   <Td>{sale.operator_id ? getUserName(sale.operator_id) : '-'}</Td>
                   <Td>
                     <ViewTicketButton 
@@ -749,7 +764,7 @@ const CashSessionDetail: React.FC = () => {
               </TicketRow>
               <TicketRow>
                 <span>Méthode de paiement:</span>
-                <span>{selectedSale.payment_method || 'Non spécifié'}</span>
+                <span>{getPaymentMethodLabel(selectedSale.payment_method)}</span>
               </TicketRow>
               <TicketRow>
                 <span>Don:</span>
