@@ -521,11 +521,30 @@ const CashSessionDetail: React.FC = () => {
     }
   }
 
-  const getPresetName = (presetId?: string): string => {
-    if (!presetId) return ''  // Vide pour les ventes normales
-
-    const preset = presets.find(p => p.id === presetId)
-    return preset ? preset.name : presetId  // Retourner le nom ou l'ID si non trouvé
+  const getPresetName = (presetId?: string, notes?: string): string => {
+    // Si preset_id est un UUID valide, chercher dans les presets
+    if (presetId) {
+      const preset = presets.find(p => p.id === presetId)
+      if (preset) return preset.name
+    }
+    
+    // Sinon, essayer d'extraire le type de preset depuis notes (format: "preset_type:don-0")
+    if (notes) {
+      const presetTypeMatch = notes.match(/preset_type:([^;]+)/)
+      if (presetTypeMatch) {
+        const presetType = presetTypeMatch[1].trim()
+        // Mapper les types de preset aux noms affichables
+        const presetNames: Record<string, string> = {
+          'don-0': 'Don 0€',
+          'don-18': 'Don -18 ans',
+          'recyclage': 'Recyclage',
+          'decheterie': 'Déchèterie'
+        }
+        return presetNames[presetType] || presetType
+      }
+    }
+    
+    return ''  // Vide pour les ventes normales sans preset
   }
 
 
@@ -805,8 +824,8 @@ const CashSessionDetail: React.FC = () => {
                         <ItemTd>{formatCurrency(item.unit_price)}</ItemTd>
                         <ItemTd>{formatCurrency(item.total_price)}</ItemTd>
                         {/* Story 1.1.2: Utiliser preset_id et notes de l'item, pas de la vente globale */}
-                        <ItemTd>{getPresetName(item.preset_id || undefined)}</ItemTd>
-                        <ItemTd>{item.notes || ''}</ItemTd>
+                        <ItemTd>{getPresetName(item.preset_id || undefined, item.notes || undefined)}</ItemTd>
+                        <ItemTd>{item.notes ? item.notes.replace(/preset_type:[^;]+;?\s*/g, '').trim() : ''}</ItemTd>
                       </tr>
                     ))}
                   </tbody>

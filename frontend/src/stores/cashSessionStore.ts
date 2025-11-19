@@ -259,16 +259,28 @@ export const useCashSessionStore = create<CashSessionState>()(
 
             const saleData: SaleCreate = {
               cash_session_id: currentSession.id,
-              items: items.map(item => ({
-                category: item.category,
-                quantity: item.quantity,
-                weight: item.weight,  // Ajout du poids
-                unit_price: item.price,
-                total_price: item.total,
-                // Ne garder preset_id que si c'est un UUID valide (filtre les valeurs comme "don-0")
-                preset_id: item.presetId && isValidUUID(item.presetId) ? item.presetId : null,
-                notes: item.notes || null  // Story 1.1.2: Notes par item
-              })),
+              items: items.map(item => {
+                // Si presetId n'est pas un UUID valide (comme "don-0", "don-18", etc.), 
+                // on le stocke dans notes pour préserver l'information du type de preset
+                const presetId = item.presetId && isValidUUID(item.presetId) ? item.presetId : null;
+                let notes = item.notes || null;
+                
+                // Si presetId n'est pas un UUID valide, l'ajouter dans notes pour traçabilité
+                if (item.presetId && !isValidUUID(item.presetId)) {
+                  const presetTypeNote = `preset_type:${item.presetId}`;
+                  notes = notes ? `${presetTypeNote}; ${notes}` : presetTypeNote;
+                }
+                
+                return {
+                  category: item.category,
+                  quantity: item.quantity,
+                  weight: item.weight,  // Ajout du poids
+                  unit_price: item.price,
+                  total_price: item.total,
+                  preset_id: presetId,  // UUID valide ou null
+                  notes: notes  // Notes utilisateur + type de preset si non-UUID
+                };
+              }),
               total_amount: items.reduce((sum, item) => sum + item.total, 0)
             };
 
