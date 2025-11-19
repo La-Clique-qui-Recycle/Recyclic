@@ -1,1 +1,0 @@
-../../pending-tech-debt/archive/tech-debt-reception-module-improvements.md

@@ -1,1 +1,0 @@
-to-review/story-b21-p4-refonte-ergonomie-reception.md

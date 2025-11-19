@@ -1,1 +1,0 @@
-../pending-tech-debt/story-tech-debt-b10-tests-coverage.md

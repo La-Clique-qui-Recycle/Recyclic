@@ -1,1 +1,0 @@
-to-review/story-b18-p2-admin-email-config.md

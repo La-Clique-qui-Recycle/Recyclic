@@ -1,1 +1,0 @@
-../pending-tech-debt/story-archi-caisse-v2-roadmap.md

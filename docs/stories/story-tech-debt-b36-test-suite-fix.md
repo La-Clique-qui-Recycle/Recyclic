@@ -1,1 +1,0 @@
-../pending-tech-debt/story-tech-debt-b36-test-suite-fix.md

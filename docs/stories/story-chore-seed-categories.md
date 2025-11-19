@@ -1,1 +1,0 @@
-to-review/story-chore-seed-categories.md

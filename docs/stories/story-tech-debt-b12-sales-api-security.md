@@ -1,1 +1,0 @@
-../pending-tech-debt/story-tech-debt-b12-sales-api-security.md

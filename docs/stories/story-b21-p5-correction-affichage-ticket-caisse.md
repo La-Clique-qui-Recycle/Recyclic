@@ -1,1 +1,0 @@
-to-review/story-b21-p5-correction-affichage-ticket-caisse.md

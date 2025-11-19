@@ -1,1 +1,0 @@
-to-review/story-consolidate-p3-bis-refactor-reception-final.md

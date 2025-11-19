@@ -1,1 +1,0 @@
-to-review/story-b17-p1-artefact-build-local.md

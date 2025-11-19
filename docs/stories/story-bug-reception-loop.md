@@ -1,1 +1,0 @@
-../pending-tech-debt/story-bug-reception-loop.md

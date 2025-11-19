@@ -1,1 +1,0 @@
-to-review/story-1.1-infrastructure-technique.md

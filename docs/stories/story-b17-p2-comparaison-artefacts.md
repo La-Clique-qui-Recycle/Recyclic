@@ -1,1 +1,0 @@
-to-review/story-b17-p2-comparaison-artefacts.md

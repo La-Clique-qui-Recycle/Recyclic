@@ -1,1 +1,0 @@
-../pending-tech-debt/bug-reception-delete-permissions.md

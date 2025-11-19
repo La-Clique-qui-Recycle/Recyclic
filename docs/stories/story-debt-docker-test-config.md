@@ -1,1 +1,0 @@
-../pending-tech-debt/story-debt-docker-test-config.md

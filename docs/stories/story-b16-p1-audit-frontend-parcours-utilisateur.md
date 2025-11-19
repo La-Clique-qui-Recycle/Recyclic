@@ -1,1 +1,0 @@
-../pending-tech-debt/story-b16-p1-audit-frontend-parcours-utilisateur.md

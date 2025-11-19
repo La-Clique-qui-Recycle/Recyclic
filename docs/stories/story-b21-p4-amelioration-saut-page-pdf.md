@@ -1,1 +1,0 @@
-../pending-tech-debt/story-b21-p4-amelioration-saut-page-pdf.md

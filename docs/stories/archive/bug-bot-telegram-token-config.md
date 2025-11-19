@@ -1,1 +1,0 @@
-../to-review/archive/bug-bot-telegram-token-config.md

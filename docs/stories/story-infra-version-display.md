@@ -1,1 +1,0 @@
-../pending-tech-debt/story-infra-version-display.md

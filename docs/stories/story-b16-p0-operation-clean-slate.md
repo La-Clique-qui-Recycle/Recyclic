@@ -1,1 +1,0 @@
-to-review/story-b16-p0-operation-clean-slate.md

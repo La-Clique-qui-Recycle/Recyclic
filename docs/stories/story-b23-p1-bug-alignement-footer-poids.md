@@ -1,1 +1,0 @@
-to-review/story-b23-p1-bug-alignement-footer-poids.md
