@@ -16,7 +16,7 @@ class PaymentMethod(str, enum.Enum):
 
 
 class Sale(Base):
-    """Modèle pour les ventes - version simplifiée pour Story 5.2"""
+    """Modèle pour les ventes - étendu pour Story 1.1.1 avec traçage des boutons prédéfinis"""
     __tablename__ = "sales"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -25,12 +25,14 @@ class Sale(Base):
     total_amount = Column(Float, nullable=False)
     donation = Column(Float, nullable=True, default=0.0)
     payment_method = Column(SQLEnum(PaymentMethod, name="payment_method", native_enum=False), nullable=True, default=PaymentMethod.CASH)
+    # Story 1.1.2: preset_id et notes déplacés vers sale_items (par item individuel)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     cash_session = relationship("CashSession", back_populates="sales")
     operator = relationship("User")
+    # Story 1.1.2: Relation preset_button supprimée - presets maintenant sur sale_items
     items = relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
 
     def __repr__(self):

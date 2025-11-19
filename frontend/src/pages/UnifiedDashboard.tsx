@@ -334,7 +334,7 @@ function UnifiedDashboard() {
       <WelcomeSection>
         <WelcomeContent>
           <WelcomeTitle>
-            Bienvenue sur Recyclic{currentUser ? `, ${currentUser.first_name || currentUser.username}` : ''}
+            Bienvenue sur RecyClique{currentUser ? `, ${currentUser.first_name || currentUser.username}` : ''}
           </WelcomeTitle>
           <WelcomeText>
             Plateforme de gestion de recyclage intelligente.

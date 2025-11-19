@@ -24,6 +24,7 @@ const DashboardHomePage = lazy(() => import('./pages/Admin/DashboardHomePage.jsx
 const AdminUsers = lazy(() => import('./pages/Admin/Users.tsx'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard.tsx'));
 const AdminReports = lazy(() => import('./pages/Admin/Reports.tsx'));
+const ReportsHub = lazy(() => import('./pages/Admin/ReportsHub.tsx'));
 const HealthDashboard = lazy(() => import('./pages/Admin/HealthDashboard.tsx'));
 const AdminCashRegisters = lazy(() => import('./pages/Admin/CashRegisters.tsx'));
 const AdminSites = lazy(() => import('./pages/Admin/Sites.tsx'));
@@ -201,6 +202,8 @@ function App() {
               <Route path="cash-sessions/:id" element={<CashSessionDetail />} />
               <Route path="reception-stats" element={<Navigate to="/" replace />} />
               <Route path="reception-reports" element={<ReceptionReports />} />
+              <Route path="reports" element={<ReportsHub />} />
+              <Route path="reports/cash-sessions" element={<AdminReports />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="session-manager" element={<SessionManager />} />
               <Route path="cash-registers" element={<AdminCashRegisters />} />

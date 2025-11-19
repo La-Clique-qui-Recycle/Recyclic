@@ -3,6 +3,12 @@ import styled from 'styled-components';
 import { Edit, Trash2 } from 'lucide-react';
 import { SaleItem } from '../../stores/cashSessionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { usePresetStore } from '../../stores/presetStore';
+import PresetButtonGrid from '../presets/PresetButtonGrid';
+import { Textarea } from '@mantine/core';
+import TicketScroller from '../tickets/TicketScroller';
+import TicketHighlighter from '../tickets/TicketHighlighter';
+import { ScrollPositionManager } from '../../utils/scrollManager';
 
 const TicketContainer = styled.div`
   background: white;
@@ -11,6 +17,31 @@ const TicketContainer = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
+  max-height: 600px; /* Limit max height for better UX */
+`;
+
+const ScrollableTicketArea = styled.div`
+  flex: 1;
+  min-height: 0; /* Allow flex shrinking */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+`;
+
+const ScrollerWrapper = styled.div`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+`;
+
+const FixedFooter = styled.div`
+  flex-shrink: 0;
+  padding: 1.5rem;
+  border-top: 2px solid #eee;
+  background: #f8f9fa;
+  border-radius: 0 0 8px 8px;
+  margin-top: auto;
 `;
 
 const TicketHeader = styled.div`
@@ -18,18 +49,10 @@ const TicketHeader = styled.div`
 `;
 
 const TicketContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
   padding: 0 1.5rem;
+  min-height: 0; /* Allow proper scrolling */
 `;
 
-const TicketFooter = styled.div`
-  padding: 1.5rem;
-  border-top: 2px solid #eee;
-  background: #f8f9fa;
-  border-radius: 0 0 8px 8px;
-  margin-top: auto;
-`;
 
 const TicketTitle = styled.h3`
   margin: 0 0 1rem 0;
@@ -226,7 +249,7 @@ const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
 interface TicketProps {
   items: SaleItem[];
   onRemoveItem: (itemId: string) => void;
-  onUpdateItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number) => void;
+  onUpdateItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number, presetId?: string, notes?: string) => void;
   onFinalizeSale: () => void;
   loading?: boolean;
 }
@@ -239,11 +262,14 @@ const Ticket: React.FC<TicketProps> = ({
   loading = false
 }) => {
   const { getCategoryById, fetchCategories } = useCategoryStore();
+  const { selectedPreset, notes, setNotes, presets } = usePresetStore();
   const [editingItem, setEditingItem] = useState<SaleItem | null>(null);
   const [editQuantity, setEditQuantity] = useState<string>('');
   const [editWeight, setEditWeight] = useState<string>('');
   const [editPrice, setEditPrice] = useState<string>('');
-  const ticketContentRef = useRef<HTMLDivElement>(null);
+  const [editPresetId, setEditPresetId] = useState<string>('');
+  const [editNotes, setEditNotes] = useState<string>('');
+  const scrollManagerRef = useRef<ScrollPositionManager | null>(null);
 
   // Load categories on component mount
   useEffect(() => {
@@ -255,8 +281,14 @@ const Ticket: React.FC<TicketProps> = ({
 
   // Auto-scroll to bottom when new items are added
   useEffect(() => {
-    if (ticketContentRef.current && items.length > 0) {
-      ticketContentRef.current.scrollTop = ticketContentRef.current.scrollHeight;
+    if (scrollManagerRef.current && items.length > 0) {
+      // Small delay to ensure DOM is updated with new item
+      const timeoutId = setTimeout(() => {
+        if (scrollManagerRef.current) {
+          scrollManagerRef.current.scrollToBottom();
+        }
+      }, 50);
+      return () => clearTimeout(timeoutId);
     }
   }, [items.length]);
 
@@ -265,6 +297,8 @@ const Ticket: React.FC<TicketProps> = ({
     setEditQuantity((item.quantity || 1).toString());
     setEditWeight((item.weight || 0).toString());
     setEditPrice(item.price.toString());
+    setEditPresetId(item.presetId || '');
+    setEditNotes(item.notes || '');
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -275,12 +309,14 @@ const Ticket: React.FC<TicketProps> = ({
       const newPrice = parseFloat(editPrice);
 
       if (!isNaN(newQuantity) && !isNaN(newWeight) && !isNaN(newPrice) &&
-          newQuantity > 0 && newWeight > 0 && newPrice > 0) {
-        onUpdateItem(editingItem.id, newQuantity, newWeight, newPrice);
+          newQuantity > 0 && newWeight > 0 && newPrice >= 0) {
+        onUpdateItem(editingItem.id, newQuantity, newWeight, newPrice, editPresetId || undefined, editNotes || undefined);
         setEditingItem(null);
         setEditQuantity('');
         setEditWeight('');
         setEditPrice('');
+        setEditPresetId('');
+        setEditNotes('');
       }
     }
   };
@@ -290,6 +326,8 @@ const Ticket: React.FC<TicketProps> = ({
     setEditQuantity('');
     setEditWeight('');
     setEditPrice('');
+    setEditPresetId('');
+    setEditNotes('');
   };
 
   return (
@@ -298,64 +336,93 @@ const Ticket: React.FC<TicketProps> = ({
         <TicketHeader>
           <TicketTitle>Ticket de Caisse</TicketTitle>
         </TicketHeader>
-        
-        <TicketContent ref={ticketContentRef}>
-          {items.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#666', margin: '2rem 0' }}>
-              Aucun article ajouté
-            </p>
-          ) : (
-            items.map((item) => {
-              // Get category and subcategory names - prioritize stored names, then lookup
-              const displayName = item.subcategoryName || item.categoryName ||
-                                 (item.subcategory ? getCategoryById(item.subcategory)?.name : null) ||
-                                 getCategoryById(item.category)?.name ||
-                                 item.category;
 
-              return (
-                <TicketItem key={item.id}>
-                  <ItemInfo>
-                    <ItemCategory>{displayName}</ItemCategory>
-                    <ItemDetails>
-                      {`Qté: ${item.quantity || 1} • ${(item.weight || 0).toFixed(2)} kg • ${(item.price || 0).toFixed(2)} €/unité`}
-                    </ItemDetails>
-                  </ItemInfo>
-                  <ItemTotal>{`${(item.total || 0).toFixed(2)} €`}</ItemTotal>
-                  <ItemActions>
-                    <ActionButton
-                      className="edit"
-                      onClick={() => handleEditClick(item)}
-                    >
-                      <Edit size={12} />
-                    </ActionButton>
-                    <ActionButton
-                      className="delete"
-                      onClick={() => onRemoveItem(item.id)}
-                    >
-                      <Trash2 size={12} />
-                    </ActionButton>
-                  </ItemActions>
-                </TicketItem>
-              );
-            })
-          )}
-        </TicketContent>
-        
-        <TicketFooter>
-          <TotalSection>
-            <TotalRow>
-              <span>{totalItems} articles</span>
-              <span data-testid="sale-total">{`${totalAmount.toFixed(2)} €`}</span>
-            </TotalRow>
-          </TotalSection>
-          
-          <FinalizeButton
-            onClick={onFinalizeSale}
-            disabled={loading || items.length === 0}
-          >
-            {loading ? 'Finalisation...' : 'Finaliser la vente'}
-          </FinalizeButton>
-        </TicketFooter>
+        <ScrollableTicketArea>
+          <ScrollerWrapper>
+            <TicketScroller
+              maxHeight="400px"
+              onScrollManagerReady={(manager) => {
+                scrollManagerRef.current = manager;
+              }}
+            >
+            <TicketHighlighter
+              scrollManager={scrollManagerRef.current}
+              highlightDuration={800}
+            >
+                <TicketContent>
+                  {items.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: '#666', margin: '2rem 0' }}>
+                      Aucun article ajouté
+                    </p>
+                  ) : (
+                    items.map((item) => {
+                      // Get category and subcategory names - prioritize stored names, then lookup
+                      const displayName = item.subcategoryName || item.categoryName ||
+                                         (item.subcategory ? getCategoryById(item.subcategory)?.name : null) ||
+                                         getCategoryById(item.category)?.name ||
+                                         item.category;
+
+                      return (
+                        <TicketItem key={item.id}>
+                          <ItemInfo>
+                            <ItemCategory>{displayName}</ItemCategory>
+                            <ItemDetails>
+                              {`Qté: ${item.quantity || 1} • ${(item.weight || 0).toFixed(2)} kg • ${(item.price || 0).toFixed(2)} €/unité`}
+                              {item.presetId && (
+                                <div style={{ marginTop: '2px', fontSize: '0.8rem', color: '#2c5530', fontWeight: 'bold' }}>
+                                  Type: {(() => {
+                                    const preset = presets.find(p => p.id === item.presetId);
+                                    return preset ? preset.name : item.presetId;
+                                  })()}
+                                </div>
+                              )}
+                              {item.notes && (
+                                <div style={{ marginTop: '2px', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
+                                  Notes: {item.notes}
+                                </div>
+                              )}
+                            </ItemDetails>
+                          </ItemInfo>
+                          <ItemTotal>{`${(item.total || 0).toFixed(2)} €`}</ItemTotal>
+                          <ItemActions>
+                            <ActionButton
+                              className="edit"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <Edit size={12} />
+                            </ActionButton>
+                            <ActionButton
+                              className="delete"
+                              onClick={() => onRemoveItem(item.id)}
+                            >
+                              <Trash2 size={12} />
+                            </ActionButton>
+                          </ItemActions>
+                        </TicketItem>
+                      );
+                    })
+                  )}
+                </TicketContent>
+              </TicketHighlighter>
+            </TicketScroller>
+          </ScrollerWrapper>
+
+          <FixedFooter>
+            <TotalSection>
+              <TotalRow>
+                <span>{totalItems} articles</span>
+                <span data-testid="sale-total">{`${totalAmount.toFixed(2)} €`}</span>
+              </TotalRow>
+            </TotalSection>
+
+            <FinalizeButton
+              onClick={onFinalizeSale}
+              disabled={loading || items.length === 0}
+            >
+              {loading ? 'Finalisation...' : 'Finaliser la vente'}
+            </FinalizeButton>
+          </FixedFooter>
+        </ScrollableTicketArea>
       </TicketContainer>
 
       <EditModal $isOpen={!!editingItem} role="dialog" aria-modal="true" aria-label="Modifier l'article">
@@ -408,11 +475,65 @@ const Ticket: React.FC<TicketProps> = ({
                 step="0.01"
                 value={editPrice}
                 onChange={(e) => setEditPrice(e.target.value)}
-                min="0.01"
+                min="0"
                 max="9999.99"
                 required
               />
             </FormGroup>
+
+            <FormGroup>
+              <Label>Type de transaction (optionnel)</Label>
+              <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {presets.map((preset) => (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    style={{
+                      padding: '6px 12px',
+                      border: editPresetId === preset.id ? '2px solid #2c5530' : '2px solid #ddd',
+                      background: editPresetId === preset.id ? '#e8f5e8' : 'white',
+                      color: editPresetId === preset.id ? '#2c5530' : '#333',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      minWidth: 'auto'
+                    }}
+                    onClick={() => setEditPresetId(editPresetId === preset.id ? '' : preset.id)}
+                  >
+                    {preset.name}
+                  </Button>
+                ))}
+                {editPresetId && (
+                  <Button
+                    type="button"
+                    style={{
+                      padding: '6px 12px',
+                      background: '#f0f0f0',
+                      border: '2px solid #ccc',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
+                    onClick={() => setEditPresetId('')}
+                  >
+                    ✕ Aucun
+                  </Button>
+                )}
+              </div>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Notes (optionnel)</Label>
+              <Textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Ajouter des notes pour cette transaction..."
+                minRows={2}
+                maxRows={4}
+                style={{ marginTop: '8px' }}
+              />
+            </FormGroup>
+
             <ButtonGroup>
               <Button type="button" onClick={handleEditCancel}>
                 Annuler

@@ -6,25 +6,27 @@ import { reportsService, CashSessionReport } from '../../services/reportsService
 
 const PageContainer = styled.div`
   padding: 24px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-width: 1400px;
+  margin: 0 auto;
 `;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
 `;
 
 const Title = styled.h1`
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 2rem;
   color: #1b5e20;
+  font-weight: 600;
 `;
 
-const ButtonBar = styled.div`
+const HeaderActions = styled.div`
   display: flex;
   gap: 12px;
 `;
@@ -49,11 +51,17 @@ const Button = styled.button<{ $variant?: 'primary' | 'ghost'; }>`
   }
 `;
 
+const TableContainer = styled.div`
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+`;
+
 const Table = styled.div`
   display: grid;
-  grid-template-columns: 3fr 1fr 2fr 120px;
+  grid-template-columns: 3fr 1fr 2fr 180px;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
   overflow: hidden;
 `;
 
@@ -62,26 +70,40 @@ const TableHeader = styled.div`
   background: #f5f5f5;
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  color: #666;
 `;
 
 const HeaderCell = styled.div`
-  padding: 14px 16px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 16px 20px;
+  border-bottom: 2px solid #e0e0e0;
 `;
 
 const TableRow = styled.div`
   display: contents;
+  transition: background-color 0.15s ease;
+
+  &:hover div {
+    background: #f8f9fa;
+  }
 
   &:nth-child(even) div {
     background: #fafafa;
   }
+
+  &:nth-child(even):hover div {
+    background: #f0f2f5;
+  }
 `;
 
 const Cell = styled.div`
-  padding: 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 0.95rem;
+  color: #333;
+  display: flex;
+  align-items: center;
 `;
 
 const EmptyState = styled.div`
@@ -110,8 +132,21 @@ const LoadingState = styled.div`
 
 const DownloadButton = styled(Button)`
   font-size: 0.9rem;
-  padding: 8px 12px;
+  padding: 8px 16px;
   justify-content: center;
+  min-width: 140px;
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const FilenameCell = styled(Cell)`
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #2e7d32;
+  font-weight: 500;
 `;
 
 function formatSize(sizeBytes: number): string {
@@ -156,6 +191,7 @@ const AdminReports: React.FC = () => {
   const handleDownload = async (report: CashSessionReport) => {
     try {
       setDownloading(report.filename);
+      // Utiliser directement l'URL complète avec le token
       const blob = await reportsService.downloadCashSessionReport(report.download_url);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -187,12 +223,12 @@ const AdminReports: React.FC = () => {
   return (
     <PageContainer>
       <Header>
-        <Title>Rapports de sessions de caisse</Title>
-        <ButtonBar>
+        <Title>Rapports de Sessions de Caisse</Title>
+        <HeaderActions>
           <Button $variant="ghost" onClick={loadReports} disabled={loading}>
             <RefreshCcw size={16} /> Rafraîchir
           </Button>
-        </ButtonBar>
+        </HeaderActions>
       </Header>
 
       {error && (
@@ -206,32 +242,38 @@ const AdminReports: React.FC = () => {
       ) : reports.length === 0 ? (
         <EmptyState>
           Aucun rapport n'a encore été généré.
+          <br />
+          <span style={{ fontSize: '0.9rem', color: '#999', marginTop: '8px', display: 'block' }}>
+            Les rapports sont générés automatiquement lors de la fermeture d'une session de caisse.
+          </span>
         </EmptyState>
       ) : (
-        <Table>
-          <TableHeader>
-            <HeaderCell>Rapport</HeaderCell>
-            <HeaderCell>Taille</HeaderCell>
-            <HeaderCell>Généré le</HeaderCell>
-            <HeaderCell>Actions</HeaderCell>
-          </TableHeader>
-          {reports.map((report) => (
-            <TableRow key={report.filename}>
-              <Cell>{report.filename}</Cell>
-              <Cell>{formatSize(report.size_bytes)}</Cell>
-              <Cell>{formatDate(report.modified_at)}</Cell>
-              <Cell>
-                <DownloadButton
-                  onClick={() => handleDownload(report)}
-                  disabled={downloading === report.filename}
-                  data-testid="download-report-button"
-                >
-                  <Download size={16} /> {downloading === report.filename ? 'Téléchargement...' : 'Télécharger'}
-                </DownloadButton>
-              </Cell>
-            </TableRow>
-          ))}
-        </Table>
+        <TableContainer>
+          <Table>
+            <TableHeader>
+              <HeaderCell>Nom du fichier</HeaderCell>
+              <HeaderCell>Taille</HeaderCell>
+              <HeaderCell>Généré le</HeaderCell>
+              <HeaderCell>Actions</HeaderCell>
+            </TableHeader>
+            {reports.map((report) => (
+              <TableRow key={report.filename}>
+                <FilenameCell>{report.filename}</FilenameCell>
+                <Cell>{formatSize(report.size_bytes)}</Cell>
+                <Cell>{formatDate(report.modified_at)}</Cell>
+                <Cell>
+                  <DownloadButton
+                    onClick={() => handleDownload(report)}
+                    disabled={downloading === report.filename}
+                    data-testid="download-report-button"
+                  >
+                    <Download size={16} /> {downloading === report.filename ? 'Téléchargement...' : 'Télécharger'}
+                  </DownloadButton>
+                </Cell>
+              </TableRow>
+            ))}
+          </Table>
+        </TableContainer>
       )}
     </PageContainer>
   );

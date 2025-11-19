@@ -29,11 +29,11 @@ async def get_sale(sale_id: str, db: Session = Depends(get_db)):
         sale_uuid = UUID(sale_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid sale ID format")
-    
+
     sale = db.query(Sale).filter(Sale.id == sale_uuid).first()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
-    
+
     return sale
 
 @router.post("/", response_model=SaleResponse)
@@ -64,6 +64,7 @@ async def create_sale(
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Bearer"})
 
     # Create the sale with operator_id for traceability
+    # Story 1.1.2: preset_id et notes sont maintenant sur sale_items (par item individuel)
     db_sale = Sale(
         cash_session_id=sale_data.cash_session_id,
         operator_id=user_id,  # Associate sale with current operator
@@ -74,7 +75,7 @@ async def create_sale(
     db.add(db_sale)
     db.flush()  # Get the sale ID
     
-    # Create sale items
+    # Create sale items - Story 1.1.2: Support preset_id and notes per item
     for item_data in sale_data.items:
         db_item = SaleItem(
             sale_id=db_sale.id,
@@ -82,7 +83,9 @@ async def create_sale(
             quantity=item_data.quantity,
             weight=item_data.weight,  # Poids en kg avec décimales
             unit_price=item_data.unit_price,
-            total_price=item_data.total_price  # Note: total_price = unit_price (pas de multiplication)
+            total_price=item_data.total_price,  # Note: total_price = unit_price (pas de multiplication)
+            preset_id=item_data.preset_id,  # Story 1.1.2: Preset par item
+            notes=item_data.notes  # Story 1.1.2: Notes par item
         )
         db.add(db_item)
 

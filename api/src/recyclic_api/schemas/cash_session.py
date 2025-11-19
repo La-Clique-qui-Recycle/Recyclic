@@ -9,6 +9,12 @@ class CashSessionStatus(str, Enum):
     CLOSED = "closed"
 
 
+class CashSessionStep(str, Enum):
+    ENTRY = "entry"      # Phase de réception/dépôt d'objets
+    SALE = "sale"        # Phase de vente (caisse)
+    EXIT = "exit"        # Phase de clôture
+
+
 class CashSessionBase(BaseModel):
     """Schéma de base pour les sessions de caisse."""
     model_config = ConfigDict(from_attributes=True)
@@ -169,3 +175,24 @@ class CashSessionDetailResponse(CashSessionResponse):
     sales: List[SaleDetail] = Field(..., description="Liste des ventes de la session")
     operator_name: Optional[str] = Field(None, description="Nom de l'opérateur")
     site_name: Optional[str] = Field(None, description="Nom du site")
+
+
+class CashSessionStepUpdate(BaseModel):
+    """Schéma pour la mise à jour de l'étape actuelle d'une session."""
+    step: CashSessionStep = Field(..., description="Nouvelle étape du workflow")
+    timestamp: Optional[datetime] = Field(None, description="Timestamp de la mise à jour (auto-généré si non fourni)")
+
+    @field_validator('timestamp', mode='before')
+    @classmethod
+    def set_default_timestamp(cls, v):
+        """Définit le timestamp par défaut si non fourni."""
+        return v or datetime.now()
+
+
+class CashSessionStepResponse(BaseModel):
+    """Schéma de réponse pour les métriques d'étape d'une session."""
+    session_id: str = Field(..., description="ID de la session")
+    current_step: Optional[CashSessionStep] = Field(None, description="Étape actuelle du workflow")
+    step_start_time: Optional[datetime] = Field(None, description="Début de l'étape actuelle")
+    last_activity: Optional[datetime] = Field(None, description="Dernière activité utilisateur")
+    step_duration_seconds: Optional[float] = Field(None, description="Durée écoulée dans l'étape actuelle")

@@ -1,0 +1,71 @@
+# Dockerfile pour les services de sauvegarde PostgreSQL
+# Auteur: James (Dev Agent)
+# Date: 2025-01-27
+
+FROM postgres:15-alpine AS base
+
+# Arguments de build
+ARG BACKUP_TIME=2
+ARG BACKUP_MINUTE=0
+
+# Installer les outils nécessaires
+RUN apk add --no-cache \
+    bash \
+    curl \
+    openssh-client \
+    openssl \
+    gzip \
+    postgresql-client \
+    && rm -rf /var/cache/apk/*
+
+# Créer les répertoires
+RUN mkdir -p /backups /logs /scripts
+
+# Copier les scripts de sauvegarde
+COPY scripts/backup-postgres.sh /scripts/
+COPY scripts/verify-backup.sh /scripts/
+
+# Rendre les scripts exécutables
+RUN chmod +x /scripts/*.sh
+
+# Configuration cron pour les sauvegardes
+RUN echo "# Sauvegarde PostgreSQL quotidienne à ${BACKUP_TIME}h${BACKUP_MINUTE}" > /etc/crontabs/root && \
+    echo "${BACKUP_MINUTE} ${BACKUP_TIME} * * * /scripts/backup-postgres.sh >> /logs/backup_cron.log 2>&1" >> /etc/crontabs/root
+
+# Script d'entrée pour cron
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Démarrer cron en arrière-plan' >> /entrypoint.sh && \
+    echo 'crond -f &' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Attendre que cron soit prêt' >> /entrypoint.sh && \
+    echo 'sleep 2' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Garder le conteneur en vie' >> /entrypoint.sh && \
+    echo 'tail -f /logs/backup_cron.log' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+# Utiliser le script d'entrée
+ENTRYPOINT ["/entrypoint.sh"]
+
+# ================================
+# Stage pour la vérification des sauvegardes
+# ================================
+FROM base AS verification
+
+# Script d'entrée pour la vérification
+RUN echo '#!/bin/bash' > /entrypoint-verification.sh && \
+    echo 'set -e' >> /entrypoint-verification.sh && \
+    echo '' >> /entrypoint-verification.sh && \
+    echo '# Exécuter la vérification des sauvegardes' >> /entrypoint-verification.sh && \
+    echo '/scripts/verify-backup.sh' >> /entrypoint-verification.sh && \
+    echo '' >> /entrypoint-verification.sh && \
+    echo '# Garder le conteneur en vie si demandé' >> /entrypoint-verification.sh && \
+    echo 'if [ "$1" = "watch" ]; then' >> /entrypoint-verification.sh && \
+    echo '  tail -f /logs/verification.log' >> /entrypoint-verification.sh && \
+    echo 'fi' >> /entrypoint-verification.sh && \
+    chmod +x /entrypoint-verification.sh
+
+# Utiliser le script d'entrée pour la vérification
+ENTRYPOINT ["/entrypoint-verification.sh"]

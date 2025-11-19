@@ -67,7 +67,7 @@ describe('Public Routes Integration Tests', () => {
 
       // Wait for the registration page to load
       await waitFor(() => {
-        expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
+        expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
       // Verify registration form elements are present
@@ -81,7 +81,7 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/inscription?telegram_id=123456789')
 
       await waitFor(() => {
-        expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
+        expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
       // Verify the telegram_id is populated from URL params
@@ -94,7 +94,7 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/inscription')
 
       await waitFor(() => {
-        expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
+        expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
       // Verify we're not on the login page
@@ -109,7 +109,7 @@ describe('Public Routes Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
-        expect(screen.getByText('Avez-vous déjà un compte Recyclic ?')).toBeInTheDocument()
+        expect(screen.getByText('Avez-vous déjà un compte RecyClique ?')).toBeInTheDocument()
         expect(screen.getByText("S'inscrire")).toBeInTheDocument()
         expect(screen.getByText('Se connecter')).toBeInTheDocument()
       })
@@ -120,7 +120,7 @@ describe('Public Routes Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText('🔗 Liaison de Compte Telegram')).toBeInTheDocument()
-        expect(screen.getByText('Avez-vous déjà un compte Recyclic ?')).toBeInTheDocument()
+        expect(screen.getByText('Avez-vous déjà un compte RecyClique ?')).toBeInTheDocument()
       })
     })
 
@@ -205,7 +205,7 @@ describe('Public Routes Integration Tests', () => {
 
       await waitFor(() => {
         // Page should still render even if sites fail to load
-        expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
+        expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
       // Form should still be functional
@@ -217,7 +217,7 @@ describe('Public Routes Integration Tests', () => {
       renderAppWithRoute('/inscription?telegram_id=987654321&ref=telegram')
 
       await waitFor(() => {
-        expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
+        expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       })
 
       // Verify telegram_id parameter is still accessible

@@ -18,7 +18,8 @@ import {
   Menu,
   FileInput,
   Divider,
-  Checkbox
+  Checkbox,
+  Tabs
 } from '@mantine/core';
 import {
   IconPlus,
@@ -37,6 +38,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import { Category, categoryService } from '../../services/categoryService';
 import { CategoryForm } from '../../components/business/CategoryForm';
+import { EnhancedCategorySelector } from '../../components/categories/EnhancedCategorySelector';
 
 const AdminCategories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -51,6 +53,7 @@ const AdminCategories: React.FC = () => {
   const [analyzeResult, setAnalyzeResult] = useState<{ session_id: string | null; summary: any; sample: any[]; errors: string[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deleteExisting, setDeleteExisting] = useState(false);
+  const [executeErrors, setExecuteErrors] = useState<string[]>([]);
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -105,23 +108,36 @@ const AdminCategories: React.FC = () => {
   const handleExecuteImport = async () => {
     if (!analyzeResult?.session_id) return;
     setImporting(true);
+    setExecuteErrors([]);
     try {
       const res = await categoryService.importExecute(analyzeResult.session_id, deleteExisting);
       if (res.errors?.length) {
-        notifications.show({ title: 'Import terminé avec erreurs', message: res.errors.join('\n'), color: 'yellow' });
+        setExecuteErrors(res.errors);
+        notifications.show({ 
+          title: 'Import terminé avec erreurs', 
+          message: `L'import s'est terminé avec ${res.errors.length} erreur(s). Voir les détails ci-dessous.`, 
+          color: 'yellow' 
+        });
       } else {
         const message = deleteExisting 
           ? 'Import réussi - Toutes les catégories et lignes de dépôt existantes ont été supprimées et remplacées'
           : 'Import réussi - Catégories mises à jour';
         notifications.show({ title: 'Import réussi', message, color: 'green' });
+        setImportModalOpen(false);
+        setAnalyzeResult(null);
+        setSelectedFile(null);
+        setDeleteExisting(false);
+        setExecuteErrors([]);
+        fetchCategories();
       }
-      setImportModalOpen(false);
-      setAnalyzeResult(null);
-      setSelectedFile(null);
-      setDeleteExisting(false);
-      fetchCategories();
-    } catch (e) {
-      notifications.show({ title: 'Erreur', message: 'Exécution de l\'import échouée', color: 'red' });
+    } catch (e: any) {
+      const errorMessage = e.response?.data?.detail || e.message || 'Exécution de l\'import échouée';
+      setExecuteErrors([errorMessage]);
+      notifications.show({ 
+        title: 'Erreur', 
+        message: 'L\'import a échoué. Voir les détails ci-dessous.', 
+        color: 'red' 
+      });
     } finally {
       setImporting(false);
     }
@@ -417,9 +433,16 @@ const AdminCategories: React.FC = () => {
           </Alert>
         )}
 
-        <Paper shadow="sm" p="md" withBorder pos="relative">
-          <LoadingOverlay visible={loading} />
-          <Table striped highlightOnHover>
+        <Tabs defaultValue="management">
+          <Tabs.List>
+            <Tabs.Tab value="management">Gestion des catégories</Tabs.Tab>
+            <Tabs.Tab value="visibility">Visibilité pour tickets de réception</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="management" pt="md">
+            <Paper shadow="sm" p="md" withBorder pos="relative">
+              <LoadingOverlay visible={loading} />
+              <Table striped highlightOnHover>
             <thead>
               <tr>
                 <th>Nom</th>
@@ -450,6 +473,25 @@ const AdminCategories: React.FC = () => {
             </tbody>
           </Table>
         </Paper>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="visibility" pt="md">
+            <Paper shadow="sm" p="md" withBorder>
+              <Stack gap="md">
+                <Alert color="blue" title="Gestion de la visibilité">
+                  <Text size="sm">
+                    Utilisez les cases à cocher pour contrôler quelles catégories apparaissent dans les tickets ENTRY/DEPOT.
+                    Les tickets SALE/CASH REGISTER affichent toujours toutes les catégories, indépendamment de ces paramètres.
+                  </Text>
+                </Alert>
+                <EnhancedCategorySelector
+                  showVisibilityControls={true}
+                  showDisplayOrder={true}
+                />
+              </Stack>
+            </Paper>
+          </Tabs.Panel>
+        </Tabs>
       </Stack>
 
       <Modal
@@ -477,7 +519,12 @@ const AdminCategories: React.FC = () => {
 
       <Modal
         opened={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
+        onClose={() => {
+          setImportModalOpen(false);
+          setExecuteErrors([]);
+          setAnalyzeResult(null);
+          setSelectedFile(null);
+        }}
         title="Importer des Catégories"
         size="lg"
       >
@@ -529,6 +576,15 @@ const AdminCategories: React.FC = () => {
                 <Alert color="green" title="Analyse valide">Vous pouvez exécuter l'import.</Alert>
               )}
             </>
+          )}
+          {executeErrors.length > 0 && (
+            <Alert color="red" title="Erreurs d'exécution" mt="md">
+              <div style={{ maxHeight: 300, overflow: 'auto' }}>
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontSize: '0.875rem' }}>
+                  {executeErrors.join('\n\n')}
+                </pre>
+              </div>
+            </Alert>
           )}
         </Stack>
       </Modal>

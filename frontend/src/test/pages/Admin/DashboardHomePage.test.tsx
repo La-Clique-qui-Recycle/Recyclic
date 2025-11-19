@@ -30,7 +30,7 @@ describe('DashboardHomePage', () => {
     renderWithRouter();
 
     expect(screen.getByText('Tableau de Bord')).toBeInTheDocument();
-    expect(screen.getByText(/Bienvenue dans l'espace d'administration de Recyclic/)).toBeInTheDocument();
+    expect(screen.getByText(/Bienvenue dans l'espace d'administration de RecyClique/)).toBeInTheDocument();
   });
 
   it('should render all quick action cards', () => {

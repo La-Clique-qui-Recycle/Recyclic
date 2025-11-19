@@ -205,7 +205,7 @@ function Registration() {
 
   return (
     <RegistrationContainer>
-      <Title>📝 Inscription Recyclic</Title>
+      <Title>📝 Inscription RecyClique</Title>
       
       {message.text && (
         <Message className={message.type}>

@@ -1,0 +1,47 @@
+# Story (Frontend): Implémentation de l'Écran de Finalisation de Vente
+
+**ID:** STORY-B14-P2-FINALIZATION-SCREEN
+**Titre:** Implémentation de l'Écran de Finalisation de Vente (Don, Paiement, Monnaie)
+**Epic:** Évolution du Workflow de Vente en Caisse
+**Priorité:** P1 (Critique)
+**Statut:** Approuvée
+
+---
+
+## User Story
+
+**En tant que** Caissier,
+**Je veux** un écran de finalisation de vente qui me permet d'enregistrer un don, de choisir un moyen de paiement et de calculer la monnaie à rendre,
+**Afin de** pouvoir clôturer une vente de manière complète et professionnelle.
+
+## Acceptance Criteria
+
+1.  Après avoir cliqué sur "Finaliser la vente", un nouvel écran (ou une modale) s'affiche.
+2.  Cet écran contient un champ pour saisir un montant de "Don".
+3.  Il contient un sélecteur pour le "Moyen de Paiement" (Espèces, Carte, Chèque).
+4.  Si "Espèces" est sélectionné, un champ "Montant Donné" apparaît.
+5.  Quand un montant est entré dans ce champ, le montant de la "Monnaie à rendre" est calculé et affiché automatiquement.
+6.  La validation de cet écran envoie toutes les informations (y compris le don et le moyen de paiement) à l'API.
+
+## Tasks / Subtasks
+
+- [ ] **Création du Composant :**
+    - [ ] Créer un nouveau composant `FinalizationScreen.tsx`.
+    - [ ] Ajouter les champs pour le don, le sélecteur de moyen de paiement, et le champ conditionnel pour le montant donné.
+- [ ] **Logique de Calcul :**
+    - [ ] Implémenter la logique pour calculer la monnaie à rendre : `Monnaie = Montant Donné - (Total Ticket + Don)`.
+- [ ] **Intégration :**
+    - [ ] Modifier le `cashSessionStore` ou la page de caisse pour afficher ce nouvel écran après le clic sur "Finaliser la vente".
+    - [ ] Mettre à jour la fonction de soumission de la vente pour qu'elle inclue les nouvelles données.
+
+## Note pour les Tests
+
+Pour tester manuellement l'interface et utiliser les outils de développement, veuillez vous connecter avec les identifiants suivants :
+- **Utilisateur :** `admintest`
+- **Mot de passe :** `AdminTest1!`
+
+## Definition of Done
+
+- [ ] L'écran de finalisation est fonctionnel, y compris le calcul de la monnaie.
+- [ ] Les données de don et de moyen de paiement sont prêtes à être envoyées à l'API.
+- [ ] La story a été validée par un agent QA.

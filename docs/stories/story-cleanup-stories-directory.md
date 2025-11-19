@@ -1,0 +1,1 @@
+../archive/future-versions/story-cleanup-stories-directory.md

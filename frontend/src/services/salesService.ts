@@ -8,6 +8,9 @@ export interface SaleItem {
   weight: number
   unit_price: number
   total_price: number
+  // Story 1.1.2: Champs ajoutés pour preset et notes par item
+  preset_id?: string | null
+  notes?: string | null
 }
 
 export interface SaleDetail {
@@ -18,6 +21,7 @@ export interface SaleDetail {
   payment_method?: string
   created_at: string
   operator_id?: string
+  // Story 1.1.2: notes et preset_id déplacés vers sale_items (par item individuel)
   items: SaleItem[]
 }
 

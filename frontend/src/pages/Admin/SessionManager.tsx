@@ -306,22 +306,33 @@ const SessionManager: React.FC = () => {
               <Td>{row.variance !== undefined ? formatCurrency(row.variance) : '-'}</Td>
               <Td>
                 <ActionsCell>
-                  <Button onClick={() => window.location.assign(`/admin/cash-sessions/${row.id}`)}>Voir Détail</Button>
-                  <Button $variant='ghost' onClick={async () => {
+                  <Button onClick={(e) => {
+                    e.stopPropagation()
+                    window.location.assign(`/admin/cash-sessions/${row.id}`)
+                  }}>Voir Détail</Button>
+                  <Button $variant='ghost' onClick={async (e) => {
+                    e.stopPropagation()
                     try {
-                      const res = await axiosClient.get(`/v1/admin/reports/cash-sessions`)
-                      const list: { reports: { filename: string, download_url: string }[] } = res.data
-                      const hit = list.reports.find(r => r.filename.includes(row.id))
-                      if (hit) {
-                        const blobRes = await axiosClient.get(hit.download_url, { responseType: 'blob' })
-                        const url = URL.createObjectURL(blobRes.data)
-                        const a = document.createElement('a')
-                        a.href = url
-                        a.download = hit.filename
-                        a.click()
-                        URL.revokeObjectURL(url)
+                      // Utiliser le nouvel endpoint qui génère le rapport directement par session ID
+                      const blobRes = await axiosClient.get(`/v1/admin/reports/cash-sessions/by-session/${row.id}`, { responseType: 'blob' })
+                      const url = URL.createObjectURL(blobRes.data)
+                      const a = document.createElement('a')
+                      a.href = url
+                      // Extraire le nom de fichier depuis le Content-Disposition header si disponible
+                      const contentDisposition = blobRes.headers['content-disposition'] || blobRes.headers['Content-Disposition']
+                      let filename = `session_caisse_${row.id}.csv`
+                      if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+                        if (filenameMatch && filenameMatch[1]) {
+                          filename = filenameMatch[1].replace(/['"]/g, '')
+                        }
                       }
-                    } catch {}
+                      a.download = filename
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    } catch (err) {
+                      console.error('Erreur lors du téléchargement du rapport:', err)
+                    }
                   }}>Télécharger CSV</Button>
                 </ActionsCell>
               </Td>

@@ -10,6 +10,9 @@ class SaleItemBase(BaseModel):
     weight: float  # Poids en kg avec décimales
     unit_price: float
     total_price: float
+    # Story 1.1.2: Champs ajoutés pour preset et notes par item
+    preset_id: Optional[UUID] = None
+    notes: Optional[str] = None
 
 class SaleItemCreate(SaleItemBase):
     pass
@@ -20,7 +23,7 @@ class SaleItemResponse(SaleItemBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator('id', 'sale_id', mode='before')
+    @field_validator('id', 'sale_id', 'preset_id', mode='before')
     @classmethod
     def _uuid_to_str(cls, v):
         return str(v) if v is not None else v
@@ -30,6 +33,12 @@ class SaleBase(BaseModel):
     total_amount: float
     donation: Optional[float] = 0.0
     payment_method: Optional[PaymentMethod] = PaymentMethod.CASH
+    # Story 1.1.2: notes et preset_id déplacés vers sale_items (par item individuel)
+
+    @field_validator('cash_session_id', mode='before')
+    @classmethod
+    def _uuid_to_str(cls, v):
+        return str(v) if v is not None else v
 
 class SaleCreate(BaseModel):
     cash_session_id: UUID
@@ -37,6 +46,7 @@ class SaleCreate(BaseModel):
     total_amount: float
     donation: Optional[float] = 0.0
     payment_method: Optional[PaymentMethod] = PaymentMethod.CASH
+    # Story 1.1.2: notes et preset_id déplacés vers sale_items (par item individuel)
 
 class SaleResponse(SaleBase):
     id: str

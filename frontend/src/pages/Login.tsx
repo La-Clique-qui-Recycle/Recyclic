@@ -28,7 +28,7 @@ export default function Login(): JSX.Element {
         <BannerInner>
           <Brand>
             <Recycle size={22} />
-            <span>Recyclic</span>
+            <span>RecyClique</span>
           </Brand>
         </BannerInner>
       </PublicBanner>

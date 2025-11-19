@@ -14,6 +14,12 @@ class CashSessionStatus(PyEnum):
     CLOSED = "closed"
 
 
+class CashSessionStep(PyEnum):
+    ENTRY = "entry"      # Phase de réception/dépôt d'objets
+    SALE = "sale"        # Phase de vente (caisse)
+    EXIT = "exit"        # Phase de clôture
+
+
 class CashSession(Base):
     """
     Modèle pour les sessions de caisse.
@@ -51,7 +57,27 @@ class CashSession(Base):
     # Timestamps
     opened_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
     closed_at = Column(DateTime(timezone=True), nullable=True)
-    
+
+    # Métriques d'étapes (pour indicateurs visuels)
+    current_step = Column(
+        SAEnum(CashSessionStep, values_callable=lambda obj: [e.name for e in obj]),
+        nullable=True,
+        default=None,
+        comment="Étape actuelle du workflow (entry/sale/exit)"
+    )
+    last_activity = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+        comment="Dernière activité utilisateur pour gestion du timeout"
+    )
+    step_start_time = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+        comment="Début de l'étape actuelle pour métriques de performance"
+    )
+
     # Statistiques de vente (calculées)
     total_sales = Column(Float, nullable=True, default=0.0)
     total_items = Column(Integer, nullable=True, default=0)
@@ -102,6 +128,20 @@ class CashSession(Base):
                     kwargs["status"] = CashSessionStatus[s]
             except Exception:
                 pass
+
+        # Normalize current_step
+        cs = kwargs.get("current_step")
+        if isinstance(cs, str):
+            try:
+                cs_norm = cs.strip().lower()
+                if cs_norm in ("entry", "sale", "exit"):
+                    step_map = {"entry": CashSessionStep.ENTRY, "sale": CashSessionStep.SALE, "exit": CashSessionStep.EXIT}
+                    kwargs["current_step"] = step_map[cs_norm]
+                else:
+                    # Try by enum name
+                    kwargs["current_step"] = CashSessionStep[cs.upper()]
+            except Exception:
+                pass
         super().__init__(**kwargs)
 
     def __repr__(self):
@@ -117,6 +157,11 @@ class CashSession(Base):
             "status": self.status.value,
             "opened_at": self.opened_at.isoformat() if self.opened_at else None,
             "closed_at": self.closed_at.isoformat() if self.closed_at else None,
+            # Métriques d'étapes
+            "current_step": self.current_step.value if self.current_step else None,
+            "last_activity": self.last_activity.isoformat() if self.last_activity else None,
+            "step_start_time": self.step_start_time.isoformat() if self.step_start_time else None,
+            # Statistiques de vente
             "total_sales": self.total_sales,
             "total_items": self.total_items,
             "closing_amount": self.closing_amount,
@@ -162,6 +207,28 @@ class CashSession(Base):
     def is_open(self) -> bool:
         """Vérifie si la session est ouverte."""
         return self.status == CashSessionStatus.OPEN
+
+    def set_current_step(self, step: CashSessionStep):
+        """Définit l'étape actuelle et met à jour les métriques."""
+        self.current_step = step
+        self.step_start_time = datetime.now(timezone.utc)
+        self.last_activity = datetime.now(timezone.utc)
+
+    def update_activity(self):
+        """Met à jour le timestamp de dernière activité."""
+        self.last_activity = datetime.now(timezone.utc)
+
+    def get_step_metrics(self) -> dict:
+        """Retourne les métriques de l'étape actuelle."""
+        return {
+            "current_step": self.current_step.value if self.current_step else None,
+            "step_start_time": self.step_start_time.isoformat() if self.step_start_time else None,
+            "last_activity": self.last_activity.isoformat() if self.last_activity else None,
+            "step_duration_seconds": (
+                (datetime.now(timezone.utc) - self.step_start_time).total_seconds()
+                if self.step_start_time else None
+            )
+        }
 
     def get_daily_summary(self) -> dict:
         """Retourne un résumé de la session."""

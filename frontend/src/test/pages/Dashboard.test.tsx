@@ -7,7 +7,7 @@ describe('Dashboard Page', () => {
   it('should render dashboard title and welcome message', () => {
     render(<Dashboard />)
     
-    expect(screen.getByText('Bienvenue sur Recyclic')).toBeInTheDocument()
+    expect(screen.getByText('Bienvenue sur RecyClique')).toBeInTheDocument()
     expect(screen.getByText(/Plateforme de gestion de recyclage intelligente/)).toBeInTheDocument()
   })
 
@@ -42,11 +42,11 @@ describe('Dashboard Page', () => {
     render(<Dashboard />)
     
     // Check main container exists
-    const dashboardContainer = screen.getByText('Bienvenue sur Recyclic').closest('div')
+    const dashboardContainer = screen.getByText('Bienvenue sur RecyClique').closest('div')
     expect(dashboardContainer).toBeInTheDocument()
     
     // Check welcome section exists
-    const welcomeSection = screen.getByText('Bienvenue sur Recyclic').closest('div')
+    const welcomeSection = screen.getByText('Bienvenue sur RecyClique').closest('div')
     expect(welcomeSection).toBeInTheDocument()
     
     // Check stats grid exists
@@ -72,7 +72,7 @@ describe('Dashboard Page', () => {
     render(<Dashboard />)
     
     // Check that the dashboard renders without errors
-    expect(screen.getByText('Bienvenue sur Recyclic')).toBeInTheDocument()
+    expect(screen.getByText('Bienvenue sur RecyClique')).toBeInTheDocument()
     
     // Check that all main elements are present
     expect(screen.getByText(/Gérez vos dépôts, suivez vos ventes/)).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe('Dashboard Page', () => {
     render(<Dashboard />)
     
     // Check that the main heading is properly structured
-    const mainHeading = screen.getByText('Bienvenue sur Recyclic')
+    const mainHeading = screen.getByText('Bienvenue sur RecyClique')
     expect(mainHeading).toBeInTheDocument()
     
     // Check that stat labels are properly associated

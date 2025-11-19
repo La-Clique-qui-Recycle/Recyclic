@@ -72,7 +72,7 @@ describe('UnifiedDashboard', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Bienvenue sur Recyclic, Test/i)).toBeInTheDocument();
+      expect(screen.getByText(/Bienvenue sur RecyClique, Test/i)).toBeInTheDocument();
     });
   });
 

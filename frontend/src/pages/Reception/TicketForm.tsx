@@ -7,7 +7,9 @@ import { useReception } from '../../contexts/ReceptionContext';
 import { receptionService } from '../../services/receptionService';
 import NumericKeypad from '../../components/ui/NumericKeypad';
 import SessionHeader from '../../components/SessionHeader';
+import { useStepState } from '../../services/sessionState';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { useReceptionShortcutStore } from '../../stores/receptionShortcutStore';
 import {
   handleWeightKey,
   handleAZERTYWeightKey,
@@ -20,7 +22,7 @@ import {
 } from '../../utils/weightMask';
 
 // ===== LAYOUT PREFERENCES =====
-const LAYOUT_STORAGE_KEY = 'recyclic_ticket_layout';
+const LAYOUT_STORAGE_KEY = 'recyclique_ticket_layout';
 
 interface LayoutPreferences {
   categoriesSize: number;
@@ -96,17 +98,14 @@ const CategoriesColumn = styled.div`
   }
 `;
 
-const CategoryGrid = styled.div`
+const CategoryGrid = styled.div<{ $columns?: number }>`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: ${props => {
+    const cols = props.$columns || 2;
+    return `repeat(${cols}, 1fr)`;
+  }} !important;
   gap: 6px;
   padding: 8px;
-
-  @media (max-width: 1024px) and (min-width: 769px) {
-    grid-template-columns: 1fr;
-    gap: 5px;
-    padding: 6px;
-  }
 
   @media (max-width: 768px) {
     display: grid;
@@ -135,6 +134,7 @@ const CategoryButton = styled.button<{ $selected?: boolean }>`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  position: relative;
 
   &:hover {
     border-color: #2e7d32;
@@ -153,6 +153,30 @@ const CategoryButton = styled.button<{ $selected?: boolean }>`
     min-height: 55px;
     width: 100%;
     height: 100%;
+  }
+`;
+
+const ShortcutBadge = styled.div`
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  background: rgba(46, 125, 50, 0.9);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 1;
+
+  @media (max-width: 768px) {
+    font-size: 9px;
+    padding: 1px 3px;
+    bottom: 3px;
+    left: 4px;
   }
 `;
 
@@ -265,22 +289,54 @@ const WeightSection = styled.div`
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0; /* Ne pas compresser cette section */
+  transition: all 0.3s ease;
+`;
+
+// Layout 2 colonnes pour le bloc central (keypad + contrôles)
+const CentralBlockLayout = styled.div`
+  display: grid;
+  grid-template-columns: 60% 40%;
+  gap: 12px;
+  margin: 2px 0;
+  flex-shrink: 0;
+  padding: 4px;
+  align-items: start;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 55% 45%;
+    gap: 10px;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+  }
 `;
 
 const NumericPadSection = styled.div`
   display: flex;
   justify-content: center;
-  margin: 2px 0;
-  flex-shrink: 0; /* Ne pas compresser cette section */
+  flex-shrink: 0;
   padding: 4px;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    justify-content: center;
+  }
 `;
 
 const ControlsSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: auto;
-  flex-shrink: 0; /* Ne pas compresser cette section */
+  gap: 12px; /* Espacement amélioré pour hiérarchie visuelle */
+  flex-shrink: 0;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    margin-top: 0;
+    gap: 10px;
+  }
 `;
 
 // ===== RIGHT SUMMARY COLUMN =====
@@ -288,14 +344,17 @@ const ControlsSection = styled.div`
 const SummaryColumn = styled.div`
   background: #f9f9f9;
   border-left: 1px solid #e0e0e0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  max-height: calc(100vh - 120px); /* Laisser de l'espace pour le header */
 
   @media (max-width: 768px) {
     border-left: none;
     border-top: 1px solid #e0e0e0;
     flex-shrink: 0;
+    height: auto;
+    max-height: none;
     overflow: visible;
   }
 `;
@@ -313,6 +372,7 @@ const SummaryContent = styled.div`
   flex: 1;
   padding: 16px;
   overflow-y: auto;
+  min-height: 0; /* Permet au contenu de scroller correctement */
 `;
 
 const SummaryItem = styled.div`
@@ -453,53 +513,55 @@ const WeightDisplay = styled.input`
 
 const Select = styled.select`
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 13px;
   background: white;
   cursor: pointer;
-  min-height: 40px;
+  min-height: 44px; /* Touch target minimum iOS */
 
   &:focus {
     outline: none;
     border-color: #2e7d32;
+    box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
   }
 
   @media (max-width: 768px) {
     font-size: 12px;
-    padding: 6px;
-    min-height: 36px;
+    padding: 10px;
+    min-height: 48px; /* Touch target minimum Android */
   }
 `;
 
 const Textarea = styled.textarea`
   width: 100%;
-  padding: 6px;
+  padding: 10px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 12px;
   resize: vertical;
-  min-height: 40px;
-  max-height: 60px;
+  min-height: 44px; /* Touch target minimum iOS */
+  max-height: 80px;
   font-family: inherit;
 
   &:focus {
     outline: none;
     border-color: #2e7d32;
+    box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
   }
 
   @media (max-width: 768px) {
     font-size: 11px;
-    min-height: 36px;
-    max-height: 50px;
+    min-height: 48px; /* Touch target minimum Android */
+    max-height: 60px;
   }
 `;
 
 const AddButton = styled.button`
   width: 100%;
-  padding: 8px;
-  min-height: 40px;
+  padding: 12px;
+  min-height: 44px; /* Touch target minimum iOS */
   background: #2e7d32;
   color: white;
   border: none;
@@ -512,6 +574,16 @@ const AddButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 4px;
+
+  &:focus {
+    outline: 2px solid #2e7d32;
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 768px) {
+    min-height: 48px; /* Touch target minimum Android */
+    padding: 14px;
+  }
 
   &:hover {
     background: #1b5e20;
@@ -817,13 +889,140 @@ const DESTINATIONS = [
   { value: 'DECHETERIE', label: 'Déchetterie' }
 ];
 
+// ===== CUSTOM HOOK FOR RESPONSIVE COLUMNS =====
+
+/**
+ * Hook pour détecter la largeur d'un conteneur et déterminer le nombre optimal de colonnes
+ * Breakpoints basés sur la largeur du conteneur (pas de l'écran) :
+ * - < 200px : 1 colonne
+ * - 200-350px : 2 colonnes
+ * - 350-500px : 3 colonnes
+ * - 500-650px : 4 colonnes
+ * - >= 650px : 5 colonnes
+ */
+const useColumnCount = (containerRef: React.RefObject<HTMLElement>): number => {
+  const [columnCount, setColumnCount] = useState(2); // Par défaut 2 colonnes
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      // Réessayer après un court délai
+      const timeoutId = setTimeout(() => {
+        const retryContainer = containerRef.current;
+        if (retryContainer) {
+          const width = retryContainer.offsetWidth || retryContainer.clientWidth;
+          let newCount = 2;
+          if (width < 200) {
+            newCount = 1;
+          } else if (width < 350) {
+            newCount = 2;
+          } else if (width < 500) {
+            newCount = 3;
+          } else if (width < 650) {
+            newCount = 4;
+          } else {
+            newCount = 5;
+          }
+          setColumnCount(newCount);
+        }
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+
+    const updateColumnCount = () => {
+      const width = container.offsetWidth || container.clientWidth;
+      let newCount = 2;
+      if (width < 200) {
+        newCount = 1;
+      } else if (width < 350) {
+        newCount = 2;
+      } else if (width < 500) {
+        newCount = 3;
+      } else if (width < 650) {
+        newCount = 4;
+      } else {
+        newCount = 5;
+      }
+      setColumnCount(prev => {
+        if (prev !== newCount) {
+          return newCount;
+        }
+        return prev;
+      });
+    };
+
+    // Initial update
+    updateColumnCount();
+
+    // Observer pour détecter les changements de taille
+    const resizeObserver = new ResizeObserver(() => {
+      updateColumnCount();
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []); // S'exécute une seule fois au montage
+
+  // Réexécuter périodiquement pour capturer les changements de taille
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const container = containerRef.current;
+      if (container) {
+        const width = container.offsetWidth || container.clientWidth;
+        let newCount = 2;
+        if (width < 200) {
+          newCount = 1;
+        } else if (width < 350) {
+          newCount = 2;
+        } else if (width < 500) {
+          newCount = 3;
+        } else if (width < 650) {
+          newCount = 4;
+        } else {
+          newCount = 5;
+        }
+        setColumnCount(prev => prev !== newCount ? newCount : prev);
+      }
+    }, 300); // Vérifier toutes les 300ms
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  return columnCount;
+};
+
 // ===== COMPONENT =====
 
 const TicketForm: React.FC = () => {
   const navigate = useNavigate();
   const { ticketId } = useParams<{ ticketId: string }>();
   const { currentTicket, isLoading, addLineToTicket, updateTicketLine, deleteTicketLine, closeTicket } = useReception();
-  const { activeCategories, fetchCategories } = useCategoryStore();
+  const { visibleCategories, activeCategories, fetchVisibleCategories, fetchCategories, loading: categoriesLoading, error: categoriesError } = useCategoryStore();
+  const {
+    initializeShortcuts,
+    activateShortcuts,
+    deactivateShortcuts,
+    getKeyForPosition,
+    isActive: shortcutsActive
+  } = useReceptionShortcutStore();
+
+  // Step state management
+  const { stepState, handleCategorySelected, handleWeightInputStarted, handleWeightInputCompleted, handleItemValidated, handleTicketClosed } = useStepState();
+
+  // Refs to store stable references to store functions
+  const initializeShortcutsRef = useRef(initializeShortcuts);
+  const activateShortcutsRef = useRef(activateShortcuts);
+  const deactivateShortcutsRef = useRef(deactivateShortcuts);
+
+  // Update refs when functions change
+  useEffect(() => {
+    initializeShortcutsRef.current = initializeShortcuts;
+    activateShortcutsRef.current = activateShortcuts;
+    deactivateShortcutsRef.current = deactivateShortcuts;
+  }, [initializeShortcuts, activateShortcuts, deactivateShortcuts]);
 
   const [loadedTicket, setLoadedTicket] = useState<Ticket | null>(null);
   const [loadingTicket, setLoadingTicket] = useState(false);
@@ -834,7 +1033,13 @@ const TicketForm: React.FC = () => {
   const [destination, setDestination] = useState<'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE'>('MAGASIN');
   const [notes, setNotes] = useState<string>('');
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const [weightInputFocused, setWeightInputFocused] = useState<boolean>(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
+  const categoriesContainerRef = useRef<HTMLDivElement>(null);
+  const summaryContentRef = useRef<HTMLDivElement>(null);
+  
+  // Hook pour déterminer le nombre de colonnes basé sur la largeur du conteneur
+  const columnCount = useColumnCount(categoriesContainerRef);
 
   // Navigation hiérarchique des catégories
   // Source de vérité : currentParentId gère le niveau hiérarchique actuel
@@ -844,6 +1049,51 @@ const TicketForm: React.FC = () => {
   const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<string[]>([]);
 
   const formattedWeight = formatWeightDisplay(weightInput);
+
+  // Ref to store the category select callback to avoid useEffect dependency issues
+  const categorySelectCallbackRef = useRef<((categoryId: string) => void) | null>(null);
+
+  // Define handleCategorySelect with useCallback before the useEffect that uses it
+  const handleCategorySelect = useCallback((categoryId: string) => {
+    const categoriesToUse = visibleCategories.length > 0 ? visibleCategories : activeCategories;
+    const category = categoriesToUse.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    // Vérifier si la catégorie a des enfants visibles
+    // AC 1.2.2: Si aucune sous-catégorie visible, la catégorie parent est sélectionnable
+    const visibleChildren = categoriesToUse.filter(child => child.parent_id === categoryId);
+    const hasChildren = visibleChildren.length > 0;
+
+    if (hasChildren) {
+      // Navigation vers les sous-catégories
+      setCurrentParentId(categoryId);
+      setCategoryBreadcrumb(prev => [...prev, category.name]);
+      // Reset selection when navigating
+      setSelectedCategory('');
+    } else {
+      // Sélection finale de la catégorie
+      setSelectedCategory(categoryId);
+      setCurrentParentId(null);
+      setCategoryBreadcrumb([]);
+
+      // Notify step state manager
+      handleCategorySelected();
+
+      // Focus automatique vers le champ poids après sélection de catégorie
+      // Délai court pour permettre au DOM de se mettre à jour
+      setTimeout(() => {
+        if (weightInputRef.current) {
+          weightInputRef.current.focus();
+          weightInputRef.current.select(); // Sélectionner tout le texte existant
+        }
+      }, 100);
+    }
+  }, [visibleCategories, activeCategories, handleCategorySelected]);
+
+  // Update the ref with the current callback function
+  useEffect(() => {
+    categorySelectCallbackRef.current = handleCategorySelect;
+  }, [handleCategorySelect]);
 
   const parseToInput = (val: number | string): string => {
     const num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
@@ -857,25 +1107,42 @@ const TicketForm: React.FC = () => {
   // Politique de filtrage basée sur currentParentId :
   // - Si currentParentId === null : afficher les catégories racines (parent_id === null)
   // - Si currentParentId === string : afficher les enfants de cette catégorie
-  const categories = activeCategories
+  // Filtrer les catégories visibles selon le niveau hiérarchique actuel
+  // AC 1.2.1, 1.2.2: Utiliser visibleCategories pour les tickets de réception (ENTRY)
+  // Fallback: si visibleCategories est vide, utiliser activeCategories (pour compatibilité avant migration)
+  const categoriesToUse = visibleCategories.length > 0 ? visibleCategories : activeCategories;
+  const categories = categoriesToUse
     .filter(cat => {
       // Si currentParentId est null, afficher les catégories racines (parent_id === null)
       if (currentParentId === null) {
         return cat.parent_id === null;
       }
-      // Sinon, afficher les enfants de currentParentId
+      // Sinon, afficher les enfants visibles de currentParentId
       return cat.parent_id === currentParentId;
     })
-    .map(cat => ({
-      id: cat.id,
-      label: cat.name,
-      slug: cat.name.toLowerCase().replace(/\s+/g, '-'),
-      hasChildren: activeCategories.some(child => child.parent_id === cat.id)
-    }));
+    .sort((a, b) => {
+      // Trier par display_order puis par nom
+      if (a.display_order !== b.display_order) {
+        return a.display_order - b.display_order;
+      }
+      return a.name.localeCompare(b.name);
+    })
+    .map(cat => {
+      // AC 1.2.2: Si aucune sous-catégorie visible, la catégorie parent est sélectionnable
+      const visibleChildren = categoriesToUse.filter(child => child.parent_id === cat.id);
+      return {
+        id: cat.id,
+        label: cat.name,
+        slug: cat.name.toLowerCase().replace(/\s+/g, '-'),
+        hasChildren: visibleChildren.length > 0
+      };
+    });
 
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    // AC 1.2.1: Charger les catégories visibles pour les tickets de réception (ENTRY)
+    // Le store gère automatiquement le fallback si l'endpoint échoue
+    fetchVisibleCategories();
+  }, [fetchVisibleCategories]);
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -903,7 +1170,44 @@ const TicketForm: React.FC = () => {
 
   const ticket = ticketId ? loadedTicket : currentTicket;
   const isTicketClosed = ticket?.status === 'closed';
+
+  // Keyboard shortcuts for category selection (positional mapping)
+  useEffect(() => {
+    if (categories.length > 0 && !isTicketClosed && categorySelectCallbackRef.current) {
+      // Initialize shortcuts with the number of categories currently displayed
+      initializeShortcutsRef.current(categories.length, (position: number) => {
+        // Position is 1-based, array is 0-based
+        const categoryIndex = position - 1;
+        if (categoryIndex >= 0 && categoryIndex < categories.length) {
+          const category = categories[categoryIndex];
+          categorySelectCallbackRef.current?.(category.id);
+        }
+      });
+
+      // Activate shortcuts only when categories are displayed AND weight input is not focused
+      if (!weightInputFocused) {
+        activateShortcutsRef.current();
+      }
+
+      return () => {
+        deactivateShortcutsRef.current();
+      };
+    }
+  }, [categories.length, isTicketClosed, weightInputFocused]); // Add weightInputFocused dependency
+
   const lines: TicketLine[] = (ticket as Ticket)?.lignes || (ticket as Ticket)?.lines || [];
+
+  // Auto-scroll vers le bas quand une nouvelle ligne est ajoutée
+  useEffect(() => {
+    if (summaryContentRef.current && lines.length > 0) {
+      // Utiliser requestAnimationFrame pour s'assurer que le DOM est mis à jour
+      requestAnimationFrame(() => {
+        if (summaryContentRef.current) {
+          summaryContentRef.current.scrollTop = summaryContentRef.current.scrollHeight;
+        }
+      });
+    }
+  }, [lines.length]); // Se déclenche quand le nombre de lignes change
 
   const handleAddLine = async () => {
     if (isTicketClosed) {
@@ -939,6 +1243,21 @@ const TicketForm: React.FC = () => {
       setWeightInput('');
       setDestination('MAGASIN');
       setNotes('');
+
+      // Notify step state manager
+      handleWeightInputCompleted();
+      handleItemValidated();
+
+      // Focus automatique vers les boutons de catégories pour permettre la saisie rapide du prochain objet
+      setTimeout(() => {
+        if (categoriesContainerRef.current) {
+          // Focus sur le premier bouton de catégorie disponible
+          const firstCategoryButton = categoriesContainerRef.current.querySelector('[role="button"][tabindex="0"]') as HTMLElement;
+          if (firstCategoryButton) {
+            firstCategoryButton.focus();
+          }
+        }
+      }, 100);
     } catch (err) {
       console.error('Erreur lors de l\'ajout de la ligne:', err);
     }
@@ -979,6 +1298,10 @@ const TicketForm: React.FC = () => {
       setWeightInput('');
       setDestination('MAGASIN');
       setNotes('');
+
+      // Notify step state manager
+      handleWeightInputCompleted();
+      handleItemValidated();
     } catch (err) {
       console.error('Erreur lors de la mise à jour de la ligne:', err);
     }
@@ -1014,32 +1337,6 @@ const TicketForm: React.FC = () => {
     setNotes(line.notes || '');
   };
 
-  const handleCategorySelect = (categoryId: string) => {
-    const category = activeCategories.find(cat => cat.id === categoryId);
-    if (!category) return;
-
-    // Vérifier si la catégorie a des enfants
-    const hasChildren = activeCategories.some(child => child.parent_id === categoryId);
-    
-    if (hasChildren) {
-      // Navigation vers les sous-catégories
-      setCurrentParentId(categoryId);
-      setCategoryBreadcrumb(prev => [...prev, category.name]);
-      // Reset selection when navigating
-      setSelectedCategory('');
-    } else {
-      // Sélection de la catégorie finale
-      setSelectedCategory(categoryId);
-      // Reset navigation state when selecting final category
-      setCurrentParentId(null);
-      setCategoryBreadcrumb([]);
-      setTimeout(() => {
-        if (weightInputRef.current) {
-          weightInputRef.current.focus();
-        }
-      }, 100);
-    }
-  };
 
   const handleCategoryBack = () => {
     if (categoryBreadcrumb.length > 0) {
@@ -1052,7 +1349,8 @@ const TicketForm: React.FC = () => {
         setCurrentParentId(null);
       } else {
         // Retour au parent précédent
-        const parentCategory = activeCategories.find(cat => cat.name === newBreadcrumb[newBreadcrumb.length - 1]);
+        const categoriesToUse = visibleCategories.length > 0 ? visibleCategories : activeCategories;
+        const parentCategory = categoriesToUse.find(cat => cat.name === newBreadcrumb[newBreadcrumb.length - 1]);
         setCurrentParentId(parentCategory?.id || null);
       }
       // Reset selection when navigating back
@@ -1090,6 +1388,9 @@ const TicketForm: React.FC = () => {
           await closeTicket(currentTicket!.id);
           navigate('/reception');
         }
+
+        // Notify step state manager
+        handleTicketClosed();
       } catch (err) {
         console.error('Erreur lors de la clôture du ticket:', err);
       }
@@ -1117,6 +1418,17 @@ const TicketForm: React.FC = () => {
     }
   }, [selectedCategory, weightInput, isEditing, editingLineId]);
 
+  // Gestionnaire pour le focus du champ poids
+  const handleWeightFocus = useCallback(() => {
+    setWeightInputFocused(true);
+    handleWeightInputStarted();
+  }, [handleWeightInputStarted]);
+
+  // Gestionnaire pour la perte de focus du champ poids
+  const handleWeightBlur = useCallback(() => {
+    setWeightInputFocused(false);
+  }, []);
+
   // Layout preferences
   const [layoutPrefs] = useState<LayoutPreferences>(loadLayoutPreferences());
 
@@ -1131,6 +1443,111 @@ const TicketForm: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Visual feedback for focus indicators
+  useEffect(() => {
+    if (!ticket) return;
+
+    const updateFocusBorder = () => {
+      const centerWorkspace = document.querySelector('[data-testid="center-workspace"]') as HTMLElement;
+      const categoriesColumn = document.querySelector('[data-testid="categories-column"]') as HTMLElement;
+
+      // Remove all previous feedback
+      [centerWorkspace, categoriesColumn].forEach(element => {
+        if (element) {
+          element.style.borderColor = '';
+          element.style.boxShadow = '';
+          element.style.borderWidth = '';
+          element.style.borderStyle = '';
+        }
+      });
+
+      const activeElement = document.activeElement;
+
+      // Check where the focus is and apply border accordingly
+      const isInCategories = categoriesColumn?.contains(activeElement as Node);
+      const isInCenter = centerWorkspace?.contains(activeElement as Node);
+
+      if (isInCategories && categoriesColumn) {
+        // Green border around categories column when focus is there
+        categoriesColumn.style.borderColor = '#2e7d32';
+        categoriesColumn.style.borderWidth = '3px';
+        categoriesColumn.style.borderStyle = 'solid';
+        categoriesColumn.style.borderRadius = '8px';
+        categoriesColumn.style.transition = 'border-color 0.3s ease';
+      } else if (isInCenter && centerWorkspace) {
+        // Green border around center workspace when focus is there
+        centerWorkspace.style.borderColor = '#2e7d32';
+        centerWorkspace.style.borderWidth = '3px';
+        centerWorkspace.style.borderStyle = 'solid';
+        centerWorkspace.style.borderRadius = '8px';
+        centerWorkspace.style.transition = 'border-color 0.3s ease';
+      }
+    };
+
+    // Initial update
+    const timeoutId = setTimeout(updateFocusBorder, 100);
+
+    // Listen for focus changes
+    const handleFocusChange = () => updateFocusBorder();
+    document.addEventListener('focusin', handleFocusChange);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('focusin', handleFocusChange);
+    };
+  }, [ticket]);
+
+  // Tab navigation management - limit Tab to categories -> weight only
+  useEffect(() => {
+    if (!ticket || isTicketClosed) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') {
+        event.preventDefault(); // Always prevent default Tab behavior
+
+        const activeElement = document.activeElement;
+
+        // Check if we're currently in categories area
+        const isInCategories = categoriesContainerRef.current?.contains(activeElement as Node);
+
+        // Check if we're currently in weight input
+        const isInWeight = weightInputRef.current === activeElement;
+
+        if (isInCategories) {
+          // From categories, Tab goes to weight input
+          if (weightInputRef.current) {
+            weightInputRef.current.focus();
+            weightInputRef.current.select();
+          }
+        } else if (isInWeight) {
+          // From weight, Tab goes back to categories
+          if (categoriesContainerRef.current) {
+            const firstCategoryButton = categoriesContainerRef.current.querySelector('[role="button"][tabindex="0"]') as HTMLElement;
+            if (firstCategoryButton) {
+              firstCategoryButton.focus();
+            }
+          }
+        } else {
+          // If we're elsewhere, Tab goes to categories first
+          if (categoriesContainerRef.current) {
+            const firstCategoryButton = categoriesContainerRef.current.querySelector('[role="button"][tabindex="0"]') as HTMLElement;
+            if (firstCategoryButton) {
+              firstCategoryButton.focus();
+            }
+          }
+        }
+      }
+    };
+
+    // Add global keydown listener
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [ticket, isTicketClosed]);
+
 
   const handleLayoutChange = (sizes: number[]) => {
     const [categoriesSize, centerSize, summarySize] = sizes;
@@ -1176,11 +1593,12 @@ const TicketForm: React.FC = () => {
         isLoading={isLoading}
       />
 
+
       <MainLayout>
         {isMobile ? (
           /* MOBILE LAYOUT - Vertical stacking, no resize panels */
           <>
-            <CategoriesColumn>
+            <CategoriesColumn ref={categoriesContainerRef} data-testid="categories-column">
               {currentParentId && (
                 <CategoryHeader>
                  <BackButton 
@@ -1202,31 +1620,46 @@ const TicketForm: React.FC = () => {
                  </Breadcrumb>
                 </CategoryHeader>
               )}
-              <CategoryGrid>
-                {categories.map((category) => (
-                 <CategoryButton
-                   key={category.id}
-                   $selected={selectedCategory === category.id}
-                   onClick={() => handleCategorySelect(category.id)}
-                   onKeyDown={(e) => handleKeyDown(e, category.id)}
-                   tabIndex={0}
-                   role="button"
-                   aria-label={category.hasChildren ? `Naviguer vers ${category.label}` : `Sélectionner ${category.label}`}
-                   aria-pressed={selectedCategory === category.id}
-                 >
-                   {category.label}
-                 </CategoryButton>
-                ))}
+              <CategoryGrid $columns={columnCount} style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
+                {categories.map((category, index) => {
+                  // Calculate position (1-based) for shortcut mapping
+                  const position = index + 1;
+                  const shortcutKey = getKeyForPosition(position);
+
+                  return (
+                    <CategoryButton
+                      key={category.id}
+                      $selected={selectedCategory === category.id}
+                      onClick={() => handleCategorySelect(category.id)}
+                      onKeyDown={(e) => handleKeyDown(e, category.id)}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={
+                        shortcutKey
+                          ? `${category.hasChildren ? 'Naviguer vers' : 'Sélectionner'} ${category.label}. Raccourci clavier: ${shortcutKey} (position ${position})`
+                          : `${category.hasChildren ? 'Naviguer vers' : 'Sélectionner'} ${category.label}`
+                      }
+                      aria-pressed={selectedCategory === category.id}
+                    >
+                      {category.label}
+                      {shortcutKey && (
+                        <ShortcutBadge aria-hidden="true">
+                          {shortcutKey}
+                        </ShortcutBadge>
+                      )}
+                    </CategoryButton>
+                  );
+                })}
               </CategoryGrid>
             </CategoriesColumn>
 
-            <CenterWorkspace>
+            <CenterWorkspace data-testid="center-workspace">
               {/* Fil d'Ariane pour la colonne du milieu */}
               {selectedCategory && (
                 <CenterBreadcrumb>
                   <span>Catégorie sélectionnée:</span>
                   <CenterBreadcrumbItem>
-                    {activeCategories.find(cat => cat.id === selectedCategory)?.name || 'Inconnue'}
+                    {(visibleCategories.length > 0 ? visibleCategories : activeCategories).find(cat => cat.id === selectedCategory)?.name || 'Inconnue'}
                   </CenterBreadcrumbItem>
                 </CenterBreadcrumb>
               )}
@@ -1242,33 +1675,37 @@ const TicketForm: React.FC = () => {
                         value={formattedWeight}
                         onChange={() => {}}
                         onKeyDown={onKeyDown}
+                        onFocus={handleWeightFocus}
+                        onBlur={handleWeightBlur}
                         placeholder="0.00"
                         readOnly
                       />
                     </FormGroup>
                   </WeightSection>
 
-                  <NumericPadSection>
-                    <NumericKeypad
-                      onKeyPress={(key) => {
-                        if (key === 'C') return;
-                        if (key === '.') {
-                          setWeightInput((prev) => applyDecimalPoint(prev));
-                        } else if (/^[0-9]$/.test(key)) {
-                          setWeightInput((prev) => applyDigit(prev, key));
-                        }
-                      }}
-                      onClear={() => setWeightInput(clearWeight())}
-                      onBackspace={() => setWeightInput((prev) => backspaceWeight(prev))}
-                    />
-                  </NumericPadSection>
+                  <CentralBlockLayout>
+                    <NumericPadSection>
+                      <NumericKeypad
+                        onKeyPress={(key) => {
+                          if (key === 'C') return;
+                          if (key === '.') {
+                            setWeightInput((prev) => applyDecimalPoint(prev));
+                          } else if (/^[0-9]$/.test(key)) {
+                            setWeightInput((prev) => applyDigit(prev, key));
+                          }
+                        }}
+                        onClear={() => setWeightInput(clearWeight())}
+                        onBackspace={() => setWeightInput((prev) => backspaceWeight(prev))}
+                      />
+                    </NumericPadSection>
 
-                  <ControlsSection>
+                    <ControlsSection data-testid="controls-section">
                     <FormGroup>
                       <Label>Destination</Label>
                       <Select
                         value={destination}
                         onChange={(e) => setDestination(e.target.value as 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE')}
+                        tabIndex={-1} // Prevent Tab navigation
                       >
                         {DESTINATIONS.map((dest) => (
                           <option key={dest.value} value={dest.value}>
@@ -1284,6 +1721,7 @@ const TicketForm: React.FC = () => {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Notes sur l'objet..."
+                        tabIndex={-1} // Prevent Tab navigation
                       />
                     </FormGroup>
 
@@ -1295,6 +1733,7 @@ const TicketForm: React.FC = () => {
                       {isEditing ? 'Mettre à jour' : 'Ajouter l\'objet'}
                     </AddButton>
                   </ControlsSection>
+                  </CentralBlockLayout>
                 </WorkspaceContent>
               )}
             </CenterWorkspace>
@@ -1303,7 +1742,7 @@ const TicketForm: React.FC = () => {
               <SummaryHeader>
                 Résumé du Ticket
               </SummaryHeader>
-              <SummaryContent>
+              <SummaryContent ref={summaryContentRef}>
                 {lines.length === 0 ? (
                   <SummaryEmptyState>Aucune ligne ajoutée</SummaryEmptyState>
                 ) : (
@@ -1327,6 +1766,7 @@ const TicketForm: React.FC = () => {
                             className="edit"
                             onClick={() => handleEditLine(line)}
                             disabled={isLoading}
+                            tabIndex={-1} // Prevent Tab navigation
                           >
                             <Edit size={12} />
                           </SummaryActionButton>
@@ -1334,6 +1774,7 @@ const TicketForm: React.FC = () => {
                             className="delete"
                             onClick={() => handleDeleteLine(line.id)}
                             disabled={isLoading}
+                            tabIndex={-1} // Prevent Tab navigation
                           >
                             <Trash2 size={12} />
                           </SummaryActionButton>
@@ -1356,7 +1797,7 @@ const TicketForm: React.FC = () => {
           <PanelGroup direction="horizontal" onLayout={handleLayoutChange}>
             {/* COLONNE GAUCHE: Catégories */}
             <Panel defaultSize={layoutPrefs.categoriesSize} minSize={15} maxSize={70}>
-              <CategoriesColumn>
+              <CategoriesColumn ref={categoriesContainerRef} data-testid="categories-column">
                 {currentParentId && (
                   <CategoryHeader>
                  <BackButton 
@@ -1378,21 +1819,36 @@ const TicketForm: React.FC = () => {
                  </Breadcrumb>
                   </CategoryHeader>
                 )}
-                <CategoryGrid>
-                  {categories.map((category) => (
-                 <CategoryButton
-                   key={category.id}
-                   $selected={selectedCategory === category.id}
-                   onClick={() => handleCategorySelect(category.id)}
-                   onKeyDown={(e) => handleKeyDown(e, category.id)}
-                   tabIndex={0}
-                   role="button"
-                   aria-label={category.hasChildren ? `Naviguer vers ${category.label}` : `Sélectionner ${category.label}`}
-                   aria-pressed={selectedCategory === category.id}
-                 >
-                   {category.label}
-                 </CategoryButton>
-                  ))}
+                <CategoryGrid $columns={columnCount} style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
+                  {categories.map((category, index) => {
+                    // Calculate position (1-based) for shortcut mapping
+                    const position = index + 1;
+                    const shortcutKey = getKeyForPosition(position);
+
+                    return (
+                      <CategoryButton
+                        key={category.id}
+                        $selected={selectedCategory === category.id}
+                        onClick={() => handleCategorySelect(category.id)}
+                        onKeyDown={(e) => handleKeyDown(e, category.id)}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={
+                          shortcutKey
+                            ? `${category.hasChildren ? 'Naviguer vers' : 'Sélectionner'} ${category.label}. Raccourci clavier: ${shortcutKey} (position ${position})`
+                            : `${category.hasChildren ? 'Naviguer vers' : 'Sélectionner'} ${category.label}`
+                        }
+                        aria-pressed={selectedCategory === category.id}
+                      >
+                        {category.label}
+                        {shortcutKey && (
+                          <ShortcutBadge aria-hidden="true">
+                            {shortcutKey}
+                          </ShortcutBadge>
+                        )}
+                      </CategoryButton>
+                    );
+                  })}
                 </CategoryGrid>
               </CategoriesColumn>
             </Panel>
@@ -1403,20 +1859,20 @@ const TicketForm: React.FC = () => {
 
             {/* COLONNE DU MILIEU: Poste de travail */}
             <Panel defaultSize={layoutPrefs.centerSize} minSize={30} maxSize={70}>
-              <CenterWorkspace>
+              <CenterWorkspace data-testid="center-workspace">
                 {/* Fil d'Ariane */}
                 {selectedCategory && (
                   <CenterBreadcrumb>
                     <span>Catégorie sélectionnée:</span>
                     <CenterBreadcrumbItem>
-                      {activeCategories.find(cat => cat.id === selectedCategory)?.name || 'Inconnue'}
+                      {(visibleCategories.length > 0 ? visibleCategories : activeCategories).find(cat => cat.id === selectedCategory)?.name || 'Inconnue'}
                     </CenterBreadcrumbItem>
                   </CenterBreadcrumb>
                 )}
 
                 {!isTicketClosed && (
                   <WorkspaceContent>
-                    <WeightSection>
+                    <WeightSection data-testid="weight-section">
                       <FormGroup>
                         <Label>Poids (kg) *</Label>
                         <WeightDisplay
@@ -1425,34 +1881,38 @@ const TicketForm: React.FC = () => {
                           value={formattedWeight}
                           onChange={() => {}}
                           onKeyDown={onKeyDown}
+                          onFocus={handleWeightFocus}
+                          onBlur={handleWeightBlur}
                           placeholder="0.00"
                           readOnly
                         />
                       </FormGroup>
                     </WeightSection>
 
-                    <NumericPadSection>
-                      <NumericKeypad
-                        onKeyPress={(key) => {
-                          if (key === 'C') return;
-                          if (key === '.') {
-                            setWeightInput((prev) => applyDecimalPoint(prev));
-                          } else if (/^[0-9]$/.test(key)) {
-                            setWeightInput((prev) => applyDigit(prev, key));
-                          }
-                        }}
-                        onClear={() => setWeightInput(clearWeight())}
-                        onBackspace={() => setWeightInput((prev) => backspaceWeight(prev))}
-                      />
-                    </NumericPadSection>
+                    <CentralBlockLayout>
+                      <NumericPadSection>
+                        <NumericKeypad
+                          onKeyPress={(key) => {
+                            if (key === 'C') return;
+                            if (key === '.') {
+                              setWeightInput((prev) => applyDecimalPoint(prev));
+                            } else if (/^[0-9]$/.test(key)) {
+                              setWeightInput((prev) => applyDigit(prev, key));
+                            }
+                          }}
+                          onClear={() => setWeightInput(clearWeight())}
+                          onBackspace={() => setWeightInput((prev) => backspaceWeight(prev))}
+                        />
+                      </NumericPadSection>
 
-                    <ControlsSection>
+                      <ControlsSection data-testid="controls-section">
                       <FormGroup>
                         <Label>Destination</Label>
-                        <Select
-                          value={destination}
-                          onChange={(e) => setDestination(e.target.value as 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE')}
-                        >
+                      <Select
+                        value={destination}
+                        onChange={(e) => setDestination(e.target.value as 'MAGASIN' | 'RECYCLAGE' | 'DECHETERIE')}
+                        tabIndex={-1} // Prevent Tab navigation
+                      >
                           {DESTINATIONS.map((dest) => (
                             <option key={dest.value} value={dest.value}>
                               {dest.label}
@@ -1463,21 +1923,24 @@ const TicketForm: React.FC = () => {
 
                       <FormGroup>
                         <Label>Notes (optionnel)</Label>
-                        <Textarea
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          placeholder="Notes sur l'objet..."
-                        />
+                      <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Notes sur l'objet..."
+                        tabIndex={-1} // Prevent Tab navigation
+                      />
                       </FormGroup>
 
                       <AddButton
                         onClick={isEditing ? () => handleUpdateLine(editingLineId!) : handleAddLine}
                         disabled={isLoading || !selectedCategory || !weightInput}
+                        tabIndex={-1} // Prevent Tab navigation to this button
                       >
                         <Save size={18} />
                         {isEditing ? 'Mettre à jour' : 'Ajouter l\'objet'}
                       </AddButton>
                     </ControlsSection>
+                    </CentralBlockLayout>
                   </WorkspaceContent>
                 )}
               </CenterWorkspace>
@@ -1493,7 +1956,7 @@ const TicketForm: React.FC = () => {
                 <SummaryHeader>
                   Résumé du Ticket
                 </SummaryHeader>
-                <SummaryContent>
+                <SummaryContent ref={summaryContentRef}>
                   {lines.length === 0 ? (
                     <SummaryEmptyState>Aucune ligne ajoutée</SummaryEmptyState>
                   ) : (
@@ -1517,6 +1980,7 @@ const TicketForm: React.FC = () => {
                               className="edit"
                               onClick={() => handleEditLine(line)}
                               disabled={isLoading}
+                              tabIndex={-1} // Prevent Tab navigation
                             >
                               <Edit size={12} />
                             </SummaryActionButton>
@@ -1524,6 +1988,7 @@ const TicketForm: React.FC = () => {
                               className="delete"
                               onClick={() => handleDeleteLine(line.id)}
                               disabled={isLoading}
+                              tabIndex={-1} // Prevent Tab navigation
                             >
                               <Trash2 size={12} />
                             </SummaryActionButton>

@@ -22,9 +22,15 @@ export const reportsService = {
     return response.data;
   },
 
-  async downloadCashSessionReport(filename: string): Promise<Blob> {
+  async downloadCashSessionReport(filenameOrUrl: string): Promise<Blob> {
+    // Si c'est une URL complète (avec token), l'utiliser directement
+    // Sinon, utiliser le filename (pour compatibilité)
+    const url = filenameOrUrl.startsWith('/v1/') || filenameOrUrl.startsWith('http')
+      ? filenameOrUrl
+      : `/v1/admin/reports/cash-sessions/${filenameOrUrl}`;
+    
     const response = await ApiClient.client.get<Blob>(
-      `/v1/admin/reports/cash-sessions/${filename}`,
+      url,
       {
         headers: getAuthHeader(),
         responseType: 'blob',

@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Recyclic Bot Webhook Server",
+    title="RecyClique Bot Webhook Server",
     version="1.0.0",
-    description="Serveur webhook pour le bot Telegram Recyclic"
+    description="Serveur webhook pour le bot Telegram RecyClique"
 )
 
 # Add CORS middleware
@@ -85,7 +85,7 @@ async def shutdown_event():
 async def root():
     """Root endpoint"""
     return {
-        "message": "Recyclic Bot Webhook Server",
+        "message": "RecyClique Bot Webhook Server",
         "version": "1.0.0",
         "status": "running"
     }

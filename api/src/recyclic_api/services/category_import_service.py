@@ -186,8 +186,20 @@ class CategoryImportService:
         try:
             # Supprimer toutes les catégories existantes si demandé
             if delete_existing:
-                # D'abord supprimer les lignes de dépôt qui référencent les catégories
+                # Ordre de suppression pour respecter les contraintes de clé étrangère :
+                # 1. sale_items (référencent preset_buttons via preset_id nullable)
+                # 2. preset_buttons (référencent categories via category_id)
+                # 3. ligne_depot (référencent categories via category_id)
+                # 4. categories (peuvent référencer d'autres categories via parent_id)
+                from recyclic_api.models.sale_item import SaleItem
+                from recyclic_api.models.preset_button import PresetButton
                 from recyclic_api.models.ligne_depot import LigneDepot
+                
+                # Nettoyer les sale_items qui référencent des preset_buttons (mettre preset_id à NULL)
+                self.db.query(SaleItem).filter(SaleItem.preset_id.isnot(None)).update({"preset_id": None})
+                # Supprimer les preset_buttons qui référencent les catégories
+                self.db.query(PresetButton).delete()
+                # Supprimer les lignes de dépôt qui référencent les catégories
                 self.db.query(LigneDepot).delete()
                 # Puis supprimer toutes les catégories
                 self.db.query(Category).delete()

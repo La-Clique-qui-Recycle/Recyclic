@@ -20,7 +20,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         welcome_message = f"""
 🤖 Bienvenue {user.first_name or 'utilisateur'} !
 
-Vous êtes connecté à la plateforme Recyclic.
+Vous êtes connecté à la plateforme RecyClique.
 
 **Fonctionnalités disponibles :**
 • 📸 Classification des déchets électroniques
@@ -52,7 +52,7 @@ Envoyez-moi une photo d'un appareil électronique pour commencer la classificati
         logger.info(f"start_command: telegram_id={telegram_id} registration_link={registration_link}")
 
         welcome_message = f"""
-🤖 Bienvenue sur le Bot Recyclic !
+🤖 Bienvenue sur le Bot RecyClique !
 
 Bonjour {user.first_name or 'utilisateur'} !
 

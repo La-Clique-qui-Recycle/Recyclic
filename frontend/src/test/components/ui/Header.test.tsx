@@ -45,7 +45,7 @@ describe('Header Component', () => {
   it('should render the logo with recycle icon', () => {
     render(<Header />)
     
-    expect(screen.getByText('Recyclic')).toBeInTheDocument()
+    expect(screen.getByText('RecyClique')).toBeInTheDocument()
     // Note: The Recycle icon doesn't have a test-id, so we check for the text
   })
 
@@ -146,7 +146,7 @@ describe('Header Component', () => {
     
     const header = screen.getByRole('banner')
     const nav = screen.getByRole('navigation')
-    const logo = screen.getByText('Recyclic')
+    const logo = screen.getByText('RecyClique')
     
     expect(header).toBeInTheDocument()
     expect(nav).toBeInTheDocument()

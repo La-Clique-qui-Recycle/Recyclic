@@ -13,7 +13,7 @@ from recyclic_api.core.audit import (
     log_cash_session_access
 )
 from recyclic_api.models.user import User, UserRole
-from recyclic_api.models.cash_session import CashSession, CashSessionStatus
+from recyclic_api.models.cash_session import CashSession, CashSessionStatus, CashSessionStep
 from recyclic_api.core.config import settings
 from recyclic_api.core.email_service import EmailAttachment, get_email_service
 from recyclic_api.services.export_service import generate_cash_session_report
@@ -27,7 +27,10 @@ from recyclic_api.schemas.cash_session import (
     CashSessionFilters,
     CashSessionStats,
     CashSessionDetailResponse,
-    SaleDetail
+    SaleDetail,
+    CashSessionStepUpdate,
+    CashSessionStepResponse,
+    CashSessionStep
 )
 from recyclic_api.services.cash_session_service import CashSessionService
 from uuid import UUID
@@ -126,6 +129,12 @@ async def create_cash_session(
             initial_amount=session_data.initial_amount,
             register_id=session_data.register_id,
         )
+
+        # Initialiser les métriques d'étape (commencer par 'entry' pour les sessions de réception)
+        cash_session.set_current_step(CashSessionStep.ENTRY)
+
+        # Sauvegarder l'initialisation des métriques
+        db.commit()
 
         # Log de l'ouverture de session
         log_cash_session_opening(
@@ -712,11 +721,208 @@ async def get_cash_session_stats(
 ):
     """
     Récupère les statistiques des sessions de caisse (KPIs agrégés).
-    
+
     Seuls les administrateurs peuvent voir les statistiques.
     """
     service = CashSessionService(db)
-    
+
     stats = service.get_session_stats(date_from=date_from, date_to=date_to, site_id=site_id)
-    
+
     return CashSessionStats(**stats)
+
+
+@router.get(
+    "/{session_id}/step",
+    response_model=CashSessionStepResponse,
+    summary="Récupérer les métriques d'étape d'une session",
+    description="""
+    Récupère l'état actuel de l'étape du workflow pour une session de caisse.
+
+    **Permissions requises :** USER, ADMIN, ou SUPER_ADMIN
+
+    **Informations retournées :**
+    - Étape actuelle du workflow (entry/sale/exit)
+    - Timestamp de début de l'étape actuelle
+    - Timestamp de dernière activité
+    - Durée écoulée dans l'étape actuelle
+
+    **Utilisation :** Sert aux indicateurs visuels de progression dans l'interface
+    """,
+    responses={
+        200: {
+            "description": "Métriques d'étape récupérées avec succès",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "session_id": "550e8400-e29b-41d4-a716-446655440000",
+                        "current_step": "entry",
+                        "step_start_time": "2025-01-27T10:30:00Z",
+                        "last_activity": "2025-01-27T10:35:00Z",
+                        "step_duration_seconds": 300.0
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Session non trouvée",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Session de caisse non trouvée"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Accès non autorisé",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Accès non autorisé"
+                    }
+                }
+            }
+        }
+    },
+    tags=["Sessions de Caisse - Métriques d'Étape"]
+)
+async def get_session_step_metrics(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    """Récupère les métriques d'étape actuelles d'une session."""
+    service = CashSessionService(db)
+
+    session = service.get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
+
+    # Vérifier que l'utilisateur peut accéder à cette session
+    if (current_user.role == UserRole.USER and
+        str(session.operator_id) != str(current_user.id)):
+        raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
+
+    # Récupérer les métriques d'étape
+    step_metrics = session.get_step_metrics()
+
+    return CashSessionStepResponse(
+        session_id=session_id,
+        **step_metrics
+    )
+
+
+@router.put(
+    "/{session_id}/step",
+    response_model=CashSessionStepResponse,
+    summary="Mettre à jour l'étape d'une session",
+    description="""
+    Met à jour l'étape actuelle du workflow pour une session de caisse.
+
+    **Permissions requises :** USER, ADMIN, ou SUPER_ADMIN
+
+    **Règles métier :**
+    - Seul l'opérateur de la session peut changer son étape
+    - Les transitions d'étape mettent à jour les métriques de performance
+    - L'activité est automatiquement tracée avec timestamp
+
+    **Étapes disponibles :**
+    - `entry` : Phase de réception/dépôt d'objets
+    - `sale` : Phase de vente (caisse)
+    - `exit` : Phase de clôture
+
+    **Audit :** Les changements d'étape sont tracés dans les logs
+    """,
+    responses={
+        200: {
+            "description": "Étape mise à jour avec succès",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "session_id": "550e8400-e29b-41d4-a716-446655440000",
+                        "current_step": "sale",
+                        "step_start_time": "2025-01-27T10:35:00Z",
+                        "last_activity": "2025-01-27T10:35:00Z",
+                        "step_duration_seconds": 0.0
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Erreur de validation",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Étape invalide"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Accès non autorisé",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Accès non autorisé à cette session"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Session non trouvée",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Session de caisse non trouvée"
+                    }
+                }
+            }
+        }
+    },
+    tags=["Sessions de Caisse - Métriques d'Étape"]
+)
+async def update_session_step(
+    session_id: str,
+    step_update: CashSessionStepUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
+):
+    """Met à jour l'étape actuelle d'une session et retourne les nouvelles métriques."""
+    service = CashSessionService(db)
+
+    session = service.get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session de caisse non trouvée")
+
+    # Vérifier que l'utilisateur peut modifier cette session
+    if (current_user.role == UserRole.USER and
+        str(session.operator_id) != str(current_user.id)):
+        raise HTTPException(status_code=403, detail="Accès non autorisé à cette session")
+
+    # Vérifier que la session est ouverte
+    if session.status != CashSessionStatus.OPEN:
+        raise HTTPException(status_code=400, detail="Impossible de changer l'étape d'une session fermée")
+
+    try:
+        # Mettre à jour l'étape
+        model_step = CashSessionStep(step_update.step.value.upper())
+        session.set_current_step(model_step)
+
+        # Sauvegarder les changements
+        db.commit()
+
+        # Log de l'activité (optionnel - peut être ajouté aux logs d'audit existants)
+        logger.info(f"Session {session_id}: étape changée vers {step_update.step.value} par {current_user.username or current_user.id}")
+
+        # Retourner les nouvelles métriques
+        step_metrics = session.get_step_metrics()
+        return CashSessionStepResponse(
+            session_id=session_id,
+            **step_metrics
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Étape invalide: {str(e)}")
+    except Exception as e:
+        logger.error(f"Erreur lors de la mise à jour de l'étape pour la session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour de l'étape")

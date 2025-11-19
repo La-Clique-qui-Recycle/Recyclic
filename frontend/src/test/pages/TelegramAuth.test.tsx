@@ -36,7 +36,7 @@ describe('TelegramAuth', () => {
   it('should render the main question and buttons', () => {
     renderWithRouter(<TelegramAuth />);
     
-    expect(screen.getByText('Avez-vous déjà un compte Recyclic ?')).toBeInTheDocument();
+    expect(screen.getByText('Avez-vous déjà un compte RecyClique ?')).toBeInTheDocument();
     expect(screen.getByText("S'inscrire")).toBeInTheDocument();
     expect(screen.getByText('Se connecter')).toBeInTheDocument();
   });

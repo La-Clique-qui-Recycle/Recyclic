@@ -25,6 +25,16 @@ const Title = styled.h3`
   color: #2c5530;
 `;
 
+const InfoMessage = styled.div`
+  background: #e8f5e8;
+  border: 1px solid #2c5530;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  color: #2c5530;
+  font-size: 0.9rem;
+`;
+
 const Form = styled.form`
   display: flex;
   flex-direction: column;
@@ -137,12 +147,21 @@ const FinalizationScreen: React.FC<FinalizationScreenProps> = ({ open, totalAmou
     return totalAmount + parsedDonation;
   }, [totalAmount, parsedDonation]);
 
+  // Déterminer si c'est une transaction spéciale (dons/sorties)
+  // Une transaction est spéciale si le total de base (sans don supplémentaire) est <= 0
+  const isSpecialTransaction = totalAmount <= 0;
+
   const change = useMemo(() => {
     if (paymentMethod !== 'cash' || parsedCashGiven == null) return undefined;
     return Number((parsedCashGiven - amountDue).toFixed(2));
   }, [paymentMethod, parsedCashGiven, amountDue]);
 
   const canConfirm = useMemo(() => {
+    // Pour les transactions à zéro euro ou dons (amountDue <= 0), pas besoin de paiement
+    if (amountDue <= 0) {
+      return true;
+    }
+
     if (paymentMethod === 'cash') {
       return parsedCashGiven != null && parsedCashGiven >= amountDue;
     }
@@ -164,6 +183,13 @@ const FinalizationScreen: React.FC<FinalizationScreenProps> = ({ open, totalAmou
     <Backdrop $open={open} role="dialog" aria-modal="true" aria-label="Finaliser la vente" data-testid="finalization-screen">
       <Modal>
         <Title>Finaliser la vente</Title>
+
+        {isSpecialTransaction && (
+          <InfoMessage>
+            💝 <strong>Transaction spéciale :</strong> Cette vente ne nécessite aucun paiement car il s'agit de dons ou de sorties uniquement.
+          </InfoMessage>
+        )}
+
         <Form onSubmit={handleSubmit}>
           <Summary>
             <span>Total à payer</span>
@@ -198,7 +224,7 @@ const FinalizationScreen: React.FC<FinalizationScreenProps> = ({ open, totalAmou
             </Field>
           </Row>
 
-          {paymentMethod === 'cash' && (
+          {paymentMethod === 'cash' && amountDue > 0 && (
             <Row>
               <Field>
                 <Label htmlFor="cashGiven">Montant donné (€)</Label>

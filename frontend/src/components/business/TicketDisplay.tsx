@@ -88,7 +88,7 @@ export const TicketDisplay: React.FC<TicketDisplayProps> = ({
   items,
   totalAmount,
   timestamp,
-  siteName = 'Ressourcerie Recyclic'
+  siteName = 'Ressourcerie RecyClique'
 }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

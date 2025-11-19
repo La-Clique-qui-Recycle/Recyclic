@@ -24,7 +24,7 @@ describe('Registration Page', () => {
   it('should render registration form with all required fields', () => {
     render(<Registration />)
     
-    expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
+    expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
     expect(screen.getByLabelText(/id telegram/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/identifiant/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/prénom/i)).toBeInTheDocument()

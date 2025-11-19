@@ -1,0 +1,46 @@
+# Story (Backend): Évolution de l'API pour le Nouveau Workflow de Vente
+
+**ID:** STORY-B14-P3-SALE-API-V2
+**Titre:** Évolution de l'API pour le Nouveau Workflow de Vente
+**Epic:** Évolution du Workflow de Vente en Caisse
+**Priorité:** P1 (Critique)
+**Statut:** Approuvée
+
+---
+
+## User Story
+
+**En tant que** Développeur Backend,
+**Je veux** que l'API de création de vente puisse accepter et stocker les nouvelles informations du workflow (quantité, don, moyen de paiement),
+**Afin de** garantir la persistance de toutes les données de la vente.
+
+## Acceptance Criteria
+
+1.  Le modèle de données pour une ligne de vente (`SaleItem`) est mis à jour pour inclure un champ `quantity` (Integer).
+2.  Le modèle de données pour une vente (`Sale`) est mis à jour pour inclure les champs `donation` (Numeric) et `payment_method` (String/Enum).
+3.  Une ou plusieurs migrations Alembic sont créées pour appliquer ces changements à la base de données.
+4.  L'endpoint `POST /api/v1/sales` est mis à jour pour accepter ces nouvelles données dans son payload.
+5.  Les tests d'intégration sont mis à jour pour valider la sauvegarde et la récupération de ces nouvelles données.
+
+## Tasks / Subtasks
+
+- [ ] **Modèles & Migrations :**
+    - [ ] Ajouter le champ `quantity` au modèle `SaleItem`.
+    - [ ] Ajouter les champs `donation` et `payment_method` au modèle `Sale`.
+    - [ ] Générer la ou les migrations Alembic correspondantes.
+- [ ] **Schémas & Endpoint :**
+    - [ ] Mettre à jour les schémas Pydantic pour inclure les nouveaux champs dans le corps de la requête de création de vente.
+    - [ ] Modifier la logique du service de création de vente pour qu'il enregistre ces nouvelles données.
+- [ ] **Tests :**
+    - [ ] Adapter les tests d'intégration existants pour qu'ils envoient un payload complet avec les nouvelles données.
+    - [ ] Ajouter des assertions pour vérifier que la quantité, le don et le moyen de paiement sont correctement enregistrés en base de données.
+
+## Dev Notes
+
+-   **Dépendance :** Cette story est un prérequis pour que les stories frontend puissent fonctionner de bout en bout.
+-   Pour le `payment_method`, il serait judicieux de créer un `Enum` Python pour garantir la cohérence des valeurs (ex: `CASH`, `CARD`, `CHECK`).
+
+## Definition of Done
+
+- [ ] L'API de création de vente gère et persiste correctement la quantité, le don et le moyen de paiement.
+- [ ] La story a été validée par un agent QA.

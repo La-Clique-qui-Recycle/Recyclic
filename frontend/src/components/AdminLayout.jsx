@@ -148,7 +148,7 @@ const AdminLayout = () => {
           <Logo>
             <LogoMain>
               <Recycle size={24} />
-              Recyclic
+              RecyClique
             </LogoMain>
             <LogoVersion>
               {versionDisplay}

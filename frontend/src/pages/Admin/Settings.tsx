@@ -1132,7 +1132,7 @@ const Settings: React.FC = () => {
                     value={emailSettings.from_name}
                     onChange={(e) => handleEmailSettingsChange('from_name', e.target.value)}
                     disabled={savingEmailSettings}
-                    placeholder="Recyclic"
+                    placeholder="RecyClique"
                   />
                   <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
                     Le nom qui apparaîtra comme expéditeur des emails
@@ -1149,7 +1149,7 @@ const Settings: React.FC = () => {
                     value={emailSettings.from_address}
                     onChange={(e) => handleEmailSettingsChange('from_address', e.target.value)}
                     disabled={savingEmailSettings}
-                    placeholder="noreply@recyclic.fr"
+                    placeholder="noreply@recyclique.fr"
                   />
                   <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
                     Cette adresse doit être vérifiée dans Brevo

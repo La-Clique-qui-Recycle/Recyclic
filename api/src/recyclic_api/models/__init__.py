@@ -5,7 +5,7 @@ from .site import Site
 from .deposit import Deposit
 from .sale import Sale
 from .sale_item import SaleItem
-from .cash_session import CashSession
+from .cash_session import CashSession, CashSessionStep
 from .cash_register import CashRegister
 from .sync_log import SyncLog
 from .registration_request import RegistrationRequest
@@ -17,6 +17,7 @@ from .ticket_depot import TicketDepot, TicketDepotStatus
 from .ligne_depot import LigneDepot
 from .ligne_depot import Destination
 from .category import Category
+from .preset_button import PresetButton, ButtonType
 from .setting import Setting
 from .permission import Permission, Group, user_groups, group_permissions
 from .audit_log import AuditLog, AuditActionType
@@ -31,6 +32,7 @@ __all__ = [
     "Deposit",
     "Sale",
     "CashSession",
+    "CashSessionStep",
     "CashRegister",
     "SyncLog",
     "RegistrationRequest",
@@ -43,6 +45,8 @@ __all__ = [
     "TicketDepotStatus",
     "LigneDepot",
     "Category",
+    "PresetButton",
+    "ButtonType",
     "Setting",
     "Permission",
     "Group",

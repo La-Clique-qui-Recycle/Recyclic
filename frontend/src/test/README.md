@@ -1,4 +1,4 @@
-# Tests Frontend - Recyclic
+# Tests Frontend - RecyClique
 
 ## Structure des Tests
 

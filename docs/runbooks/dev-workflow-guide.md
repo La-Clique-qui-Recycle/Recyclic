@@ -159,3 +159,148 @@ hexdump -C .env | head -1
 - Nettoyer les fichiers si nécessaire
 
 **En résumé :** Le problème était un mélange de cache Docker et de BOM. En production, vous n'aurez pas ce problème car le code sera frais et l'image sera reconstruite proprement ! 🚀
+
+---
+
+## 🛡️ **Système de Sauvegarde et Récupération**
+
+### Vue d'ensemble
+
+Le système de sauvegarde automatique garantit la disponibilité et l'intégrité des données PostgreSQL. Cette section couvre les procédures essentielles pour les développeurs.
+
+### Sauvegarde Automatique
+
+#### Configuration
+- **Fréquence** : Quotidienne à 02h00
+- **Rétention** : 7 jours quotidiens, 4 semaines hebdomadaires, 12 mois mensuels
+- **Compression** : Activée par défaut
+- **Chiffrement** : Optionnel (configurable via `BACKUP_ENCRYPTION_KEY`)
+
+#### Scripts Disponibles
+```bash
+# Sauvegarde manuelle PostgreSQL
+./scripts/backup-postgres.sh
+
+# Configuration cron job (Linux)
+./scripts/setup-postgres-backup-cron.sh
+
+# Services Docker dédiés
+docker-compose -f docker-compose.backup.yml up -d postgres-backup
+```
+
+#### Variables d'Environnement
+```bash
+# Configuration obligatoire
+POSTGRES_PASSWORD=your_password
+POSTGRES_HOST=localhost
+POSTGRES_DB=recyclic
+
+# Configuration optionnelle
+BACKUP_COMPRESSION=true
+BACKUP_ENCRYPTION=false
+BACKUP_RETENTION_DAYS=7
+NOTIFICATION_EMAIL=admin@example.com
+NOTIFICATION_TELEGRAM_TOKEN=your_token
+NOTIFICATION_TELEGRAM_CHAT_ID=your_chat_id
+```
+
+### Monitoring et Alertes
+
+#### Métriques Collectées
+- Âge de la dernière sauvegarde
+- Taille totale des sauvegardes
+- Espace disque disponible
+- État de santé du système
+
+#### Seuils d'Alerte
+- **Critique** : Sauvegarde > 25h, Disque < 1GB
+- **Warning** : Sauvegarde > 6h, Disque < 5GB
+
+#### Commandes de Monitoring
+```bash
+# Collecte des métriques
+./scripts/backup-monitoring.sh
+
+# Vérification des sauvegardes
+./scripts/verify-backup.sh
+
+# Test du système d'alertes
+./scripts/backup-alerting.sh test
+```
+
+### Procédures de Récupération
+
+#### Scénarios Courants
+
+##### 1. Récupération Simple (Test/Développement)
+```bash
+# Arrêter les services
+docker-compose stop api bot frontend
+
+# Restaurer la base
+docker-compose exec -T postgres psql -U recyclic -d recyclic < /path/to/backup.sql
+
+# Redémarrer les services
+docker-compose start api bot frontend
+```
+
+##### 2. Récupération d'Urgence (Production)
+```bash
+# Arrêter tout
+docker-compose down
+
+# Supprimer le volume corrompu
+docker volume rm recyclic_postgres_data
+
+# Recréer et restaurer
+docker-compose up -d postgres
+docker-compose exec postgres psql -U recyclic -c "CREATE DATABASE recyclic;"
+docker-compose exec -T postgres psql -U recyclic -d recyclic < /path/to/backup.sql
+docker-compose up -d
+```
+
+#### Tests de Récupération
+```bash
+# Tests automatisés complets
+./scripts/test-recovery.sh
+
+# Validation RTO/RPO (< 4h restauration, < 1h données perdues)
+```
+
+### Documentation Complète
+
+📖 **Guide de Récupération Détaillé** : [`docs/runbooks/database-recovery.md`](../runbooks/database-recovery.md)
+- Procédures complètes pour tous les scénarios
+- Tests automatisés et validation
+- Métriques RTO/RPO
+
+📖 **Architecture Infrastructure** : [`docs/architecture/9-infrastructure-et-dploiement.md`](../architecture/9-infrastructure-et-dploiement.md)
+- Configuration détaillée des services de sauvegarde
+- Intégration avec l'orchestration Docker
+
+### Bonnes Pratiques
+
+#### Développement
+- Tester les sauvegardes après les migrations importantes
+- Vérifier l'intégrité avant les déploiements
+- Maintenir des sauvegardes manuelles avant les changements risqués
+
+#### Production
+- Monitorer quotidiennement les métriques de sauvegarde
+- Tester mensuellement les procédures de récupération
+- Conserver des sauvegardes hors site pour la sécurité
+
+#### Alertes et Monitoring
+- Configurer les notifications pour tous les environnements critiques
+- Répondre aux alertes dans les 30 minutes
+- Documenter tout incident de sauvegarde
+
+### Contacts d'Urgence
+
+- **Technique** : Équipe Dev (James, Bob)
+- **Intervention** : Suivre le guide de récupération
+- **Escalade** : Direction technique si RTO dépassé
+
+---
+
+*Dernière mise à jour : 2025-01-27 | Version : 1.0*

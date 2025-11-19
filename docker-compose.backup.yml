@@ -1,0 +1,69 @@
+# Configuration Docker Compose pour les sauvegardes automatisées
+# Auteur: James (Dev Agent)
+# Date: 2025-01-27
+
+version: '3.8'
+
+services:
+  # Service de sauvegarde PostgreSQL programmé
+  postgres-backup:
+    build:
+      context: .
+      dockerfile: Dockerfile.backup
+      args:
+        BACKUP_TIME: ${BACKUP_TIME:-2}  # Heure d'exécution (2h du matin)
+    image: recyclic/postgres-backup:${BACKUP_IMAGE_TAG:-latest}
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_COMPRESSION: ${BACKUP_COMPRESSION:-true}
+      BACKUP_ENCRYPTION: ${BACKUP_ENCRYPTION:-false}
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+      RETENTION_DAILY: ${RETENTION_DAILY:-7}
+      RETENTION_WEEKLY: ${RETENTION_WEEKLY:-4}
+      RETENTION_MONTHLY: ${RETENTION_MONTHLY:-12}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:ro  # Accès en lecture seule aux données
+      - ./backups:/backups  # Montage du répertoire de sauvegardes
+      - ./logs:/logs  # Montage du répertoire de logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"  # Ne pas redémarrer automatiquement
+    profiles:
+      - backup  # Activer avec --profile backup
+
+  # Service de vérification des sauvegardes
+  backup-verification:
+    build:
+      context: .
+      dockerfile: Dockerfile.backup
+      target: verification
+    image: recyclic/backup-verification:${BACKUP_IMAGE_TAG:-latest}
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: recyclic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backups:ro  # Accès en lecture seule aux sauvegardes
+      - ./logs:/logs  # Montage du répertoire de logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    profiles:
+      - verification
+
+volumes:
+  postgres_data:
+    external: true  # Volume partagé avec le service postgres principal
+
+networks:
+  default:
+    external:
+      name: recyclic-network

@@ -1,9 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
+import { Text } from '@mantine/core';
 import CategorySelector from './CategorySelector';
+import EnhancedCategorySelector from '../categories/EnhancedCategorySelector';
 import MultipleWeightEntry from './MultipleWeightEntry';
 import StagingItem from './StagingItem';
+import PresetButtonGrid from '../presets/PresetButtonGrid';
+import PriceCalculator from '../presets/PriceCalculator';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { usePresetStore } from '../../stores/presetStore';
+import { keyboardShortcutHandler } from '../../utils/keyboardShortcuts';
 import {
   applyDigit,
   applyDecimalPoint,
@@ -71,6 +77,22 @@ const CategoryDescription = styled.div`
   color: #666;
 `;
 
+const ShortcutBadge = styled.div`
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  background: rgba(44, 85, 48, 0.9);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+`;
+
 const ModeButton = styled.button<{ $active?: boolean }>`
   padding: 0.6rem 1.25rem;
   min-height: 44px;
@@ -99,7 +121,9 @@ const ModeContent = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* EMPÊCHE le débordement */
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  scrollbar-gutter: stable;
 `;
 
 const ModeTitle = styled.h3`
@@ -113,6 +137,7 @@ const StepContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: 0;
 `;
 
 const StepTitle = styled.h3`
@@ -163,6 +188,34 @@ const InfoSection = styled.div`
   flex: 1;
 `;
 
+const PriceStepLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+
+  @media (min-width: 1200px) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+`;
+
+const PriceColumn = styled.div<{ $secondary?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  flex: 1;
+
+  ${({ $secondary }) =>
+    $secondary &&
+    `
+      @media (min-width: 1200px) {
+        max-width: 380px;
+      }
+    `}
+`;
+
 const ValidateButton = styled.button`
   padding: 1rem 2rem;
   background: #2c5530;
@@ -192,6 +245,8 @@ export interface SaleItemData {
   weight: number;
   price: number;
   total: number;
+  preset_id?: string;
+  notes?: string;
 }
 
 export interface NumpadCallbacks {
@@ -220,12 +275,45 @@ type WizardStep = 'category' | 'subcategory' | 'quantity' | 'weight' | 'price';
 
 export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCallbacks, currentMode }) => {
   const { getCategoryById, activeCategories } = useCategoryStore();
+  const { selectedPreset, notes, clearSelection } = usePresetStore();
 
   const [currentStep, setCurrentStep] = useState<WizardStep>('category');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
   const [weightError, setWeightError] = useState<string>('');
+
+  // État local pour gérer les presets/notes par transaction (au lieu du store global)
+  const [currentTransactionPreset, setCurrentTransactionPreset] = useState<PresetButtonWithCategory | null>(null);
+  const [currentTransactionNotes, setCurrentTransactionNotes] = useState<string>('');
+
+  // Initialize keyboard shortcuts when categories are available
+  useEffect(() => {
+    if (activeCategories.length > 0) {
+      // Initialize shortcuts for the current step
+      const categoriesToUse = currentStep === 'category'
+        ? activeCategories.filter(category => !category.parent_id)
+        : currentStep === 'subcategory'
+          ? activeCategories.filter(category => category.parent_id === selectedCategory)
+          : [];
+
+      keyboardShortcutHandler.initialize(
+        categoriesToUse,
+        currentStep === 'category' ? handleCategorySelect : handleSubcategorySelect
+      );
+
+      if (categoriesToUse.length > 0 && (currentStep === 'category' || currentStep === 'subcategory')) {
+        keyboardShortcutHandler.activate();
+      } else {
+        keyboardShortcutHandler.deactivate();
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      keyboardShortcutHandler.deactivate();
+    };
+  }, [activeCategories, currentStep, selectedCategory]);
 
   // Use numpad state from parent - now properly separated
   const quantity = numpadCallbacks.quantityValue;
@@ -292,20 +380,34 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCa
   }, [weight]);
 
   const isPriceValid = useMemo(() => {
-    if (!price) return false;
-    const num = parseFloat(price);
-    if (isNaN(num) || num < 0.01 || num > 9999.99) return false;
+    // Si un preset est sélectionné, il est automatiquement valide (prix déjà défini)
+    // Story 1.1.2: Utiliser currentTransactionPreset au lieu de selectedPreset du store global
+    if (currentTransactionPreset) {
+      return true;
+    }
+
     const cat = getCategoryById(selectedCategory);
-    // Validation entre price(min) et max_price si max_price>0
     const hasMax = cat?.max_price != null && Number(cat.max_price) > 0;
     const hasMin = cat?.price != null;
+
+    // Si pas de max_price (prix fixe), utiliser automatiquement le prix minimum
+    if (hasMin && !hasMax) {
+      return true; // Prix minimum sera utilisé automatiquement
+    }
+
+    // Sinon, validation manuelle du prix
+    if (!price) return false;
+    const num = parseFloat(price);
+    if (isNaN(num) || num < 0 || num > 9999.99) return false;
+
+    // Validation entre price(min) et max_price si max_price>0
     if (hasMax && hasMin) {
       const min = Number(cat!.price);
       const max = Number(cat!.max_price);
       return num >= min && num <= max;
     }
     return true;
-  }, [price, selectedCategory, getCategoryById]);
+  }, [price, selectedCategory, getCategoryById, currentTransactionPreset]);
 
   // Removed handleNumberClick, handleDecimalClick, handleClear - now handled by parent numpad
 
@@ -392,39 +494,19 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCa
     const category = getCategoryById(actualCategoryId);
 
     // Nouvelle logique:
-    // - Si max_price > 0 => demander saisie du prix (aller à l'étape price)
-    // - Sinon, utiliser price (prix minimum) comme prix final et sauter l'étape
-    const hasMaxPrice = category?.max_price != null && Number(category.max_price) > 0;
-    if (hasMaxPrice) {
-      setCurrentStep('price');
-      // Initialize numpad for price input
-      numpadCallbacks.setPriceValue('');
-      numpadCallbacks.setPriceError('');
-      numpadCallbacks.setMode('price');
-      return;
-    }
-
-    if (category?.price != null) {
-      const numQuantity = parseInt(quantity, 10);
-      const numWeight = parseFloat(weight);
-      const unitPrice = Number(category.price);
-      const totalPrice = unitPrice * numQuantity;
-      onItemComplete({
-        category: selectedCategory,
-        subcategory: selectedSubcategory || undefined,
-        quantity: numQuantity,
-        weight: numWeight,
-        price: unitPrice,
-        total: totalPrice,
-      });
-      resetWizard();
-      return;
-    }
-
-    // Par défaut si pas de price défini, demander le prix
+    // - Toujours passer par l'étape prix pour permettre la sélection des boutons prédéfinis
     setCurrentStep('price');
-    // Initialize numpad for price input
-    numpadCallbacks.setPriceValue('');
+
+    // Pré-remplir le prix si c'est un prix fixe (pas de max_price)
+    const hasMaxPrice = category?.max_price != null && Number(category.max_price) > 0;
+    if (category?.price && !hasMaxPrice) {
+      // Prix fixe : pré-remplir avec le prix minimum
+      numpadCallbacks.setPriceValue(category.price.toString());
+    } else {
+      // Prix variable : champ vide
+      numpadCallbacks.setPriceValue('');
+    }
+
     numpadCallbacks.setPriceError('');
     numpadCallbacks.setMode('price');
   };
@@ -440,23 +522,44 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCa
   };
 
   const handlePriceConfirm = () => {
-    if (!isPriceValid || !isWeightValid) return;
+    if (!isPriceValid || !isWeightValid || !isQuantityValid) return;
+
+    // Use subcategory if selected, otherwise use category
+    const actualCategoryId = selectedSubcategory || selectedCategory;
+    const category = getCategoryById(actualCategoryId);
 
     const numWeight = parseFloat(weight);
-    const numPrice = parseFloat(price);
     const numQuantity = parseInt(quantity, 10);
-    const totalPrice = numPrice * numQuantity;
+
+    // Calcul du prix unitaire
+    // IMPORTANT: Les presets (Don 0€, Don -18 ans, Recyclage, Déchèterie) ont toujours un prix unitaire de 0€
+    // Le preset_price sert uniquement à identifier le type de transaction, pas à calculer le prix
+    let finalPrice = 0;
+    if (currentTransactionPreset) {
+      // Si un preset est sélectionné, le prix unitaire est toujours 0€
+      finalPrice = 0;
+    } else if (price) {
+      // Si pas de preset mais prix saisi manuellement, utiliser ce prix
+      finalPrice = parseFloat(price);
+    } else if (category?.price && !category?.max_price) {
+      // Si pas de prix saisi et pas de max_price (prix fixe), utiliser le prix minimum
+      finalPrice = Number(category.price);
+    }
+
+    const totalPrice = finalPrice * numQuantity;
 
     onItemComplete({
       category: selectedCategory,
       subcategory: selectedSubcategory || undefined,
       quantity: numQuantity,
       weight: numWeight,
-      price: numPrice,
+      price: finalPrice,
       total: totalPrice,
+      preset_id: currentTransactionPreset?.id,
+      notes: currentTransactionPreset ? currentTransactionNotes : undefined,
     });
 
-    // Reset wizard
+    // Reset wizard (keep preset selection for the transaction)
     resetWizard();
   };
 
@@ -473,6 +576,10 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCa
     numpadCallbacks.setWeightError('');
     numpadCallbacks.setMode('idle');
     setCurrentStep('category');
+
+    // Réinitialiser l'état local des presets/notes pour la prochaine transaction
+    setCurrentTransactionPreset(null);
+    setCurrentTransactionNotes('');
   };
 
   // Gestionnaire séparé pour la touche Entrée
@@ -535,10 +642,23 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCa
                     data-testid={`subcategory-${subcat.id}`}
                     data-selected={selectedSubcategory === subcat.id ? 'true' : 'false'}
                     aria-pressed={selectedSubcategory === subcat.id}
-                    aria-label={`Sélectionner la sous-catégorie ${subcat.name}`}
+                    aria-label={
+                      subcat.shortcut_key
+                        ? `Sélectionner la sous-catégorie ${subcat.name}. Raccourci clavier: ${subcat.shortcut_key.toUpperCase()}`
+                        : `Sélectionner la sous-catégorie ${subcat.name}`
+                    }
+                    style={{ position: 'relative' }}
                   >
                     <CategoryName>{subcat.name}</CategoryName>
                     <CategoryDescription>{formatPrice()}</CategoryDescription>
+                    {subcat.shortcut_key && (
+                      <ShortcutBadge
+                        aria-hidden="true"
+                        data-testid={`subcategory-shortcut-${subcat.id}`}
+                      >
+                        {subcat.shortcut_key.toUpperCase()}
+                      </ShortcutBadge>
+                    )}
                   </CategoryButton>
                 );
               })}
@@ -603,40 +723,98 @@ export const SaleWizard: React.FC<SaleWizardProps> = ({ onItemComplete, numpadCa
         return (
           <StepContent data-step="price">
             <StepTitle>Prix unitaire</StepTitle>
-            <DisplayValue $isValid={!priceError} data-testid="price-input">
-              {price || '0'} €
-            </DisplayValue>
+            <PriceStepLayout>
+              <PriceColumn>
+                <PresetButtonGrid
+                  selectedPreset={currentTransactionPreset}
+                  onPresetSelect={setCurrentTransactionPreset}
+                  onPresetSelected={(preset) => {
+                    if (preset) {
+                      // When a preset is selected, set the price to 0€ (presets always have 0€ unit price)
+                      numpadCallbacks.setPriceValue('0');
+                    } else {
+                      // When deselected, clear the price value to allow manual input
+                      numpadCallbacks.setPriceValue('');
+                    }
+                  }}
+                />
 
-            {(() => {
-              const cat = getCategoryById(selectedCategory);
-              const hasMax = cat?.max_price != null && Number(cat.max_price) > 0;
-              const hasMin = cat?.price != null;
-              if (hasMin && hasMax) {
-                const min = Number(cat!.price).toFixed(2);
-                const max = Number(cat!.max_price).toFixed(2);
-                return (
-                  <InfoSection>
-                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                      Fourchette de prix autorisée
-                    </div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2c5530' }}>
-                      {min} € – {max} €
-                    </div>
-                  </InfoSection>
-                );
-              }
-              return null;
-            })()}
+                {currentTransactionPreset && (() => {
+                  // Récupérer le nom de la catégorie actuellement sélectionnée
+                  const actualCategoryId = selectedSubcategory || selectedCategory;
+                  const currentCategory = getCategoryById(actualCategoryId);
+                  const currentCategoryName = currentCategory?.name;
 
-            <ErrorMessage>{priceError}</ErrorMessage>
+                  return (
+                    <PriceCalculator
+                      selectedPreset={currentTransactionPreset}
+                      notes={currentTransactionNotes}
+                      onNotesChange={setCurrentTransactionNotes}
+                      categoryName={currentCategoryName}
+                      onPriceCalculated={(calculatedPrice) => {
+                        numpadCallbacks.setPriceValue(calculatedPrice.toString());
+                      }}
+                    />
+                  );
+                })()}
 
-            <ValidateButton
-              disabled={!isPriceValid}
-              onClick={handlePriceConfirm}
-              data-testid="add-item-button"
-            >
-              Valider le prix
-            </ValidateButton>
+                {!currentTransactionPreset && (
+                  <div>
+                    <Text size="sm" fw={500} mb="xs" c="dimmed">
+                      Prix manuel
+                    </Text>
+                    <DisplayValue $isValid={!priceError} data-testid="price-input">
+                      {price || '0'} €
+                    </DisplayValue>
+                  </div>
+                )}
+              </PriceColumn>
+
+              <PriceColumn $secondary>
+                {(() => {
+                  const cat = getCategoryById(selectedCategory);
+                  const hasMax = cat?.max_price != null && Number(cat.max_price) > 0;
+                  const hasMin = cat?.price != null;
+                  if (hasMin && hasMax) {
+                    const min = Number(cat!.price).toFixed(2);
+                    const max = Number(cat!.max_price).toFixed(2);
+                    return (
+                      <InfoSection style={{ margin: 0 }}>
+                        <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                          Fourchette de prix autorisée
+                        </div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2c5530' }}>
+                          {min} € – {max} €
+                        </div>
+                      </InfoSection>
+                    );
+                  } else if (hasMin && !hasMax) {
+                    const min = Number(cat!.price).toFixed(2);
+                    return (
+                      <InfoSection style={{ margin: 0 }}>
+                        <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                          Prix fixe (boutons prédéfinis disponibles)
+                        </div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2c5530' }}>
+                          {min} € (ou sélectionner un bouton)
+                        </div>
+                      </InfoSection>
+                    );
+                  }
+                  return null;
+                })()}
+
+                <ErrorMessage>{priceError}</ErrorMessage>
+
+                <ValidateButton
+                  disabled={!isPriceValid}
+                  onClick={handlePriceConfirm}
+                  data-testid="add-item-button"
+                >
+                  Valider le prix
+                </ValidateButton>
+              </PriceColumn>
+            </PriceStepLayout>
           </StepContent>
         );
 

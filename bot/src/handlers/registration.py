@@ -18,7 +18,7 @@ async def registration_command(update: Update, context: ContextTypes.DEFAULT_TYP
     if existing_user:
         if existing_user.get("is_active"):
             await update.message.reply_text(
-                "✅ Vous êtes déjà inscrit et actif sur la plateforme Recyclic !\n\n"
+                "✅ Vous êtes déjà inscrit et actif sur la plateforme RecyClique !\n\n"
                 "Vous pouvez utiliser toutes les fonctionnalités du bot."
             )
         else:
@@ -33,11 +33,11 @@ async def registration_command(update: Update, context: ContextTypes.DEFAULT_TYP
     logger.info(f"registration_command: telegram_id={telegram_id} registration_link={registration_link}")
     
     message = f"""
-🤖 **Inscription Recyclic**
+🤖 **Inscription RecyClique**
 
 Bonjour {user.first_name or 'utilisateur'} !
 
-Pour utiliser le bot Recyclic, vous devez d'abord vous inscrire.
+Pour utiliser le bot RecyClique, vous devez d'abord vous inscrire.
 
 **Étapes d'inscription :**
 1. Cliquez sur le bouton "S'inscrire" ci-dessous

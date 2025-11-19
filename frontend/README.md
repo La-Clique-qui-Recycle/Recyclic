@@ -1,6 +1,6 @@
-# Frontend Recyclic
+# Frontend RecyClique
 
-Interface web React pour la plateforme Recyclic - Gestion de recyclage intelligente.
+Interface web React pour la plateforme RecyClique - Gestion de recyclage intelligente.
 
 ## 🚀 Démarrage Rapide
 
@@ -170,10 +170,10 @@ Cette configuration permet au frontend d'appeler `/api/v1/sites` qui sera automa
 
 ```bash
 # Build de l'image
-docker build -t recyclic-frontend .
+docker build -t recyclique-frontend .
 
 # Exécution
-docker run -p 3000:3000 recyclic-frontend
+docker run -p 3000:3000 recyclique-frontend
 ```
 
 ### Docker Compose

@@ -98,7 +98,7 @@ export default function Header() {
       <Nav>
         <Logo>
           <Recycle size={24} />
-          Recyclic
+          RecyClique
         </Logo>
         <NavLinks>
           {navItems.map(({ path, label, icon: Icon }) => (

@@ -1,0 +1,879 @@
+{
+  "timestamp": "Mon Nov 17 20:52:38 CET 2025",
+  "total_files": 97,
+  "results": [
+    {
+      "filename": "5.3-ticket-temps-reel-gestion-erreurs.story.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-5.1.1-migration-db-enum-conflict.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-5.1.2-tests-backend-cash-session-fails.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-bot-asyncio-event-loop.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-bot-container-import-error.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-bot-telegram-token-config.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-frontend-blank-page-on-startup.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-frontend-dev-server-fails-to-start.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-frontend-err-empty-response.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/bug-frontend-login-network-error.md",
+      "status": "terminated",
+      "category": "Terminée",
+      "destination": "docs/archive/v1.2-and-earlier/",
+      "indicators": [
+        "status_terminated",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "archive/task-b01-p4-tech-telegram-button-investigation.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version"
+      ]
+    },
+    {
+      "filename": "archive/tech-debt-activate-reception-tests.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "archive/tech-debt-reception-module-improvements.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "archive/tech-debt-robustesse-api-reception.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "bug-reception-delete-permissions.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "epic-4.6-admin-api-integration-refactor.story.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-1-1-infrastructure-technique.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version"
+      ]
+    },
+    {
+      "filename": "story-1-1-risk-design-analysis.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-1-1-validation-report.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-1.1-infrastructure-technique.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-admin-dashboard-home.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-archi-caisse-v2-roadmap.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b16-p0-operation-clean-slate.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b16-p1-audit-frontend-parcours-utilisateur.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-b17-p1-artefact-build-local.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b17-p2-comparaison-artefacts.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b17-p5-refonte-admin-dashboard.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b18-p0-correction-proxy-uvicorn.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b18-p1-automatisation-meta-build.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b18-p2-admin-email-config.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b18-p2-backend-api-import-csv.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b18-p2-frontend-interface-import-csv.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b19-p1-raffinements-workflow-caisse.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b21-p3-feature-export-pdf-categories.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b21-p3-raffinements-layout-caisse.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b21-p4-amelioration-saut-page-pdf.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-b21-p4-refonte-ergonomie-reception.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b21-p5-correction-affichage-ticket-caisse.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b23-p1-bug-alignement-footer-poids.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b28-p1-bug-typing-admin-service.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-b31-p1-harmonisation-chemins-api.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b31-p1-independent-stacks-docker.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b31-p2-documentation-update.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b32-p0-debug-login-local.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b32-p1-env-superadmin.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b33-p2-completer-profils-utilisateur.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b33-p5-permissions-par-groupes.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b34-p10-nettoyer-audit.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b34-p15-feat-permission-based-navigation.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b34-p16-bug-fix-cash-session-audit.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b34-p17-bug-diagnose-cash-session-redirect.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b34-p25-ux-audit-admin-section.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version"
+      ]
+    },
+    {
+      "filename": "story-b34-p27-ux-audit-admin-workflows.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b34-p8-activite-en-temps-reel.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b34-p9-restaurer-affichage-version.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-b37-10-bug-fix-current-cash-session-validation.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-b37-12-spec-dashboard-data.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-be-api-lignes-depot.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-be-api-postes-tickets.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-bug-b10-ticket-crash.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-bug-bcrypt-cli.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-bug-caisse-inactive.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-bug-health-service-final.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-bug-health-service-urls.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-bug-login-405-root-cause.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-bug-reception-loop.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-bug-scheduler-async.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-chore-seed-categories.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-cleanup-stories-directory.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-consolidate-p3-bis-refactor-reception-final.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-cpu-optimization-follow-up.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-debt-docker-test-config.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-debt-frontend-stabilization-final.md",
+      "status": "terminated",
+      "category": "Terminée",
+      "destination": "docs/archive/v1.2-and-earlier/",
+      "indicators": [
+        "status_terminated",
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-debt-refactor-hardcoded-paths.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-debt-test-scripts.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-debug-health-page-404.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt"
+      ]
+    },
+    {
+      "filename": "story-docs-create-superadmin.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": []
+    },
+    {
+      "filename": "story-fe-auth-choice-page.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-fe-cleanup-registration-form.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-feat-main-dashboard-kpis.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-final-frontend-deployment-refactor.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-infra-frontend-https-dev.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-infra-version-display.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-investigate-high-cpu-usage.md",
+      "status": "uncertain",
+      "category": "À vérifier",
+      "destination": "docs/stories/to-review/",
+      "indicators": [
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-api-security-hardening.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b09-frontend-cache.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b09-perf-reliability.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b09-security-audit.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b10-monitoring-audit.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b10-tests-coverage.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b12-a11y-tests.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b12-sales-api-security.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b13-currency-helpers.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b13-history-performance.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b36-bot-cleanup.md",
+      "status": "future",
+      "category": "Future",
+      "destination": "docs/archive/future-versions/",
+      "indicators": [
+        "future_version",
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-b36-test-suite-fix.md",
+      "status": "tech_debt",
+      "category": "Tech Debt",
+      "destination": "docs/pending-tech-debt/",
+      "indicators": [
+        "tech_debt",
+        "has_validation"
+      ]
+    },
+    {
+      "filename": "story-tech-debt-merge-session-refactor.md",
+      "status": "terminated",
+      "category": "Terminée",
+      "destination": "docs/archive/v1.2-and-earlier/",
+      "indicators": [
+        "status_terminated",
+        "tech_debt",
+        "has_validation"
+      ]
+    }
+  ]
+}

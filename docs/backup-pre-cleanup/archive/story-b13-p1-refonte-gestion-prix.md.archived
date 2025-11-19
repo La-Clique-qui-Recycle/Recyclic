@@ -1,0 +1,150 @@
+# Story (Refonte): Refonte de la Gestion des Prix des Catégories
+
+**ID:** STORY-B13-P1-REFONTE-PRIX
+**Titre:** Refonte de la Gestion des Prix des Catégories
+**Epic:** Refonte du Workflow de Caisse
+**Priorité:** P0 (Critique)
+**Statut:** Done
+
+---
+
+## User Story
+
+**En tant que** Super-Administrateur,
+**Je veux** un système de gestion des prix simplifié basé sur un prix minimum et un prix maximum,
+**Afin de** configurer la tarification de manière plus intuitive et de guider le processus de vente en caisse.
+
+## Acceptance Criteria
+
+**Backend:**
+1.  La colonne `min_price` est supprimée de la table `categories`.
+2.  La colonne `price` est sémantiquement considérée comme le "Prix Minimum".
+3.  L'API est mise à jour pour ne plus gérer le champ `min_price`.
+
+**Frontend - Administration:**
+4.  La page de gestion des catégories est accessible uniquement aux rôles `admin` et `super-admin`.
+5.  La liste des catégories s'affiche avec les sous-catégories dépliées par défaut.
+6.  Le tableau des catégories affiche les colonnes "Prix Minimum" (valeur de `price`) et "Prix Maximum".
+7.  Le formulaire d'édition de catégorie ne contient que les champs "Prix Minimum" et "Prix Maximum".
+
+**Frontend - Caisse:**
+8.  Si une catégorie sélectionnée a un `max_price` > 0, l'assistant de caisse demande la saisie manuelle d'un prix.
+9.  Si une catégorie sélectionnée n'a pas de `max_price`, l'assistant utilise la valeur de `price` (Prix Minimum) comme prix final et saute l'étape de saisie.
+
+## Tasks / Subtasks
+
+- [x] **Backend :**
+    - [x] Créer une migration Alembic pour supprimer la colonne `min_price` de la table `categories`.
+    - [x] Mettre à jour les schémas Pydantic pour supprimer `min_price`.
+    - [x] Mettre à jour le `category_service.py` et les tests associés.
+- [x] **Frontend - Administration :**
+    - [x] Modifier le composant `CategoriesPage.tsx` pour afficher la liste dépliée et les nouvelles colonnes.
+    - [x] Modifier le composant `CategoryForm.tsx` pour n'afficher que les deux champs de prix.
+    - [x] S'assurer que la route `/admin/categories` est bien protégée pour les rôles `admin` et `super-admin`.
+- [x] **Frontend - Caisse :**
+    - [x] Modifier le composant `SaleWizard.tsx` pour implémenter la nouvelle logique de décision (si `max_price` > 0 alors demander le prix, sinon utiliser `price`).
+    - [x] (Optionnel) Ajouter une validation pour que le prix saisi manuellement soit entre `price` et `max_price`.
+
+## Dev Notes
+
+-   Cette story est une refonte majeure qui clarifie la logique métier.
+-   La modification du workflow en caisse est le point le plus critique.
+
+## Definition of Done
+
+- [ ] Le nouveau système de prix est fonctionnel de bout en bout (admin et caisse).
+- [ ] La story a été validée par un agent QA.
+
+---
+
+## Dev Agent Record
+
+- Agent Model Used: dev (James)
+
+- File List:
+  - Backend
+    - `api/src/recyclic_api/models/category.py`
+    - `api/src/recyclic_api/schemas/category.py`
+    - `api/src/recyclic_api/services/category_service.py`
+    - `api/migrations/versions/m3npr1c3dr0p_drop_min_price_from_categories.py`
+    - `api/tests/api/test_categories_endpoint.py`
+  - Frontend
+    - `frontend/src/services/categoryService.ts`
+    - `frontend/src/components/business/CategoryForm.tsx`
+    - `frontend/src/pages/Admin/Categories.tsx`
+    - `frontend/src/components/business/SaleWizard.tsx`
+    - `frontend/src/components/business/CategoryForm.test.tsx`
+    - `frontend/src/App.jsx`
+
+- Change Log:
+  - Retrait complet de `min_price` (modèle, schémas, services, types, UI, tests).
+  - Ajout migration Alembic pour suppression `min_price`.
+  - Admin: ajout colonnes Prix Min/Max, expansion par défaut des racines, garde d’accès admin/super-admin.
+  - Caisse: logique `max_price`>0 ⇒ saisie manuelle; sinon utilisation de `price`; validation prix saisi ∈ [price, max_price].
+  - QA Fixes: ajout message d’aide affichant la plage de prix autorisée; ajout d’attributs ARIA sur champs de prix.
+
+- Completion Notes:
+  - Tests story backend: `api/tests/api/test_categories_endpoint.py` OK.
+  - Tests story frontend: `CategoryForm.test.tsx`, `SaleWizard.test.tsx` OK.
+  - Hors périmètre: divergences Alembic et import `create_reset_token` à adresser via dettes techniques.
+  - QA Fixes appliqués: aide plage de prix (UI caisse), ARIA labels (Form + Wizard), tests ré-exécutés OK.
+
+- Debug Log References:
+  - `.ai/debug-log.md` (si présent) pour détails d’exécution locale.
+
+- Status: Ready for Done
+
+## QA Results
+
+### Review Date: 2025-01-12
+
+### Reviewed By: Quinn (Test Architect)
+
+### Code Quality Assessment
+- Backend: Modèle `Category` sans `min_price`, `price` et `max_price` présents, schémas Pydantic mis à jour, validations service assurant que les champs de prix ne sont définis que pour les sous-catégories. Cohérent avec les AC.
+- Frontend Admin: Page `Categories` affiche "Prix minimum" = `price` et "Prix maximum" = `max_price`, hiérarchie dépliée par défaut. Formulaire limité à `price` et `max_price` pour les sous-catégories uniquement.
+- Frontend Caisse: `SaleWizard` applique la logique: `max_price` > 0 ⇒ saisie manuelle du prix; sinon utilisation de `price` et saut de l'étape de saisie.
+
+### Refactoring Performed
+Aucun refactoring nécessaire. Le code est propre et conforme.
+
+### Compliance Check
+- Coding Standards: ✓
+- Project Structure: ✓
+- Testing Strategy: ✓ (tests unitaires front/back mentionnés et adaptés à la refonte)
+- All ACs Met: ✓
+
+### Improvements Checklist
+- [ ] Ajouter message d'aide sur la plage autorisée du prix dans l'UI de caisse
+- [ ] Ajouter ARIA labels pour l’accessibilité sur les champs de prix
+- [ ] Ajouter un test e2e couvrant la plage min/max en caisse
+
+### Security Review
+Aucun impact sécurité spécifique (logique prix côté UI et service, pas de données sensibles).
+
+### Performance Considerations
+Impact négligeable; logique conditionnelle simple.
+
+### Files Modified During Review
+Aucun fichier modifié durant la révision.
+
+### Gate Status
+Gate: PASS → `docs/qa/gates/b13.p1-refonte-gestion-des-prix.yml`
+Quality Score: 94/100
+Risk Level: Low
+
+### Recommended Status
+✓ Ready for Done
+
+### Review Date: 2025-01-12 (post-fix)
+
+### Reviewed By: Quinn (Test Architect)
+
+Les recommandations QA ont été appliquées par l'agent dev et vérifiées :
+- Message d’aide affichant la plage de prix autorisée dans `SaleWizard` (data-testid=`price-range-help`).
+- Attributs ARIA ajoutés sur les champs de prix dans `CategoryForm` et `SaleWizard`.
+- Tests ré-exécutés: OK.
+
+Gate: PASS (confirmé) — Quality Score maintenu: 94/100.
+
+Recommandations à long terme inchangées: ajouter un test E2E couvrant la plage min/max en caisse.

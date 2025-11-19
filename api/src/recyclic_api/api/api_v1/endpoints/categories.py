@@ -17,11 +17,22 @@ from recyclic_api.schemas.category import (
     CategoryImportExecuteRequest,
 )
 from recyclic_api.services.category_service import CategoryService
+from recyclic_api.services.category_management import CategoryManagementService
 from recyclic_api.services.category_export_service import CategoryExportService
 from recyclic_api.services.category_import_service import CategoryImportService
+from pydantic import BaseModel
 
 
 router = APIRouter(tags=["categories"])
+
+
+# Schemas for visibility and display order updates
+class VisibilityUpdate(BaseModel):
+    is_visible: bool
+
+
+class DisplayOrderUpdate(BaseModel):
+    display_order: int
 
 
 @router.post(
@@ -310,38 +321,67 @@ async def get_category_breadcrumb(
     return breadcrumb
 
 
-@router.get(
-    "/export",
-    summary="Export categories configuration",
-    description="Export all categories to PDF or Excel format. Requires ADMIN or SUPER_ADMIN role."
+@router.put(
+    "/{category_id}/visibility",
+    response_model=CategoryRead,
+    summary="Update category visibility",
+    description="Update category visibility for ENTRY tickets. Requires ADMIN or SUPER_ADMIN role."
 )
-async def export_categories(
-    format: str = Query(..., description="Export format: 'pdf' or 'xls'"),
+async def update_category_visibility(
+    category_id: str,
+    visibility_data: VisibilityUpdate,
     current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: Session = Depends(get_db)
 ):
-    """
-    Export categories configuration to PDF or Excel format.
+    """Update category visibility (for ENTRY tickets only)"""
+    service = CategoryManagementService(db)
+    return await service.update_category_visibility(category_id, visibility_data.is_visible)
 
-    - **format**: Either 'pdf' or 'xls'
-    - Returns the file as a downloadable stream
-    """
-    if format not in ['pdf', 'xls']:
-        raise HTTPException(status_code=400, detail="Invalid format. Must be 'pdf' or 'xls'")
 
-    export_service = CategoryExportService(db)
+@router.put(
+    "/{category_id}/display-order",
+    response_model=CategoryRead,
+    summary="Update category display order",
+    description="Update category display order. Requires ADMIN or SUPER_ADMIN role."
+)
+async def update_category_display_order(
+    category_id: str,
+    order_data: DisplayOrderUpdate,
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    db: Session = Depends(get_db)
+):
+    """Update category display order"""
+    service = CategoryManagementService(db)
+    return await service.update_display_order(category_id, order_data.display_order)
 
-    if format == 'pdf':
-        buffer = export_service.export_to_pdf()
-        filename = f"categories_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        media_type = "application/pdf"
-    else:  # xls
-        buffer = export_service.export_to_excel()
-        filename = f"categories_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
-    return StreamingResponse(
-        buffer,
-        media_type=media_type,
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
+@router.get(
+    "/entry-tickets",
+    response_model=List[CategoryRead],
+    summary="Get categories for ENTRY tickets",
+    description="Get categories filtered by visibility for ENTRY/DEPOT tickets. Requires authentication."
+)
+async def get_categories_for_entry_tickets(
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get categories for ENTRY tickets (respects visibility settings)"""
+    service = CategoryManagementService(db)
+    return await service.get_categories_for_entry_tickets(is_active=is_active)
+
+
+@router.get(
+    "/sale-tickets",
+    response_model=List[CategoryRead],
+    summary="Get categories for SALE tickets",
+    description="Get all categories for SALE/CASH REGISTER tickets (ignores visibility). Requires authentication."
+)
+async def get_categories_for_sale_tickets(
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get categories for SALE tickets (always shows all categories)"""
+    service = CategoryManagementService(db)
+    return await service.get_categories_for_sale_tickets(is_active=is_active)

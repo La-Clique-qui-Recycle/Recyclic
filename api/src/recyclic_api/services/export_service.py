@@ -7,9 +7,10 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
+from uuid import UUID as UUIDType
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from recyclic_api.core.config import settings
 from recyclic_api.models.deposit import Deposit, DepositStatus, EEECategory
@@ -18,6 +19,8 @@ from recyclic_api.models.sale_item import SaleItem
 from recyclic_api.models.cash_session import CashSession
 from recyclic_api.models.user import User
 from recyclic_api.models.site import Site
+from recyclic_api.models.preset_button import PresetButton
+from recyclic_api.models.category import Category
 
 
 @dataclass(frozen=True)
@@ -245,54 +248,213 @@ def generate_cash_session_report(
     report_root = Path(reports_dir or settings.CASH_SESSION_REPORT_DIR)
     report_root.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    filename = f"cash_session_{session.id}_{timestamp}.csv"
-    file_path = report_root / filename
-
+    # Amélioration du nom de fichier : format lisible avec date, opérateur, site et UUID (pour compatibilité)
     operator = session.operator or db.query(User).filter(User.id == session.operator_id).first()
     site = session.site or db.query(Site).filter(Site.id == session.site_id).first()
+    
+    operator_name = (getattr(operator, "username", None) or getattr(operator, "full_name", None) or "unknown")
+    operator_name_safe = operator_name.replace(' ', '_').replace('/', '_')[:20]
+    
+    site_name = getattr(site, "name", "") or "unknown"
+    site_name_safe = site_name.replace(' ', '_').replace('/', '_')[:20]
+    
+    date_str = session.opened_at.strftime('%Y%m%d') if session.opened_at else datetime.utcnow().strftime('%Y%m%d')
+    timestamp = datetime.utcnow().strftime("%H%M%S")
+    
+    # Format: session_caisse_YYYYMMDD_operateur_site_{UUID}_HHMMSS.csv
+    # Exemple: session_caisse_20251119_admintest1_LaClique_c2399c3d-52aa-464d-aec2-e6e901cfaa8a_125443.csv
+    # L'UUID complet est conservé pour permettre l'extraction par le pattern dans reports.py
+    filename = f"session_caisse_{date_str}_{operator_name_safe}_{site_name_safe}_{session.id}_{timestamp}.csv"
+    file_path = report_root / filename
 
     def _format_amount(value: Optional[float]) -> str:
+        """Format un montant avec virgule comme séparateur décimal (format français)"""
         if value is None:
             return ''
-        return f"{value:.2f}"
+        # Utiliser virgule au lieu de point pour les décimales (format français)
+        return f"{value:.2f}".replace('.', ',')
+    
+    def _format_weight(value: Optional[float]) -> str:
+        """Format un poids avec virgule comme séparateur décimal (format français)"""
+        if value is None:
+            return ''
+        # Utiliser virgule au lieu de point pour les décimales (format français)
+        return f"{value:.3f}".replace('.', ',')
+    
+    def _format_date(dt: Optional[datetime]) -> str:
+        if dt is None:
+            return ''
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
 
+    # Résumé de session avec en-têtes en français
     summary_rows = [
-        ("Session ID", str(session.id)),
-        ("Operator ID", str(session.operator_id)),
-        ("Operator Name", (getattr(operator, "full_name", None) or getattr(operator, "username", None) or getattr(operator, "telegram_id", None) or "")),
-        ("Site ID", str(session.site_id)),
-        ("Site Name", getattr(site, "name", "") or ""),
-        ("Opened At", session.opened_at.isoformat() if session.opened_at else ""),
-        ("Closed At", session.closed_at.isoformat() if session.closed_at else ""),
-        ("Initial Amount", _format_amount(session.initial_amount)),
-        ("Closing Amount", _format_amount(session.closing_amount if session.closing_amount is not None else (session.initial_amount + (session.total_sales or 0)))),
-        ("Actual Amount", _format_amount(session.actual_amount)),
-        ("Variance", _format_amount(session.variance)),
-        ("Variance Comment", session.variance_comment or ""),
-        ("Total Sales", _format_amount(session.total_sales)),
-        ("Total Items", str(session.total_items or 0)),
-        ("Report Generated At", datetime.utcnow().isoformat()),
+        ("ID Session", str(session.id)),
+        ("ID Opérateur", str(session.operator_id)),
+        ("Nom Opérateur", (getattr(operator, "full_name", None) or getattr(operator, "username", None) or getattr(operator, "telegram_id", None) or "")),
+        ("ID Site", str(session.site_id)),
+        ("Nom Site", getattr(site, "name", "") or ""),
+        ("Date Ouverture", _format_date(session.opened_at)),
+        ("Date Fermeture", _format_date(session.closed_at)),
+        ("Montant Initial (€)", _format_amount(session.initial_amount)),
+        ("Montant de Clôture (€)", _format_amount(session.closing_amount if session.closing_amount is not None else (session.initial_amount + (session.total_sales or 0)))),
+        ("Montant Réel (€)", _format_amount(session.actual_amount)),
+        ("Écart (€)", _format_amount(session.variance)),
+        ("Commentaire Écart", session.variance_comment or ""),
+        ("Total Ventes (€)", _format_amount(session.total_sales)),
+        ("Nombre d'Articles", str(session.total_items or 0)),
+        ("Rapport Généré Le", _format_date(datetime.utcnow())),
     ]
 
-    sales = db.query(Sale).filter(Sale.cash_session_id == session.id).all()
+    # Charger les ventes avec les relations nécessaires (preset_button pour récupérer le nom)
+    sales = db.query(Sale).filter(Sale.cash_session_id == session.id).options(
+        joinedload(Sale.items).joinedload(SaleItem.preset_button)
+    ).all()
 
-    with file_path.open('w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['section', 'field', 'value'])
+    # Créer un cache des catégories pour éviter les requêtes multiples
+    # Récupérer tous les IDs de catégories uniques utilisés dans les items
+    category_ids = set()
+    for sale in sales:
+        for item in sale.items:
+            if item.category:
+                # Vérifier si c'est un UUID (format avec tirets) ou un code (EEE-X)
+                try:
+                    # Essayer de parser comme UUID
+                    UUIDType(item.category)
+                    category_ids.add(item.category)
+                except (ValueError, AttributeError):
+                    # Ce n'est pas un UUID, probablement un code comme "EEE-1"
+                    pass
+    
+    # Charger toutes les catégories en une seule requête
+    category_map = {}
+    if category_ids:
+        # Convertir les strings en UUID pour la requête
+        uuid_category_ids = []
+        for cat_id in category_ids:
+            try:
+                uuid_category_ids.append(UUIDType(cat_id))
+            except (ValueError, AttributeError):
+                pass
+        
+        if uuid_category_ids:
+            categories = db.query(Category).filter(Category.id.in_(uuid_category_ids)).all()
+            # Créer le mapping avec les deux formats (UUID et string) pour faciliter la recherche
+            for cat in categories:
+                category_map[str(cat.id)] = cat.name
+                category_map[cat.id] = cat.name  # Support aussi pour comparaison directe UUID
+
+    # Utiliser le séparateur point-virgule (;) pour compatibilité avec Excel/OpenOffice français
+    # et virgule (,) pour les décimales
+    with file_path.open('w', newline='', encoding='utf-8-sig') as csvfile:
+        # Utiliser point-virgule comme délimiteur (standard français pour CSV)
+        # QUOTE_MINIMAL pour échapper automatiquement les guillemets et caractères spéciaux
+        writer = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+        
+        # Section 1: Résumé de session (format tabulaire lisible)
+        writer.writerow(['=== RÉSUMÉ DE SESSION ==='])
+        writer.writerow(['Champ', 'Valeur'])
         for label, value in summary_rows:
-            writer.writerow(['session_summary', label, value])
+            writer.writerow([label, value])
 
-        writer.writerow([])
-        writer.writerow(['section', 'sale_id', 'sale_created_at', 'item_id', 'category', 'quantity', 'unit_price', 'total_price'])
+        # Ligne vide pour séparation (avec le bon nombre de colonnes pour éviter les erreurs d'import)
+        writer.writerow(['', ''])  # 2 colonnes pour le résumé
+        
+        # Section 2: Détails des ventes avec toutes les colonnes nécessaires
+        # Ajout d'une colonne "Numéro de Ticket" pour identifier chaque ticket
+        writer.writerow(['=== DÉTAILS DES VENTES ==='])
+        writer.writerow([
+            'Numéro de Ticket',
+            'Date de Vente',
+            'Catégorie',
+            'Quantité',
+            'Poids (kg)',
+            'Prix Unitaire (€)',
+            'Prix Total (€)',
+            'Type de Transaction',
+            'Notes'
+        ])
 
-        for sale in sales:
-            sale_created_at = sale.created_at.isoformat() if sale.created_at else ''
+        # Compteur pour numéroter les tickets
+        ticket_number = 1
+        total_tickets = len(sales)
+        
+        for sale_idx, sale in enumerate(sales, start=1):
+            sale_created_at = _format_date(sale.created_at)
             if sale.items:
                 for item in sale.items:
-                    writer.writerow(['sale_item', str(sale.id), sale_created_at, str(item.id), item.category, str(item.quantity), _format_amount(item.unit_price), _format_amount(item.total_price)])
+                    # Récupérer le nom du preset si présent et nettoyer
+                    preset_name = ''
+                    if item.preset_button:
+                        preset_name = (item.preset_button.name or '').replace('\n', ' ').replace('\r', ' ').strip()
+                    elif item.preset_id:
+                        # Fallback: si la relation n'est pas chargée, chercher le preset
+                        preset = db.query(PresetButton).filter(PresetButton.id == item.preset_id).first()
+                        if preset:
+                            preset_name = (preset.name or '').replace('\n', ' ').replace('\r', ' ').strip()
+                    
+                    # Récupérer les notes et nettoyer les caractères problématiques
+                    notes = (item.notes or '').replace('\n', ' ').replace('\r', ' ').strip()
+                    
+                    # Récupérer le poids avec format français (virgule)
+                    weight_str = ''
+                    if item.weight is not None:
+                        weight_str = _format_weight(item.weight)
+                    
+                    # Résoudre le nom de la catégorie depuis l'ID et nettoyer
+                    category_name = item.category
+                    if item.category in category_map:
+                        category_name = (category_map[item.category] or item.category).replace('\n', ' ').replace('\r', ' ').strip()
+                    elif item.category:
+                        # Si ce n'est pas un UUID mais un code (ex: "EEE-1"), garder tel quel
+                        # Sinon essayer de chercher la catégorie
+                        try:
+                            UUIDType(item.category)
+                            # C'est un UUID mais pas dans le cache, chercher
+                            cat = db.query(Category).filter(Category.id == item.category).first()
+                            if cat:
+                                category_name = (cat.name or item.category).replace('\n', ' ').replace('\r', ' ').strip()
+                        except (ValueError, AttributeError):
+                            # Ce n'est pas un UUID, probablement un code, garder tel quel mais nettoyer
+                            category_name = item.category.replace('\n', ' ').replace('\r', ' ').strip()
+                    
+                    writer.writerow([
+                        f'Ticket #{ticket_number}',
+                        sale_created_at,
+                        category_name,
+                        str(item.quantity),
+                        weight_str,
+                        _format_amount(item.unit_price),
+                        _format_amount(item.total_price),
+                        preset_name,
+                        notes
+                    ])
+                
+                # Après tous les items d'un ticket, ajouter une ligne de séparation
+                # Sauf pour le dernier ticket
+                # Utiliser une ligne avec le bon nombre de colonnes (9) mais vides pour éviter les erreurs d'import
+                if sale_idx < total_tickets:
+                    writer.writerow(['', '', '', '', '', '', '', '', ''])  # 9 colonnes vides pour séparer les tickets
+                
+                ticket_number += 1
             else:
-                writer.writerow(['sale', str(sale.id), sale_created_at, '', '', '0', _format_amount(0.0), _format_amount(sale.total_amount)])
+                # Vente sans items (cas rare)
+                writer.writerow([
+                    f'Ticket #{ticket_number}',
+                    sale_created_at,
+                    '',
+                    '0',
+                    '',
+                    _format_amount(0.0),
+                    _format_amount(sale.total_amount),
+                    '',
+                    ''
+                ])
+                
+                # Séparation après ce ticket aussi
+                if sale_idx < total_tickets:
+                    writer.writerow(['', '', '', '', '', '', '', '', ''])  # 9 colonnes vides pour séparer les tickets
+                
+                ticket_number += 1
 
     _enforce_report_retention(report_root)
 

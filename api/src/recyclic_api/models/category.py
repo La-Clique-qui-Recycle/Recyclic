@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Numeric
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Numeric, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -16,6 +16,9 @@ class Category(Base):
     parent_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True, index=True)
     price = Column(Numeric(10, 2), nullable=True)
     max_price = Column(Numeric(10, 2), nullable=True)
+    display_order = Column(Integer, default=0, nullable=False, index=True)
+    is_visible = Column(Boolean, default=True, nullable=False, index=True)
+    shortcut_key = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

@@ -177,7 +177,7 @@ describe('Registration Workflow Integration', () => {
       render(<Registration />)
 
       // Form should still be functional even if sites fail to load
-      expect(screen.getByText('📝 Inscription Recyclic')).toBeInTheDocument()
+      expect(screen.getByText('📝 Inscription RecyClique')).toBeInTheDocument()
       expect(screen.getByLabelText(/ressourcerie/i)).toBeInTheDocument()
 
       // Should still be able to submit with empty site selection

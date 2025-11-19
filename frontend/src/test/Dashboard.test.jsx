@@ -47,7 +47,7 @@ describe('Dashboard', () => {
 
     render(<Dashboard />);
     
-    expect(screen.getByText('Bienvenue sur Recyclic')).toBeInTheDocument();
+    expect(screen.getByText('Bienvenue sur RecyClique')).toBeInTheDocument();
     expect(screen.getByText('Plateforme de gestion de recyclage intelligente.')).toBeInTheDocument();
   });
 

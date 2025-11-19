@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { useCashSessionStore } from '../../stores/cashSessionStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { usePresetStore } from '../../stores/presetStore';
 import SaleWizard from '../../components/business/SaleWizard';
 import Ticket from '../../components/business/Ticket';
 import FinalizationScreen, { FinalizationData } from '../../components/business/FinalizationScreen';
@@ -136,6 +137,7 @@ const Sale: React.FC = () => {
 
   const { currentUser } = useAuthStore();
   const { getCategoryById, fetchCategories } = useCategoryStore();
+  const { clearSelection, selectedPreset, notes } = usePresetStore();
 
   // Load categories on component mount
   useEffect(() => {
@@ -152,16 +154,8 @@ const Sale: React.FC = () => {
     // Get category names from the category store
     const category = getCategoryById(itemData.category);
     const subcategory = itemData.subcategory ? getCategoryById(itemData.subcategory) : null;
-    
-    // Debug: log what we're getting
-    console.log('handleItemComplete debug:', {
-      itemData,
-      category,
-      subcategory,
-      categoryName: category?.name,
-      subcategoryName: subcategory?.name
-    });
-    
+
+
     addSaleItem({
       category: itemData.category,
       subcategory: itemData.subcategory,
@@ -170,8 +164,12 @@ const Sale: React.FC = () => {
       quantity: itemData.quantity,
       weight: itemData.weight,
       price: itemData.price,
-      total: itemData.total
+      total: itemData.total,
+      presetId: itemData.preset_id,  // Utiliser le preset_id de l'item (déjà isolé par transaction)
+      notes: itemData.notes  // Utiliser les notes de l'item (déjà isolées par transaction)
     });
+
+    // Plus besoin de clearSelection() - l'état est maintenant géré par transaction dans SaleWizard
   };
 
   const handleFinalizeSale = async () => {
@@ -202,8 +200,12 @@ const Sale: React.FC = () => {
   const handleConfirmFinalization = async (data: FinalizationData) => {
     setFinalizationData(data);
     setIsFinalizing(false);
+
     const success = await submitSale(currentSaleItems, data);
     if (success) {
+      // Effacer la sélection de preset après une vente réussie
+      clearSelection();
+
       // Afficher une popup de succès qui disparaît automatiquement après 3 secondes
       setShowSuccessPopup(true);
       setTimeout(() => {

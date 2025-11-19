@@ -1,7 +1,7 @@
 {
-  "name": "recyclic-frontend",
+  "name": "recyclique-frontend",
   "version": "1.2.7",
-  "description": "Interface web pour la plateforme Recyclic",
+  "description": "Interface web pour la plateforme RecyClique",
   "private": true,
   "type": "module",
   "dependencies": {

@@ -43,7 +43,7 @@ describe('adminService.exportDatabase', () => {
     const mockResponse = {
       data: mockBlob,
       headers: {
-        'content-disposition': 'attachment; filename=recyclic_db_export_20250101_120000.sql'
+        'content-disposition': 'attachment; filename=recyclique_db_export_20250101_120000.sql'
       }
     }
 
@@ -86,7 +86,7 @@ describe('adminService.exportDatabase', () => {
     await adminService.exportDatabase()
 
     // Assert
-    expect(mockLink.download).toBe('recyclic_db_export.sql')
+    expect(mockLink.download).toBe('recyclique_db_export.sql')
   })
 
   it('should extract filename from content-disposition header', async () => {

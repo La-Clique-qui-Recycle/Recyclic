@@ -15,6 +15,20 @@ export interface CashSession {
   total_items?: number;
 }
 
+export interface SaleItem {
+  id: string;
+  category: string;
+  subcategory?: string;
+  categoryName?: string;
+  subcategoryName?: string;
+  quantity: number;
+  weight: number;
+  price: number;
+  total: number;
+  presetId?: string;  // ID du preset utilisé pour cet item
+  notes?: string;     // Notes pour cet item
+}
+
 export interface CashSessionCreate {
   operator_id: string;
   site_id: string;
@@ -49,8 +63,21 @@ export interface SaleCreate {
     weight: number;  // Poids en kg
     unit_price: number;
     total_price: number;
+    preset_id?: string | null;  // Story 1.1.2: Preset par item
+    notes?: string | null;  // Story 1.1.2: Notes par item
   }[];
   total_amount: number;
+  donation?: number;
+  payment_method?: string;
+}
+
+interface ScrollState {
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+  canScrollUp: boolean;
+  canScrollDown: boolean;
+  isScrollable: boolean;
 }
 
 interface CashSessionState {
@@ -60,7 +87,10 @@ interface CashSessionState {
   currentSaleItems: SaleItem[];
   loading: boolean;
   error: string | null;
-  
+
+  // Scroll state for ticket display
+  ticketScrollState: ScrollState;
+
   // Actions
   setCurrentSession: (session: CashSession | null) => void;
   setSessions: (sessions: CashSession[]) => void;
@@ -71,10 +101,15 @@ interface CashSessionState {
   // Sale actions
   addSaleItem: (item: Omit<SaleItem, 'id'>) => void;
   removeSaleItem: (itemId: string) => void;
-  updateSaleItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number) => void;
+  updateSaleItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number, presetId?: string, notes?: string) => void;
   clearCurrentSale: () => void;
   submitSale: (items: SaleItem[], finalization?: { donation: number; paymentMethod: 'cash'|'card'|'check'; cashGiven?: number; change?: number; }) => Promise<boolean>;
-  
+
+  // Scroll actions
+  setScrollPosition: (scrollTop: number) => void;
+  updateScrollableState: (isScrollable: boolean, canScrollUp: boolean, canScrollDown: boolean, scrollHeight: number, clientHeight: number) => void;
+  resetScrollState: () => void;
+
   // Async actions
   openSession: (data: CashSessionCreate) => Promise<CashSession | null>;
   closeSession: (sessionId: string) => Promise<boolean>;
@@ -96,6 +131,14 @@ export const useCashSessionStore = create<CashSessionState>()(
         currentSaleItems: [],
         loading: false,
         error: null,
+        ticketScrollState: {
+          scrollTop: 0,
+          scrollHeight: 0,
+          clientHeight: 0,
+          canScrollUp: false,
+          canScrollDown: false,
+          isScrollable: false
+        },
 
         // Setters
         setCurrentSession: (session) => set({ currentSession: session }),
@@ -108,7 +151,9 @@ export const useCashSessionStore = create<CashSessionState>()(
         addSaleItem: (item: Omit<SaleItem, 'id'>) => {
           const newItem: SaleItem = {
             ...item,
-            id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            presetId: item.presetId,
+            notes: item.notes
           };
 
           set((state) => ({
@@ -122,7 +167,7 @@ export const useCashSessionStore = create<CashSessionState>()(
           }));
         },
 
-        updateSaleItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number) => {
+        updateSaleItem: (itemId: string, newQuantity: number, newWeight: number, newPrice: number, presetId?: string, notes?: string) => {
           set((state) => ({
             currentSaleItems: state.currentSaleItems.map(item =>
               item.id === itemId
@@ -131,7 +176,9 @@ export const useCashSessionStore = create<CashSessionState>()(
                     quantity: newQuantity,
                     weight: newWeight,
                     price: newPrice,
-                    total: newQuantity * newPrice  // total = quantité × prix
+                    total: newQuantity * newPrice,  // total = quantité × prix
+                    presetId: presetId !== undefined ? presetId : item.presetId,
+                    notes: notes !== undefined ? notes : item.notes
                   }
                 : item
             )
@@ -139,7 +186,55 @@ export const useCashSessionStore = create<CashSessionState>()(
         },
 
         clearCurrentSale: () => {
-          set({ currentSaleItems: [] });
+          set({
+            currentSaleItems: [],
+            ticketScrollState: {
+              scrollTop: 0,
+              scrollHeight: 0,
+              clientHeight: 0,
+              canScrollUp: false,
+              canScrollDown: false,
+              isScrollable: false
+            }
+          });
+        },
+
+        // Scroll actions
+        setScrollPosition: (scrollTop: number) => {
+          set((state) => ({
+            ticketScrollState: {
+              ...state.ticketScrollState,
+              scrollTop,
+              canScrollUp: scrollTop > 0,
+              canScrollDown: scrollTop < state.ticketScrollState.scrollHeight - state.ticketScrollState.clientHeight - 1
+            }
+          }));
+        },
+
+        updateScrollableState: (isScrollable: boolean, canScrollUp: boolean, canScrollDown: boolean, scrollHeight: number, clientHeight: number) => {
+          set((state) => ({
+            ticketScrollState: {
+              ...state.ticketScrollState,
+              isScrollable,
+              canScrollUp,
+              canScrollDown,
+              scrollHeight,
+              clientHeight
+            }
+          }));
+        },
+
+        resetScrollState: () => {
+          set({
+            ticketScrollState: {
+              scrollTop: 0,
+              scrollHeight: 0,
+              clientHeight: 0,
+              canScrollUp: false,
+              canScrollDown: false,
+              isScrollable: false
+            }
+          });
         },
 
         submitSale: async (items: SaleItem[], finalization?: { donation: number; paymentMethod: 'cash'|'card'|'check'; cashGiven?: number; change?: number; }): Promise<boolean> => {
@@ -162,7 +257,9 @@ export const useCashSessionStore = create<CashSessionState>()(
                 quantity: item.quantity,
                 weight: item.weight,  // Ajout du poids
                 unit_price: item.price,
-                total_price: item.total
+                total_price: item.total,
+                preset_id: item.presetId || null,  // Story 1.1.2: Preset par item
+                notes: item.notes || null  // Story 1.1.2: Notes par item
               })),
               total_amount: items.reduce((sum, item) => sum + item.total, 0)
             };
@@ -175,14 +272,16 @@ export const useCashSessionStore = create<CashSessionState>()(
             };
 
             // Étendre le payload pour inclure finalisation (don, paiement)
-            // Note: cash_given et change sont des champs UI-only, pas stockés en DB
+            // Story 1.1.2: preset_id et notes sont maintenant par item, pas au niveau vente globale
             const extendedPayload = {
               ...saleData,
               donation: finalization?.donation ?? 0,
               payment_method: paymentMethodMap[finalization?.paymentMethod ?? 'cash'] ?? 'espèces',
+              // preset_id et notes supprimés du niveau vente - maintenant dans chaque item
             };
 
             console.log('[submitSale] Preparing sale:', saleData);
+            console.log('[submitSale] Extended payload:', extendedPayload);
 
             // Call API to create sale using axiosClient (handles auth automatically)
             console.log('[submitSale] Sending POST to /api/v1/sales/');

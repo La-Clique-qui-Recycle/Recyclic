@@ -80,7 +80,10 @@ class CategoryService:
             is_active=True,
             parent_id=parent_id,
             price=category_data.price,
-            max_price=category_data.max_price
+            max_price=category_data.max_price,
+            display_order=category_data.display_order if category_data.display_order is not None else 0,
+            is_visible=category_data.is_visible if category_data.is_visible is not None else True,
+            shortcut_key=category_data.shortcut_key
         )
 
         self.db.add(new_category)
@@ -102,7 +105,7 @@ class CategoryService:
         if is_active is not None:
             query = query.filter(Category.is_active == is_active)
 
-        query = query.order_by(Category.name)
+        query = query.order_by(Category.display_order, Category.name)
         categories = query.all()
 
         return [CategoryRead.model_validate(cat) for cat in categories]

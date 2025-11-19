@@ -74,7 +74,7 @@ def send_password_reset_email(
         email_service = EmailService(require_api_key=True)
         
         # Prepare email content
-        subject = "🔄 Réinitialisation de votre mot de passe - Recyclic"
+        subject = "🔄 Réinitialisation de votre mot de passe - RecyClique"
         
         # Send the email
         success = email_service.send_email(

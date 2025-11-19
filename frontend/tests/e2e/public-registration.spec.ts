@@ -6,8 +6,8 @@ test.describe('Public Registration Route', () => {
     await page.goto('/inscription');
 
     // Vérifier que la page se charge correctement
-    await expect(page).toHaveTitle(/Recyclic/);
-    await expect(page.locator('h1')).toContainText('📝 Inscription Recyclic');
+    await expect(page).toHaveTitle(/RecyClique/);
+    await expect(page.locator('h1')).toContainText('📝 Inscription RecyClique');
 
     // Vérifier la présence des éléments du formulaire
     await expect(page.locator('label')).toContainText('ID Telegram');
@@ -33,7 +33,7 @@ test.describe('Public Registration Route', () => {
     await page.goto('/inscription');
 
     // Vérifier qu'on reste sur la page d'inscription
-    await expect(page.locator('h1')).toContainText('📝 Inscription Recyclic');
+    await expect(page.locator('h1')).toContainText('📝 Inscription RecyClique');
 
     // Tenter d'accéder à une route protégée pour comparaison
     await page.goto('/admin/dashboard');

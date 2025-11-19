@@ -23,6 +23,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • Une fois validé par un admin, toutes les fonctionnalités seront disponibles
 
 **Support :**
-Pour toute question, contactez l'équipe Recyclic.
+Pour toute question, contactez l'équipe RecyClique.
     """
     await update.message.reply_text(help_message, parse_mode='Markdown')

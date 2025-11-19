@@ -1,3 +1,3 @@
 """
-Utility modules for the Recyclic API.
+Utility modules for the RecyClique API.
 """

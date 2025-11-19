@@ -14,6 +14,8 @@ export const ADMIN_ROUTES = {
   SESSION_MANAGER: '/admin/session-manager',
   RECEPTION_STATS: '/admin/reception-stats',
   RECEPTION_REPORTS: '/admin/reception-reports',
+  REPORTS: '/admin/reports',
+  REPORTS_CASH_SESSIONS: '/admin/reports/cash-sessions',
   HEALTH: '/admin/health',
   SETTINGS: '/admin/settings'
 };

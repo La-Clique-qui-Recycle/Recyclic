@@ -12,6 +12,9 @@ class CategoryCreate(CategoryBase):
     parent_id: Optional[str] = None
     price: Optional[Decimal] = None
     max_price: Optional[Decimal] = None
+    display_order: Optional[int] = 0
+    is_visible: Optional[bool] = True
+    shortcut_key: Optional[str] = None
 
 
 class CategoryUpdate(BaseModel):
@@ -20,6 +23,9 @@ class CategoryUpdate(BaseModel):
     parent_id: Optional[str] = None
     price: Optional[Decimal] = None
     max_price: Optional[Decimal] = None
+    display_order: Optional[int] = None
+    is_visible: Optional[bool] = None
+    shortcut_key: Optional[str] = None
 
 
 class CategoryRead(CategoryBase):
@@ -28,6 +34,9 @@ class CategoryRead(CategoryBase):
     parent_id: Optional[str] = None
     price: Optional[Decimal] = None
     max_price: Optional[Decimal] = None
+    display_order: int
+    is_visible: bool
+    shortcut_key: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

@@ -38,7 +38,7 @@ describe('Admin Layout Navigation Integration', () => {
     renderAdminRoutes(['/admin']);
 
     expect(screen.getByText('Tableau de Bord')).toBeInTheDocument();
-    expect(screen.getByText(/Bienvenue dans l'espace d'administration de Recyclic/)).toBeInTheDocument();
+    expect(screen.getByText(/Bienvenue dans l'espace d'administration de RecyClique/)).toBeInTheDocument();
     expect(screen.getByText('Administration')).toBeInTheDocument(); // Sidebar title
   });
 

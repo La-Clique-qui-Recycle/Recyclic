@@ -49,7 +49,7 @@ class NotificationService:
 
 Bonjour {user_name} !
 
-Votre inscription sur la plateforme Recyclic a été approuvée par un administrateur.
+Votre inscription sur la plateforme RecyClique a été approuvée par un administrateur.
 
 Vous pouvez maintenant utiliser toutes les fonctionnalités du bot :
 
@@ -59,7 +59,7 @@ Vous pouvez maintenant utiliser toutes les fonctionnalités du bot :
 /depot - Nouveau dépôt
 /classify - Classification d'appareils
 
-Bienvenue dans l'équipe Recyclic ! 🌱
+Bienvenue dans l'équipe RecyClique ! 🌱
             """
             
             await self.bot.send_message(
@@ -81,11 +81,11 @@ Bienvenue dans l'équipe Recyclic ! 🌱
 
 Bonjour {user_name},
 
-Votre demande d'inscription sur la plateforme Recyclic a été rejetée.
+Votre demande d'inscription sur la plateforme RecyClique a été rejetée.
 
 {f"**Raison :** {reason}" if reason else ""}
 
-Si vous pensez qu'il s'agit d'une erreur, vous pouvez contacter l'équipe Recyclic pour plus d'informations.
+Si vous pensez qu'il s'agit d'une erreur, vous pouvez contacter l'équipe RecyClique pour plus d'informations.
 
 Merci de votre compréhension.
             """

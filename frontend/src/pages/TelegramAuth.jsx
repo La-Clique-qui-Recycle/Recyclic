@@ -237,7 +237,7 @@ function TelegramAuth() {
       <Title>🔗 Liaison de Compte Telegram</Title>
       
       <Question>
-        Avez-vous déjà un compte Recyclic ?
+        Avez-vous déjà un compte RecyClique ?
       </Question>
       
       <ButtonContainer>

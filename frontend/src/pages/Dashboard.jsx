@@ -142,7 +142,7 @@ function Dashboard() {
   return (
     <DashboardContainer>
       <WelcomeSection>
-        <WelcomeTitle>Bienvenue sur Recyclic</WelcomeTitle>
+        <WelcomeTitle>Bienvenue sur RecyClique</WelcomeTitle>
         <WelcomeText>
           Plateforme de gestion de recyclage intelligente. 
           Gérez vos dépôts, suivez vos ventes et analysez vos performances.

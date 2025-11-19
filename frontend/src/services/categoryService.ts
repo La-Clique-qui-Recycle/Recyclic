@@ -7,6 +7,9 @@ export interface Category {
   parent_id?: string | null;
   price?: number | null;
   max_price?: number | null;
+  display_order: number;
+  is_visible: boolean;
+  shortcut_key?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -16,6 +19,9 @@ export interface CategoryCreate {
   parent_id?: string | null;
   price?: number | null;
   max_price?: number | null;
+  display_order?: number;
+  is_visible?: boolean;
+  shortcut_key?: string | null;
 }
 
 export interface CategoryUpdate {
@@ -24,6 +30,9 @@ export interface CategoryUpdate {
   parent_id?: string | null;
   price?: number | null;
   max_price?: number | null;
+  display_order?: number;
+  is_visible?: boolean;
+  shortcut_key?: string | null;
 }
 
 /**
@@ -188,6 +197,40 @@ class CategoryService {
       session_id: sessionId,
       delete_existing: deleteExisting
     });
+    return response.data;
+  }
+
+  /**
+   * Update category visibility for ENTRY tickets
+   */
+  async updateCategoryVisibility(id: string, isVisible: boolean): Promise<Category> {
+    const response = await api.put(`/v1/categories/${id}/visibility`, { is_visible: isVisible });
+    return response.data;
+  }
+
+  /**
+   * Update category display order
+   */
+  async updateDisplayOrder(id: string, displayOrder: number): Promise<Category> {
+    const response = await api.put(`/v1/categories/${id}/display-order`, { display_order: displayOrder });
+    return response.data;
+  }
+
+  /**
+   * Get categories for ENTRY tickets (respects visibility settings)
+   */
+  async getCategoriesForEntryTickets(isActive?: boolean): Promise<Category[]> {
+    const params = isActive !== undefined ? { is_active: isActive } : {};
+    const response = await api.get('/v1/categories/entry-tickets', { params });
+    return response.data;
+  }
+
+  /**
+   * Get categories for SALE tickets (always shows all categories)
+   */
+  async getCategoriesForSaleTickets(isActive?: boolean): Promise<Category[]> {
+    const params = isActive !== undefined ? { is_active: isActive } : {};
+    const response = await api.get('/v1/categories/sale-tickets', { params });
     return response.data;
   }
 }

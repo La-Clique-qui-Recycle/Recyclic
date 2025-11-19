@@ -6,6 +6,7 @@ import axiosClient from '../../api/axiosClient'
 import { getSaleDetail, SaleDetail, SaleItem } from '../../services/salesService'
 import { getCategories, Category } from '../../services/categoriesService'
 import { getUsers, User as UserType } from '../../services/usersService'
+import { presetService } from '../../services/presetService'
 
 // Types pour les données de la session
 interface SaleSummary {
@@ -322,10 +323,13 @@ const ViewTicketButton = styled.button`
 
 /**
  * Formate un montant en devise EUR
- * @param value - Montant à formater
- * @returns Montant formaté
+ * @param value - Montant à formater (peut être null ou undefined)
+ * @returns Montant formaté ou '0,00 €' si null/undefined
  */
-const formatCurrency = (value: number) => {
+const formatCurrency = (value: number | null | undefined) => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return (0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+  }
   return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
 }
 
@@ -401,6 +405,7 @@ const CashSessionDetail: React.FC = () => {
   const [loadingSale, setLoadingSale] = useState<boolean>(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [users, setUsers] = useState<UserType[]>([])
+  const [presets, setPresets] = useState<any[]>([])  // Pour stocker la liste des presets
   const [loadingData, setLoadingData] = useState<boolean>(false)
 
   useEffect(() => {
@@ -428,17 +433,19 @@ const CashSessionDetail: React.FC = () => {
     fetchSessionDetail()
   }, [id])
 
-  // Charger les catégories et utilisateurs pour les noms
+  // Charger les catégories, utilisateurs et presets pour les noms
   useEffect(() => {
     const loadReferenceData = async () => {
       try {
         setLoadingData(true)
-        const [categoriesData, usersData] = await Promise.all([
+        const [categoriesData, usersData, presetsData] = await Promise.all([
           getCategories(),
-          getUsers()
+          getUsers(),
+          presetService.getPresets()
         ])
         setCategories(categoriesData)
         setUsers(usersData)
+        setPresets(presetsData)
       } catch (error) {
         console.error('Erreur lors du chargement des données de référence:', error)
       } finally {
@@ -488,7 +495,7 @@ const CashSessionDetail: React.FC = () => {
   const getCategoryName = (categoryValue: string): string => {
     // Vérifier si c'est un UUID (ID) ou un nom
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryValue)
-    
+
     if (isUUID) {
       // C'est un ID, chercher le nom dans les catégories
       const category = categories.find(cat => cat.id === categoryValue)
@@ -497,6 +504,13 @@ const CashSessionDetail: React.FC = () => {
       // C'est déjà un nom, le retourner tel quel
       return categoryValue
     }
+  }
+
+  const getPresetName = (presetId?: string): string => {
+    if (!presetId) return ''  // Vide pour les ventes normales
+
+    const preset = presets.find(p => p.id === presetId)
+    return preset ? preset.name : presetId  // Retourner le nom ou l'ID si non trouvé
   }
 
 
@@ -764,15 +778,20 @@ const CashSessionDetail: React.FC = () => {
                       <ItemTh>Poids (kg)</ItemTh>
                       <ItemTh>Prix unitaire</ItemTh>
                       <ItemTh>Total</ItemTh>
+                      <ItemTh>Type de transaction</ItemTh>
+                      <ItemTh>Notes</ItemTh>
                     </tr>
                   </thead>
                   <tbody>
                     {selectedSale.items.map((item) => (
                       <tr key={item.id}>
                         <ItemTd>{getCategoryName(item.category)}</ItemTd>
-                        <ItemTd>{item.weight.toFixed(2)}</ItemTd>
+                        <ItemTd>{(item.weight ?? 0).toFixed(2)}</ItemTd>
                         <ItemTd>{formatCurrency(item.unit_price)}</ItemTd>
                         <ItemTd>{formatCurrency(item.total_price)}</ItemTd>
+                        {/* Story 1.1.2: Utiliser preset_id et notes de l'item, pas de la vente globale */}
+                        <ItemTd>{getPresetName(item.preset_id || undefined)}</ItemTd>
+                        <ItemTd>{item.notes || ''}</ItemTd>
                       </tr>
                     ))}
                   </tbody>

@@ -23,7 +23,11 @@ router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
-_SESSION_FILENAME_PATTERN = re.compile(r"^cash_session_([0-9a-fA-F-]{36})_")
+# Pattern pour extraire l'UUID de session depuis le nom de fichier
+# Supporte les deux formats :
+# - Ancien: cash_session_{uuid}_{timestamp}.csv
+# - Nouveau: session_caisse_{date}_{operator}_{site}_{uuid}_{timestamp}.csv
+_SESSION_FILENAME_PATTERN = re.compile(r"(?:cash_session_|session_caisse_[^_]+_[^_]+_[^_]+_)([0-9a-fA-F-]{36})_")
 
 
 def _reports_directory() -> Path:
@@ -79,6 +83,74 @@ def list_cash_session_reports(
         )
 
     return ReportListResponse(reports=reports, total=len(reports))
+
+
+@conditional_rate_limit("60/minute")
+@router.get(
+    "/cash-sessions/by-session/{session_id}",
+    response_class=FileResponse,
+    summary="Télécharger un rapport de session de caisse par ID de session",
+)
+def download_cash_session_report_by_id(
+    request: Request,
+    session_id: UUID,
+    current_user: User = Depends(require_role_strict([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    """Génère et télécharge le rapport CSV d'une session de caisse par son ID."""
+    cash_session = db.query(CashSession).filter(CashSession.id == session_id).first()
+    if cash_session is None:
+        log_admin_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            f"/admin/reports/cash-sessions/by-session/{session_id}",
+            success=False,
+            error_message="session_not_found",
+        )
+        raise HTTPException(status_code=404, detail="Session de caisse introuvable")
+
+    try:
+        _ensure_session_access(current_user, cash_session)
+    except HTTPException as exc:
+        log_admin_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            f"/admin/reports/cash-sessions/by-session/{session_id}",
+            success=False,
+            error_message=exc.detail,
+        )
+        raise
+
+    # Générer le rapport avec le nouveau format
+    from recyclic_api.services.export_service import generate_cash_session_report
+    
+    try:
+        report_path = generate_cash_session_report(db, cash_session)
+        
+        log_cash_session_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            str(session_id),
+            "download_report",
+        )
+        log_admin_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            f"/admin/reports/cash-sessions/by-session/{session_id}",
+            success=True,
+        )
+        
+        return FileResponse(report_path, media_type="text/csv", filename=report_path.name)
+    except Exception as e:
+        logger.error(f"Error generating report for session {session_id}: {e}", exc_info=True)
+        log_admin_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            f"/admin/reports/cash-sessions/by-session/{session_id}",
+            success=False,
+            error_message=f"report_generation_failed: {str(e)}",
+        )
+        raise HTTPException(status_code=500, detail="Erreur lors de la génération du rapport")
 
 
 @conditional_rate_limit("60/minute")
@@ -160,31 +232,50 @@ def download_cash_session_report(
         )
         raise
 
-    file_path = _reports_directory() / safe_name
-    if not file_path.exists() or not file_path.is_file():
+    # Régénérer le rapport avec le nouveau format (au lieu de servir l'ancien fichier)
+    # Cela garantit que tous les rapports téléchargés utilisent le nouveau format amélioré
+    from recyclic_api.services.export_service import generate_cash_session_report
+    
+    try:
+        # Régénérer le rapport avec le nouveau format
+        report_path = generate_cash_session_report(db, cash_session)
+        download_token = generate_download_token(report_path.name)
+        
+        log_cash_session_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            str(session_id),
+            "download_report",
+        )
+        log_admin_access(
+            str(current_user.id),
+            current_user.username or "Unknown",
+            endpoint_path,
+            success=True,
+        )
+        
+        return FileResponse(report_path, media_type="text/csv", filename=report_path.name)
+    except Exception as e:
+        logger.error(f"Error regenerating report for session {session_id}: {e}", exc_info=True)
+        # Fallback: essayer de servir l'ancien fichier s'il existe
+        file_path = _reports_directory() / safe_name
+        if file_path.exists() and file_path.is_file():
+            log_admin_access(
+                str(current_user.id),
+                current_user.username or "Unknown",
+                endpoint_path,
+                success=True,
+            )
+            return FileResponse(file_path, media_type="text/csv", filename=safe_name)
+        
         log_admin_access(
             str(current_user.id),
             current_user.username or "Unknown",
             endpoint_path,
             success=False,
-            error_message="report_missing",
+            error_message=f"report_generation_failed: {str(e)}",
         )
-        raise HTTPException(status_code=404, detail="Rapport introuvable")
-
-    log_cash_session_access(
-        str(current_user.id),
-        current_user.username or "Unknown",
-        str(session_id),
-        "download_report",
-    )
-    log_admin_access(
-        str(current_user.id),
-        current_user.username or "Unknown",
-        endpoint_path,
-        success=True,
-    )
-
-    return FileResponse(file_path, media_type="text/csv", filename=safe_name)
+        raise HTTPException(status_code=500, detail="Erreur lors de la génération du rapport")
 
 
 

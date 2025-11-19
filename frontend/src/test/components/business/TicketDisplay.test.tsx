@@ -34,7 +34,7 @@ describe('TicketDisplay Component', () => {
       />
     )
     
-    expect(screen.getByText('Ressourcerie Recyclic')).toBeInTheDocument()
+    expect(screen.getByText('Ressourcerie RecyClique')).toBeInTheDocument()
   })
 
   it('should render receipt icon in title', () => {

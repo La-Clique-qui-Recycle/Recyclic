@@ -207,7 +207,7 @@ class CategoryExportService:
             alignment=TA_CENTER
         )
         elements.append(Paragraph(
-            f"Document généré par Recyclic - {datetime.now().year}",
+            f"Document généré par RecyClique - {datetime.now().year}",
             footer_style
         ))
 

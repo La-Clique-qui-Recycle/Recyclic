@@ -81,7 +81,16 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   }
 
   // Filtrer pour ne montrer que les catégories racines (sans parent_id)
-  const rootCategories = activeCategories.filter(category => !category.parent_id);
+  // Trier par display_order puis par nom pour la caisse
+  const rootCategories = activeCategories
+    .filter(category => !category.parent_id)
+    .sort((a, b) => {
+      // Trier par display_order d'abord, puis par nom
+      if (a.display_order !== b.display_order) {
+        return a.display_order - b.display_order;
+      }
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <CategoryContainer role="group" aria-label="Sélection de catégorie">

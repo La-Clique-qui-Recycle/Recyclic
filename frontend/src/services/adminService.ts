@@ -414,7 +414,7 @@ export const adminService = {
 
       // Extraire le nom du fichier depuis les headers
       const contentDisposition = response.headers['content-disposition'];
-      let filename = 'recyclic_db_export.sql';
+      let filename = 'recyclique_db_export.sql';
 
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
